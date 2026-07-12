@@ -1,8 +1,8 @@
 # DynamoDB × Spring Boot 3 実装パターン(AWS SDK v2 Enhanced Client)
 
-> ⚠️ **重要な技術決定**
-> 要求定義書には `spring-data-dynamodb`(io.github.boostchicken:5.2.5)が記載されているが、
-> このライブラリは **Spring Boot 3.x / Spring Data 3.x に非対応**(javax→jakarta移行前で更新停止)。
+> ⚠️ **重要な技術決定(要求定義に反映済み)**
+> 当初候補だった `spring-data-dynamodb`(io.github.boostchicken:5.2.5)は
+> **Spring Boot 3.x / Spring Data 3.x に非対応**(javax→jakarta移行前で更新停止)のため不採用。
 > 本プロジェクトでは **AWS SDK for Java v2 の DynamoDB Enhanced Client** を採用する。
 > シングルテーブル設計(`02_database_design.md`)にはむしろ素のSDKの方が相性が良い。
 
