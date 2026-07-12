@@ -18,7 +18,7 @@
 | `Visibility` | `PRIVATE` \| `TOKEN` \| `PUBLIC` | 公開範囲 |
 | `ParticipantStatus` | `ACTIVE` \| `WITHDRAWN` | 参加状態 |
 | `RoundStatus` | `PAIRING` \| `PLAYING` \| `CONFIRMED` | ラウンド状態 |
-| `Rank` | `KYU_20` … `KYU_1` \| `DAN_1` … `DAN_9` | 棋力(段級位)。29段階。弱→強: 20級 < … < 1級 < 初段(`DAN_1`)< … < 九段。表示名は `KYU_n`=「n級」、`DAN_1`=「初段」、`DAN_2`〜`DAN_9`=「二段」〜「九段」 |
+| `Rank` | `KYU_20` … `KYU_1` \| `DAN_1` … `DAN_9` | 棋力(段級位)。29段階。弱→強: 20級 < … < 1級 < 初段(`DAN_1`)< … < 9段。順序は `sortOrder`(段=負、級=正、小さいほど強い)で判定。表示名は `KYU_n`=「n級」、`DAN_1`=「初段」、`DAN_2`〜`DAN_9`=「2段」〜「9段」 |
 | `MatchResult` | `NONE` \| `PLAYER1_WIN` \| `PLAYER2_WIN` \| `DRAW` \| `BOTH_LOSE` \| `BYE` | 対局結果 |
 
 - Java: enum クラス、JSON化は名前そのまま(`@JsonValue` 不使用)

@@ -193,14 +193,26 @@ class ModelTest {
     class RankTest {
 
         @Test
-        @DisplayName("棋力は20級が最弱・九段が最強で、1級の次は初段")
+        @DisplayName("棋力は20級が最弱・9段が最強で、1級の次は初段")
         void 棋力の順序() {
             assertThat(Rank.values()).hasSize(29);
-            assertThat(Rank.values()[0]).isEqualTo(Rank.KYU_20);
-            assertThat(Rank.values()[28]).isEqualTo(Rank.DAN_9);
             assertThat(Rank.DAN_1.isStrongerThan(Rank.KYU_1)).isTrue();
             assertThat(Rank.KYU_1.isStrongerThan(Rank.KYU_2)).isTrue();
             assertThat(Rank.DAN_9.isStrongerThan(Rank.DAN_8)).isTrue();
+            assertThat(Rank.KYU_20.sortOrder()).isEqualTo(20);
+            assertThat(Rank.DAN_9.sortOrder()).isEqualTo(-9);
+        }
+
+        @Test
+        @DisplayName("sortOrderは重複せず、宣言順(弱い順)とも一致している")
+        void sortOrderの整合() {
+            Rank[] ranks = Rank.values();
+            for (int i = 1; i < ranks.length; i++) {
+                // 宣言が後ろのものほど強い(sortOrderが小さい)こと。重複もここで検出される
+                assertThat(ranks[i].sortOrder())
+                        .as("%s は %s より強く宣言されている", ranks[i], ranks[i - 1])
+                        .isLessThan(ranks[i - 1].sortOrder());
+            }
         }
 
         @Test
@@ -214,12 +226,13 @@ class ModelTest {
         }
 
         @Test
-        @DisplayName("表示名: 級は数字、段は漢数字で初段のみ特別")
+        @DisplayName("表示名は算用数字で、初段のみ特別")
         void 表示名() {
             assertThat(Rank.KYU_20.displayName()).isEqualTo("20級");
             assertThat(Rank.KYU_1.displayName()).isEqualTo("1級");
             assertThat(Rank.DAN_1.displayName()).isEqualTo("初段");
-            assertThat(Rank.DAN_9.displayName()).isEqualTo("九段");
+            assertThat(Rank.DAN_2.displayName()).isEqualTo("2段");
+            assertThat(Rank.DAN_9.displayName()).isEqualTo("9段");
         }
     }
 
