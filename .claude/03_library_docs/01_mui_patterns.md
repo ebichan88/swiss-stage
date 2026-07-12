@@ -1,4 +1,4 @@
-# Material-UI (MUI v5) 実装パターン集
+# Material-UI (MUI) 実装パターン集
 
 > MUIでハマりやすいポイントと、このプロジェクトでの標準パターン。
 
@@ -46,7 +46,7 @@ export const theme = createTheme({
 ## 2. import の注意
 
 ```typescript
-// OK: バレルimport(Vite + MUI v5 はtree-shakingされる)
+// OK: バレルimport(Vite + MUI はtree-shakingされる)
 import { Button, Dialog } from '@mui/material';
 
 // アイコンは個別import必須(バレルは開発サーバーが激重になる)

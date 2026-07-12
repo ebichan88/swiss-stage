@@ -1,0 +1,8 @@
+# ローカル開発用プロファイル(秘密情報は置かない — 環境変数で注入する)
+app:
+  dynamodb:
+    endpoint: http://localhost:8000
+
+logging:
+  level:
+    com.swiss_stage: DEBUG

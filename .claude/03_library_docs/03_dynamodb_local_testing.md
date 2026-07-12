@@ -85,6 +85,7 @@ class DynamoDbTournamentRepositoryTest {
 | テストが順序依存で落ちる | ID共有が原因。フィクスチャで毎回新規ULIDを生成する |
 | `TransactionCanceledException` の原因が分からない | `cancellationReasons()` をログ出力するテストヘルパーを使う(どの条件が失敗したか出る) |
 | DynamoDB Localが古い挙動 | イメージを `latest` に更新。特にトランザクション系は古いバージョンでバグあり |
+| ポートは応答するが全操作がタイムアウト | `-dbPath` のボリュームがroot所有でSQLiteが書けずクラッシュループ(`docker logs` に `unable to open database file`)→ composeに `user: root` を設定するか `-inMemory` にする |
 
 ---
 

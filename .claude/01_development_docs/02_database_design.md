@@ -52,7 +52,7 @@
 | entityType | `PARTICIPANT` | |
 | name | `蛯名 隆` | 必須 |
 | organization | `〇〇株式会社` | 任意 |
-| rank | `三段` | 任意(段級位) |
+| rank | `DAN_3` | 任意(棋力enum。`07_type_definitions.md` の `Rank` 参照) |
 | seedOrder | `1` | 初回マッチングのシード順 |
 | status | `ACTIVE` / `WITHDRAWN` | 途中棄権対応 |
 

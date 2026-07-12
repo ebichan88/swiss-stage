@@ -1,0 +1,5 @@
+# テスト用プロファイル(DynamoDB Local: 03_dynamodb_local_testing.md)
+app:
+  dynamodb:
+    table-name: swiss-stage
+    endpoint: ${DYNAMODB_ENDPOINT:http://localhost:8000}

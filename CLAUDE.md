@@ -15,7 +15,7 @@
 
 | 領域 | 技術 |
 |------|------|
-| フロントエンド | React 18 + TypeScript + Vite + Material-UI v5 + React Router v6 + TanStack Query |
+| フロントエンド | React 19 + TypeScript + Vite + Material-UI + React Router v7 + TanStack Query |
 | バックエンド | Java 21 + Spring Boot 3.x + Gradle 8 |
 | データベース | DynamoDB(シングルテーブル設計、AWS SDK v2 Enhanced Client) |
 | インフラ | AWS(EC2 t3.micro + ALB + Route53 + CloudWatch)、予算 ~$17/月 |
@@ -76,7 +76,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 
 - domain層(マッチング・順位計算)はTDD、カバレッジ90%以上 + jqwikプロパティテスト
 - リポジトリ実装のテストは DynamoDB Local(モック禁止)。テストごとに一意ULIDで分離
-- フロントは Jest + Testing Library + MSW。`getByRole` 優先
+- フロントは Vitest + Testing Library + MSW。`getByRole` 優先
 - E2Eはクリティカルパスのみ(`12_e2e_test_design.md`)
 
 ## 避けるべき落とし穴
@@ -93,6 +93,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 10. 認証状態のロード完了前にリダイレクトしない(`RequireAuth` の isLoading 待ち)
 11. 大会前日・当日はデプロイしない
 12. コミット前に `npm run check` / `./gradlew check` を必ず実行
+13. 順序・優先度に意味のあるenumはordinal(宣言順)に依存しない。明示的な数値フィールド(`sortOrder` 等)で比較し、宣言順との整合をテストで検証する(例: `Rank`)
 
 ## プロジェクトドキュメントガイド
 
