@@ -4,6 +4,7 @@ import com.swiss_stage.domain.DomainException;
 import com.swiss_stage.domain.model.Match;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
+import com.swiss_stage.domain.model.Rank;
 import com.swiss_stage.domain.model.Standing;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,11 +55,13 @@ public final class SwissPairingService {
         return pairLaterRound(participants, active, previousMatches, options);
     }
 
-    // --- 初回ラウンド: シード順(または乱数)で上位半分と下位半分を対応させる ---
+    // --- 初回ラウンド: 棋力の近い者同士を組む(棋力の強い順にソートして隣接ペアリング) ---
 
     private PairingResult pairFirstRound(List<Participant> active, PairingOptions options) {
         List<Participant> ordered = new ArrayList<>(active);
-        ordered.sort(Comparator.comparingInt(Participant::seedOrder));
+        ordered.sort(Comparator
+                .comparing(Participant::rank, Rank.strongestFirst())
+                .thenComparingInt(Participant::seedOrder));
         if (options.randomFirstRound()) {
             Collections.shuffle(ordered, new Random(options.randomSeed()));
         }
@@ -67,10 +70,9 @@ public final class SwissPairingService {
         if (ordered.size() % 2 != 0) {
             bye = ordered.removeLast().id();
         }
-        int half = ordered.size() / 2;
         List<PairingResult.Pair> pairs = new ArrayList<>();
-        for (int i = 0; i < half; i++) {
-            pairs.add(new PairingResult.Pair(ordered.get(i).id(), ordered.get(i + half).id()));
+        for (int i = 0; i + 1 < ordered.size(); i += 2) {
+            pairs.add(new PairingResult.Pair(ordered.get(i).id(), ordered.get(i + 1).id()));
         }
         return new PairingResult(pairs, bye, Set.of());
     }

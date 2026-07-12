@@ -5,6 +5,7 @@ import com.swiss_stage.domain.model.MatchResult;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
 import com.swiss_stage.domain.model.ParticipantStatus;
+import com.swiss_stage.domain.model.Rank;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,7 +15,7 @@ final class TestData {
     private TestData() {}
 
     static Participant participant(int seedOrder) {
-        return participant(seedOrder, null);
+        return participant(seedOrder, (String) null);
     }
 
     static Participant participant(int seedOrder, String organization) {
@@ -23,6 +24,16 @@ final class TestData {
                 "参加者" + seedOrder,
                 organization,
                 null,
+                seedOrder,
+                ParticipantStatus.ACTIVE);
+    }
+
+    static Participant participant(int seedOrder, Rank rank) {
+        return new Participant(
+                new ParticipantId("P" + String.format("%03d", seedOrder)),
+                "参加者" + seedOrder,
+                null,
+                rank,
                 seedOrder,
                 ParticipantStatus.ACTIVE);
     }

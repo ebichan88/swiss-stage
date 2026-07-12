@@ -9,7 +9,7 @@ public record Participant(
         ParticipantId id,
         String name,
         String organization,
-        String rank,
+        Rank rank,
         int seedOrder,
         ParticipantStatus status) {
 
@@ -22,7 +22,7 @@ public record Participant(
         }
     }
 
-    public static Participant create(String name, String organization, String rank, int seedOrder) {
+    public static Participant create(String name, String organization, Rank rank, int seedOrder) {
         return new Participant(
                 ParticipantId.generate(), name, organization, rank, seedOrder, ParticipantStatus.ACTIVE);
     }

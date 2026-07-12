@@ -11,6 +11,7 @@ import com.swiss_stage.domain.model.Match;
 import com.swiss_stage.domain.model.MatchResult;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
+import com.swiss_stage.domain.model.Rank;
 import com.swiss_stage.domain.service.PairingOptions;
 import com.swiss_stage.domain.service.PairingRelaxation;
 import com.swiss_stage.domain.service.PairingResult;
@@ -28,7 +29,7 @@ class SwissPairingServiceTest {
     private final PairingOptions defaults = PairingOptions.defaults();
 
     @Test
-    @DisplayName("初回ラウンド(偶数): シード順で上位半分と下位半分が対応する")
+    @DisplayName("初回ラウンド(偶数): 棋力未入力ならシード順で隣同士が組まれる")
     void 初回ラウンド偶数() {
         List<Participant> ps = participants(8);
 
@@ -36,22 +37,51 @@ class SwissPairingServiceTest {
 
         assertThat(result.pairs()).hasSize(4);
         assertThat(result.hasBye()).isFalse();
-        // シード1位 vs 5位、2位 vs 6位 …
+        // シード1位 vs 2位、3位 vs 4位 …
         assertThat(result.pairs().get(0).player1Id()).isEqualTo(ps.get(0).id());
-        assertThat(result.pairs().get(0).player2Id()).isEqualTo(ps.get(4).id());
-        assertThat(result.pairs().get(3).player1Id()).isEqualTo(ps.get(3).id());
+        assertThat(result.pairs().get(0).player2Id()).isEqualTo(ps.get(1).id());
+        assertThat(result.pairs().get(3).player1Id()).isEqualTo(ps.get(6).id());
         assertThat(result.pairs().get(3).player2Id()).isEqualTo(ps.get(7).id());
     }
 
     @Test
-    @DisplayName("初回ラウンド(奇数): 最下位シードにBYEが付く")
-    void 初回ラウンド奇数() {
-        List<Participant> ps = participants(7);
+    @DisplayName("初回ラウンド: 棋力の強い順にソートされ、棋力の近い者同士が組まれる")
+    void 初回ラウンド棋力順() {
+        // シード順と棋力順をずらして、棋力が優先されることを確認する
+        Participant kyu5 = participant(1, Rank.KYU_5);
+        Participant dan3 = participant(2, Rank.DAN_3);
+        Participant kyu1 = participant(3, Rank.KYU_1);
+        Participant dan1 = participant(4, Rank.DAN_1);
+        List<Participant> ps = List.of(kyu5, dan3, kyu1, dan1);
 
         PairingResult result = service.pair(ps, List.of(), 1, defaults);
 
-        assertThat(result.pairs()).hasSize(3);
-        assertThat(result.byeParticipantId()).isEqualTo(ps.get(6).id());
+        // 強い順: 三段 > 初段 > 1級 > 5級 → (三段, 初段), (1級, 5級)
+        assertThat(result.pairs().get(0).player1Id()).isEqualTo(dan3.id());
+        assertThat(result.pairs().get(0).player2Id()).isEqualTo(dan1.id());
+        assertThat(result.pairs().get(1).player1Id()).isEqualTo(kyu1.id());
+        assertThat(result.pairs().get(1).player2Id()).isEqualTo(kyu5.id());
+    }
+
+    @Test
+    @DisplayName("初回ラウンド(奇数): 棋力未入力者は末尾に置かれ、最弱者にBYEが付く")
+    void 初回ラウンド奇数() {
+        Participant dan1 = participant(1, Rank.DAN_1);
+        Participant kyu20 = participant(2, Rank.KYU_20);
+        Participant kyu1 = participant(3, Rank.KYU_1);
+        Participant dan9 = participant(4, Rank.DAN_9);
+        Participant unrated = participant(5); // 棋力未入力は20級より弱い扱い
+        List<Participant> ps = List.of(dan1, kyu20, kyu1, dan9, unrated);
+
+        PairingResult result = service.pair(ps, List.of(), 1, defaults);
+
+        // 強い順: 九段 > 初段 > 1級 > 20級 > 未入力 → BYEは未入力者
+        assertThat(result.pairs()).hasSize(2);
+        assertThat(result.byeParticipantId()).isEqualTo(unrated.id());
+        assertThat(result.pairs().get(0).player1Id()).isEqualTo(dan9.id());
+        assertThat(result.pairs().get(0).player2Id()).isEqualTo(dan1.id());
+        assertThat(result.pairs().get(1).player1Id()).isEqualTo(kyu1.id());
+        assertThat(result.pairs().get(1).player2Id()).isEqualTo(kyu20.id());
     }
 
     @Test

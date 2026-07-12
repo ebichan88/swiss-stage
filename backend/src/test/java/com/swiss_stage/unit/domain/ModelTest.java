@@ -10,12 +10,16 @@ import com.swiss_stage.domain.model.MatchId;
 import com.swiss_stage.domain.model.MatchResult;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
+import com.swiss_stage.domain.model.Rank;
 import com.swiss_stage.domain.model.Round;
 import com.swiss_stage.domain.model.RoundStatus;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
 import com.swiss_stage.domain.model.TournamentStatus;
 import com.swiss_stage.domain.model.Visibility;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -158,7 +162,7 @@ class ModelTest {
         @Test
         @DisplayName("棄権すると非アクティブになる")
         void 棄権() {
-            Participant p = Participant.create("参加者一", "A社", "三段", 1);
+            Participant p = Participant.create("参加者一", "A社", Rank.DAN_3, 1);
             assertThat(p.isActive()).isTrue();
             assertThat(p.withdraw().isActive()).isFalse();
         }
@@ -182,6 +186,40 @@ class ModelTest {
                     .isInstanceOf(DomainException.class);
             assertThatThrownBy(() -> Participant.create("x", null, null, 0))
                     .isInstanceOf(DomainException.class);
+        }
+    }
+
+    @Nested
+    class RankTest {
+
+        @Test
+        @DisplayName("棋力は20級が最弱・九段が最強で、1級の次は初段")
+        void 棋力の順序() {
+            assertThat(Rank.values()).hasSize(29);
+            assertThat(Rank.values()[0]).isEqualTo(Rank.KYU_20);
+            assertThat(Rank.values()[28]).isEqualTo(Rank.DAN_9);
+            assertThat(Rank.DAN_1.isStrongerThan(Rank.KYU_1)).isTrue();
+            assertThat(Rank.KYU_1.isStrongerThan(Rank.KYU_2)).isTrue();
+            assertThat(Rank.DAN_9.isStrongerThan(Rank.DAN_8)).isTrue();
+        }
+
+        @Test
+        @DisplayName("strongestFirstは強い順に並べ、未入力(null)を末尾に置く")
+        void 強い順ソート() {
+            List<Rank> ranks = new ArrayList<>(
+                    Arrays.asList(Rank.KYU_20, null, Rank.DAN_9, Rank.DAN_1, Rank.KYU_1));
+            ranks.sort(Rank.strongestFirst());
+            assertThat(ranks).containsExactly(
+                    Rank.DAN_9, Rank.DAN_1, Rank.KYU_1, Rank.KYU_20, null);
+        }
+
+        @Test
+        @DisplayName("表示名: 級は数字、段は漢数字で初段のみ特別")
+        void 表示名() {
+            assertThat(Rank.KYU_20.displayName()).isEqualTo("20級");
+            assertThat(Rank.KYU_1.displayName()).isEqualTo("1級");
+            assertThat(Rank.DAN_1.displayName()).isEqualTo("初段");
+            assertThat(Rank.DAN_9.displayName()).isEqualTo("九段");
         }
     }
 
