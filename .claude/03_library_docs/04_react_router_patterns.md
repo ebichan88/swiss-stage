@@ -1,4 +1,4 @@
-# React Router v6 実装パターン集
+# React Router v7 実装パターン集
 
 ## 1. ルート定義の標準形
 

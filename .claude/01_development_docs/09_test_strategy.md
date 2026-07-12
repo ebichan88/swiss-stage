@@ -17,7 +17,7 @@
 | backend application | Spring Boot Test + Mockito | 80%以上 | ユースケースの流れと例外変換 |
 | backend infrastructure | DynamoDB Local統合テスト | 主要リポジトリ全メソッド | キー設計ミスの検出 |
 | backend presentation | MockMvc | 70%以上 | ステータスコード・レスポンス形式・認可 |
-| frontend | Jest + Testing Library | 主要コンポーネント・hooks | 表示ロジックと状態管理 |
+| frontend | Vitest + Testing Library | 主要コンポーネント・hooks | 表示ロジックと状態管理 |
 | E2E | Playwright | クリティカルパスのみ | `12_e2e_test_design.md` 参照 |
 
 ---
@@ -58,7 +58,7 @@ backend/src/test/java/com/swiss_stage/
 
 ```
 frontend/tests/
-├── unit/            # Jest + Testing Library
+├── unit/            # Vitest + Testing Library
 └── e2e/             # Playwright
 ```
 

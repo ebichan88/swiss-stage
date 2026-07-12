@@ -289,20 +289,20 @@ Swiss Stage は企業名・氏名などの個人情報を取り扱う。
 
 | カテゴリ | 技術 | バージョン | 用途 |
 |---------|------|----------|------|
-| 言語 | TypeScript | 5.x | 型安全なコード記述 |
-| フレームワーク | React | 18.x | UIコンポーネント構築 |
-| ビルドツール | Vite | 5.x | 高速開発サーバー・バンドル |
-| UIライブラリ | Material-UI | 5.x | コンポーネント・デザインシステム |
-| ルーティング | React Router | 6.x | SPA画面遷移 |
-| 状態管理 | （未定） | - | 必要に応じてRedux/Zustand導入検討 |
+| 言語 | TypeScript | 6.x | 型安全なコード記述 |
+| フレームワーク | React | 19.x | UIコンポーネント構築 |
+| ビルドツール | Vite | 8.x | 高速開発サーバー・バンドル |
+| UIライブラリ | Material-UI | 9.x | コンポーネント・デザインシステム |
+| ルーティング | React Router | 7.x | SPA画面遷移 |
+| 状態管理 | TanStack Query | 5.x | サーバー状態管理(グローバルUI状態はContext) |
 
 ### テスト・品質
 
 | カテゴリ | 技術 | 用途 |
 |---------|------|------|
-| 単体テスト | Jest | コンポーネント・ロジックテスト |
+| 単体テスト | Vitest | コンポーネント・ロジックテスト |
 | E2Eテスト | Playwright | ユーザーフロー検証 |
-| 静的解析 | ESLint | コード品質チェック |
+| 静的解析 | oxlint | コード品質チェック |
 | フォーマッター | Prettier | コードフォーマット統一 |
 
 ### ディレクトリ構造（推奨）
@@ -317,7 +317,7 @@ frontend/
 │   ├── types/           # TypeScript型定義
 │   └── utils/           # 汎用ユーティリティ
 ├── tests/
-│   ├── unit/            # Jest単体テスト
+│   ├── unit/            # Vitest単体テスト
 │   └── e2e/             # Playwrightシナリオ
 └── public/              # 静的ファイル
 ```
@@ -465,7 +465,7 @@ backend/
 on: [pull_request]
 jobs:
   frontend-test:
-    - npm test (Jest)
+    - npm test (Vitest)
     - npm run lint
   backend-test:
     - ./gradlew test

@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: swiss-stage
+
+management:
+  endpoints:
+    web:
+      base-path: /api/v1
+      exposure:
+        include: health   # 公開するのはhealthのみ(15_performance_monitoring.md)
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+app:
+  dynamodb:
+    table-name: swiss-stage
+    endpoint: ""          # 空 = AWS本番(EC2インスタンスロール)。localプロファイルで上書き

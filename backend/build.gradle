@@ -1,0 +1,37 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.4.1'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.swiss_stage'
+version = '0.1.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // DynamoDB (AWS SDK for Java v2 Enhanced Client)
+    // 注: spring-data-dynamodb(boostchicken)は Spring Boot 3 非対応のため使用しない
+    implementation platform('software.amazon.awssdk:bom:2.29.45')
+    implementation 'software.amazon.awssdk:dynamodb-enhanced'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'net.jqwik:jqwik:1.9.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

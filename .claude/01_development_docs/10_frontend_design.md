@@ -79,7 +79,7 @@ export function useTournament(id: string) {
 
 ---
 
-## 5. ルーティング(React Router v6)
+## 5. ルーティング(React Router v7)
 
 - ルート定義は `App.tsx` に集約(`createBrowserRouter`)
 - 認証ガード: `RequireAuth` コンポーネントで運営者画面をラップ。未認証は `/login` へリダイレクト

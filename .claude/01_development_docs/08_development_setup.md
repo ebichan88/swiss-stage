@@ -75,10 +75,10 @@ DYNAMODB_ENDPOINT=http://localhost:8000   # localのみ
 ```bash
 npm run dev           # 開発サーバー起動
 npm run build         # プロダクションビルド
-npm run lint          # ESLint(自動修正付き)
+npm run lint          # oxlint
 npm run format        # Prettier
 npm run type-check    # tsc --noEmit
-npm run test          # Jest単体テスト
+npm run test          # Vitest単体テスト
 npm run test:e2e      # Playwright(バックエンド起動が前提)
 npm run check         # lint + format + type-check + test(コミット前に必ず実行)
 ```
@@ -103,6 +103,7 @@ services:
     ports:
       - "8000:8000"
     command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /data"
+    user: root   # named volumeがroot所有のため。非rootだとSQLiteが書けずクラッシュループする
     volumes:
       - dynamodb-data:/data
 volumes:
