@@ -1,9 +1,13 @@
 package com.swiss_stage.domain.model;
 
 import com.swiss_stage.domain.DomainException;
+import java.time.Instant;
 
 /**
  * 大会。状態遷移: PREPARING → IN_PROGRESS → FINISHED(逆行不可)。
+ *
+ * <p>shareToken は共有URL用トークン(未発行はnull)。
+ * 時刻は Clock をDIした呼び出し側(application層)から渡す(domainでは Instant.now() を呼ばない)。
  */
 public record Tournament(
         TournamentId id,
@@ -13,8 +17,11 @@ public record Tournament(
         int currentRound,
         TournamentStatus status,
         Visibility visibility,
+        String shareToken,
         String ownerSub,
-        long version) {
+        long version,
+        Instant createdAt,
+        Instant updatedAt) {
 
     public Tournament {
         if (name == null || name.isBlank()) {
@@ -29,12 +36,16 @@ public record Tournament(
         if (ownerSub == null || ownerSub.isBlank()) {
             throw new DomainException("大会の所有者は必須です");
         }
+        if (createdAt == null || updatedAt == null) {
+            throw new DomainException("大会の作成・更新日時は必須です");
+        }
     }
 
-    public static Tournament create(String name, GameType gameType, int totalRounds, String ownerSub) {
+    public static Tournament create(
+            String name, GameType gameType, int totalRounds, String ownerSub, Instant now) {
         return new Tournament(
                 TournamentId.generate(), name, gameType, totalRounds, 0,
-                TournamentStatus.PREPARING, Visibility.PRIVATE, ownerSub, 0L);
+                TournamentStatus.PREPARING, Visibility.PRIVATE, null, ownerSub, 0L, now, now);
     }
 
     public boolean isOwnedBy(String sub) {
@@ -46,8 +57,7 @@ public record Tournament(
         if (status != TournamentStatus.PREPARING) {
             throw new DomainException("準備中の大会のみ開始できます");
         }
-        return new Tournament(id, name, gameType, totalRounds, currentRound,
-                TournamentStatus.IN_PROGRESS, visibility, ownerSub, version);
+        return withStatus(TournamentStatus.IN_PROGRESS, currentRound);
     }
 
     /** 次ラウンドへ進む。開催中のみ可 */
@@ -58,20 +68,39 @@ public record Tournament(
         if (currentRound >= totalRounds) {
             throw new DomainException("最終ラウンドを超えて進めることはできません");
         }
-        return new Tournament(id, name, gameType, totalRounds, currentRound + 1,
-                status, visibility, ownerSub, version);
+        return withStatus(status, currentRound + 1);
     }
 
     public Tournament finish() {
         if (status != TournamentStatus.IN_PROGRESS) {
             throw new DomainException("開催中の大会のみ終了できます");
         }
-        return new Tournament(id, name, gameType, totalRounds, currentRound,
-                TournamentStatus.FINISHED, visibility, ownerSub, version);
+        return withStatus(TournamentStatus.FINISHED, currentRound);
+    }
+
+    public Tournament rename(String newName) {
+        return new Tournament(id, newName, gameType, totalRounds, currentRound,
+                status, visibility, shareToken, ownerSub, version, createdAt, updatedAt);
     }
 
     public Tournament withVisibility(Visibility newVisibility) {
         return new Tournament(id, name, gameType, totalRounds, currentRound,
-                status, newVisibility, ownerSub, version);
+                status, newVisibility, shareToken, ownerSub, version, createdAt, updatedAt);
+    }
+
+    public Tournament withShareToken(String newShareToken) {
+        return new Tournament(id, name, gameType, totalRounds, currentRound,
+                status, visibility, newShareToken, ownerSub, version, createdAt, updatedAt);
+    }
+
+    /** 保存直前に更新日時を刻む(application層がClockから渡す) */
+    public Tournament touched(Instant now) {
+        return new Tournament(id, name, gameType, totalRounds, currentRound,
+                status, visibility, shareToken, ownerSub, version, createdAt, now);
+    }
+
+    private Tournament withStatus(TournamentStatus newStatus, int newCurrentRound) {
+        return new Tournament(id, name, gameType, totalRounds, newCurrentRound,
+                newStatus, visibility, shareToken, ownerSub, version, createdAt, updatedAt);
     }
 }

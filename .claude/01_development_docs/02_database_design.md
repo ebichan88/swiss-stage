@@ -40,8 +40,9 @@
 | shareToken | `a1b2c3...` | GSI2PK に `SHARE#{token}` を設定 |
 | ownerSub | `google-oauth2|1234` | GSI1PK に `USER#{sub}` を設定 |
 | GSI1PK / GSI1SK | `USER#{sub}` / `TOURNAMENT#{createdAt}` | AP5用 |
-| GSI2PK | `SHARE#{token}` | AP6用 |
-| createdAt / updatedAt | ISO8601 | 全アイテム共通 |
+| GSI2PK | `SHARE#{token}` | AP6用(トークン未発行時は属性なし) |
+| createdAt / updatedAt | ISO8601(UTC) | MVPでは METADATA アイテムのみ保持(子アイテムのタイムスタンプはDTOで不要なため) |
+| version | number | 楽観ロック(`@DynamoDbVersionAttribute`)。初回保存で1が払い出される |
 
 ### Participant(参加者)
 
@@ -67,7 +68,8 @@
 | tableNumber | `12` | 卓番号 |
 | player1Id / player2Id | ParticipantId | player2Id=null なら不戦勝 |
 | result | `PLAYER1_WIN` / `PLAYER2_WIN` / `DRAW` / `BOTH_LOSE` / `BYE` / `NONE` | NONE=未入力 |
-| resultInputBy | `OWNER` / `SHARE_TOKEN` | 監査用 |
+| version | number | 楽観ロック(結果入力の競合検出) |
+| resultInputBy | `OWNER` / `SHARE_TOKEN` | 監査用(共有トークン結果入力の実装時=Phase 5に追加) |
 
 ### Round(ラウンド状態)
 

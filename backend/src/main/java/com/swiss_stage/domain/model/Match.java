@@ -5,6 +5,7 @@ import java.util.Optional;
 
 /**
  * 対局。player2 が null の場合は不戦勝(BYE)を表す。
+ * version は楽観ロック用(結果入力の競合検出。0 = 未保存)。
  */
 public record Match(
         MatchId id,
@@ -12,7 +13,8 @@ public record Match(
         int tableNumber,
         ParticipantId player1Id,
         ParticipantId player2Id,
-        MatchResult result) {
+        MatchResult result,
+        long version) {
 
     public Match {
         if (player1Id == null) {
@@ -30,11 +32,11 @@ public record Match(
     }
 
     public static Match pairOf(int roundNumber, int tableNumber, ParticipantId p1, ParticipantId p2) {
-        return new Match(MatchId.generate(), roundNumber, tableNumber, p1, p2, MatchResult.NONE);
+        return new Match(MatchId.generate(), roundNumber, tableNumber, p1, p2, MatchResult.NONE, 0L);
     }
 
     public static Match byeOf(int roundNumber, int tableNumber, ParticipantId p1) {
-        return new Match(MatchId.generate(), roundNumber, tableNumber, p1, null, MatchResult.BYE);
+        return new Match(MatchId.generate(), roundNumber, tableNumber, p1, null, MatchResult.BYE, 0L);
     }
 
     public boolean isBye() {
@@ -74,6 +76,6 @@ public record Match(
         if (newResult == MatchResult.BYE) {
             throw new DomainException("通常対局の結果をBYEにはできません");
         }
-        return new Match(id, roundNumber, tableNumber, player1Id, player2Id, newResult);
+        return new Match(id, roundNumber, tableNumber, player1Id, player2Id, newResult, version);
     }
 }

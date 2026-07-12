@@ -17,6 +17,7 @@ import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
 import com.swiss_stage.domain.model.TournamentStatus;
 import com.swiss_stage.domain.model.Visibility;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,7 +30,9 @@ class ModelTest {
     @Nested
     class TournamentTest {
 
-        private final Tournament preparing = Tournament.create("テスト大会", GameType.GO, 5, "owner-sub");
+        private final Instant now = Instant.parse("2026-07-13T00:00:00Z");
+        private final Tournament preparing =
+                Tournament.create("テスト大会", GameType.GO, 5, "owner-sub", now);
 
         @Test
         @DisplayName("PREPARING → IN_PROGRESS → FINISHED と遷移できる")
@@ -61,7 +64,8 @@ class ModelTest {
         @Test
         @DisplayName("最終ラウンドを超えて進められない")
         void 最終ラウンド超過() {
-            Tournament t = Tournament.create("大会", GameType.SHOGI, 1, "owner").start().advanceRound();
+            Tournament t = Tournament.create("大会", GameType.SHOGI, 1, "owner", now)
+                    .start().advanceRound();
             assertThatThrownBy(t::advanceRound).isInstanceOf(DomainException.class);
         }
 
@@ -75,11 +79,24 @@ class ModelTest {
         }
 
         @Test
+        @DisplayName("名前変更・共有トークン設定・更新日時の付与ができる")
+        void 属性の更新() {
+            assertThat(preparing.rename("新名称").name()).isEqualTo("新名称");
+            assertThat(preparing.withShareToken("token-123").shareToken()).isEqualTo("token-123");
+            assertThat(preparing.shareToken()).isNull();
+
+            Instant later = now.plusSeconds(60);
+            Tournament touched = preparing.touched(later);
+            assertThat(touched.updatedAt()).isEqualTo(later);
+            assertThat(touched.createdAt()).isEqualTo(now);
+        }
+
+        @Test
         @DisplayName("大会名が空・ラウンド数0は作成できない")
         void バリデーション() {
-            assertThatThrownBy(() -> Tournament.create(" ", GameType.GO, 5, "owner"))
+            assertThatThrownBy(() -> Tournament.create(" ", GameType.GO, 5, "owner", now))
                     .isInstanceOf(DomainException.class);
-            assertThatThrownBy(() -> Tournament.create("大会", GameType.GO, 0, "owner"))
+            assertThatThrownBy(() -> Tournament.create("大会", GameType.GO, 0, "owner", now))
                     .isInstanceOf(DomainException.class);
         }
     }
@@ -137,9 +154,9 @@ class ModelTest {
         @DisplayName("同一参加者同士・不正なBYE指定は作成できない")
         void バリデーション() {
             assertThatThrownBy(() -> Match.pairOf(1, 1, p1, p1)).isInstanceOf(DomainException.class);
-            assertThatThrownBy(() -> new Match(MatchId.generate(), 1, 1, p1, null, MatchResult.NONE))
+            assertThatThrownBy(() -> new Match(MatchId.generate(), 1, 1, p1, null, MatchResult.NONE, 0L))
                     .isInstanceOf(DomainException.class);
-            assertThatThrownBy(() -> new Match(MatchId.generate(), 1, 1, p1, p2, MatchResult.BYE))
+            assertThatThrownBy(() -> new Match(MatchId.generate(), 1, 1, p1, p2, MatchResult.BYE, 0L))
                     .isInstanceOf(DomainException.class);
         }
 
@@ -223,6 +240,19 @@ class ModelTest {
             ranks.sort(Rank.strongestFirst());
             assertThat(ranks).containsExactly(
                     Rank.DAN_9, Rank.DAN_1, Rank.KYU_1, Rank.KYU_20, null);
+        }
+
+        @Test
+        @DisplayName("表示名からパースできる(初段='1段'も許容、未知はempty)")
+        void 表示名からのパース() {
+            assertThat(Rank.fromDisplayName("20級")).contains(Rank.KYU_20);
+            assertThat(Rank.fromDisplayName("初段")).contains(Rank.DAN_1);
+            assertThat(Rank.fromDisplayName("1段")).contains(Rank.DAN_1);
+            assertThat(Rank.fromDisplayName(" 3段 ")).contains(Rank.DAN_3);
+            assertThat(Rank.fromDisplayName("")).isEmpty();
+            assertThat(Rank.fromDisplayName(null)).isEmpty();
+            assertThat(Rank.fromDisplayName("十段")).isEmpty();
+            assertThat(Rank.fromDisplayName("21級")).isEmpty();
         }
 
         @Test
