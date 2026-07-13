@@ -1,10 +1,10 @@
 {
     "permissions": {
         "allow": [
-            "Bash(uv run pytest *)",
-            "Bash(uv run python scripts/validate_prompt_yaml.py *)",
             "Bash(git status *)",
-            "Bash(git diff *)"
+            "Bash(git diff *)",
+            "Bash(./gradlew *)",
+            "Bash(cd backend && ./gradlew *)"
         ],
         "ask": [
             "Bash(git push *)",
