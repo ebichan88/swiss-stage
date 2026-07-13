@@ -19,12 +19,17 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  // FormData はブラウザが boundary 付き Content-Type を付与するため手動指定しない
+  if (!(init?.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
   let response: Response;
   try {
     response = await fetch(`${BASE_PATH}${path}`, {
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json', ...init?.headers },
       ...init,
+      headers,
     });
   } catch {
     throw new ApiError({
@@ -60,6 +65,8 @@ export const apiClient = {
       method: 'POST',
       body: data === undefined ? undefined : JSON.stringify(data),
     }),
+  postMultipart: <T>(path: string, formData: FormData) =>
+    request<T>(path, { method: 'POST', body: formData }),
   put: <T>(path: string, data: unknown) =>
     request<T>(path, { method: 'PUT', body: JSON.stringify(data) }),
   patch: <T>(path: string, data: unknown) =>
