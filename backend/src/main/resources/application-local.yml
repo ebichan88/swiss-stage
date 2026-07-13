@@ -6,6 +6,8 @@ app:
     # ローカル開発専用のダミー秘密鍵(本番はJWT_SECRET環境変数。この値を本番で使わない)
     jwt-secret: ${JWT_SECRET:local-dev-only-jwt-secret-0123456789abcdef}
     secure-cookie: false   # httpのため
+    # OAuth2成功後はVite開発サーバーへ戻す(実Google認証を試す場合はGOOGLE_OAUTH_*も設定)
+    frontend-base-url: http://localhost:5173
 
 logging:
   level:

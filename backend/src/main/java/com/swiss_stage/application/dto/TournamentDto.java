@@ -15,6 +15,7 @@ public record TournamentDto(
         TournamentStatus status,
         Visibility visibility,
         String shareToken,
+        boolean resultInputEnabled,
         long version,
         String createdAt,
         String updatedAt) {
@@ -22,7 +23,7 @@ public record TournamentDto(
     public static TournamentDto from(Tournament t) {
         return new TournamentDto(
                 t.id().value(), t.name(), t.gameType(), t.totalRounds(), t.currentRound(),
-                t.status(), t.visibility(), t.shareToken(), t.version(),
+                t.status(), t.visibility(), t.shareToken(), t.resultInputEnabled(), t.version(),
                 t.createdAt().toString(), t.updatedAt().toString());
     }
 }

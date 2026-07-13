@@ -23,6 +23,7 @@ public class MatchItem {
     private String player1Id;
     private String player2Id;
     private String result;
+    private String resultInputBy;
     private Long version;
 
     @DynamoDbPartitionKey
@@ -99,6 +100,14 @@ public class MatchItem {
 
     public void setResult(String result) {
         this.result = result;
+    }
+
+    public String getResultInputBy() {
+        return resultInputBy;
+    }
+
+    public void setResultInputBy(String resultInputBy) {
+        this.resultInputBy = resultInputBy;
     }
 
     @DynamoDbVersionAttribute

@@ -7,6 +7,7 @@ import com.swiss_stage.domain.OptimisticLockException;
 import com.swiss_stage.domain.model.Match;
 import com.swiss_stage.domain.model.MatchResult;
 import com.swiss_stage.domain.model.ParticipantId;
+import com.swiss_stage.domain.model.ResultInputBy;
 import com.swiss_stage.domain.model.Round;
 import com.swiss_stage.domain.model.TournamentId;
 import com.swiss_stage.domain.repository.MatchRepository;
@@ -57,10 +58,13 @@ class DynamoDbMatchRepositoryTest extends DynamoDbRepositoryTestSupport {
 
         Match loaded = repository.findById(tournamentId, match.id()).orElseThrow();
         assertThat(loaded.version()).isPositive();
-        repository.save(tournamentId, loaded.withResult(MatchResult.PLAYER1_WIN));
+        assertThat(loaded.resultInputBy()).isNull();
+        repository.save(tournamentId,
+                loaded.withResult(MatchResult.PLAYER1_WIN, ResultInputBy.SHARE_TOKEN));
 
         Match updated = repository.findById(tournamentId, match.id()).orElseThrow();
         assertThat(updated.result()).isEqualTo(MatchResult.PLAYER1_WIN);
+        assertThat(updated.resultInputBy()).isEqualTo(ResultInputBy.SHARE_TOKEN);
         assertThat(updated.version()).isGreaterThan(loaded.version());
 
         // 古いversionのまま上書きしようとすると競合

@@ -74,6 +74,13 @@ public class TournamentController {
         return success(tournamentService.finish(PathIds.tournamentId(id), user.sub()));
     }
 
+    /** 共有トークンの発行・再発行(旧トークンは即時無効) */
+    @PostMapping("/{id}/share-token/regenerate")
+    public ApiSuccess<TournamentDto> regenerateShareToken(
+            CurrentUser user, @PathVariable String id) {
+        return success(tournamentService.regenerateShareToken(PathIds.tournamentId(id), user.sub()));
+    }
+
     private <T> ApiSuccess<T> success(T data) {
         return ApiSuccess.of(data, Instant.now(clock));
     }

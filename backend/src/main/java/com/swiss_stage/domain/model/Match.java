@@ -6,6 +6,7 @@ import java.util.Optional;
 /**
  * 対局。player2 が null の場合は不戦勝(BYE)を表す。
  * version は楽観ロック用(結果入力の競合検出。0 = 未保存)。
+ * resultInputBy は結果を入力した主体(監査用。未入力・BYEは null)。
  */
 public record Match(
         MatchId id,
@@ -14,6 +15,7 @@ public record Match(
         ParticipantId player1Id,
         ParticipantId player2Id,
         MatchResult result,
+        ResultInputBy resultInputBy,
         long version) {
 
     public Match {
@@ -32,11 +34,13 @@ public record Match(
     }
 
     public static Match pairOf(int roundNumber, int tableNumber, ParticipantId p1, ParticipantId p2) {
-        return new Match(MatchId.generate(), roundNumber, tableNumber, p1, p2, MatchResult.NONE, 0L);
+        return new Match(
+                MatchId.generate(), roundNumber, tableNumber, p1, p2, MatchResult.NONE, null, 0L);
     }
 
     public static Match byeOf(int roundNumber, int tableNumber, ParticipantId p1) {
-        return new Match(MatchId.generate(), roundNumber, tableNumber, p1, null, MatchResult.BYE, 0L);
+        return new Match(
+                MatchId.generate(), roundNumber, tableNumber, p1, null, MatchResult.BYE, null, 0L);
     }
 
     public boolean isBye() {
@@ -70,12 +74,17 @@ public record Match(
     }
 
     public Match withResult(MatchResult newResult) {
+        return withResult(newResult, ResultInputBy.OWNER);
+    }
+
+    public Match withResult(MatchResult newResult, ResultInputBy inputBy) {
         if (isBye()) {
             throw new DomainException("BYEの結果は変更できません");
         }
         if (newResult == MatchResult.BYE) {
             throw new DomainException("通常対局の結果をBYEにはできません");
         }
-        return new Match(id, roundNumber, tableNumber, player1Id, player2Id, newResult, version);
+        return new Match(
+                id, roundNumber, tableNumber, player1Id, player2Id, newResult, inputBy, version);
     }
 }

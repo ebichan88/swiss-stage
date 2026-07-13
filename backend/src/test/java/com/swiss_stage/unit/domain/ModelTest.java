@@ -11,6 +11,7 @@ import com.swiss_stage.domain.model.MatchResult;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
 import com.swiss_stage.domain.model.Rank;
+import com.swiss_stage.domain.model.ResultInputBy;
 import com.swiss_stage.domain.model.Round;
 import com.swiss_stage.domain.model.RoundStatus;
 import com.swiss_stage.domain.model.Tournament;
@@ -92,6 +93,13 @@ class ModelTest {
         }
 
         @Test
+        @DisplayName("トークン経由の結果入力許可は既定でオフ、切り替えられる")
+        void 結果入力許可の切り替え() {
+            assertThat(preparing.resultInputEnabled()).isFalse();
+            assertThat(preparing.withResultInputEnabled(true).resultInputEnabled()).isTrue();
+        }
+
+        @Test
         @DisplayName("大会名が空・ラウンド数0は作成できない")
         void バリデーション() {
             assertThatThrownBy(() -> Tournament.create(" ", GameType.GO, 5, "owner", now))
@@ -133,9 +141,13 @@ class ModelTest {
         @DisplayName("結果の入力・上書きができ、BYEへの変更はできない")
         void 結果入力() {
             Match match = Match.pairOf(1, 1, p1, p2);
+            assertThat(match.resultInputBy()).isNull();
             Match decided = match.withResult(MatchResult.PLAYER1_WIN);
             assertThat(decided.pointsFor(p1)).isEqualTo(2);
             assertThat(decided.pointsFor(p2)).isZero();
+            assertThat(decided.resultInputBy()).isEqualTo(ResultInputBy.OWNER);
+            assertThat(match.withResult(MatchResult.DRAW, ResultInputBy.SHARE_TOKEN)
+                    .resultInputBy()).isEqualTo(ResultInputBy.SHARE_TOKEN);
             assertThatThrownBy(() -> match.withResult(MatchResult.BYE))
                     .isInstanceOf(DomainException.class);
         }
@@ -154,9 +166,11 @@ class ModelTest {
         @DisplayName("同一参加者同士・不正なBYE指定は作成できない")
         void バリデーション() {
             assertThatThrownBy(() -> Match.pairOf(1, 1, p1, p1)).isInstanceOf(DomainException.class);
-            assertThatThrownBy(() -> new Match(MatchId.generate(), 1, 1, p1, null, MatchResult.NONE, 0L))
+            assertThatThrownBy(
+                    () -> new Match(MatchId.generate(), 1, 1, p1, null, MatchResult.NONE, null, 0L))
                     .isInstanceOf(DomainException.class);
-            assertThatThrownBy(() -> new Match(MatchId.generate(), 1, 1, p1, p2, MatchResult.BYE, 0L))
+            assertThatThrownBy(
+                    () -> new Match(MatchId.generate(), 1, 1, p1, p2, MatchResult.BYE, null, 0L))
                     .isInstanceOf(DomainException.class);
         }
 

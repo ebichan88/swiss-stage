@@ -41,6 +41,7 @@ interface Tournament {
   status: TournamentStatus;
   visibility: Visibility;
   shareToken: string | null;     // 運営者にのみ返す
+  resultInputEnabled: boolean;   // 共有トークン経由の結果入力を許可するか
   version: number;               // 楽観ロック用
   createdAt: string;             // ISO8601
   updatedAt: string;
@@ -53,7 +54,7 @@ public record TournamentDto(
     String id, String name, GameType gameType,
     int totalRounds, int currentRound,
     TournamentStatus status, Visibility visibility,
-    String shareToken, long version,
+    String shareToken, boolean resultInputEnabled, long version,
     String createdAt, String updatedAt) {}
 ```
 
@@ -108,6 +109,27 @@ interface Standing {
   sos: number;
   sosos: number;
   hadBye: boolean;
+}
+```
+
+### SharedTournament(共有ページ用の大会集約)
+
+```typescript
+// GET /api/v1/shared/{token} のレスポンス。
+// shareToken・ownerSub は含めない(13_security_design.md §6)
+interface SharedTournament {
+  tournament: SharedTournamentSummary;
+  rounds: Round[];
+  standings: Standing[];
+}
+
+interface SharedTournamentSummary {
+  name: string;
+  gameType: GameType;
+  totalRounds: number;
+  currentRound: number;
+  status: TournamentStatus;
+  resultInputEnabled: boolean;   // true なら参加者(トークン保持者)が結果入力できる
 }
 ```
 

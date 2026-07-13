@@ -75,8 +75,12 @@ class TournamentApiTest extends ApiContractTestSupport {
                 .andExpect(jsonPath("$.error.code").value("TOURNAMENT_NOT_FOUND"));
 
         // ULID形式でないIDも404(キー組み立てへの入力混入禁止)
-        mockMvc.perform(get("/api/v1/tournaments/../etc").cookie(ownerCookie()))
+        mockMvc.perform(get("/api/v1/tournaments/not-a-ulid").cookie(ownerCookie()))
                 .andExpect(status().isNotFound());
+
+        // パストラバーサルはSpring SecurityのHttpFirewallが400で拒否する(Phase 5〜)
+        mockMvc.perform(get("/api/v1/tournaments/../etc").cookie(ownerCookie()))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

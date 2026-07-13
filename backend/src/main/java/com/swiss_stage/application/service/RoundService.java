@@ -18,6 +18,7 @@ import com.swiss_stage.domain.model.MatchId;
 import com.swiss_stage.domain.model.MatchResult;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
+import com.swiss_stage.domain.model.ResultInputBy;
 import com.swiss_stage.domain.model.Round;
 import com.swiss_stage.domain.model.RoundStatus;
 import com.swiss_stage.domain.model.Tournament;
@@ -68,6 +69,11 @@ public class RoundService {
 
     public List<RoundDto> list(TournamentId tournamentId, String ownerSub) {
         access.loadOwned(tournamentId, ownerSub);
+        return assembleRounds(tournamentId);
+    }
+
+    /** ラウンド一覧の組み立て(認可済みの呼び出し元専用。共有ページからも使う) */
+    List<RoundDto> assembleRounds(TournamentId tournamentId) {
         Map<ParticipantId, Participant> participants = participantMap(tournamentId);
         Map<Integer, List<Match>> matchesByRound = matchRepository
                 .findAllByTournamentId(tournamentId).stream()
@@ -156,6 +162,13 @@ public class RoundService {
     public MatchDto inputResult(
             TournamentId tournamentId, MatchId matchId, String ownerSub, InputResultRequest request) {
         access.loadOwned(tournamentId, ownerSub);
+        return applyResult(tournamentId, matchId, request, ResultInputBy.OWNER);
+    }
+
+    /** 結果入力の本体(認可済みの呼び出し元専用。共有トークン経由はSharedServiceから呼ぶ) */
+    MatchDto applyResult(
+            TournamentId tournamentId, MatchId matchId, InputResultRequest request,
+            ResultInputBy inputBy) {
         if (request.result() == MatchResult.NONE || request.result() == MatchResult.BYE) {
             throw new ValidationException("結果には勝敗・引き分け・両者敗けのいずれかを指定してください");
         }
@@ -171,7 +184,7 @@ public class RoundService {
         }
         Match updated;
         try {
-            updated = match.withResult(request.result());
+            updated = match.withResult(request.result(), inputBy);
         } catch (DomainException e) {
             throw new ValidationException(e.getMessage());
         }

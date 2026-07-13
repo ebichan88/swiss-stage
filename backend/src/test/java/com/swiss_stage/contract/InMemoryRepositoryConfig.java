@@ -73,7 +73,8 @@ public class InMemoryRepositoryConfig {
             private Tournament withVersion(Tournament t, long version) {
                 return new Tournament(t.id(), t.name(), t.gameType(), t.totalRounds(),
                         t.currentRound(), t.status(), t.visibility(), t.shareToken(),
-                        t.ownerSub(), version, t.createdAt(), t.updatedAt());
+                        t.resultInputEnabled(), t.ownerSub(), version, t.createdAt(),
+                        t.updatedAt());
             }
         };
     }
@@ -185,7 +186,8 @@ public class InMemoryRepositoryConfig {
                 }
                 byTournament(tournamentId).put(match.id().value(), new Match(
                         match.id(), match.roundNumber(), match.tableNumber(),
-                        match.player1Id(), match.player2Id(), match.result(), storedVersion + 1));
+                        match.player1Id(), match.player2Id(), match.result(),
+                        match.resultInputBy(), storedVersion + 1));
             }
 
             @Override
