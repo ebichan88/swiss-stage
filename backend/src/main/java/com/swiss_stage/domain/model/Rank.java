@@ -1,6 +1,8 @@
 package com.swiss_stage.domain.model;
 
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Optional;
 
 /**
  * 棋力(段級位)。囲碁・将棋共通の29段階。最弱は20級、最強は9段。
@@ -67,5 +69,22 @@ public enum Rank {
     /** 強い順の比較器。棋力未入力(null)は最弱(20級)よりさらに弱い扱いで末尾に並ぶ */
     public static Comparator<Rank> strongestFirst() {
         return Comparator.nullsLast(Comparator.comparingInt(Rank::sortOrder));
+    }
+
+    /**
+     * 表示名("3級"・"初段"・"2段" 等。"1段" は初段の別表記として許容)からのパース。
+     * CSVインポートで使用する。未知の表記は empty(呼び出し側で行エラーにする)。
+     */
+    public static Optional<Rank> fromDisplayName(String text) {
+        if (text == null || text.isBlank()) {
+            return Optional.empty();
+        }
+        String normalized = text.strip();
+        if (normalized.equals("1段")) {
+            return Optional.of(DAN_1);
+        }
+        return Arrays.stream(values())
+                .filter(r -> r.displayName.equals(normalized))
+                .findFirst();
     }
 }

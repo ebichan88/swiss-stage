@@ -1,7 +1,11 @@
-# ローカル開発用プロファイル(秘密情報は置かない — 環境変数で注入する)
+# ローカル開発用プロファイル(本物の秘密情報は置かない — 環境変数で注入する)
 app:
   dynamodb:
     endpoint: http://localhost:8000
+  auth:
+    # ローカル開発専用のダミー秘密鍵(本番はJWT_SECRET環境変数。この値を本番で使わない)
+    jwt-secret: ${JWT_SECRET:local-dev-only-jwt-secret-0123456789abcdef}
+    secure-cookie: false   # httpのため
 
 logging:
   level:

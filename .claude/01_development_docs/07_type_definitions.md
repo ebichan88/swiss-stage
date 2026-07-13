@@ -88,6 +88,13 @@ interface Round {
   status: RoundStatus;
   matches: Match[];
 }
+
+// POST /rounds(組み合わせ生成)のレスポンス。
+// relaxations が空でなければUIに警告を表示する(例: "REMATCH", "BYE_REPEAT", "SAME_ORGANIZATION")
+interface GeneratedRound {
+  round: Round;
+  relaxations: string[];
+}
 ```
 
 ### Standing(順位)
@@ -101,6 +108,15 @@ interface Standing {
   sos: number;
   sosos: number;
   hadBye: boolean;
+}
+```
+
+### CsvImportResult(参加者CSVインポート)
+
+```typescript
+interface CsvImportResult {
+  importedCount: number;
+  participants: Participant[];   // 全行正常時のみ取り込む(エラー時は400 + details)
 }
 ```
 
