@@ -46,10 +46,11 @@
 
 | メソッド | パス | 説明 | 認証 |
 |---------|------|------|------|
-| GET | `/api/v1/auth/login` | Google OAuth2へリダイレクト | - |
-| GET | `/api/v1/auth/callback` | OAuth2コールバック | - |
+| GET | `/api/v1/auth/login` | Google OAuth2へリダイレクト(Phase 5) | - |
+| GET | `/api/v1/auth/callback` | OAuth2コールバック(Phase 5) | - |
 | POST | `/api/v1/auth/logout` | ログアウト | 運営者 |
 | GET | `/api/v1/auth/me` | ログイン中ユーザー情報 | 運営者 |
+| POST | `/api/v1/auth/test-login` | 開発・テスト用の仮ログイン(**local/testプロファイル限定**。本番には存在しない) | - |
 
 ### 大会
 
@@ -78,7 +79,7 @@
 | メソッド | パス | 説明 | 認証 |
 |---------|------|------|------|
 | GET | `/api/v1/tournaments/{id}/rounds` | ラウンド一覧(対局含む) | 運営者 or トークン |
-| POST | `/api/v1/tournaments/{id}/rounds` | 次ラウンドの組み合わせ生成 | 運営者 |
+| POST | `/api/v1/tournaments/{id}/rounds` | 次ラウンドの組み合わせ生成。レスポンスは `GeneratedRound`(round + relaxations) | 運営者 |
 | POST | `/api/v1/tournaments/{id}/rounds/{n}/confirm` | ラウンド確定 | 運営者 |
 | PUT | `/api/v1/tournaments/{id}/matches/{mid}/result` | 対局結果入力 | 運営者 or トークン |
 | GET | `/api/v1/tournaments/{id}/standings` | 順位表取得 | 運営者 or トークン |
@@ -99,7 +100,8 @@
 3. **べき等性**: 結果入力(PUT)はべき等。ラウンド生成(POST)は Round status で二重生成を防ぐ(409を返す)。
 4. **楽観ロック**: 更新系リクエストには `version` を含め、競合時は 409 + `CONFLICT` コードを返す。
 5. **ページネーション**: MVPでは参加者最大300名のため不要。将来必要になったら `cursor` ベースで追加。
-6. **CSVインポート**: ヘッダー行必須(`氏名,所属,段級位`)。文字コードは UTF-8 / Shift_JIS を自動判定。エラー行は行番号付きで `details` に返す。
+6. **CSVインポート**: ヘッダー行必須(`氏名,所属,段級位`)。文字コードは UTF-8 / Shift_JIS を自動判定。エラー行は行番号付きで `details` に返す(1行でもエラーがあれば全行取り込まない)。行数上限500・ファイル1MB。
+7. **共有トークン系(`/shared/{token}`・トークン再発行・トークンによる閲覧/結果入力)は Phase 5 で実装**。Phase 3時点の「運営者 or トークン」エンドポイントは運営者認証のみ。
 
 ---
 

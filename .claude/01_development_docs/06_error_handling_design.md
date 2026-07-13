@@ -17,11 +17,13 @@
 | 未認証 | 401 | `UNAUTHORIZED` | ログインしてください | INFO |
 | 権限なし | 403 | `FORBIDDEN` | この操作を行う権限がありません | WARN |
 | 無効な共有トークン | 403 | `INVALID_SHARE_TOKEN` | このURLは無効になっています。運営者に確認してください | INFO |
-| リソース未存在 | 404 | `TOURNAMENT_NOT_FOUND` 等 | 大会が見つかりません | INFO |
+| リソース未存在 | 404 | `TOURNAMENT_NOT_FOUND` / `PARTICIPANT_NOT_FOUND` / `ROUND_NOT_FOUND` / `MATCH_NOT_FOUND` / `NOT_FOUND`(汎用) | 大会が見つかりません | INFO |
 | 状態遷移違反 | 409 | `INVALID_STATE` | 大会開始前にはこの操作はできません | INFO |
 | 更新競合 | 409 | `CONFLICT` | ほかの端末で更新されました。画面を更新して再度お試しください | INFO |
 | ラウンド二重生成 | 409 | `ROUND_ALREADY_EXISTS` | このラウンドは既に生成されています | INFO |
-| マッチング不能 | 422 | `PAIRING_CONSTRAINT_RELAXED` | 制約を緩和して組み合わせました(再戦が含まれます) | WARN |
+| マッチング不能 | 422 | `PAIRING_FAILED` | 組み合わせを生成できませんでした | WARN |
+
+補足: 制約の**緩和はエラーではない**。組み合わせ生成は成功レスポンスの `relaxations`(`GeneratedRound`)で緩和内容を返し、UIが警告を表示する(`05_swiss_pairing_algorithm.md` §2.2)。
 | レート制限 | 429 | `RATE_LIMITED` | しばらく時間をおいて再度お試しください | WARN |
 | システムエラー | 500 | `INTERNAL_ERROR` | 予期しないエラーが発生しました | ERROR |
 
@@ -44,8 +46,10 @@ AppException (abstract, RuntimeException)
 └── PairingException         // 422(マッチング関連)
 ```
 
-- `AppException` は `errorCode`(enum `ErrorCode`)と `userMessage` を持つ
-- domain層は Spring に依存しないため、domain層の例外(`DomainException`)を application 層で `AppException` に変換する
+- `AppException` は `errorCode`(enum `ErrorCode`)と `userMessage`(+ 任意の `details`)を持つ
+- domain層は Spring に依存しないため、domain層の例外(`DomainException`)を application 層で `AppException` に変換する。
+  変換漏れの最終防衛線として `GlobalExceptionHandler` でも `DomainException`→409 `INVALID_STATE`、
+  `OptimisticLockException`→409 `CONFLICT`、`DuplicateRoundException`→409 `ROUND_ALREADY_EXISTS` にマップする
 
 ### グローバルハンドラー
 

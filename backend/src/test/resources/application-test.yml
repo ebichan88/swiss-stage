@@ -3,3 +3,6 @@ app:
   dynamodb:
     table-name: swiss-stage
     endpoint: ${DYNAMODB_ENDPOINT:http://localhost:8000}
+  auth:
+    jwt-secret: test-only-jwt-secret-0123456789abcdef
+    secure-cookie: false

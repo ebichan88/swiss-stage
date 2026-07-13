@@ -1,6 +1,10 @@
 spring:
   application:
     name: swiss-stage
+  servlet:
+    multipart:
+      max-file-size: 1MB     # CSVインポート上限(13_security_design.md §4)
+      max-request-size: 2MB
 
 management:
   endpoints:
@@ -17,3 +21,6 @@ app:
   dynamodb:
     table-name: swiss-stage
     endpoint: ""          # 空 = AWS本番(EC2インスタンスロール)。localプロファイルで上書き
+  auth:
+    jwt-secret: ${JWT_SECRET:}   # 32文字以上必須。本番は環境変数で注入(リポジトリに書かない)
+    secure-cookie: true          # ローカル(http)のみlocalプロファイルで無効化
