@@ -1,20 +1,6 @@
 import { createBrowserRouter, RouterProvider, ScrollRestoration, Outlet } from 'react-router-dom';
 
-import { AppLayout } from './components/layouts/AppLayout';
-import { RequireAuth } from './components/layouts/RequireAuth';
-import { TournamentLayout } from './components/layouts/TournamentLayout';
-import { LoginPage } from './pages/LoginPage';
-import { NotFoundPage } from './pages/NotFoundPage';
-import { ParticipantsPage } from './pages/ParticipantsPage';
-import { RoundsPage } from './pages/RoundsPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { SharedPage } from './pages/SharedPage';
-import { SharedResultPage } from './pages/SharedResultPage';
-import { StandingsPage } from './pages/StandingsPage';
-import { TopPage } from './pages/TopPage';
-import { TournamentCreatePage } from './pages/TournamentCreatePage';
-import { TournamentListPage } from './pages/TournamentListPage';
-import { TournamentOverviewPage } from './pages/TournamentOverviewPage';
+import { FullPageSpinner } from './components/ui/QueryStates';
 import { paths } from './routes';
 
 function Root() {
@@ -26,40 +12,103 @@ function Root() {
   );
 }
 
-// ルート定義はここに集約する(.claude/03_library_docs/04_react_router_patterns.md)
+// ルート定義はここに集約する(.claude/03_library_docs/04_react_router_patterns.md)。
+// ルート単位でコード分割し、共有ページ(参加者のスマホ)が運営者画面のコードを
+// 読み込まないようにする(14_performance_optimization.md §4)
 const router = createBrowserRouter([
   {
     element: <Root />,
+    // lazyルートの初回ロード中に表示する(無指定だと空白画面+警告)
+    hydrateFallbackElement: <FullPageSpinner />,
     children: [
-      { path: paths.top, element: <TopPage /> },
-      { path: paths.login, element: <LoginPage /> },
-      // 共有ページ(S10/S11)はログイン不要(トークンがアクセス制御を担う)
-      { path: '/s/:token', element: <SharedPage /> },
-      { path: '/s/:token/matches/:mid', element: <SharedResultPage /> },
       {
-        element: <RequireAuth />,
+        path: paths.top,
+        lazy: () => import('./pages/TopPage').then((m) => ({ Component: m.TopPage })),
+      },
+      {
+        path: paths.login,
+        lazy: () => import('./pages/LoginPage').then((m) => ({ Component: m.LoginPage })),
+      },
+      // 共有ページ(S10/S11)はログイン不要(トークンがアクセス制御を担う)
+      {
+        path: '/s/:token',
+        lazy: () => import('./pages/SharedPage').then((m) => ({ Component: m.SharedPage })),
+      },
+      {
+        path: '/s/:token/matches/:mid',
+        lazy: () =>
+          import('./pages/SharedResultPage').then((m) => ({ Component: m.SharedResultPage })),
+      },
+      {
+        lazy: () =>
+          import('./components/layouts/RequireAuth').then((m) => ({ Component: m.RequireAuth })),
         children: [
           {
-            element: <AppLayout />,
+            lazy: () =>
+              import('./components/layouts/AppLayout').then((m) => ({ Component: m.AppLayout })),
             children: [
-              { path: paths.tournaments, element: <TournamentListPage /> },
-              { path: paths.tournamentNew, element: <TournamentCreatePage /> },
+              {
+                path: paths.tournaments,
+                lazy: () =>
+                  import('./pages/TournamentListPage').then((m) => ({
+                    Component: m.TournamentListPage,
+                  })),
+              },
+              {
+                path: paths.tournamentNew,
+                lazy: () =>
+                  import('./pages/TournamentCreatePage').then((m) => ({
+                    Component: m.TournamentCreatePage,
+                  })),
+              },
               {
                 path: '/tournaments/:id',
-                element: <TournamentLayout />,
+                lazy: () =>
+                  import('./components/layouts/TournamentLayout').then((m) => ({
+                    Component: m.TournamentLayout,
+                  })),
                 children: [
-                  { index: true, element: <TournamentOverviewPage /> },
-                  { path: 'participants', element: <ParticipantsPage /> },
-                  { path: 'rounds', element: <RoundsPage /> },
-                  { path: 'standings', element: <StandingsPage /> },
-                  { path: 'settings', element: <SettingsPage /> },
+                  {
+                    index: true,
+                    lazy: () =>
+                      import('./pages/TournamentOverviewPage').then((m) => ({
+                        Component: m.TournamentOverviewPage,
+                      })),
+                  },
+                  {
+                    path: 'participants',
+                    lazy: () =>
+                      import('./pages/ParticipantsPage').then((m) => ({
+                        Component: m.ParticipantsPage,
+                      })),
+                  },
+                  {
+                    path: 'rounds',
+                    lazy: () =>
+                      import('./pages/RoundsPage').then((m) => ({ Component: m.RoundsPage })),
+                  },
+                  {
+                    path: 'standings',
+                    lazy: () =>
+                      import('./pages/StandingsPage').then((m) => ({
+                        Component: m.StandingsPage,
+                      })),
+                  },
+                  {
+                    path: 'settings',
+                    lazy: () =>
+                      import('./pages/SettingsPage').then((m) => ({ Component: m.SettingsPage })),
+                  },
                 ],
               },
             ],
           },
         ],
       },
-      { path: '*', element: <NotFoundPage /> },
+      {
+        path: '*',
+        lazy: () => import('./pages/NotFoundPage').then((m) => ({ Component: m.NotFoundPage })),
+      },
     ],
   },
 ]);

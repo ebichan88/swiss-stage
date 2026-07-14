@@ -1,0 +1,53 @@
+# E2E(Playwright)。PRごとには実行しない(遅いため)。
+# リリース前・大会前に手動実行する(11_cicd_design.md / 12_e2e_test_design.md)
+name: E2E
+on:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      dynamodb-local:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8000:8000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - name: Create DynamoDB Local table
+        run: ./scripts/create-table.sh
+        working-directory: backend
+        env:
+          DYNAMODB_ENDPOINT: http://localhost:8000
+      - name: Start backend (local profile)
+        run: |
+          ./gradlew bootRun --args='--spring.profiles.active=local' &
+          for i in $(seq 1 60); do
+            wget -q -O /dev/null http://localhost:8080/api/v1/health && exit 0
+            sleep 2
+          done
+          echo "backend did not start" && exit 1
+        working-directory: backend
+      - run: npm ci
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npm run test:e2e
+        working-directory: frontend
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: frontend/test-results/
+          retention-days: 7

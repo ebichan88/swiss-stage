@@ -23,8 +23,19 @@ cd frontend && npm run dev
 
 ## UIの駆動(Playwright)
 
-- Playwright はリポジトリに未導入(E2EはPhase 6)。スクラッチパッドに `npm i playwright && npx playwright install chromium` で入れる。
-- **sudoなし環境の注意**: headless shell が `libnspr4.so` 等で起動失敗する。`apt-get download libnspr4 libnss3 libasound2t64 libatk1.0-0t64 libatk-bridge2.0-0t64 libcups2t64 libxkbcommon0 libatspi2.0-0t64 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libcairo2 libpango-1.0-0 libpangocairo-1.0-0` → `dpkg -x *.deb libs/` → `LD_LIBRARY_PATH=$PWD/libs/usr/lib/x86_64-linux-gnu node script.mjs` で回避できる。
+- Playwright は導入済み(`frontend/tests/e2e/`、CP1〜CP4)。実行は backend 起動済みの状態で:
+  `LD_LIBRARY_PATH=~/.cache/swiss-stage-e2e-libs/usr/lib/x86_64-linux-gnu npm run test:e2e`
+- **sudoなし環境の注意**: headless shell が `libnspr4.so` 等で起動失敗する。必要ライブラリは
+  `~/.cache/swiss-stage-e2e-libs/` に展開済み(無ければ `apt-get download libnspr4 libnss3 libasound2t64 libatk1.0-0t64 libatk-bridge2.0-0t64 libcups2t64 libxkbcommon0 libatspi2.0-0t64 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libcairo2 libpango-1.0-0 libpangocairo-1.0-0` → `dpkg -x *.deb <dir>` で再作成)。
+- アドホックにUIを駆動する場合も同じ `LD_LIBRARY_PATH` を付けて `node script.mjs`。
+
+## 負荷テスト(perf/)
+
+- 手順は `perf/README.md`。この環境は curl/wget が権限で拒否され k6 を導入できないため、
+  データ投入は `node perf/seed-shared.mjs`、計測は Node fetch の同等スクリプトで代替する
+  (300 VU 並行で `GET /api/v1/shared/{token}` を叩き p95/エラー率を出す)。
+- レート制限(IP別60req/分)に当たるため、負荷計測時は
+  `--app.rate-limit.shared.capacity=100000 --app.rate-limit.shared.refill-per-minute=100000` を付けてbackendを起動する。
 
 ## セレクタのハマりどころ
 

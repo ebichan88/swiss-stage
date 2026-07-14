@@ -23,16 +23,19 @@ public class TournamentService {
     private final TournamentRepository tournamentRepository;
     private final ParticipantRepository participantRepository;
     private final TournamentAccessSupport access;
+    private final SharedViewCache sharedViewCache;
     private final Clock clock;
 
     public TournamentService(
             TournamentRepository tournamentRepository,
             ParticipantRepository participantRepository,
             TournamentAccessSupport access,
+            SharedViewCache sharedViewCache,
             Clock clock) {
         this.tournamentRepository = tournamentRepository;
         this.participantRepository = participantRepository;
         this.access = access;
+        this.sharedViewCache = sharedViewCache;
         this.clock = clock;
     }
 
@@ -69,23 +72,26 @@ public class TournamentService {
             tournament = tournament.withResultInputEnabled(request.resultInputEnabled());
         }
         tournamentRepository.save(tournament.touched(Instant.now(clock)));
+        sharedViewCache.evict(id);
         return reload(id);
     }
 
     /**
      * 共有トークンの発行・再発行(13_security_design.md §2)。
-     * 上書き保存のため旧トークンは即時無効になる。
+     * 上書き保存のため旧トークンは即時無効になる(キャッシュも同時に破棄)。
      */
     public TournamentDto regenerateShareToken(TournamentId id, String ownerSub) {
         Tournament tournament = access.loadOwned(id, ownerSub);
         tournamentRepository.save(
                 tournament.withShareToken(ShareTokens.generate()).touched(Instant.now(clock)));
+        sharedViewCache.evict(id);
         return reload(id);
     }
 
     public void delete(TournamentId id, String ownerSub) {
         access.loadOwned(id, ownerSub);
         tournamentRepository.delete(id);
+        sharedViewCache.evict(id);
     }
 
     public TournamentDto start(TournamentId id, String ownerSub) {
@@ -97,12 +103,14 @@ public class TournamentService {
             throw new InvalidStateException("大会の開始には参加者が2名以上必要です");
         }
         tournamentRepository.save(tournament.start().touched(Instant.now(clock)));
+        sharedViewCache.evict(id);
         return reload(id);
     }
 
     public TournamentDto finish(TournamentId id, String ownerSub) {
         Tournament tournament = access.loadOwned(id, ownerSub);
         tournamentRepository.save(tournament.finish().touched(Instant.now(clock)));
+        sharedViewCache.evict(id);
         return reload(id);
     }
 

@@ -1,6 +1,10 @@
 spring:
   application:
     name: swiss-stage
+  web:
+    resources:
+      # 静的配信はWebMvcConfigで明示定義(SPAフォールバック + Cache-Control)。デフォルトは無効化
+      add-mappings: false
   servlet:
     multipart:
       max-file-size: 1MB     # CSVインポート上限(13_security_design.md §4)
@@ -20,6 +24,10 @@ spring:
 server:
   # ALB配下でX-Forwarded-*からクライアントIP・スキームを復元(レート制限・OAuth2リダイレクトに必要)
   forward-headers-strategy: framework
+  # 共有ページ集約(300名で~90KB)を会場の低速回線でも3秒以内に返すため圧縮する
+  # (14_performance_optimization.md §1。JSON/JS/CSSが対象、2KB未満は非圧縮)
+  compression:
+    enabled: true
 
 management:
   endpoints:
@@ -44,3 +52,6 @@ app:
     shared:                      # /api/v1/shared/** のIPベースレート制限(13_security_design.md §5)
       capacity: 60
       refill-per-minute: 60
+  cache:
+    shared:                      # 共有ページ集約のインメモリキャッシュTTL(14_performance_optimization.md §3)
+      ttl-seconds: 30
