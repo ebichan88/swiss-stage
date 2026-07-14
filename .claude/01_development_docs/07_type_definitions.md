@@ -69,6 +69,16 @@ interface Participant {
   seedOrder: number;
   status: ParticipantStatus;
 }
+
+// PATCH /participants/{pid}(UpdateParticipantRequest)。未指定(null)の項目は変更しない。
+// rank は null で「変更なし」のため、未入力に戻す場合は clearRank: true を送る(rankとの同時指定は400)
+interface UpdateParticipantInput {
+  name?: string;
+  organization?: string;         // 空文字で未入力に戻せる
+  rank?: Rank;
+  clearRank?: boolean;
+  status?: ParticipantStatus;    // WITHDRAWN で途中棄権
+}
 ```
 
 ### Match / Round

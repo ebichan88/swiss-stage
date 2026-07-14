@@ -7,6 +7,7 @@ import com.swiss_stage.application.dto.UpdateParticipantRequest;
 import com.swiss_stage.application.exception.ErrorCode;
 import com.swiss_stage.application.exception.InvalidStateException;
 import com.swiss_stage.application.exception.NotFoundException;
+import com.swiss_stage.application.exception.ValidationException;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
 import com.swiss_stage.domain.model.Tournament;
@@ -24,14 +25,17 @@ public class ParticipantService {
     private final ParticipantRepository participantRepository;
     private final TournamentAccessSupport access;
     private final ParticipantCsvParser csvParser;
+    private final SharedViewCache sharedViewCache;
 
     public ParticipantService(
             ParticipantRepository participantRepository,
             TournamentAccessSupport access,
-            ParticipantCsvParser csvParser) {
+            ParticipantCsvParser csvParser,
+            SharedViewCache sharedViewCache) {
         this.participantRepository = participantRepository;
         this.access = access;
         this.csvParser = csvParser;
+        this.sharedViewCache = sharedViewCache;
     }
 
     public List<ParticipantDto> list(TournamentId tournamentId, String ownerSub) {
@@ -50,6 +54,7 @@ public class ParticipantService {
                 request.name(), normalize(request.organization()), request.rank(),
                 nextSeedOrder(tournamentId));
         participantRepository.save(tournamentId, participant);
+        sharedViewCache.evict(tournamentId);
         return ParticipantDto.from(participant);
     }
 
@@ -65,6 +70,7 @@ public class ParticipantService {
                     row.name(), normalize(row.organization()), row.rank(), seedOrder++));
         }
         participantRepository.saveAll(tournamentId, participants);
+        sharedViewCache.evict(tournamentId);
         return new CsvImportResultDto(
                 participants.size(),
                 participants.stream().map(ParticipantDto::from).toList());
@@ -74,6 +80,10 @@ public class ParticipantService {
             TournamentId tournamentId, ParticipantId participantId,
             String ownerSub, UpdateParticipantRequest request) {
         access.loadOwned(tournamentId, ownerSub);
+        boolean clearRank = Boolean.TRUE.equals(request.clearRank());
+        if (clearRank && request.rank() != null) {
+            throw new ValidationException("rank と clearRank は同時に指定できません");
+        }
         Participant participant = participantRepository.findById(tournamentId, participantId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
@@ -82,10 +92,11 @@ public class ParticipantService {
                 request.name() != null ? request.name() : participant.name(),
                 request.organization() != null
                         ? normalize(request.organization()) : participant.organization(),
-                request.rank() != null ? request.rank() : participant.rank(),
+                clearRank ? null : request.rank() != null ? request.rank() : participant.rank(),
                 participant.seedOrder(),
                 request.status() != null ? request.status() : participant.status());
         participantRepository.save(tournamentId, updated);
+        sharedViewCache.evict(tournamentId);
         return ParticipantDto.from(updated);
     }
 
@@ -95,6 +106,7 @@ public class ParticipantService {
         participantRepository.findById(tournamentId, participantId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.PARTICIPANT_NOT_FOUND));
         participantRepository.delete(tournamentId, participantId);
+        sharedViewCache.evict(tournamentId);
     }
 
     private int nextSeedOrder(TournamentId tournamentId) {

@@ -2,6 +2,12 @@
 
 ## 1. ルート定義の標準形
 
+実際の `src/App.tsx` はルート単位のコード分割のため各ルートを `lazy:` で定義する
+(`lazy: () => import('./pages/TopPage').then((m) => ({ Component: m.TopPage }))`)。
+共有ページ(参加者のスマホ)が運営者画面のコードを読み込まないようにするのが目的
+(14_performance_optimization.md §4)。初回ロード中の表示はルートルートの
+`hydrateFallbackElement: <FullPageSpinner />` で指定する。以下は構造の骨子:
+
 ```tsx
 // src/App.tsx — ルート定義はここに集約する
 const router = createBrowserRouter([
@@ -95,19 +101,14 @@ export const paths = {
 ## 5. SPAのサーバー側設定(重要)
 
 - `/tournaments/xxx` へ直アクセスすると静的サーバーは404を返す
-- **Spring Boot側で「`/api/**` 以外の未マッチパスは `index.html` を返す」フォワード設定が必須**
-
-```java
-@Controller
-class SpaController {
-    // 拡張子なしの全パスをindex.htmlへ(静的アセットとAPIは除外される)
-    @GetMapping(value = { "/{path:[^\\.]*}", "/**/{path:[^\\.]*}" })
-    public String forward() {
-        return "forward:/index.html";
-    }
-}
-```
-
+- **Spring Boot側で「`/api/**` 以外の未マッチパスは `index.html` を返す」フォールバックが必須**
+- 実装: `presentation/WebMvcConfig#addResourceHandlers`。`PathResourceResolver` を継承した
+  フォールバックリゾルバで、存在しないパス(`api/` 以外)を `index.html` に解決する
+  (Spring Boot 3のPathPatternParserでは `/**/{path}` 形式のコントローラマッピングが使えないため、
+  リソースハンドラ方式を採用。デフォルトの静的マッピングは `spring.web.resources.add-mappings=false` で無効化)
+- Cache-Control もここで設定: `/assets/**`(ハッシュ付き)= 1年 + immutable / それ以外 = no-cache
+- ルート `/` は `addViewControllers` で `forward:/index.html`
+- 契約テスト: `contract/SpaFallbackApiTest`(テスト用 index.html は `src/test/resources/static/`)
 - Vite開発時は `vite.config.ts` の `server.proxy` で `/api` を `http://localhost:8080` へプロキシ
 
 ---

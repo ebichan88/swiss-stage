@@ -26,23 +26,33 @@ public class SharedService {
     private final TournamentRepository tournamentRepository;
     private final RoundService roundService;
     private final StandingService standingService;
+    private final SharedViewCache cache;
 
     public SharedService(
             TournamentRepository tournamentRepository,
             RoundService roundService,
-            StandingService standingService) {
+            StandingService standingService,
+            SharedViewCache cache) {
         this.tournamentRepository = tournamentRepository;
         this.roundService = roundService;
         this.standingService = standingService;
+        this.cache = cache;
     }
 
-    /** 共有ページ(S10)用の集約。shareToken・ownerSub は含めない */
+    /**
+     * 共有ページ(S10)用の集約。shareToken・ownerSub は含めない。
+     * ラウンド確定直後のアクセススパイクに備えキャッシュする(無効トークンはキャッシュされない)。
+     */
     public SharedTournamentDto getShared(String token) {
-        Tournament tournament = resolveByToken(token);
-        return new SharedTournamentDto(
-                SharedTournamentDto.SharedTournamentSummary.from(tournament),
-                roundService.assembleRounds(tournament.id()),
-                standingService.assembleStandings(tournament.id()));
+        return cache.get(token, t -> {
+            Tournament tournament = resolveByToken(t);
+            return new SharedViewCache.Entry(
+                    tournament.id(),
+                    new SharedTournamentDto(
+                            SharedTournamentDto.SharedTournamentSummary.from(tournament),
+                            roundService.assembleRounds(tournament.id()),
+                            standingService.assembleStandings(tournament.id())));
+        });
     }
 
     /** 共有トークン経由の結果入力。大会設定(resultInputEnabled)で許可時のみ */

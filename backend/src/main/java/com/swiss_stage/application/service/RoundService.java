@@ -49,6 +49,7 @@ public class RoundService {
     private final RoundRepository roundRepository;
     private final MatchRepository matchRepository;
     private final TournamentAccessSupport access;
+    private final SharedViewCache sharedViewCache;
     private final SwissPairingService pairingService = new SwissPairingService();
     private final Clock clock;
 
@@ -58,12 +59,14 @@ public class RoundService {
             RoundRepository roundRepository,
             MatchRepository matchRepository,
             TournamentAccessSupport access,
+            SharedViewCache sharedViewCache,
             Clock clock) {
         this.tournamentRepository = tournamentRepository;
         this.participantRepository = participantRepository;
         this.roundRepository = roundRepository;
         this.matchRepository = matchRepository;
         this.access = access;
+        this.sharedViewCache = sharedViewCache;
         this.clock = clock;
     }
 
@@ -130,6 +133,7 @@ public class RoundService {
         Round playing = round.startPlaying();
         roundRepository.save(tournamentId, playing);
         tournamentRepository.save(tournament.advanceRound().touched(Instant.now(clock)));
+        sharedViewCache.evict(tournamentId);
 
         List<Match> saved = matchRepository.findByRound(tournamentId, nextRoundNumber);
         return new GeneratedRoundDto(
@@ -155,6 +159,7 @@ public class RoundService {
             throw new InvalidStateException(e.getMessage());
         }
         roundRepository.save(tournamentId, confirmed);
+        sharedViewCache.evict(tournamentId);
         return toRoundDto(confirmed, matches, participantMap(tournamentId));
     }
 
@@ -193,6 +198,7 @@ public class RoundService {
         } catch (OptimisticLockException e) {
             throw new ConflictException();
         }
+        sharedViewCache.evict(tournamentId);
         Match saved = matchRepository.findById(tournamentId, matchId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.MATCH_NOT_FOUND));
         return MatchDto.from(saved, participantMap(tournamentId));

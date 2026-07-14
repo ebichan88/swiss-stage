@@ -72,8 +72,7 @@ export function ParticipantsPage() {
           input: {
             name: values.name.trim(),
             organization,
-            // API仕様上 null は「変更なし」のため、棋力の未入力への戻しはできない
-            ...(values.rank === '' ? {} : { rank: values.rank }),
+            ...(values.rank === '' ? { clearRank: true } : { rank: values.rank }),
           },
         },
         {

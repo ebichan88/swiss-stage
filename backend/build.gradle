@@ -29,6 +29,9 @@ dependencies {
     // IPベースの簡易レート制限(13_security_design.md §5。共有トークンのブルートフォース対策)
     implementation 'com.bucket4j:bucket4j-core:8.10.1'
 
+    // 共有ページ集約のインメモリキャッシュ(14_performance_optimization.md §3)
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.2.0'
+
     // DynamoDB (AWS SDK for Java v2 Enhanced Client)
     // 注: spring-data-dynamodb(boostchicken)は Spring Boot 3 非対応のため使用しない
     implementation platform('software.amazon.awssdk:bom:2.29.45')

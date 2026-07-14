@@ -151,6 +151,32 @@ class ParticipantApiTest extends ApiContractTestSupport {
                 .andExpect(jsonPath("$.data.status").value("WITHDRAWN"));
     }
 
+    @Test
+    @DisplayName("clearRank=trueで棋力を未入力に戻せる(rankとの同時指定は400)")
+    void 棋力のクリア() throws Exception {
+        MvcResult created = mockMvc.perform(post(participantsPath())
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"棋力 未定\",\"rank\":\"DAN_3\"}"))
+                .andExpect(status().isCreated()).andReturn();
+        String participantId = dataOf(created).path("id").asText();
+
+        mockMvc.perform(patch(participantsPath() + "/" + participantId)
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"clearRank\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.rank").doesNotExist())
+                .andExpect(jsonPath("$.data.name").value("棋力 未定"));
+
+        mockMvc.perform(patch(participantsPath() + "/" + participantId)
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"rank\":\"KYU_1\",\"clearRank\":true}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
     private String participantsPath() {
         return "/api/v1/tournaments/" + tournamentId + "/participants";
     }

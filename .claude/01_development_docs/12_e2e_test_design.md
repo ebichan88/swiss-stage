@@ -2,10 +2,10 @@
 
 ## 1. 基本方針
 
-- ツール: **Playwright**(`frontend/tests/e2e/`)
+- ツール: **Playwright**(`frontend/tests/e2e/`。CP1〜CP4実装済み)
 - 対象: **クリティカルパスのみ**(大会当日に絶対に動かなければならないフロー)
-- 実行タイミング: リリース前・大会前(PRごとには実行しない)
-- バックエンド + DynamoDB Local を起動した状態で実行する
+- 実行タイミング: リリース前・大会前(PRごとには実行しない)。GitHub Actionsは `.github/workflows/e2e.yml`(workflow_dispatch)
+- バックエンド + DynamoDB Local を起動した状態で実行する(Vite開発サーバーは `playwright.config.ts` の webServer が自動起動)
 
 ---
 
@@ -48,9 +48,11 @@
 
 1. **セレクタは `getByRole` / `getByLabel` を優先**。壊れやすいCSSセレクタ禁止
 2. **テストデータの分離**: 各テストは自分で大会を作成し、テスト間で大会を共有しない
-3. **認証のセットアップ**: Google OAuth2を実際に通さない。E2E用に `local` プロファイル限定のテストログインエンドポイント(`/api/v1/auth/test-login`)を用意する(**本番ビルドには絶対に含めない** — `@Profile("local")` 必須)
-4. **CSVインポート用フィクスチャ**: `tests/e2e/fixtures/participants_16.csv` 等を用意(UTF-8版とShift_JIS版の両方)
-5. **失敗時の調査**: `trace: on-first-retry` を設定し、失敗時はトレースで原因調査
+3. **認証のセットアップ**: Google OAuth2を実際に通さない。`local`/`test` プロファイル限定のテストログインエンドポイント(`/api/v1/auth/test-login`)を使う(**本番ビルドには絶対に含めない** — `@Profile` 必須)。UI操作は `/login` の「開発用ログイン」ボタン(DEVビルド限定)
+4. **CSVインポート用フィクスチャ**: `tests/e2e/fixtures/participants_16.csv` / `participants_16_sjis.csv` / `participants_15.csv`(CP3の奇数人数用)
+5. **共通操作は `tests/e2e/helpers.ts`** に集約(ログイン・大会作成・CSVインポート・結果入力・共有URL発行など)
+6. **順位のアサーション**: 順位は同順位あり(1,2,2,4形式)。`rank === 行番号` を仮定しない
+7. **失敗時の調査**: `trace: on-first-retry` を設定し、失敗時はトレースで原因調査
 
 ---
 

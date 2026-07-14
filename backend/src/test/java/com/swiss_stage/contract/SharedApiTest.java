@@ -157,6 +157,50 @@ class SharedApiTest extends ApiContractTestSupport {
                 .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
     }
 
+    @Test
+    @DisplayName("キャッシュ済みの共有ページも結果入力・確定後は即時反映される(evict)")
+    void キャッシュevict() throws Exception {
+        String token = regenerateToken();
+        setVisibility("TOKEN");
+        mockMvc.perform(post(base() + "/start").cookie(ownerCookie())).andExpect(status().isOk());
+        MvcResult round = mockMvc.perform(post(base() + "/rounds").cookie(ownerCookie()))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        // 共有ページを一度取得してキャッシュを温める
+        mockMvc.perform(get("/api/v1/shared/" + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.rounds[0].matches[0].result").value("NONE"));
+
+        // 運営者が結果入力 → キャッシュ済みでも新しい結果が返る
+        JsonNode match = dataOf(round).path("round").path("matches").get(0);
+        mockMvc.perform(put(base() + "/matches/" + match.path("id").asText() + "/result")
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"result\":\"PLAYER1_WIN\",\"version\":"
+                                + match.path("version").asLong() + "}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/shared/" + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.rounds[0].matches[0].result").value("PLAYER1_WIN"));
+
+        // 参加者名の変更も反映される(順位表の表示名)
+        MvcResult participants = mockMvc.perform(get(base() + "/participants")
+                        .cookie(ownerCookie()))
+                .andExpect(status().isOk())
+                .andReturn();
+        String participantId = dataOf(participants).get(0).path("id").asText();
+        mockMvc.perform(patch(base() + "/participants/" + participantId)
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"改名 太郎\"}"))
+                .andExpect(status().isOk());
+        MvcResult shared = mockMvc.perform(get("/api/v1/shared/" + token))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(shared.getResponse().getContentAsString()).contains("改名 太郎");
+    }
+
     private MockHttpServletRequestBuilder putSharedResult(
             String token, String matchId, String result, long version) {
         return put("/api/v1/shared/" + token + "/matches/" + matchId + "/result")

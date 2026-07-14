@@ -52,7 +52,7 @@ jobs:
 ### ルール
 
 - どちらかのジョブが失敗したPRはマージ禁止(ブランチ保護設定)
-- E2E(Playwright)はPRごとには実行しない(遅いため)。`workflow_dispatch` + リリース前に手動実行
+- E2E(Playwright)はPRごとには実行しない(遅いため)。`.github/workflows/e2e.yml`(workflow_dispatch)をリリース前に手動実行
 - 依存更新は Dependabot(週次、`gradle` / `npm` / `github-actions`)
 
 ---
