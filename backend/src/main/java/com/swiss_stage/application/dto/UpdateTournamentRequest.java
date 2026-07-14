@@ -11,5 +11,8 @@ public record UpdateTournamentRequest(
 
         Visibility visibility,
 
+        /** 共有トークン経由の結果入力を許可するか。null = 変更しない */
+        Boolean resultInputEnabled,
+
         @NotNull(message = "versionは必須です")
         Long version) {}

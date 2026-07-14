@@ -8,6 +8,8 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { ParticipantsPage } from './pages/ParticipantsPage';
 import { RoundsPage } from './pages/RoundsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { SharedPage } from './pages/SharedPage';
+import { SharedResultPage } from './pages/SharedResultPage';
 import { StandingsPage } from './pages/StandingsPage';
 import { TopPage } from './pages/TopPage';
 import { TournamentCreatePage } from './pages/TournamentCreatePage';
@@ -31,6 +33,9 @@ const router = createBrowserRouter([
     children: [
       { path: paths.top, element: <TopPage /> },
       { path: paths.login, element: <LoginPage /> },
+      // 共有ページ(S10/S11)はログイン不要(トークンがアクセス制御を担う)
+      { path: '/s/:token', element: <SharedPage /> },
+      { path: '/s/:token/matches/:mid', element: <SharedResultPage /> },
       {
         element: <RequireAuth />,
         children: [

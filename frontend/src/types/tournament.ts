@@ -10,6 +10,8 @@ export interface Tournament {
   status: TournamentStatus;
   visibility: Visibility;
   shareToken: string | null;
+  /** 共有トークン経由の結果入力を許可するか */
+  resultInputEnabled: boolean;
   version: number;
   createdAt: string;
   updatedAt: string;
@@ -26,5 +28,6 @@ export interface CreateTournamentInput {
 export interface UpdateTournamentInput {
   name?: string;
   visibility?: Visibility;
+  resultInputEnabled?: boolean;
   version: number;
 }

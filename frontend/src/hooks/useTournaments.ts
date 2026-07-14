@@ -6,6 +6,7 @@ import {
   fetchTournament,
   fetchTournaments,
   finishTournament,
+  regenerateShareToken,
   startTournament,
   updateTournament,
 } from '../services/tournamentService';
@@ -65,6 +66,16 @@ export function useFinishTournament(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => finishTournament(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tournament(id) });
+    },
+  });
+}
+
+export function useRegenerateShareToken(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => regenerateShareToken(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.tournament(id) });
     },

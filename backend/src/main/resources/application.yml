@@ -5,6 +5,21 @@ spring:
     multipart:
       max-file-size: 1MB     # CSVインポート上限(13_security_design.md §4)
       max-request-size: 2MB
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            # 本番は環境変数で注入。デフォルトは起動を通すためのダミー(ログインは失敗する)
+            client-id: ${GOOGLE_OAUTH_CLIENT_ID:unset-client-id}
+            client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET:unset-client-secret}
+            scope: openid, profile
+            # Google Cloud Consoleに登録するリダイレクトURI: https://{ドメイン}/api/v1/auth/callback
+            redirect-uri: "{baseUrl}/api/v1/auth/callback"
+
+server:
+  # ALB配下でX-Forwarded-*からクライアントIP・スキームを復元(レート制限・OAuth2リダイレクトに必要)
+  forward-headers-strategy: framework
 
 management:
   endpoints:
@@ -24,3 +39,8 @@ app:
   auth:
     jwt-secret: ${JWT_SECRET:}   # 32文字以上必須。本番は環境変数で注入(リポジトリに書かない)
     secure-cookie: true          # ローカル(http)のみlocalプロファイルで無効化
+    frontend-base-url: ""        # 空 = 同一オリジン。開発でVite(:5173)へ戻す場合のみ上書き
+  rate-limit:
+    shared:                      # /api/v1/shared/** のIPベースレート制限(13_security_design.md §5)
+      capacity: 60
+      refill-per-minute: 60

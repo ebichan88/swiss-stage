@@ -1,13 +1,17 @@
+import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import LinkIcon from '@mui/icons-material/Link';
 import {
   Box,
   Button,
   Card,
   CardContent,
   CircularProgress,
+  FormControlLabel,
   IconButton,
   MenuItem,
   Stack,
+  Switch,
   TextField,
   Tooltip,
   Typography,
@@ -19,7 +23,11 @@ import { useNavigate } from 'react-router-dom';
 import { useTournamentContext } from '../components/layouts/TournamentLayout';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useSnackbar } from '../hooks/useSnackbar';
-import { useDeleteTournament, useUpdateTournament } from '../hooks/useTournaments';
+import {
+  useDeleteTournament,
+  useRegenerateShareToken,
+  useUpdateTournament,
+} from '../hooks/useTournaments';
 import { ApiError } from '../services/apiClient';
 import { paths } from '../routes';
 import type { Visibility } from '../types/enums';
@@ -29,20 +37,27 @@ import { visibilityLabels } from '../utils/labels';
 interface SettingsFormValues {
   name: string;
   visibility: Visibility;
+  resultInputEnabled: boolean;
 }
 
-/** S09 大会設定(名前・公開範囲・共有URL・削除)。共有トークンの再発行はPhase 5 */
+/** S09 大会設定(名前・公開範囲・結果入力許可・共有URL・削除) */
 export function SettingsPage() {
   const tournament = useTournamentContext();
   const updateMutation = useUpdateTournament(tournament.id);
   const deleteMutation = useDeleteTournament(tournament.id);
+  const regenerateMutation = useRegenerateShareToken(tournament.id);
   const navigate = useNavigate();
   const { showSuccess, showError } = useSnackbar();
   const [deleting, setDeleting] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   const { control, handleSubmit } = useForm<SettingsFormValues>({
     // 保存成功時は invalidate で tournament が更新され、values 経由でフォームにも反映される
-    values: { name: tournament.name, visibility: tournament.visibility },
+    values: {
+      name: tournament.name,
+      visibility: tournament.visibility,
+      resultInputEnabled: tournament.resultInputEnabled,
+    },
   });
 
   const onSubmit = (formValues: SettingsFormValues) => {
@@ -50,6 +65,7 @@ export function SettingsPage() {
       {
         name: formValues.name.trim(),
         visibility: formValues.visibility,
+        resultInputEnabled: formValues.resultInputEnabled,
         version: tournament.version,
       },
       {
@@ -83,6 +99,19 @@ export function SettingsPage() {
       () => showSuccess('共有URLをコピーしました'),
       () => showError('コピーに失敗しました'),
     );
+  };
+
+  const handleRegenerate = () => {
+    regenerateMutation.mutate(undefined, {
+      onSuccess: () => {
+        setRegenerating(false);
+        showSuccess(shareUrl ? '共有URLを再発行しました' : '共有URLを発行しました');
+      },
+      onError: (error) => {
+        setRegenerating(false);
+        showError(error instanceof ApiError ? error.message : '共有URLの発行に失敗しました');
+      },
+    });
   };
 
   return (
@@ -125,6 +154,21 @@ export function SettingsPage() {
                   </TextField>
                 )}
               />
+              <Controller
+                name="resultInputEnabled"
+                control={control}
+                render={({ field }) => (
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={field.value}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                      />
+                    }
+                    label="参加者による結果入力を許可(共有URL経由)"
+                  />
+                )}
+              />
               <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <Button
                   type="submit"
@@ -149,24 +193,50 @@ export function SettingsPage() {
           <Typography variant="h3" component="h2" gutterBottom>
             共有URL
           </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            参加者はこのURLから組み合わせ・順位を閲覧できます(公開範囲が「非公開」の間は無効)。
+          </Typography>
           {shareUrl ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <TextField
-                value={shareUrl}
-                fullWidth
-                size="small"
-                slotProps={{ htmlInput: { readOnly: true } }}
-              />
-              <Tooltip title="コピー">
-                <IconButton aria-label="共有URLをコピー" onClick={handleCopyShareUrl}>
-                  <ContentCopyIcon />
-                </IconButton>
-              </Tooltip>
-            </Box>
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TextField
+                  value={shareUrl}
+                  fullWidth
+                  size="small"
+                  slotProps={{ htmlInput: { readOnly: true, 'aria-label': '共有URL' } }}
+                />
+                <Tooltip title="コピー">
+                  <IconButton aria-label="共有URLをコピー" onClick={handleCopyShareUrl}>
+                    <ContentCopyIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+              <Box>
+                <Button
+                  variant="outlined"
+                  startIcon={<AutorenewIcon />}
+                  onClick={() => setRegenerating(true)}
+                >
+                  再発行する
+                </Button>
+              </Box>
+            </Stack>
           ) : (
-            <Typography variant="body2" color="text.secondary">
-              共有URLの発行・再発行は今後追加予定です。
-            </Typography>
+            <Button
+              variant="contained"
+              startIcon={
+                regenerateMutation.isPending ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : (
+                  <LinkIcon />
+                )
+              }
+              onClick={handleRegenerate}
+              disabled={regenerateMutation.isPending}
+              sx={{ mt: 1 }}
+            >
+              共有URLを発行する
+            </Button>
           )}
         </CardContent>
       </Card>
@@ -190,6 +260,15 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
+      <ConfirmDialog
+        open={regenerating}
+        title="共有URLを再発行しますか?"
+        message="現在のURLは無効になり、配布済みのQRコード・リンクからはアクセスできなくなります。"
+        confirmLabel="再発行する"
+        loading={regenerateMutation.isPending}
+        onConfirm={handleRegenerate}
+        onCancel={() => setRegenerating(false)}
+      />
       <ConfirmDialog
         open={deleting}
         title="大会を削除しますか?"

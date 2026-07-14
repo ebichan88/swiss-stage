@@ -1,5 +1,6 @@
 import type { Participant, ParticipantSummary } from '../src/types/participant';
-import type { Match } from '../src/types/round';
+import type { Match, Round } from '../src/types/round';
+import type { SharedTournament, SharedTournamentSummary } from '../src/types/shared';
 import type { Standing } from '../src/types/standing';
 import type { Tournament } from '../src/types/tournament';
 
@@ -15,6 +16,7 @@ export function tournamentOf(overrides: Partial<Tournament> = {}): Tournament {
     status: 'PREPARING',
     visibility: 'PRIVATE',
     shareToken: null,
+    resultInputEnabled: false,
     version: 1,
     createdAt: '2026-07-12T10:00:00+09:00',
     updatedAt: '2026-07-12T10:00:00+09:00',
@@ -52,6 +54,38 @@ export function matchOf(overrides: Partial<Match> = {}): Match {
     player2: summaryOf({ id: 'p2', name: '仮名 花子', organization: null }),
     result: 'NONE',
     version: 0,
+    ...overrides,
+  };
+}
+
+export function roundOf(overrides: Partial<Round> = {}): Round {
+  return {
+    roundNumber: 1,
+    status: 'PLAYING',
+    matches: [matchOf()],
+    ...overrides,
+  };
+}
+
+export function sharedSummaryOf(
+  overrides: Partial<SharedTournamentSummary> = {},
+): SharedTournamentSummary {
+  return {
+    name: '第1回テスト囲碁大会',
+    gameType: 'GO',
+    totalRounds: 5,
+    currentRound: 1,
+    status: 'IN_PROGRESS',
+    resultInputEnabled: false,
+    ...overrides,
+  };
+}
+
+export function sharedTournamentOf(overrides: Partial<SharedTournament> = {}): SharedTournament {
+  return {
+    tournament: sharedSummaryOf(),
+    rounds: [roundOf()],
+    standings: [standingOf()],
     ...overrides,
   };
 }

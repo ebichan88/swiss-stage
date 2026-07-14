@@ -34,6 +34,11 @@ public class StandingService {
 
     public List<StandingDto> standings(TournamentId tournamentId, String ownerSub) {
         access.loadOwned(tournamentId, ownerSub);
+        return assembleStandings(tournamentId);
+    }
+
+    /** 順位表の組み立て(認可済みの呼び出し元専用。共有ページからも使う) */
+    List<StandingDto> assembleStandings(TournamentId tournamentId) {
         List<Participant> participants = participantRepository.findAllByTournamentId(tournamentId);
         List<Match> matches = matchRepository.findAllByTournamentId(tournamentId);
         Map<ParticipantId, Participant> byId = participants.stream()

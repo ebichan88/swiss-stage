@@ -36,7 +36,8 @@ class DynamoDbTournamentRepositoryTest extends DynamoDbRepositoryTestSupport {
     @DisplayName("大会を保存して全属性を復元できる(初回保存でversionが払い出される)")
     void 保存と取得() {
         Tournament tournament = Tournament.create("統合テスト大会", GameType.GO, 5, uniqueSub(), NOW)
-                .withShareToken(uniqueToken());
+                .withShareToken(uniqueToken())
+                .withResultInputEnabled(true);
         repository.save(tournament);
 
         Tournament found = repository.findById(tournament.id()).orElseThrow();
@@ -48,6 +49,7 @@ class DynamoDbTournamentRepositoryTest extends DynamoDbRepositoryTestSupport {
         assertThat(found.status()).isEqualTo(TournamentStatus.PREPARING);
         assertThat(found.visibility()).isEqualTo(Visibility.PRIVATE);
         assertThat(found.shareToken()).isEqualTo(tournament.shareToken());
+        assertThat(found.resultInputEnabled()).isTrue();
         assertThat(found.ownerSub()).isEqualTo(tournament.ownerSub());
         assertThat(found.createdAt()).isEqualTo(NOW);
         assertThat(found.updatedAt()).isEqualTo(NOW);

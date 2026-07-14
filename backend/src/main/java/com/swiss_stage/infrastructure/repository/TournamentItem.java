@@ -27,6 +27,7 @@ public class TournamentItem {
     private String status;
     private String visibility;
     private String shareToken;
+    private Boolean resultInputEnabled;
     private String ownerSub;
     private String gsi1Pk;
     private String gsi1Sk;
@@ -117,6 +118,14 @@ public class TournamentItem {
 
     public void setShareToken(String shareToken) {
         this.shareToken = shareToken;
+    }
+
+    public Boolean getResultInputEnabled() {
+        return resultInputEnabled;
+    }
+
+    public void setResultInputEnabled(Boolean resultInputEnabled) {
+        this.resultInputEnabled = resultInputEnabled;
     }
 
     public String getOwnerSub() {

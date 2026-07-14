@@ -23,6 +23,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
+    // Google OAuth2ログイン(13_security_design.md §2。セッションJWTは自前のjjwtで発行)
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+    // IPベースの簡易レート制限(13_security_design.md §5。共有トークンのブルートフォース対策)
+    implementation 'com.bucket4j:bucket4j-core:8.10.1'
+
     // DynamoDB (AWS SDK for Java v2 Enhanced Client)
     // 注: spring-data-dynamodb(boostchicken)は Spring Boot 3 非対応のため使用しない
     implementation platform('software.amazon.awssdk:bom:2.29.45')

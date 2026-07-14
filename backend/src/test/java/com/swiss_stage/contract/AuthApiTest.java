@@ -50,6 +50,25 @@ class AuthApiTest extends ApiContractTestSupport {
     }
 
     @Test
+    @DisplayName("/auth/login はGoogleのOAuth2認可フローへ2段リダイレクトする")
+    void Googleログインへのリダイレクト() throws Exception {
+        MvcResult entry = mockMvc.perform(get("/api/v1/auth/login"))
+                .andExpect(status().isFound())
+                .andReturn();
+        String authorizationPath = entry.getResponse().getRedirectedUrl();
+        assertThat(authorizationPath).isEqualTo("/api/v1/auth/login/google");
+
+        MvcResult authorize = mockMvc.perform(get(authorizationPath))
+                .andExpect(status().isFound())
+                .andReturn();
+        String googleUrl = authorize.getResponse().getRedirectedUrl();
+        assertThat(googleUrl)
+                .startsWith("https://accounts.google.com/o/oauth2/v2/auth")
+                .contains("redirect_uri=")
+                .contains("/api/v1/auth/callback");
+    }
+
+    @Test
     @DisplayName("logoutでCookieが失効し、不正なCookieは未認証扱いになる")
     void ログアウトと不正Cookie() throws Exception {
         mockMvc.perform(post("/api/v1/auth/logout"))

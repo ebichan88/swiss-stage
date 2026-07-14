@@ -31,3 +31,8 @@ export async function startTournament(id: string): Promise<Tournament> {
 export async function finishTournament(id: string): Promise<Tournament> {
   return apiClient.post<Tournament>(`/tournaments/${id}/finish`);
 }
+
+/** 共有トークンの発行・再発行(旧トークンは即時無効) */
+export async function regenerateShareToken(id: string): Promise<Tournament> {
+  return apiClient.post<Tournament>(`/tournaments/${id}/share-token/regenerate`);
+}

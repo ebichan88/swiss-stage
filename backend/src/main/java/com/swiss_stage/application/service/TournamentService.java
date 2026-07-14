@@ -65,7 +65,21 @@ public class TournamentService {
         if (request.visibility() != null) {
             tournament = tournament.withVisibility(request.visibility());
         }
+        if (request.resultInputEnabled() != null) {
+            tournament = tournament.withResultInputEnabled(request.resultInputEnabled());
+        }
         tournamentRepository.save(tournament.touched(Instant.now(clock)));
+        return reload(id);
+    }
+
+    /**
+     * 共有トークンの発行・再発行(13_security_design.md §2)。
+     * 上書き保存のため旧トークンは即時無効になる。
+     */
+    public TournamentDto regenerateShareToken(TournamentId id, String ownerSub) {
+        Tournament tournament = access.loadOwned(id, ownerSub);
+        tournamentRepository.save(
+                tournament.withShareToken(ShareTokens.generate()).touched(Instant.now(clock)));
         return reload(id);
     }
 

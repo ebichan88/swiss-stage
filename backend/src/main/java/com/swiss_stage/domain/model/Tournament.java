@@ -7,6 +7,7 @@ import java.time.Instant;
  * 大会。状態遷移: PREPARING → IN_PROGRESS → FINISHED(逆行不可)。
  *
  * <p>shareToken は共有URL用トークン(未発行はnull)。
+ * resultInputEnabled は共有トークン経由の結果入力を許可するか(13_security_design.md §3)。
  * 時刻は Clock をDIした呼び出し側(application層)から渡す(domainでは Instant.now() を呼ばない)。
  */
 public record Tournament(
@@ -18,6 +19,7 @@ public record Tournament(
         TournamentStatus status,
         Visibility visibility,
         String shareToken,
+        boolean resultInputEnabled,
         String ownerSub,
         long version,
         Instant createdAt,
@@ -45,7 +47,7 @@ public record Tournament(
             String name, GameType gameType, int totalRounds, String ownerSub, Instant now) {
         return new Tournament(
                 TournamentId.generate(), name, gameType, totalRounds, 0,
-                TournamentStatus.PREPARING, Visibility.PRIVATE, null, ownerSub, 0L, now, now);
+                TournamentStatus.PREPARING, Visibility.PRIVATE, null, false, ownerSub, 0L, now, now);
     }
 
     public boolean isOwnedBy(String sub) {
@@ -80,27 +82,38 @@ public record Tournament(
 
     public Tournament rename(String newName) {
         return new Tournament(id, newName, gameType, totalRounds, currentRound,
-                status, visibility, shareToken, ownerSub, version, createdAt, updatedAt);
+                status, visibility, shareToken, resultInputEnabled, ownerSub, version,
+                createdAt, updatedAt);
     }
 
     public Tournament withVisibility(Visibility newVisibility) {
         return new Tournament(id, name, gameType, totalRounds, currentRound,
-                status, newVisibility, shareToken, ownerSub, version, createdAt, updatedAt);
+                status, newVisibility, shareToken, resultInputEnabled, ownerSub, version,
+                createdAt, updatedAt);
     }
 
     public Tournament withShareToken(String newShareToken) {
         return new Tournament(id, name, gameType, totalRounds, currentRound,
-                status, visibility, newShareToken, ownerSub, version, createdAt, updatedAt);
+                status, visibility, newShareToken, resultInputEnabled, ownerSub, version,
+                createdAt, updatedAt);
+    }
+
+    public Tournament withResultInputEnabled(boolean newResultInputEnabled) {
+        return new Tournament(id, name, gameType, totalRounds, currentRound,
+                status, visibility, shareToken, newResultInputEnabled, ownerSub, version,
+                createdAt, updatedAt);
     }
 
     /** 保存直前に更新日時を刻む(application層がClockから渡す) */
     public Tournament touched(Instant now) {
         return new Tournament(id, name, gameType, totalRounds, currentRound,
-                status, visibility, shareToken, ownerSub, version, createdAt, now);
+                status, visibility, shareToken, resultInputEnabled, ownerSub, version,
+                createdAt, now);
     }
 
     private Tournament withStatus(TournamentStatus newStatus, int newCurrentRound) {
         return new Tournament(id, name, gameType, totalRounds, newCurrentRound,
-                newStatus, visibility, shareToken, ownerSub, version, createdAt, updatedAt);
+                newStatus, visibility, shareToken, resultInputEnabled, ownerSub, version,
+                createdAt, updatedAt);
     }
 }
