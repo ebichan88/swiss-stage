@@ -47,37 +47,37 @@ public class TournamentController {
     }
 
     @GetMapping("/{id}")
-    public ApiSuccess<TournamentDto> get(CurrentUser user, @PathVariable String id) {
+    public ApiSuccess<TournamentDto> get(CurrentUser user, @PathVariable("id") String id) {
         return success(tournamentService.get(PathIds.tournamentId(id), user.sub()));
     }
 
     @PatchMapping("/{id}")
     public ApiSuccess<TournamentDto> update(
-            CurrentUser user, @PathVariable String id,
+            CurrentUser user, @PathVariable("id") String id,
             @Valid @RequestBody UpdateTournamentRequest request) {
         return success(tournamentService.update(PathIds.tournamentId(id), user.sub(), request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(CurrentUser user, @PathVariable String id) {
+    public ResponseEntity<Void> delete(CurrentUser user, @PathVariable("id") String id) {
         tournamentService.delete(PathIds.tournamentId(id), user.sub());
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/start")
-    public ApiSuccess<TournamentDto> start(CurrentUser user, @PathVariable String id) {
+    public ApiSuccess<TournamentDto> start(CurrentUser user, @PathVariable("id") String id) {
         return success(tournamentService.start(PathIds.tournamentId(id), user.sub()));
     }
 
     @PostMapping("/{id}/finish")
-    public ApiSuccess<TournamentDto> finish(CurrentUser user, @PathVariable String id) {
+    public ApiSuccess<TournamentDto> finish(CurrentUser user, @PathVariable("id") String id) {
         return success(tournamentService.finish(PathIds.tournamentId(id), user.sub()));
     }
 
     /** 共有トークンの発行・再発行(旧トークンは即時無効) */
     @PostMapping("/{id}/share-token/regenerate")
     public ApiSuccess<TournamentDto> regenerateShareToken(
-            CurrentUser user, @PathVariable String id) {
+            CurrentUser user, @PathVariable("id") String id) {
         return success(tournamentService.regenerateShareToken(PathIds.tournamentId(id), user.sub()));
     }
 

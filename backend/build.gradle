@@ -18,6 +18,12 @@ repositories {
     mavenCentral()
 }
 
+// Spring Bootプラグインが自動付与する -parameters はVSCode(Eclipse JDT)のビルドに
+// 伝わらないため明示する(省略時、名前なし @PathVariable の解決が実行時に失敗する)
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << '-parameters'
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'

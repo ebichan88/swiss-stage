@@ -32,14 +32,14 @@ public class SharedController {
     }
 
     @GetMapping("/{token}")
-    public ApiSuccess<SharedTournamentDto> get(@PathVariable String token) {
+    public ApiSuccess<SharedTournamentDto> get(@PathVariable("token") String token) {
         return ApiSuccess.of(sharedService.getShared(token), Instant.now(clock));
     }
 
     @PutMapping("/{token}/matches/{matchId}/result")
     public ApiSuccess<MatchDto> inputResult(
-            @PathVariable String token,
-            @PathVariable String matchId,
+            @PathVariable("token") String token,
+            @PathVariable("matchId") String matchId,
             @Valid @RequestBody InputResultRequest request) {
         return ApiSuccess.of(
                 sharedService.inputResult(token, PathIds.matchId(matchId), request),
