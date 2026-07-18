@@ -1,4 +1,32 @@
+import type { Group } from '../../../types/group';
 import type { Match } from '../../../types/round';
+
+/** 卓番号の表示。グループ大会は「A-1」形式、グループなしは数字のみ */
+export function tableLabel(match: Match): string {
+  return match.group ? `${match.group.name}-${match.tableNumber}` : String(match.tableNumber);
+}
+
+export interface MatchSection {
+  group: Group | null;
+  matches: Match[];
+}
+
+/**
+ * 対局をグループごとのセクションに分ける(入力はグループ→卓番号順で並んでいる前提)。
+ * グループなし大会は group=null の単一セクション
+ */
+export function matchSections(matches: Match[]): MatchSection[] {
+  const sections: MatchSection[] = [];
+  for (const match of matches) {
+    const last = sections.at(-1);
+    if (last && (last.group?.id ?? null) === (match.group?.id ?? null)) {
+      last.matches.push(match);
+    } else {
+      sections.push({ group: match.group, matches: [match] });
+    }
+  }
+  return sections;
+}
 
 /** 対局者の勝敗マーク(○=勝ち / ●=負け / △=引き分け)。未入力・BYEは null */
 export function resultMark(match: Match, side: 'player1' | 'player2'): string | null {
