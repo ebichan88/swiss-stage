@@ -42,14 +42,14 @@ public class ParticipantController {
 
     @GetMapping
     public ApiSuccess<List<ParticipantDto>> list(
-            CurrentUser user, @PathVariable String tournamentId) {
+            CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
         return success(participantService.list(PathIds.tournamentId(tournamentId), user.sub()));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiSuccess<ParticipantDto> add(
-            CurrentUser user, @PathVariable String tournamentId,
+            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
             @Valid @RequestBody CreateParticipantRequest request) {
         return success(participantService.add(
                 PathIds.tournamentId(tournamentId), user.sub(), request));
@@ -58,7 +58,7 @@ public class ParticipantController {
     @PostMapping("/import")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiSuccess<CsvImportResultDto> importCsv(
-            CurrentUser user, @PathVariable String tournamentId,
+            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
             @RequestPart("file") MultipartFile file) {
         if (file.isEmpty()) {
             throw new ValidationException("CSVファイルを選択してください");
@@ -75,8 +75,8 @@ public class ParticipantController {
 
     @PatchMapping("/{participantId}")
     public ApiSuccess<ParticipantDto> update(
-            CurrentUser user, @PathVariable String tournamentId,
-            @PathVariable String participantId,
+            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
+            @PathVariable("participantId") String participantId,
             @Valid @RequestBody UpdateParticipantRequest request) {
         return success(participantService.update(
                 PathIds.tournamentId(tournamentId), PathIds.participantId(participantId),
@@ -85,8 +85,8 @@ public class ParticipantController {
 
     @DeleteMapping("/{participantId}")
     public ResponseEntity<Void> delete(
-            CurrentUser user, @PathVariable String tournamentId,
-            @PathVariable String participantId) {
+            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
+            @PathVariable("participantId") String participantId) {
         participantService.delete(
                 PathIds.tournamentId(tournamentId), PathIds.participantId(participantId), user.sub());
         return ResponseEntity.noContent().build();

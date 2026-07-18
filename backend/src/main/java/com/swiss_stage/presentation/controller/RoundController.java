@@ -34,28 +34,28 @@ public class RoundController {
     }
 
     @GetMapping("/rounds")
-    public ApiSuccess<List<RoundDto>> list(CurrentUser user, @PathVariable String tournamentId) {
+    public ApiSuccess<List<RoundDto>> list(CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
         return success(roundService.list(PathIds.tournamentId(tournamentId), user.sub()));
     }
 
     @PostMapping("/rounds")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiSuccess<GeneratedRoundDto> generate(
-            CurrentUser user, @PathVariable String tournamentId) {
+            CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
         return success(roundService.generateNextRound(
                 PathIds.tournamentId(tournamentId), user.sub()));
     }
 
     @PostMapping("/rounds/{roundNumber}/confirm")
     public ApiSuccess<RoundDto> confirm(
-            CurrentUser user, @PathVariable String tournamentId, @PathVariable int roundNumber) {
+            CurrentUser user, @PathVariable("tournamentId") String tournamentId, @PathVariable("roundNumber") int roundNumber) {
         return success(roundService.confirm(
                 PathIds.tournamentId(tournamentId), roundNumber, user.sub()));
     }
 
     @PutMapping("/matches/{matchId}/result")
     public ApiSuccess<MatchDto> inputResult(
-            CurrentUser user, @PathVariable String tournamentId, @PathVariable String matchId,
+            CurrentUser user, @PathVariable("tournamentId") String tournamentId, @PathVariable("matchId") String matchId,
             @Valid @RequestBody InputResultRequest request) {
         return success(roundService.inputResult(
                 PathIds.tournamentId(tournamentId), PathIds.matchId(matchId), user.sub(), request));

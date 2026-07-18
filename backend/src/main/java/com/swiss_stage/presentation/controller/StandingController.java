@@ -26,7 +26,7 @@ public class StandingController {
 
     @GetMapping
     public ApiSuccess<List<StandingDto>> standings(
-            CurrentUser user, @PathVariable String tournamentId) {
+            CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
         return ApiSuccess.of(
                 standingService.standings(PathIds.tournamentId(tournamentId), user.sub()),
                 Instant.now(clock));

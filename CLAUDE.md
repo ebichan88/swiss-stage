@@ -95,6 +95,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 12. コミット前に `npm run check` / `./gradlew check` を必ず実行
 13. 順序・優先度に意味のあるenumはordinal(宣言順)に依存しない。明示的な数値フィールド(`sortOrder` 等)で比較し、宣言順との整合をテストで検証する(例: `Rank`)
 14. `package-lock.json` の更新はCIと同じ `npx -y npm@10 install --package-lock-only` で行う(ローカルのnpm 11はpeerDependenciesをlockに含めず、CIの `npm ci` が「Missing from lock file」で落ちる)
+15. コントローラーの `@PathVariable`/`@RequestParam` 等は名前を必ず明示する(省略すると `-parameters` フラグ依存になり、VSCode(Eclipse JDT)ビルドで起動したときだけ実行時エラー。ArchUnitで強制済み)
 
 ## プロジェクトドキュメントガイド
 
