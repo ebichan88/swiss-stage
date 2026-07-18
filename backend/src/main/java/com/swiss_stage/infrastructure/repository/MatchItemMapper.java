@@ -1,5 +1,6 @@
 package com.swiss_stage.infrastructure.repository;
 
+import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Match;
 import com.swiss_stage.domain.model.MatchId;
 import com.swiss_stage.domain.model.MatchResult;
@@ -24,6 +25,7 @@ final class MatchItemMapper {
         item.setResult(m.result().name());
         item.setResultInputBy(m.resultInputBy() == null ? null : m.resultInputBy().name());
         item.setVersion(m.version() == 0 ? null : m.version());
+        item.setGroupId(m.groupId() == null ? null : m.groupId().value());
         return item;
     }
 
@@ -36,6 +38,7 @@ final class MatchItemMapper {
                 item.getPlayer2Id() == null ? null : new ParticipantId(item.getPlayer2Id()),
                 MatchResult.valueOf(item.getResult()),
                 item.getResultInputBy() == null ? null : ResultInputBy.valueOf(item.getResultInputBy()),
-                item.getVersion() == null ? 0L : item.getVersion());
+                item.getVersion() == null ? 0L : item.getVersion(),
+                item.getGroupId() == null ? null : new GroupId(item.getGroupId()));
     }
 }

@@ -25,6 +25,7 @@ public class MatchItem {
     private String result;
     private String resultInputBy;
     private Long version;
+    private String groupId;
 
     @DynamoDbPartitionKey
     @DynamoDbAttribute("PK")
@@ -117,5 +118,13 @@ public class MatchItem {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
     }
 }

@@ -2,6 +2,7 @@ package com.swiss_stage.integration.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantStatus;
 import com.swiss_stage.domain.model.Rank;
@@ -29,6 +30,24 @@ class DynamoDbParticipantRepositoryTest extends DynamoDbRepositoryTestSupport {
         Participant foundMinimal = repository.findById(tournamentId, minimal.id()).orElseThrow();
         assertThat(foundMinimal.organization()).isNull();
         assertThat(foundMinimal.rank()).isNull();
+        assertThat(foundMinimal.groupId()).isNull();
+    }
+
+    @Test
+    @DisplayName("グループ割当を保存して復元できる(解除でnullに戻る)")
+    void グループ割当の往復() {
+        TournamentId tournamentId = TournamentId.generate();
+        GroupId groupId = GroupId.generate();
+        Participant participant = Participant.create("組分 太郎", null, Rank.DAN_1, 1).withGroup(groupId);
+        repository.save(tournamentId, participant);
+
+        Participant found = repository.findById(tournamentId, participant.id()).orElseThrow();
+        assertThat(found.groupId()).isEqualTo(groupId);
+        assertThat(found).isEqualTo(participant);
+
+        repository.save(tournamentId, found.withGroup(null));
+        assertThat(repository.findById(tournamentId, participant.id()).orElseThrow().groupId())
+                .isNull();
     }
 
     @Test

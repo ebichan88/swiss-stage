@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.swiss_stage.domain.OptimisticLockException;
+import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Match;
 import com.swiss_stage.domain.model.MatchResult;
 import com.swiss_stage.domain.model.ParticipantId;
@@ -47,6 +48,30 @@ class DynamoDbMatchRepositoryTest extends DynamoDbRepositoryTestSupport {
         assertThat(found.player2Id()).isNull();
         assertThat(repository.findById(tournamentId, com.swiss_stage.domain.model.MatchId.generate()))
                 .isEmpty();
+    }
+
+    @Test
+    @DisplayName("対局のグループ帰属を保存して復元できる(グループなしはnullのまま)")
+    void グループ帰属の往復() {
+        TournamentId tournamentId = TournamentId.generate();
+        GroupId groupId = GroupId.generate();
+        Match grouped = Match.pairOf(1, 1, ParticipantId.generate(), ParticipantId.generate(), groupId);
+        Match groupedBye = Match.byeOf(1, 2, ParticipantId.generate(), groupId);
+        Match ungrouped = Match.pairOf(1, 3, ParticipantId.generate(), ParticipantId.generate());
+        repository.saveAll(tournamentId, List.of(grouped, groupedBye, ungrouped));
+
+        assertThat(repository.findById(tournamentId, grouped.id()).orElseThrow().groupId())
+                .isEqualTo(groupId);
+        assertThat(repository.findById(tournamentId, groupedBye.id()).orElseThrow().groupId())
+                .isEqualTo(groupId);
+        assertThat(repository.findById(tournamentId, ungrouped.id()).orElseThrow().groupId())
+                .isNull();
+
+        // 結果入力してもグループ帰属は保たれる
+        Match loaded = repository.findById(tournamentId, grouped.id()).orElseThrow();
+        repository.save(tournamentId, loaded.withResult(MatchResult.PLAYER1_WIN));
+        assertThat(repository.findById(tournamentId, grouped.id()).orElseThrow().groupId())
+                .isEqualTo(groupId);
     }
 
     @Test
