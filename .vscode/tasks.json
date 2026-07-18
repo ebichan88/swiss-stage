@@ -1,0 +1,20 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "dynamodb-local: up",
+      "type": "shell",
+      "command": "docker compose up -d dynamodb-local",
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "dynamodb-local: create-table",
+      "type": "shell",
+      "command": "./scripts/create-table.sh",
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "dependsOn": ["dynamodb-local: up"],
+      "problemMatcher": []
+    }
+  ]
+}
