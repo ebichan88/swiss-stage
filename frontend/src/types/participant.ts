@@ -23,17 +23,21 @@ export interface CreateParticipantInput {
   name: string;
   organization: string | null;
   rank: Rank | null;
+  groupId?: string | null;
 }
 
 /**
  * PATCH /participants/{pid}(backend: UpdateParticipantRequest)。未指定の項目は変更しない。
- * 棋力を未入力に戻すには clearRank: true(rank との同時指定は400)
+ * 棋力を未入力に戻すには clearRank: true(rank との同時指定は400)。
+ * グループ割当も同型: 未割当に戻すには clearGroup: true(変更は PREPARING 中のみ)
  */
 export interface UpdateParticipantInput {
   name?: string;
   organization?: string;
   rank?: Rank;
   clearRank?: boolean;
+  groupId?: string;
+  clearGroup?: boolean;
   status?: ParticipantStatus;
 }
 

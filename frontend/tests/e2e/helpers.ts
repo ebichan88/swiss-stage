@@ -6,6 +6,7 @@ import { expect, type APIResponse, type Page } from '@playwright/test';
 export interface ApiMatch {
   id: string;
   tableNumber: number;
+  group: { id: string; name: string } | null;
   player1: { id: string; name: string };
   player2: { id: string; name: string } | null;
   result: string;
@@ -78,7 +79,8 @@ export async function generateRound(
 
 /** 表示中ラウンドの全対局に「player1の勝ち」を入力する(BYEは入力不可のため除外) */
 export async function inputAllResults(page: Page): Promise<void> {
-  const combos = page.getByRole('combobox', { name: /卓\d+の結果/ });
+  // 卓表示はグループなし=「卓1」/ グループあり=「卓A-1」の両形式
+  const combos = page.getByRole('combobox', { name: /卓.+の結果/ });
   const count = await combos.count();
   for (let i = 0; i < count; i++) {
     // 入力後もセレクトは残る(確定まで変更可)ため、毎回 nth(i) を開いて先頭の勝ちを選ぶ
