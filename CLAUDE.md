@@ -94,6 +94,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 11. 大会前日・当日はデプロイしない
 12. コミット前に `npm run check` / `./gradlew check` を必ず実行
 13. 順序・優先度に意味のあるenumはordinal(宣言順)に依存しない。明示的な数値フィールド(`sortOrder` 等)で比較し、宣言順との整合をテストで検証する(例: `Rank`)
+14. `package-lock.json` の更新はCIと同じ `npx -y npm@10 install --package-lock-only` で行う(ローカルのnpm 11はpeerDependenciesをlockに含めず、CIの `npm ci` が「Missing from lock file」で落ちる)
 
 ## プロジェクトドキュメントガイド
 
