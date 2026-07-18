@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { PairingTable } from '../components/features/round/PairingTable';
+import { matchSections } from '../components/features/round/matchDisplay';
 import { useTournamentContext } from '../components/layouts/TournamentLayout';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -216,16 +217,25 @@ export function RoundsPage() {
             </Alert>
           )}
 
-          <PairingTable
-            matches={selectedRound.matches}
-            editable={isEditable}
-            savingMatchId={
-              inputResultMutation.isPending
-                ? (inputResultMutation.variables?.matchId ?? null)
-                : null
-            }
-            onInputResult={handleInputResult}
-          />
+          {matchSections(selectedRound.matches).map(({ group, matches }) => (
+            <Box key={group?.id ?? 'all'} sx={{ mb: 3 }}>
+              {group && (
+                <Typography variant="h4" component="h3" sx={{ mb: 1 }}>
+                  {group.name}
+                </Typography>
+              )}
+              <PairingTable
+                matches={matches}
+                editable={isEditable}
+                savingMatchId={
+                  inputResultMutation.isPending
+                    ? (inputResultMutation.variables?.matchId ?? null)
+                    : null
+                }
+                onInputResult={handleInputResult}
+              />
+            </Box>
+          ))}
         </Box>
       )}
 

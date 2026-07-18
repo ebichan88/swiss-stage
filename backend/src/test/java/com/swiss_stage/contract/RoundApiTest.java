@@ -98,13 +98,15 @@ class RoundApiTest extends ApiContractTestSupport {
                 .andExpect(jsonPath("$.data[0].roundNumber").value(1))
                 .andExpect(jsonPath("$.data[0].matches.length()").value(2));
 
-        // 順位表: R1全勝の2名が上位(勝点1.0)、暫定順位も返る
+        // 順位表: グループなし大会は group=null の単一要素。R1全勝の2名が上位(勝点1.0)
         mockMvc.perform(get(base() + "/standings").cookie(ownerCookie()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(4))
-                .andExpect(jsonPath("$.data[0].rank").value(1))
-                .andExpect(jsonPath("$.data[0].wins").value(1.0))
-                .andExpect(jsonPath("$.data[0].participant.name").isNotEmpty());
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].group").isEmpty())
+                .andExpect(jsonPath("$.data[0].standings.length()").value(4))
+                .andExpect(jsonPath("$.data[0].standings[0].rank").value(1))
+                .andExpect(jsonPath("$.data[0].standings[0].wins").value(1.0))
+                .andExpect(jsonPath("$.data[0].standings[0].participant.name").isNotEmpty());
     }
 
     @Test

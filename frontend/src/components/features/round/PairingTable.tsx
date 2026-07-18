@@ -18,7 +18,7 @@ import type { MatchResult } from '../../../types/enums';
 import type { Match } from '../../../types/round';
 import type { ParticipantSummary } from '../../../types/participant';
 import { MatchResultControl } from './MatchResultControl';
-import { resultMark } from './matchDisplay';
+import { resultMark, tableLabel } from './matchDisplay';
 
 export interface PairingTableProps {
   matches: Match[];
@@ -53,7 +53,7 @@ export function PairingTable({
           <Card key={match.id} variant="outlined">
             <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Typography variant="h2" component="p" sx={{ minWidth: 48, textAlign: 'center' }}>
-                {match.tableNumber}
+                {tableLabel(match)}
               </Typography>
               <Box sx={{ flexGrow: 1 }}>
                 <Typography variant="body1">
@@ -94,7 +94,7 @@ export function PairingTable({
             <TableRow key={match.id}>
               <TableCell>
                 <Typography variant="h3" component="span">
-                  {match.tableNumber}
+                  {tableLabel(match)}
                 </Typography>
               </TableCell>
               <TableCell>{playerText(match.player1, resultMark(match, 'player1'))}</TableCell>

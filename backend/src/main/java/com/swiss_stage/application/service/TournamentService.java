@@ -7,11 +7,14 @@ import com.swiss_stage.application.exception.ConflictException;
 import com.swiss_stage.application.exception.ErrorCode;
 import com.swiss_stage.application.exception.InvalidStateException;
 import com.swiss_stage.application.exception.NotFoundException;
+import com.swiss_stage.domain.DomainException;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
+import com.swiss_stage.domain.repository.GroupRepository;
 import com.swiss_stage.domain.repository.ParticipantRepository;
 import com.swiss_stage.domain.repository.TournamentRepository;
+import com.swiss_stage.domain.service.GroupAssignmentService;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -22,18 +25,22 @@ public class TournamentService {
 
     private final TournamentRepository tournamentRepository;
     private final ParticipantRepository participantRepository;
+    private final GroupRepository groupRepository;
     private final TournamentAccessSupport access;
     private final SharedViewCache sharedViewCache;
+    private final GroupAssignmentService assignmentService = new GroupAssignmentService();
     private final Clock clock;
 
     public TournamentService(
             TournamentRepository tournamentRepository,
             ParticipantRepository participantRepository,
+            GroupRepository groupRepository,
             TournamentAccessSupport access,
             SharedViewCache sharedViewCache,
             Clock clock) {
         this.tournamentRepository = tournamentRepository;
         this.participantRepository = participantRepository;
+        this.groupRepository = groupRepository;
         this.access = access;
         this.sharedViewCache = sharedViewCache;
         this.clock = clock;
@@ -96,11 +103,19 @@ public class TournamentService {
 
     public TournamentDto start(TournamentId id, String ownerSub) {
         Tournament tournament = access.loadOwned(id, ownerSub);
-        long activeCount = participantRepository.findAllByTournamentId(id).stream()
+        List<Participant> participants = participantRepository.findAllByTournamentId(id);
+        long activeCount = participants.stream()
                 .filter(Participant::isActive)
                 .count();
         if (activeCount < 2) {
             throw new InvalidStateException("大会の開始には参加者が2名以上必要です");
+        }
+        // グループ大会は全ACTIVE参加者の割当済み・各グループ2名以上を検証(05 §2.4)
+        try {
+            assignmentService.validateForStart(
+                    groupRepository.findAllByTournamentId(id), participants);
+        } catch (DomainException e) {
+            throw new InvalidStateException(e.getMessage());
         }
         tournamentRepository.save(tournament.start().touched(Instant.now(clock)));
         sharedViewCache.evict(id);

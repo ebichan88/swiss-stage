@@ -5,7 +5,16 @@ import { Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 
 import { SharedPage } from '../../../src/pages/SharedPage';
-import { matchOf, roundOf, sharedSummaryOf, sharedTournamentOf, summaryOf } from '../../fixtures';
+import {
+  groupOf,
+  groupStandingsOf,
+  matchOf,
+  roundOf,
+  sharedSummaryOf,
+  sharedTournamentOf,
+  standingOf,
+  summaryOf,
+} from '../../fixtures';
 import { apiError, apiSuccess, server } from '../../msw/server';
 import { renderWithProviders } from '../../testUtils';
 
@@ -54,6 +63,41 @@ describe('SharedPage', () => {
 
     await userEvent.click(screen.getByRole('tab', { name: '順位表' }));
     expect(await screen.findByRole('table')).toBeInTheDocument();
+  });
+
+  it('グループ大会の順位表はグループごとに見出し付きで表示する', async () => {
+    server.use(
+      http.get(`/api/v1/shared/${TOKEN}`, () =>
+        HttpResponse.json(
+          apiSuccess(
+            sharedTournamentOf({
+              standings: [
+                groupStandingsOf({
+                  group: groupOf({ id: 'g1', name: 'A' }),
+                  standings: [standingOf({ participant: summaryOf({ name: '架空 太郎' }) })],
+                }),
+                groupStandingsOf({
+                  group: groupOf({ id: 'g2', name: 'B' }),
+                  standings: [
+                    standingOf({ participant: summaryOf({ id: 'p2', name: '仮名 花子' }) }),
+                  ],
+                }),
+              ],
+            }),
+          ),
+        ),
+      ),
+    );
+
+    renderSharedPage();
+
+    await screen.findByRole('heading', { name: '第1回テスト囲碁大会' });
+    await userEvent.click(screen.getByRole('tab', { name: '順位表' }));
+
+    expect(await screen.findByRole('heading', { name: 'A' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'B' })).toBeInTheDocument();
+    expect(screen.getAllByRole('table')).toHaveLength(2);
+    expect(screen.getByText(/仮名 花子/)).toBeInTheDocument();
   });
 
   it('結果入力が許可されていれば入力ページへのリンクを表示する', async () => {

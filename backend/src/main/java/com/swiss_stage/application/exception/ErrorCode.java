@@ -15,6 +15,7 @@ public enum ErrorCode {
     PARTICIPANT_NOT_FOUND(404, "参加者が見つかりません"),
     ROUND_NOT_FOUND(404, "ラウンドが見つかりません"),
     MATCH_NOT_FOUND(404, "対局が見つかりません"),
+    GROUP_NOT_FOUND(404, "グループが見つかりません"),
     INVALID_STATE(409, "現在の状態ではこの操作はできません"),
     CONFLICT(409, "ほかの端末で更新されました。画面を更新して再度お試しください"),
     ROUND_ALREADY_EXISTS(409, "このラウンドは既に生成されています"),

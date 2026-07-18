@@ -1,7 +1,8 @@
+import type { Group } from '../src/types/group';
 import type { Participant, ParticipantSummary } from '../src/types/participant';
 import type { Match, Round } from '../src/types/round';
 import type { SharedTournament, SharedTournamentSummary } from '../src/types/shared';
-import type { Standing } from '../src/types/standing';
+import type { GroupStandings, Standing } from '../src/types/standing';
 import type { Tournament } from '../src/types/tournament';
 
 /** テストデータビルダー(09_test_strategy.md §5)。個人名は架空の名前のみ使用する */
@@ -32,6 +33,7 @@ export function participantOf(overrides: Partial<Participant> = {}): Participant
     rank: 'DAN_3',
     seedOrder: 1,
     status: 'ACTIVE',
+    groupId: null,
     ...overrides,
   };
 }
@@ -50,6 +52,7 @@ export function matchOf(overrides: Partial<Match> = {}): Match {
     id: '01TESTMATCH000000000000000',
     roundNumber: 1,
     tableNumber: 1,
+    group: null,
     player1: summaryOf({ id: 'p1', name: '架空 太郎' }),
     player2: summaryOf({ id: 'p2', name: '仮名 花子', organization: null }),
     result: 'NONE',
@@ -85,6 +88,23 @@ export function sharedTournamentOf(overrides: Partial<SharedTournament> = {}): S
   return {
     tournament: sharedSummaryOf(),
     rounds: [roundOf()],
+    standings: [groupStandingsOf()],
+    ...overrides,
+  };
+}
+
+export function groupOf(overrides: Partial<Group> = {}): Group {
+  return {
+    id: '01TESTGROUP000000000000000',
+    name: 'A',
+    ...overrides,
+  };
+}
+
+/** グループなし大会の形(group=null の単一要素)。グループ大会は group を上書きする */
+export function groupStandingsOf(overrides: Partial<GroupStandings> = {}): GroupStandings {
+  return {
+    group: null,
     standings: [standingOf()],
     ...overrides,
   };

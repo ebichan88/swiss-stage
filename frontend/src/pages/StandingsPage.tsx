@@ -7,10 +7,12 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState, LoadingState } from '../components/ui/QueryStates';
 import { useStandings } from '../hooks/useStandings';
 
-/** S08 順位表。順位は保存されずバックエンドで都度計算される */
+/** S08 順位表。順位は保存されずバックエンドで都度計算される。グループ大会はグループごとに表示 */
 export function StandingsPage() {
   const tournament = useTournamentContext();
-  const { data: standings, isPending, isError, refetch } = useStandings(tournament.id);
+  const { data: groupStandings, isPending, isError, refetch } = useStandings(tournament.id);
+
+  const isEmpty = groupStandings?.every((g) => g.standings.length === 0) ?? false;
 
   return (
     <Box>
@@ -26,13 +28,24 @@ export function StandingsPage() {
       {isError && (
         <ErrorState message="順位表の取得に失敗しました" onRetry={() => void refetch()} />
       )}
-      {standings && standings.length === 0 && (
+      {groupStandings && isEmpty && (
         <EmptyState
           icon={<LeaderboardIcon fontSize="inherit" />}
           message="順位はまだありません。ラウンドを確定すると表示されます"
         />
       )}
-      {standings && standings.length > 0 && <StandingsTable standings={standings} />}
+      {groupStandings &&
+        !isEmpty &&
+        groupStandings.map(({ group, standings }) => (
+          <Box key={group?.id ?? 'all'} sx={{ mb: 3 }}>
+            {group && (
+              <Typography variant="h4" component="h3" sx={{ mb: 1 }}>
+                {group.name}
+              </Typography>
+            )}
+            <StandingsTable standings={standings} />
+          </Box>
+        ))}
     </Box>
   );
 }
