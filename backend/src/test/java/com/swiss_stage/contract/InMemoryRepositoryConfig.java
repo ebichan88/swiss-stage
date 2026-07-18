@@ -2,6 +2,8 @@ package com.swiss_stage.contract;
 
 import com.swiss_stage.domain.DuplicateRoundException;
 import com.swiss_stage.domain.OptimisticLockException;
+import com.swiss_stage.domain.model.Group;
+import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Match;
 import com.swiss_stage.domain.model.MatchId;
 import com.swiss_stage.domain.model.Participant;
@@ -9,6 +11,7 @@ import com.swiss_stage.domain.model.ParticipantId;
 import com.swiss_stage.domain.model.Round;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
+import com.swiss_stage.domain.repository.GroupRepository;
 import com.swiss_stage.domain.repository.MatchRepository;
 import com.swiss_stage.domain.repository.ParticipantRepository;
 import com.swiss_stage.domain.repository.RoundRepository;
@@ -187,7 +190,7 @@ public class InMemoryRepositoryConfig {
                 byTournament(tournamentId).put(match.id().value(), new Match(
                         match.id(), match.roundNumber(), match.tableNumber(),
                         match.player1Id(), match.player2Id(), match.result(),
-                        match.resultInputBy(), storedVersion + 1));
+                        match.resultInputBy(), storedVersion + 1, match.groupId()));
             }
 
             @Override
@@ -196,6 +199,41 @@ public class InMemoryRepositoryConfig {
             }
 
             private Map<String, Match> byTournament(TournamentId tournamentId) {
+                return store.computeIfAbsent(tournamentId.value(), k -> new ConcurrentHashMap<>());
+            }
+        };
+    }
+
+    @Bean
+    @Primary
+    public GroupRepository inMemoryGroupRepository() {
+        return new GroupRepository() {
+            private final Map<String, Map<String, Group>> store = new ConcurrentHashMap<>();
+
+            @Override
+            public Optional<Group> findById(TournamentId tournamentId, GroupId id) {
+                return Optional.ofNullable(byTournament(tournamentId).get(id.value()));
+            }
+
+            @Override
+            public List<Group> findAllByTournamentId(TournamentId tournamentId) {
+                // DynamoDB実装と同様に作成順(ULID=SK昇順)で返す
+                return byTournament(tournamentId).values().stream()
+                        .sorted(Comparator.comparing(g -> g.id().value()))
+                        .toList();
+            }
+
+            @Override
+            public void save(TournamentId tournamentId, Group group) {
+                byTournament(tournamentId).put(group.id().value(), group);
+            }
+
+            @Override
+            public void delete(TournamentId tournamentId, GroupId id) {
+                byTournament(tournamentId).remove(id.value());
+            }
+
+            private Map<String, Group> byTournament(TournamentId tournamentId) {
                 return store.computeIfAbsent(tournamentId.value(), k -> new ConcurrentHashMap<>());
             }
         };

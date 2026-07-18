@@ -1,6 +1,6 @@
 import type { GameType, TournamentStatus } from './enums';
 import type { Round } from './round';
-import type { Standing } from './standing';
+import type { GroupStandings } from './standing';
 
 /**
  * 共有ページ(S10)向けの大会集約(backend: SharedTournamentDto)。
@@ -9,7 +9,8 @@ import type { Standing } from './standing';
 export interface SharedTournament {
   tournament: SharedTournamentSummary;
   rounds: Round[];
-  standings: Standing[];
+  /** グループなし大会は group=null の単一要素 */
+  standings: GroupStandings[];
 }
 
 export interface SharedTournamentSummary {

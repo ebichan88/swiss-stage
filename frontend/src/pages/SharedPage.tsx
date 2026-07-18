@@ -189,13 +189,22 @@ export function SharedPage() {
         ))}
 
       {tab === 'standings' &&
-        (standings.length === 0 ? (
+        (standings.every((g) => g.standings.length === 0) ? (
           <EmptyState
             icon={<HourglassEmptyIcon fontSize="inherit" />}
             message="順位はまだありません。"
           />
         ) : (
-          <StandingsTable standings={standings} />
+          standings.map(({ group, standings: groupStandings }) => (
+            <Box key={group?.id ?? 'all'} sx={{ mb: 3 }}>
+              {group && (
+                <Typography variant="h4" component="h2" sx={{ mb: 1 }}>
+                  {group.name}
+                </Typography>
+              )}
+              <StandingsTable standings={groupStandings} />
+            </Box>
+          ))
         ))}
     </Container>
   );

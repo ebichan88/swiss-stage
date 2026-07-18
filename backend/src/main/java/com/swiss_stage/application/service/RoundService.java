@@ -13,6 +13,8 @@ import com.swiss_stage.application.exception.ValidationException;
 import com.swiss_stage.domain.DomainException;
 import com.swiss_stage.domain.DuplicateRoundException;
 import com.swiss_stage.domain.OptimisticLockException;
+import com.swiss_stage.domain.model.Group;
+import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Match;
 import com.swiss_stage.domain.model.MatchId;
 import com.swiss_stage.domain.model.MatchResult;
@@ -24,6 +26,7 @@ import com.swiss_stage.domain.model.RoundStatus;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
 import com.swiss_stage.domain.model.TournamentStatus;
+import com.swiss_stage.domain.repository.GroupRepository;
 import com.swiss_stage.domain.repository.MatchRepository;
 import com.swiss_stage.domain.repository.ParticipantRepository;
 import com.swiss_stage.domain.repository.RoundRepository;
@@ -48,6 +51,7 @@ public class RoundService {
     private final ParticipantRepository participantRepository;
     private final RoundRepository roundRepository;
     private final MatchRepository matchRepository;
+    private final GroupRepository groupRepository;
     private final TournamentAccessSupport access;
     private final SharedViewCache sharedViewCache;
     private final SwissPairingService pairingService = new SwissPairingService();
@@ -58,6 +62,7 @@ public class RoundService {
             ParticipantRepository participantRepository,
             RoundRepository roundRepository,
             MatchRepository matchRepository,
+            GroupRepository groupRepository,
             TournamentAccessSupport access,
             SharedViewCache sharedViewCache,
             Clock clock) {
@@ -65,6 +70,7 @@ public class RoundService {
         this.participantRepository = participantRepository;
         this.roundRepository = roundRepository;
         this.matchRepository = matchRepository;
+        this.groupRepository = groupRepository;
         this.access = access;
         this.sharedViewCache = sharedViewCache;
         this.clock = clock;
@@ -78,6 +84,7 @@ public class RoundService {
     /** ラウンド一覧の組み立て(認可済みの呼び出し元専用。共有ページからも使う) */
     List<RoundDto> assembleRounds(TournamentId tournamentId) {
         Map<ParticipantId, Participant> participants = participantMap(tournamentId);
+        Map<GroupId, Group> groups = groupMap(tournamentId);
         Map<Integer, List<Match>> matchesByRound = matchRepository
                 .findAllByTournamentId(tournamentId).stream()
                 .collect(Collectors.groupingBy(Match::roundNumber));
@@ -85,7 +92,7 @@ public class RoundService {
                 .sorted(Comparator.comparingInt(Round::roundNumber))
                 .map(round -> toRoundDto(
                         round, matchesByRound.getOrDefault(round.roundNumber(), List.of()),
-                        participants))
+                        participants, groups))
                 .toList();
     }
 
@@ -137,7 +144,7 @@ public class RoundService {
 
         List<Match> saved = matchRepository.findByRound(tournamentId, nextRoundNumber);
         return new GeneratedRoundDto(
-                toRoundDto(playing, saved, participantMap(tournamentId)),
+                toRoundDto(playing, saved, participantMap(tournamentId), groupMap(tournamentId)),
                 pairing.relaxations().stream().map(Enum::name).sorted().toList());
     }
 
@@ -160,7 +167,7 @@ public class RoundService {
         }
         roundRepository.save(tournamentId, confirmed);
         sharedViewCache.evict(tournamentId);
-        return toRoundDto(confirmed, matches, participantMap(tournamentId));
+        return toRoundDto(confirmed, matches, participantMap(tournamentId), groupMap(tournamentId));
     }
 
     /** 対局結果入力(PUT・べき等)。確定済みラウンドの対局は変更不可 */
@@ -201,7 +208,7 @@ public class RoundService {
         sharedViewCache.evict(tournamentId);
         Match saved = matchRepository.findById(tournamentId, matchId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.MATCH_NOT_FOUND));
-        return MatchDto.from(saved, participantMap(tournamentId));
+        return MatchDto.from(saved, participantMap(tournamentId), groupMap(tournamentId));
     }
 
     /** PairingResultをMatchへ変換する。卓番号はペア順に1始まり、BYEは末尾の卓 */
@@ -222,11 +229,19 @@ public class RoundService {
                 .collect(Collectors.toMap(Participant::id, Function.identity()));
     }
 
+    private Map<GroupId, Group> groupMap(TournamentId tournamentId) {
+        return groupRepository.findAllByTournamentId(tournamentId).stream()
+                .collect(Collectors.toMap(Group::id, Function.identity()));
+    }
+
     private static RoundDto toRoundDto(
-            Round round, List<Match> matches, Map<ParticipantId, Participant> participants) {
+            Round round, List<Match> matches, Map<ParticipantId, Participant> participants,
+            Map<GroupId, Group> groups) {
         List<MatchDto> matchDtos = matches.stream()
-                .sorted(Comparator.comparingInt(Match::tableNumber))
-                .map(m -> MatchDto.from(m, participants))
+                .sorted(Comparator.comparing(
+                        (Match m) -> m.groupId() == null ? "" : m.groupId().value())
+                        .thenComparingInt(Match::tableNumber))
+                .map(m -> MatchDto.from(m, participants, groups))
                 .toList();
         return new RoundDto(round.roundNumber(), round.status(), matchDtos);
     }

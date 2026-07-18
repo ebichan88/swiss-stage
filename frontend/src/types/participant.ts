@@ -7,6 +7,8 @@ export interface Participant {
   rank: Rank | null;
   seedOrder: number;
   status: ParticipantStatus;
+  /** グループ割当(null = 未割当。グループなし大会は常にnull) */
+  groupId: string | null;
 }
 
 /** 対局・順位表で使う参加者の要約 */
