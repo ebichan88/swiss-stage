@@ -49,6 +49,9 @@ docker compose up -d dynamodb-local
 cd frontend
 npm install
 npm run dev
+# 依存を追加・更新して package-lock.json が変わるときは、CI(Node 20 / npm 10)と
+# 同じ解決になるよう npm@10 で再生成する(npm 11はpeerDependenciesをlockに含めず npm ci が落ちる):
+#   npx -y npm@10 install --package-lock-only
 # → http://localhost:5173 (Viteが /api を localhost:8080 にプロキシ)
 ```
 
