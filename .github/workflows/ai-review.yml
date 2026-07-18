@@ -1,0 +1,49 @@
+name: AI Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+# 同一PRで連続pushされたら古いレビューをキャンセルして最新だけ実行する
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  review:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          # Claude Pro/Maxサブスクリプション認証。`claude setup-token` で発行したトークンを
+          # リポジトリSecretsに登録する。従量課金に切り替える場合は
+          # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }} に差し替える
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            あなたはこのリポジトリのAIレビュアーです。
+            `.claude/agents/reviewer.md` を読み、その指示に厳密に従ってこのPRをレビューしてください。
+            差分は `gh pr diff ${{ github.event.pull_request.number }}` で取得します。
+
+            レポートの投稿(1PRにつき1コメントを更新し続けるsticky方式):
+            1. レポートを一時ファイル(例: /tmp/review-report.md)に書き出す
+            2. `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --paginate --jq '.[] | select(.body | startswith("<!-- swiss-stage-ai-review -->")) | .id'` で既存のAIレビューコメントを探す
+            3. 見つかったら `gh api --method PATCH repos/${{ github.repository }}/issues/comments/<ID> -F body=@/tmp/review-report.md` で更新する
+            4. 見つからなければ `gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/review-report.md` で新規投稿する
+
+            レポートはPRコメントとしてのみ投稿してください。レビュー結果をメッセージ本文に出力しないでください。
+          claude_args: |
+            --allowedTools "Read,Grep,Glob,Write,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*)"
