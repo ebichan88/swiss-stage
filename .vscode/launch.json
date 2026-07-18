@@ -6,7 +6,6 @@
       "name": "Backend: Spring Boot (local)",
       "request": "launch",
       "mainClass": "com.swiss_stage.SwissStageApplication",
-      "projectName": "swiss-stage",
       "args": "--spring.profiles.active=local",
       "cwd": "${workspaceFolder}/backend",
       "preLaunchTask": "dynamodb-local: create-table"
