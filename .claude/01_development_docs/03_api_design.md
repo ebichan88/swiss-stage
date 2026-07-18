@@ -71,8 +71,18 @@
 | GET | `/api/v1/tournaments/{id}/participants` | 参加者一覧 | 運営者 |
 | POST | `/api/v1/tournaments/{id}/participants` | 参加者追加 | 運営者 |
 | POST | `/api/v1/tournaments/{id}/participants/import` | CSVインポート(multipart) | 運営者 |
-| PATCH | `/api/v1/tournaments/{id}/participants/{pid}` | 参加者更新・棄権処理 | 運営者 |
+| PATCH | `/api/v1/tournaments/{id}/participants/{pid}` | 参加者更新・棄権処理・グループ割当変更 | 運営者 |
 | DELETE | `/api/v1/tournaments/{id}/participants/{pid}` | 参加者削除(開始前のみ) | 運営者 |
+
+### グループ(棋力帯クラス分け。すべて PREPARING 中のみ変更可)
+
+| メソッド | パス | 説明 | 認証 |
+|---------|------|------|------|
+| GET | `/api/v1/tournaments/{id}/groups` | グループ一覧(作成順) | 運営者 |
+| POST | `/api/v1/tournaments/{id}/groups` | グループ作成(最大10個。同名重複は400) | 運営者 |
+| PATCH | `/api/v1/tournaments/{id}/groups/{gid}` | グループ改名 | 運営者 |
+| DELETE | `/api/v1/tournaments/{id}/groups/{gid}` | グループ削除(割当済み参加者は未割当に戻す) | 運営者 |
+| POST | `/api/v1/tournaments/{id}/groups/auto-assign` | 段級位で全ACTIVE参加者を一括振り分け(`05_swiss_pairing_algorithm.md` §2.4)。レスポンスは更新後の参加者一覧 | 運営者 |
 
 ### ラウンド・対局
 
@@ -82,7 +92,7 @@
 | POST | `/api/v1/tournaments/{id}/rounds` | 次ラウンドの組み合わせ生成。レスポンスは `GeneratedRound`(round + relaxations) | 運営者 |
 | POST | `/api/v1/tournaments/{id}/rounds/{n}/confirm` | ラウンド確定 | 運営者 |
 | PUT | `/api/v1/tournaments/{id}/matches/{mid}/result` | 対局結果入力 | 運営者 |
-| GET | `/api/v1/tournaments/{id}/standings` | 順位表取得 | 運営者 |
+| GET | `/api/v1/tournaments/{id}/standings` | 順位表取得。レスポンスは `GroupStandings[]`(グループなし大会は group=null の単一要素) | 運営者 |
 
 ### 共有(トークン保持者向け。IPレート制限あり)
 
@@ -101,7 +111,7 @@
 3. **べき等性**: 結果入力(PUT)はべき等。ラウンド生成(POST)は Round status で二重生成を防ぐ(409を返す)。
 4. **楽観ロック**: 更新系リクエストには `version` を含め、競合時は 409 + `CONFLICT` コードを返す。
 5. **ページネーション**: MVPでは参加者最大300名のため不要。将来必要になったら `cursor` ベースで追加。
-6. **CSVインポート**: ヘッダー行必須(`氏名,所属,段級位`)。文字コードは UTF-8 / Shift_JIS を自動判定。エラー行は行番号付きで `details` に返す(1行でもエラーがあれば全行取り込まない)。行数上限500・ファイル1MB。
+6. **CSVインポート**: ヘッダー行必須(`氏名,所属,段級位` の3列、または `氏名,所属,段級位,グループ` の4列。グループ列は任意)。グループ列の値は定義済みグループ名に完全一致させる(未知の名前は行エラー。自動作成はしない)。文字コードは UTF-8 / Shift_JIS を自動判定。エラー行は行番号付きで `details` に返す(1行でもエラーがあれば全行取り込まない)。行数上限500・ファイル1MB。
 7. **共有トークンによる閲覧・結果入力は `/api/v1/shared/{token}` 系エンドポイントに集約する**(Phase 5で実装済み)。
    共有ページは1リクエストで全データ(大会・ラウンド・順位)を取得でき、`/api/v1/tournaments/**` は運営者認証のみに保てる。
    無効・不明・非公開(PRIVATE)トークンはすべて 403 `INVALID_SHARE_TOKEN` で統一し、大会の存在を漏らさない。

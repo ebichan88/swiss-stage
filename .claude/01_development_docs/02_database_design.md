@@ -20,6 +20,7 @@
 | AP5 | 運営者の大会一覧を取得(新しい順) | GSI1: PK=`USER#{sub}`, SK=`TOURNAMENT#{createdAt}` |
 | AP6 | 共有トークンから大会を特定 | GSI2: PK=`SHARE#{token}` |
 | AP7 | 大会の全データ一括取得(順位計算・共有ページ用) | PK=`TOURNAMENT#{id}` を Query(全SK) |
+| AP8 | 大会のグループ一覧を取得 | PK=`TOURNAMENT#{id}`, SK begins_with `GROUP#` |
 
 ---
 
@@ -57,6 +58,20 @@
 | rank | `DAN_3` | 任意(棋力enum。`07_type_definitions.md` の `Rank` 参照) |
 | seedOrder | `1` | 初回マッチングのシード順 |
 | status | `ACTIVE` / `WITHDRAWN` | 途中棄権対応 |
+| groupId | `01J...`(GroupのULID) | 任意。属性なし=未割当(グループなし大会含む) |
+
+### Group(棋力帯グループ)
+
+| 属性 | 例 | 備考 |
+|------|----|------|
+| PK | `TOURNAMENT#01J...` | |
+| SK | `GROUP#01J...` | ULID(作成順ソート=自動振り分けの割当順) |
+| entityType | `GROUP` | |
+| name | `A` | 必須。50文字以内。大会内で重複不可 |
+
+- グループは1大会あたり最大10個。作成・改名・削除は PREPARING 中のみ
+- version は持たない(PREPARING 中のみ編集・単一運営者前提。Participant と同格の扱い)
+- 大会削除はパーティション全Query→BatchWriteのため、GROUPアイテムも自動で削除される
 
 ### Match(対局)
 
@@ -66,7 +81,8 @@
 | SK | `ROUND#03#MATCH#01J...` | ラウンド番号はゼロ埋め2桁(ソート用) |
 | entityType | `MATCH` | |
 | roundNumber | `3` | |
-| tableNumber | `12` | 卓番号 |
+| tableNumber | `12` | 卓番号。グループ大会ではグループ内で1始まり(表示は「A-1」形式) |
+| groupId | `01J...` | 任意。属性なし=グループなし大会の対局。取得時のグループ絞り込みはアプリ側フィルタ(グループ≦10・参加者≦300のため十分) |
 | player1Id / player2Id | ParticipantId | player2Id=null なら不戦勝 |
 | result | `PLAYER1_WIN` / `PLAYER2_WIN` / `DRAW` / `BOTH_LOSE` / `BYE` / `NONE` | NONE=未入力 |
 | version | number | 楽観ロック(結果入力の競合検出) |

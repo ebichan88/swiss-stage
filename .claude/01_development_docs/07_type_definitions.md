@@ -68,16 +68,35 @@ interface Participant {
   rank: Rank | null;             // 棋力(段級位enum。null = 未入力)
   seedOrder: number;
   status: ParticipantStatus;
+  groupId: string | null;        // グループ割当(null = 未割当。グループなし大会は常にnull)
 }
 
 // PATCH /participants/{pid}(UpdateParticipantRequest)。未指定(null)の項目は変更しない。
 // rank は null で「変更なし」のため、未入力に戻す場合は clearRank: true を送る(rankとの同時指定は400)
+// groupId / clearGroup も同型パターン(groupId との同時指定は400。変更は PREPARING 中のみ)
 interface UpdateParticipantInput {
   name?: string;
   organization?: string;         // 空文字で未入力に戻せる
   rank?: Rank;
   clearRank?: boolean;
+  groupId?: string;
+  clearGroup?: boolean;
   status?: ParticipantStatus;    // WITHDRAWN で途中棄権
+}
+```
+
+### Group(棋力帯グループ)
+
+```typescript
+// GET/POST /tournaments/{id}/groups。作成順(ULID順)で返す
+interface Group {
+  id: string;                    // ULID
+  name: string;                  // 大会内で一意。50文字以内
+}
+
+// POST /groups(作成)・PATCH /groups/{gid}(改名)のリクエスト
+interface GroupInput {
+  name: string;
 }
 ```
 
@@ -87,7 +106,8 @@ interface UpdateParticipantInput {
 interface Match {
   id: string;
   roundNumber: number;
-  tableNumber: number;
+  tableNumber: number;                  // グループ大会ではグループ内で1始まり
+  group: Group | null;                  // null = グループなし大会。卓表示は group ? `${group.name}-${tableNumber}` : tableNumber
   player1: ParticipantSummary;          // { id, name, organization }
   player2: ParticipantSummary | null;   // null = BYE
   result: MatchResult;
@@ -112,13 +132,20 @@ interface GeneratedRound {
 
 ```typescript
 interface Standing {
-  rank: number;                  // 同順位あり(1,2,2,4 形式)
+  rank: number;                  // 同順位あり(1,2,2,4 形式)。グループ大会ではグループ内順位
   participant: ParticipantSummary;
   wins: number;                  // 勝点(0.5刻みあり得るため number)
   losses: number;
   sos: number;
   sosos: number;
   hadBye: boolean;
+}
+
+// GET /standings・SharedTournament.standings のレスポンス要素。
+// 常にこの形で返し、グループなし大会は group=null の単一要素(フロントの分岐を最小化)
+interface GroupStandings {
+  group: Group | null;
+  standings: Standing[];
 }
 ```
 
@@ -130,7 +157,7 @@ interface Standing {
 interface SharedTournament {
   tournament: SharedTournamentSummary;
   rounds: Round[];
-  standings: Standing[];
+  standings: GroupStandings[];   // グループなし大会は group=null の単一要素
 }
 
 interface SharedTournamentSummary {
