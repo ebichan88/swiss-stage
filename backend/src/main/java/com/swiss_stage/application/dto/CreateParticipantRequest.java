@@ -12,4 +12,7 @@ public record CreateParticipantRequest(
         @Size(max = 100, message = "所属は100文字以内で入力してください")
         String organization,
 
-        Rank rank) {}
+        Rank rank,
+
+        /** 割当先グループのID(任意。グループなし大会はnull) */
+        String groupId) {}

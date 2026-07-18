@@ -2,37 +2,46 @@ package com.swiss_stage.application.service;
 
 import com.swiss_stage.application.dto.CreateParticipantRequest;
 import com.swiss_stage.application.dto.CsvImportResultDto;
+import com.swiss_stage.application.dto.FieldErrorDto;
 import com.swiss_stage.application.dto.ParticipantDto;
 import com.swiss_stage.application.dto.UpdateParticipantRequest;
 import com.swiss_stage.application.exception.ErrorCode;
 import com.swiss_stage.application.exception.InvalidStateException;
 import com.swiss_stage.application.exception.NotFoundException;
 import com.swiss_stage.application.exception.ValidationException;
+import com.swiss_stage.domain.model.Group;
+import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
 import com.swiss_stage.domain.model.TournamentStatus;
+import com.swiss_stage.domain.repository.GroupRepository;
 import com.swiss_stage.domain.repository.ParticipantRepository;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ParticipantService {
 
     private final ParticipantRepository participantRepository;
+    private final GroupRepository groupRepository;
     private final TournamentAccessSupport access;
     private final ParticipantCsvParser csvParser;
     private final SharedViewCache sharedViewCache;
 
     public ParticipantService(
             ParticipantRepository participantRepository,
+            GroupRepository groupRepository,
             TournamentAccessSupport access,
             ParticipantCsvParser csvParser,
             SharedViewCache sharedViewCache) {
         this.participantRepository = participantRepository;
+        this.groupRepository = groupRepository;
         this.access = access;
         this.csvParser = csvParser;
         this.sharedViewCache = sharedViewCache;
@@ -50,9 +59,12 @@ public class ParticipantService {
             TournamentId tournamentId, String ownerSub, CreateParticipantRequest request) {
         Tournament tournament = access.loadOwned(tournamentId, ownerSub);
         requirePreparing(tournament, "参加者の追加は大会開始前のみ可能です");
+        GroupId groupId = request.groupId() == null
+                ? null
+                : resolveGroup(tournamentId, request.groupId()).id();
         Participant participant = Participant.create(
                 request.name(), normalize(request.organization()), request.rank(),
-                nextSeedOrder(tournamentId));
+                nextSeedOrder(tournamentId)).withGroup(groupId);
         participantRepository.save(tournamentId, participant);
         sharedViewCache.evict(tournamentId);
         return ParticipantDto.from(participant);
@@ -62,12 +74,18 @@ public class ParticipantService {
         Tournament tournament = access.loadOwned(tournamentId, ownerSub);
         requirePreparing(tournament, "CSVインポートは大会開始前のみ可能です");
         List<ParticipantCsvParser.Row> rows = csvParser.parse(csv);
+        Map<String, GroupId> groupsByName = groupRepository.findAllByTournamentId(tournamentId)
+                .stream()
+                .collect(Collectors.toMap(Group::name, Group::id));
+        validateGroupNames(rows, groupsByName);
 
         int seedOrder = nextSeedOrder(tournamentId);
         List<Participant> participants = new ArrayList<>();
         for (ParticipantCsvParser.Row row : rows) {
+            GroupId groupId = row.groupName() == null ? null : groupsByName.get(row.groupName());
             participants.add(Participant.create(
-                    row.name(), normalize(row.organization()), row.rank(), seedOrder++));
+                    row.name(), normalize(row.organization()), row.rank(), seedOrder++)
+                    .withGroup(groupId));
         }
         participantRepository.saveAll(tournamentId, participants);
         sharedViewCache.evict(tournamentId);
@@ -79,14 +97,23 @@ public class ParticipantService {
     public ParticipantDto update(
             TournamentId tournamentId, ParticipantId participantId,
             String ownerSub, UpdateParticipantRequest request) {
-        access.loadOwned(tournamentId, ownerSub);
+        Tournament tournament = access.loadOwned(tournamentId, ownerSub);
         boolean clearRank = Boolean.TRUE.equals(request.clearRank());
         if (clearRank && request.rank() != null) {
             throw new ValidationException("rank と clearRank は同時に指定できません");
         }
+        boolean clearGroup = Boolean.TRUE.equals(request.clearGroup());
+        if (clearGroup && request.groupId() != null) {
+            throw new ValidationException("groupId と clearGroup は同時に指定できません");
+        }
         Participant participant = participantRepository.findById(tournamentId, participantId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
+        GroupId groupId = participant.groupId();
+        if (clearGroup || request.groupId() != null) {
+            requirePreparing(tournament, "グループ割当の変更は大会開始前のみ可能です");
+            groupId = clearGroup ? null : resolveGroup(tournamentId, request.groupId()).id();
+        }
         Participant updated = new Participant(
                 participant.id(),
                 request.name() != null ? request.name() : participant.name(),
@@ -94,7 +121,8 @@ public class ParticipantService {
                         ? normalize(request.organization()) : participant.organization(),
                 clearRank ? null : request.rank() != null ? request.rank() : participant.rank(),
                 participant.seedOrder(),
-                request.status() != null ? request.status() : participant.status());
+                request.status() != null ? request.status() : participant.status(),
+                groupId);
         participantRepository.save(tournamentId, updated);
         sharedViewCache.evict(tournamentId);
         return ParticipantDto.from(updated);
@@ -107,6 +135,32 @@ public class ParticipantService {
                 .orElseThrow(() -> new NotFoundException(ErrorCode.PARTICIPANT_NOT_FOUND));
         participantRepository.delete(tournamentId, participantId);
         sharedViewCache.evict(tournamentId);
+    }
+
+    /**
+     * グループの解決。ユーザー入力をキー組み立てに使わないため、
+     * 大会のグループ一覧(最大10件)から突き合わせる
+     */
+    private Group resolveGroup(TournamentId tournamentId, String groupIdValue) {
+        return groupRepository.findAllByTournamentId(tournamentId).stream()
+                .filter(g -> g.id().value().equals(groupIdValue))
+                .findFirst()
+                .orElseThrow(() -> new ValidationException("指定されたグループが存在しません"));
+    }
+
+    /** CSVのグループ列は定義済みグループ名に完全一致(未知の名前は行エラー。自動作成しない) */
+    private static void validateGroupNames(
+            List<ParticipantCsvParser.Row> rows, Map<String, GroupId> groupsByName) {
+        List<FieldErrorDto> errors = rows.stream()
+                .filter(row -> row.groupName() != null && !groupsByName.containsKey(row.groupName()))
+                .map(row -> new FieldErrorDto(
+                        row.lineNumber() + "行目",
+                        "グループ「" + row.groupName() + "」が定義されていません。先にグループを作成してください"))
+                .toList();
+        if (!errors.isEmpty()) {
+            throw new ValidationException(
+                    ErrorCode.CSV_INVALID_FORMAT, "CSVの内容に誤りがあります", errors);
+        }
     }
 
     private int nextSeedOrder(TournamentId tournamentId) {

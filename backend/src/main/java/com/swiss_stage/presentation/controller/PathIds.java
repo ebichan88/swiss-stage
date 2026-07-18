@@ -2,6 +2,7 @@ package com.swiss_stage.presentation.controller;
 
 import com.swiss_stage.application.exception.ErrorCode;
 import com.swiss_stage.application.exception.NotFoundException;
+import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.MatchId;
 import com.swiss_stage.domain.model.ParticipantId;
 import com.swiss_stage.domain.model.TournamentId;
@@ -30,6 +31,11 @@ final class PathIds {
     static MatchId matchId(String value) {
         requireUlid(value, ErrorCode.MATCH_NOT_FOUND);
         return new MatchId(value);
+    }
+
+    static GroupId groupId(String value) {
+        requireUlid(value, ErrorCode.GROUP_NOT_FOUND);
+        return new GroupId(value);
     }
 
     private static void requireUlid(String value, ErrorCode notFound) {
