@@ -1,3 +1,4 @@
+import CategoryIcon from '@mui/icons-material/Category';
 import GroupsIcon from '@mui/icons-material/Groups';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
@@ -6,12 +7,14 @@ import { useState } from 'react';
 
 import type { ParticipantFormValues } from '../components/features/participant/ParticipantFormDialog';
 import { CsvImportDialog } from '../components/features/participant/CsvImportDialog';
+import { GroupManagerDialog } from '../components/features/participant/GroupManagerDialog';
 import { ParticipantFormDialog } from '../components/features/participant/ParticipantFormDialog';
 import { ParticipantTable } from '../components/features/participant/ParticipantTable';
 import { useTournamentContext } from '../components/layouts/TournamentLayout';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState, LoadingState } from '../components/ui/QueryStates';
+import { useGroups } from '../hooks/useGroups';
 import {
   useAddParticipant,
   useDeleteParticipant,
@@ -29,12 +32,14 @@ type DialogState =
   | { kind: 'withdraw'; participant: Participant }
   | { kind: 'delete'; participant: Participant }
   | { kind: 'import' }
+  | { kind: 'groups' }
   | null;
 
 /** S06 参加者管理。PREPARING=追加・編集・削除可 / IN_PROGRESS=棄権処理のみ / FINISHED=閲覧のみ */
 export function ParticipantsPage() {
   const tournament = useTournamentContext();
   const { data: participants, isPending, isError, refetch } = useParticipants(tournament.id);
+  const { data: groups } = useGroups(tournament.id);
   const addMutation = useAddParticipant(tournament.id);
   const updateMutation = useUpdateParticipant(tournament.id);
   const deleteMutation = useDeleteParticipant(tournament.id);
@@ -48,6 +53,8 @@ export function ParticipantsPage() {
   const errorMessage = (error: unknown, fallback: string) =>
     error instanceof ApiError ? error.message : fallback;
 
+  const hasGroups = (groups ?? []).length > 0;
+
   const handleFormSubmit = (values: ParticipantFormValues) => {
     const organization = values.organization.trim();
     if (dialog?.kind === 'add') {
@@ -56,6 +63,7 @@ export function ParticipantsPage() {
           name: values.name.trim(),
           organization: organization === '' ? null : organization,
           rank: values.rank === '' ? null : values.rank,
+          ...(hasGroups && values.groupId !== '' ? { groupId: values.groupId } : {}),
         },
         {
           onSuccess: () => {
@@ -73,6 +81,11 @@ export function ParticipantsPage() {
             name: values.name.trim(),
             organization,
             ...(values.rank === '' ? { clearRank: true } : { rank: values.rank }),
+            ...(hasGroups
+              ? values.groupId === ''
+                ? { clearGroup: true }
+                : { groupId: values.groupId }
+              : {}),
           },
         },
         {
@@ -111,6 +124,18 @@ export function ParticipantsPage() {
     });
   };
 
+  const handleChangeGroup = (participant: Participant, groupId: string | null) => {
+    updateMutation.mutate(
+      {
+        participantId: participant.id,
+        input: groupId === null ? { clearGroup: true } : { groupId },
+      },
+      {
+        onError: (error) => showError(errorMessage(error, 'グループの変更に失敗しました')),
+      },
+    );
+  };
+
   const handleImport = (file: File) => {
     importMutation.mutate(file, {
       onSuccess: (result) => {
@@ -138,7 +163,14 @@ export function ParticipantsPage() {
           {participants && ` (${participants.length}名)`}
         </Typography>
         {canEdit && (
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Button
+              variant="outlined"
+              startIcon={<CategoryIcon />}
+              onClick={() => setDialog({ kind: 'groups' })}
+            >
+              グループ管理
+            </Button>
             <Button
               variant="outlined"
               startIcon={<UploadFileIcon />}
@@ -186,19 +218,27 @@ export function ParticipantsPage() {
       {participants && participants.length > 0 && (
         <ParticipantTable
           participants={participants}
+          groups={groups ?? []}
           canEdit={canEdit}
           canWithdraw={canWithdraw}
           onEdit={(participant) => setDialog({ kind: 'edit', participant })}
           onWithdraw={(participant) => setDialog({ kind: 'withdraw', participant })}
           onDelete={(participant) => setDialog({ kind: 'delete', participant })}
+          onChangeGroup={handleChangeGroup}
         />
       )}
 
       <ParticipantFormDialog
         open={dialog?.kind === 'add' || dialog?.kind === 'edit'}
         participant={dialog?.kind === 'edit' ? dialog.participant : undefined}
+        groups={groups ?? []}
         loading={addMutation.isPending || updateMutation.isPending}
         onSubmit={handleFormSubmit}
+        onClose={() => setDialog(null)}
+      />
+      <GroupManagerDialog
+        open={dialog?.kind === 'groups'}
+        tournamentId={tournament.id}
         onClose={() => setDialog(null)}
       />
       <CsvImportDialog

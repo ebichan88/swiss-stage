@@ -3,7 +3,7 @@ import { Box, Button, Card, CardContent, Container, Stack, Typography } from '@m
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
-import { matchResultText } from '../components/features/round/matchDisplay';
+import { matchResultText, tableLabel } from '../components/features/round/matchDisplay';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { ErrorState, FullPageSpinner } from '../components/ui/QueryStates';
 import { useInputSharedResult, useSharedTournament } from '../hooks/useShared';
@@ -91,7 +91,7 @@ export function SharedResultPage() {
       <Card variant="outlined" sx={{ mt: 2 }}>
         <CardContent>
           <Typography variant="body2" color="text.secondary">
-            第{round.roundNumber}ラウンド・{match.tableNumber}卓
+            第{round.roundNumber}ラウンド・{tableLabel(match)}卓
           </Typography>
           <Typography variant="h2" component="h1" sx={{ mt: 1 }}>
             {match.player1.name} vs {match.player2.name}
