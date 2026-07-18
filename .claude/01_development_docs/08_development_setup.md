@@ -58,7 +58,8 @@ npm run dev
 ### 環境変数
 
 `backend/src/main/resources/application-local.yml` で管理(ローカル用はコミット可)。
-秘密情報(Google OAuth2クライアントシークレット等)は環境変数で注入し、**絶対にコミットしない**:
+**基本的な動作確認だけなら環境変数は不要**(`JWT_SECRET`はダミー値がyamlにデフォルト設定済み、Google OAuth2も未設定でよい。下記「ログイン」参照)。
+実Google認証を試す場合や秘密情報を上書きしたい場合のみ、環境変数で注入する(**絶対にコミットしない**):
 
 ```
 GOOGLE_CLIENT_ID=xxx
@@ -68,6 +69,30 @@ DYNAMODB_ENDPOINT=http://localhost:8000   # localのみ
 ```
 
 フロントは `frontend/.env.local`(gitignore済み)に `VITE_API_BASE_URL` 等を設定。
+
+### ログイン(ローカル)
+
+Google OAuth2を実際に通す必要はない。`local`/`test` プロファイル限定のテストログインエンドポイント
+`POST /api/v1/auth/test-login` があり、UIからは `/login` 画面の「開発用ログイン」ボタンで使える
+(**本番ビルドには含まれない**)。詳細: `12_e2e_test_design.md` §3、`03_api_design.md`。
+
+### 起動確認(どのURLを開くか)
+
+3つのポートは役割が異なる。**ブラウザで開くのは 5173 のみ**。
+
+| ポート | 役割 | ブラウザで開く? |
+|-------|------|----------------|
+| 5173 | フロントエンド(Vite) | ✅ ここを開く |
+| 8080 | バックエンドAPI(Spring Boot) | ❌ フロントから `/api` 経由で呼ばれるだけ |
+| 8000 | DynamoDB Local | ❌ データ置き場のAPIエンドポイント。UIなし |
+
+起動確認の手順:
+
+1. `docker compose up -d dynamodb-local` → `./scripts/create-table.sh`(backend/)
+2. `./gradlew bootRun --args='--spring.profiles.active=local'`(backend/)。ログに
+   `Started SwissStageApplication` が出れば起動完了(`curl`が使えない環境ではログで確認する)
+3. `npm run dev`(frontend/)。ログに `VITE ready` が出れば起動完了
+4. ブラウザで **http://localhost:5173** を開き、`/login` の「開発用ログイン」でログイン
 
 ---
 

@@ -1,0 +1,30 @@
+{
+  "folders": [
+    { "name": "swiss-stage (root)", "path": "." },
+    { "name": "backend", "path": "backend" },
+    { "name": "frontend", "path": "frontend" }
+  ],
+  "settings": {
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "editor.formatOnSave": true,
+    "[typescript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescriptreact]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[java]": {
+      "editor.formatOnSave": false
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "vscjava.vscode-java-pack",
+      "vscjava.vscode-gradle",
+      "oxc.oxc-vscode",
+      "esbenp.prettier-vscode",
+      "ms-azuretools.vscode-docker",
+      "ms-playwright.playwright"
+    ]
+  }
+}
