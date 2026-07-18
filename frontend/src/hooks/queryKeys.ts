@@ -4,6 +4,7 @@ export const queryKeys = {
   tournaments: ['tournaments'] as const,
   tournament: (id: string) => ['tournaments', id] as const,
   participants: (id: string) => ['tournaments', id, 'participants'] as const,
+  groups: (id: string) => ['tournaments', id, 'groups'] as const,
   rounds: (id: string) => ['tournaments', id, 'rounds'] as const,
   standings: (id: string) => ['tournaments', id, 'standings'] as const,
   shared: (token: string) => ['shared', token] as const,

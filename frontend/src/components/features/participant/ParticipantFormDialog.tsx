@@ -13,20 +13,24 @@ import { Controller, useForm } from 'react-hook-form';
 
 import type { Rank } from '../../../types/enums';
 import { RANKS_STRONGEST_FIRST } from '../../../types/enums';
+import type { Group } from '../../../types/group';
 import type { Participant } from '../../../types/participant';
 import { rankLabel } from '../../../utils/labels';
 
-/** rank は Select で扱うため未入力を空文字で表現する */
+/** rank / groupId は Select で扱うため未入力(未割当)を空文字で表現する */
 export interface ParticipantFormValues {
   name: string;
   organization: string;
   rank: Rank | '';
+  groupId: string;
 }
 
 export interface ParticipantFormDialogProps {
   open: boolean;
   /** 編集時は対象参加者、追加時は undefined */
   participant?: Participant;
+  /** グループ定義(空ならグループ選択を表示しない) */
+  groups: Group[];
   loading: boolean;
   onSubmit: (values: ParticipantFormValues) => void;
   onClose: () => void;
@@ -35,6 +39,7 @@ export interface ParticipantFormDialogProps {
 export function ParticipantFormDialog({
   open,
   participant,
+  groups,
   loading,
   onSubmit,
   onClose,
@@ -44,6 +49,7 @@ export function ParticipantFormDialog({
       name: participant?.name ?? '',
       organization: participant?.organization ?? '',
       rank: participant?.rank ?? '',
+      groupId: participant?.groupId ?? '',
     },
   });
 
@@ -106,6 +112,22 @@ export function ParticipantFormDialog({
                 </TextField>
               )}
             />
+            {groups.length > 0 && (
+              <Controller
+                name="groupId"
+                control={control}
+                render={({ field }) => (
+                  <TextField {...field} label="グループ" select fullWidth>
+                    <MenuItem value="">未割当</MenuItem>
+                    {groups.map((group) => (
+                      <MenuItem key={group.id} value={group.id}>
+                        {group.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
+            )}
           </Stack>
         </DialogContent>
         <DialogActions>

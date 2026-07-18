@@ -7,6 +7,7 @@ import java.util.Optional;
  * 対局。player2 が null の場合は不戦勝(BYE)を表す。
  * version は楽観ロック用(結果入力の競合検出。0 = 未保存)。
  * resultInputBy は結果を入力した主体(監査用。未入力・BYEは null)。
+ * groupId はグループ大会での帰属グループ(null = グループなし大会)。
  */
 public record Match(
         MatchId id,
@@ -16,7 +17,8 @@ public record Match(
         ParticipantId player2Id,
         MatchResult result,
         ResultInputBy resultInputBy,
-        long version) {
+        long version,
+        GroupId groupId) {
 
     public Match {
         if (player1Id == null) {
@@ -33,14 +35,35 @@ public record Match(
         }
     }
 
+    public Match(
+            MatchId id,
+            int roundNumber,
+            int tableNumber,
+            ParticipantId player1Id,
+            ParticipantId player2Id,
+            MatchResult result,
+            ResultInputBy resultInputBy,
+            long version) {
+        this(id, roundNumber, tableNumber, player1Id, player2Id, result, resultInputBy, version, null);
+    }
+
     public static Match pairOf(int roundNumber, int tableNumber, ParticipantId p1, ParticipantId p2) {
+        return pairOf(roundNumber, tableNumber, p1, p2, null);
+    }
+
+    public static Match pairOf(
+            int roundNumber, int tableNumber, ParticipantId p1, ParticipantId p2, GroupId groupId) {
         return new Match(
-                MatchId.generate(), roundNumber, tableNumber, p1, p2, MatchResult.NONE, null, 0L);
+                MatchId.generate(), roundNumber, tableNumber, p1, p2, MatchResult.NONE, null, 0L, groupId);
     }
 
     public static Match byeOf(int roundNumber, int tableNumber, ParticipantId p1) {
+        return byeOf(roundNumber, tableNumber, p1, null);
+    }
+
+    public static Match byeOf(int roundNumber, int tableNumber, ParticipantId p1, GroupId groupId) {
         return new Match(
-                MatchId.generate(), roundNumber, tableNumber, p1, null, MatchResult.BYE, null, 0L);
+                MatchId.generate(), roundNumber, tableNumber, p1, null, MatchResult.BYE, null, 0L, groupId);
     }
 
     public boolean isBye() {
@@ -85,6 +108,6 @@ public record Match(
             throw new DomainException("通常対局の結果をBYEにはできません");
         }
         return new Match(
-                id, roundNumber, tableNumber, player1Id, player2Id, newResult, inputBy, version);
+                id, roundNumber, tableNumber, player1Id, player2Id, newResult, inputBy, version, groupId);
     }
 }

@@ -10,10 +10,12 @@ public record ParticipantDto(
         String organization,
         Rank rank,
         int seedOrder,
-        ParticipantStatus status) {
+        ParticipantStatus status,
+        String groupId) {
 
     public static ParticipantDto from(Participant p) {
         return new ParticipantDto(
-                p.id().value(), p.name(), p.organization(), p.rank(), p.seedOrder(), p.status());
+                p.id().value(), p.name(), p.organization(), p.rank(), p.seedOrder(), p.status(),
+                p.groupId() == null ? null : p.groupId().value());
     }
 }

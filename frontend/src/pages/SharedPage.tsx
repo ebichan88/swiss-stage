@@ -17,7 +17,12 @@ import {
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
-import { resultMark, matchResultText } from '../components/features/round/matchDisplay';
+import {
+  matchResultText,
+  matchSections,
+  resultMark,
+  tableLabel,
+} from '../components/features/round/matchDisplay';
 import { StandingsTable } from '../components/features/standing/StandingsTable';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState, FullPageSpinner } from '../components/ui/QueryStates';
@@ -50,7 +55,7 @@ function SharedMatchCard({ token, match, canInput }: SharedMatchCardProps) {
         sx={{ display: 'flex', alignItems: 'center', gap: 2, '&:last-child': { pb: 2 } }}
       >
         <Typography variant="h3" component="span" sx={{ flexShrink: 0 }}>
-          {match.tableNumber}卓
+          {tableLabel(match)}卓
         </Typography>
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography variant="body1">
@@ -181,21 +186,44 @@ export function SharedPage() {
                 message="このラウンドの対局はありません。"
               />
             ) : (
-              currentRound.matches.map((match) => (
-                <SharedMatchCard key={match.id} token={token} match={match} canInput={canInput} />
+              matchSections(currentRound.matches).map(({ group, matches }) => (
+                <Stack key={group?.id ?? 'all'} spacing={1.5}>
+                  {group && (
+                    <Typography variant="h4" component="h2">
+                      {group.name}
+                    </Typography>
+                  )}
+                  {matches.map((match) => (
+                    <SharedMatchCard
+                      key={match.id}
+                      token={token}
+                      match={match}
+                      canInput={canInput}
+                    />
+                  ))}
+                </Stack>
               ))
             )}
           </Stack>
         ))}
 
       {tab === 'standings' &&
-        (standings.length === 0 ? (
+        (standings.every((g) => g.standings.length === 0) ? (
           <EmptyState
             icon={<HourglassEmptyIcon fontSize="inherit" />}
             message="順位はまだありません。"
           />
         ) : (
-          <StandingsTable standings={standings} />
+          standings.map(({ group, standings: groupStandings }) => (
+            <Box key={group?.id ?? 'all'} sx={{ mb: 3 }}>
+              {group && (
+                <Typography variant="h4" component="h2" sx={{ mb: 1 }}>
+                  {group.name}
+                </Typography>
+              )}
+              <StandingsTable standings={groupStandings} />
+            </Box>
+          ))
         ))}
     </Container>
   );

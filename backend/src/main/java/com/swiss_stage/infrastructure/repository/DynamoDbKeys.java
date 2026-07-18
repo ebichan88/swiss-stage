@@ -1,5 +1,6 @@
 package com.swiss_stage.infrastructure.repository;
 
+import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.MatchId;
 import com.swiss_stage.domain.model.ParticipantId;
 import com.swiss_stage.domain.model.TournamentId;
@@ -14,6 +15,7 @@ final class DynamoDbKeys {
     static final String METADATA_SK = "METADATA";
     static final String ROUND_PREFIX = "ROUND#";
     static final String PARTICIPANT_PREFIX = "PARTICIPANT#";
+    static final String GROUP_PREFIX = "GROUP#";
 
     private DynamoDbKeys() {}
 
@@ -23,6 +25,10 @@ final class DynamoDbKeys {
 
     static String participantSk(ParticipantId id) {
         return PARTICIPANT_PREFIX + id.value();
+    }
+
+    static String groupSk(GroupId id) {
+        return GROUP_PREFIX + id.value();
     }
 
     /** ラウンド番号はゼロ埋め2桁(SKソートのため) */

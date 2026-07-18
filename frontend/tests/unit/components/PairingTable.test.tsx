@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PairingTable } from '../../../src/components/features/round/PairingTable';
-import { matchOf, summaryOf } from '../../fixtures';
+import { groupOf, matchOf, summaryOf } from '../../fixtures';
 import { renderWithProviders } from '../../testUtils';
 
 describe('PairingTable', () => {
@@ -32,6 +32,21 @@ describe('PairingTable', () => {
     // BYE(不戦勝)は入力不可で「不戦勝」表示
     expect(rows[2]).toHaveTextContent('(不戦勝)');
     expect(within(rows[2]).getByText('不戦勝')).toBeInTheDocument();
+  });
+
+  it('グループ大会の卓番号は「A-1」形式で表示する', () => {
+    renderWithProviders(
+      <PairingTable
+        matches={[matchOf({ id: 'm1', tableNumber: 1, group: groupOf({ name: 'A' }) })]}
+        editable
+        savingMatchId={null}
+        onInputResult={() => {}}
+      />,
+    );
+
+    const rows = screen.getAllByRole('row');
+    expect(rows[1]).toHaveTextContent('A-1');
+    expect(screen.getByRole('combobox', { name: '卓A-1の結果' })).toBeInTheDocument();
   });
 
   it('結果を選ぶと onInputResult が呼ばれる', async () => {

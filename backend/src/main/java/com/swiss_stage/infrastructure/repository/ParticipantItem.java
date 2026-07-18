@@ -22,6 +22,7 @@ public class ParticipantItem {
     private String rank;
     private Integer seedOrder;
     private String status;
+    private String groupId;
 
     @DynamoDbPartitionKey
     @DynamoDbAttribute("PK")
@@ -97,5 +98,13 @@ public class ParticipantItem {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
     }
 }

@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.swiss_stage.domain.DomainException;
 import com.swiss_stage.domain.model.GameType;
+import com.swiss_stage.domain.model.Group;
+import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Match;
 import com.swiss_stage.domain.model.MatchId;
 import com.swiss_stage.domain.model.MatchResult;
@@ -217,6 +219,48 @@ class ModelTest {
                     .isInstanceOf(DomainException.class);
             assertThatThrownBy(() -> Participant.create("x", null, null, 0))
                     .isInstanceOf(DomainException.class);
+        }
+
+        @Test
+        @DisplayName("グループ割当は変更・解除でき、棄権しても保たれる")
+        void グループ割当() {
+            GroupId groupId = GroupId.generate();
+            Participant p = Participant.create("参加者一", null, null, 1);
+            assertThat(p.groupId()).isNull();
+            Participant assigned = p.withGroup(groupId);
+            assertThat(assigned.groupId()).isEqualTo(groupId);
+            assertThat(assigned.withdraw().groupId()).isEqualTo(groupId);
+            assertThat(assigned.withGroup(null).groupId()).isNull();
+        }
+    }
+
+    @Nested
+    class GroupTest {
+
+        @Test
+        @DisplayName("グループを作成・改名できる")
+        void 作成と改名() {
+            Group group = Group.create("A");
+            assertThat(group.name()).isEqualTo("A");
+            Group renamed = group.rename("Aクラス");
+            assertThat(renamed.id()).isEqualTo(group.id());
+            assertThat(renamed.name()).isEqualTo("Aクラス");
+        }
+
+        @Test
+        @DisplayName("グループ名なし・50文字超は作成できない")
+        void バリデーション() {
+            assertThatThrownBy(() -> Group.create(" ")).isInstanceOf(DomainException.class);
+            assertThatThrownBy(() -> Group.create("あ".repeat(51)))
+                    .isInstanceOf(DomainException.class);
+        }
+
+        @Test
+        @DisplayName("GroupIdは連続生成しても昇順になる(作成順ソートの前提)")
+        void 採番の単調増加() {
+            GroupId first = GroupId.generate();
+            GroupId second = GroupId.generate();
+            assertThat(first.value()).isLessThan(second.value());
         }
     }
 

@@ -1,5 +1,6 @@
 package com.swiss_stage.infrastructure.repository;
 
+import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
 import com.swiss_stage.domain.model.ParticipantStatus;
@@ -21,6 +22,7 @@ final class ParticipantItemMapper {
         item.setRank(p.rank() == null ? null : p.rank().name());
         item.setSeedOrder(p.seedOrder());
         item.setStatus(p.status().name());
+        item.setGroupId(p.groupId() == null ? null : p.groupId().value());
         return item;
     }
 
@@ -31,6 +33,7 @@ final class ParticipantItemMapper {
                 item.getOrganization(),
                 item.getRank() == null ? null : Rank.valueOf(item.getRank()),
                 item.getSeedOrder(),
-                ParticipantStatus.valueOf(item.getStatus()));
+                ParticipantStatus.valueOf(item.getStatus()),
+                item.getGroupId() == null ? null : new GroupId(item.getGroupId()));
     }
 }

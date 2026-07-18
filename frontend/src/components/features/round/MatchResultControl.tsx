@@ -2,7 +2,7 @@ import { Chip, MenuItem, TextField, Typography } from '@mui/material';
 
 import type { MatchResult } from '../../../types/enums';
 import type { Match } from '../../../types/round';
-import { matchResultText } from './matchDisplay';
+import { matchResultText, tableLabel } from './matchDisplay';
 
 export interface MatchResultControlProps {
   match: Match;
@@ -30,7 +30,7 @@ export function MatchResultControl({ match, editable, saving, onInput }: MatchRe
       disabled={saving}
       // aria-label はルート要素ではなく combobox 役割を持つ表示要素に付ける
       slotProps={{
-        select: { SelectDisplayProps: { 'aria-label': `卓${match.tableNumber}の結果` } },
+        select: { SelectDisplayProps: { 'aria-label': `卓${tableLabel(match)}の結果` } },
       }}
       sx={{ minWidth: 180 }}
     >

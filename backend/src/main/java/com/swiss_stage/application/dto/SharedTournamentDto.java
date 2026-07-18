@@ -12,7 +12,7 @@ import java.util.List;
 public record SharedTournamentDto(
         SharedTournamentSummary tournament,
         List<RoundDto> rounds,
-        List<StandingDto> standings) {
+        List<GroupStandingsDto> standings) {
 
     public record SharedTournamentSummary(
             String name,

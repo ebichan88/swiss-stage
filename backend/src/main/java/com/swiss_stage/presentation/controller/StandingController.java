@@ -1,6 +1,6 @@
 package com.swiss_stage.presentation.controller;
 
-import com.swiss_stage.application.dto.StandingDto;
+import com.swiss_stage.application.dto.GroupStandingsDto;
 import com.swiss_stage.application.service.StandingService;
 import com.swiss_stage.presentation.api.ApiSuccess;
 import com.swiss_stage.presentation.auth.CurrentUser;
@@ -25,7 +25,7 @@ public class StandingController {
     }
 
     @GetMapping
-    public ApiSuccess<List<StandingDto>> standings(
+    public ApiSuccess<List<GroupStandingsDto>> standings(
             CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
         return ApiSuccess.of(
                 standingService.standings(PathIds.tournamentId(tournamentId), user.sub()),

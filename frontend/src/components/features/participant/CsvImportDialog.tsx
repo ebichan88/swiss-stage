@@ -94,7 +94,8 @@ export function CsvImportDialog({ open, loading, error, onImport, onClose }: Csv
       <DialogTitle>参加者をCSVでインポート</DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" gutterBottom>
-          ヘッダー行(氏名,所属,段級位)が必要です。文字コードは UTF-8 / Shift_JIS
+          ヘッダー行(氏名,所属,段級位)が必要です。グループ分けする場合は4列目に「グループ」列
+          を追加できます(定義済みのグループ名を指定)。文字コードは UTF-8 / Shift_JIS
           に対応。1行でもエラーがあると全行取り込まれません。
         </Typography>
         <Box
