@@ -62,10 +62,18 @@ npm run dev
 実Google認証を試す場合や秘密情報を上書きしたい場合のみ、環境変数で注入する(**絶対にコミットしない**):
 
 ```
-GOOGLE_CLIENT_ID=xxx
-GOOGLE_CLIENT_SECRET=xxx
+GOOGLE_OAUTH_CLIENT_ID=xxx
+GOOGLE_OAUTH_CLIENT_SECRET=xxx
 JWT_SECRET=xxx            # ローカルは任意の32文字以上
 DYNAMODB_ENDPOINT=http://localhost:8000   # localのみ
+```
+
+Google OAuth用はリポジトリルートの `.swiss-stage-oauth.env.template` をコピーして使う
+(コピー先 `.swiss-stage-oauth.env` はgitignore済み。リダイレクトURI登録などの手順はテンプレート内のコメント参照):
+
+```bash
+cp .swiss-stage-oauth.env.template .swiss-stage-oauth.env  # 値を記入後
+source .swiss-stage-oauth.env
 ```
 
 フロントは `frontend/.env.local`(gitignore済み)に `VITE_API_BASE_URL` 等を設定。
