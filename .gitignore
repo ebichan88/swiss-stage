@@ -1,2 +1,5 @@
 # Claude Code のセッションメモリ(個人用・コミットしない)
 .claude/projects/
+
+# Google OAuthのローカル用シークレット(テンプレート: .swiss-stage-oauth.env.template)
+.swiss-stage-oauth.env
