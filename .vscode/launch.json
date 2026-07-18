@@ -8,6 +8,7 @@
       "mainClass": "com.swiss_stage.SwissStageApplication",
       "args": "--spring.profiles.active=local",
       "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/.swiss-stage-oauth.env",
       "preLaunchTask": "dynamodb-local: create-table"
     },
     {
