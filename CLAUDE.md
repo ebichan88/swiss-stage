@@ -132,6 +132,11 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 - `03_dynamodb_local_testing.md` — DynamoDB Localテスト・CI設定
 - `04_react_router_patterns.md` — ルート定義・認証ガード・SPAフォールバック
 
+### 🔍 品質基準・AIレビュー(.claude/04_quality/)
+- `01_review_checklist.md` — AIレビューの観点(機械検査できない項目のみ。lint/ArchUnitで検査可能なものは載せない)
+- `02_severity.md` — Critical/Major/Minorの定義とPASS/FAIL判定基準
+- Reviewer本体は `.claude/agents/reviewer.md`、CI連携は `.github/workflows/ai-review.yml`(PRごとに自動レビューコメント)
+
 ### クイックリファレンスマップ
 
 | タスク | 参照ドキュメント |
@@ -155,3 +160,4 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 - 実装と設計ドキュメントが乖離したら、**同じPRでドキュメントを更新する**
 - 仕様変更(特にマッチング・順位計算)は先に `05_swiss_pairing_algorithm.md` を更新してから実装する
 - 新しいエラーコード・デザイントークン・UIパターンは対応ドキュメントに追記してから使う
+- AIレビューの誤検知・見逃しに気づいたら `04_quality/01_review_checklist.md` を更新して育てる。機械検査可能な規約はチェックリストではなく lint / ArchUnit に追加する
