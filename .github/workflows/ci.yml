@@ -3,6 +3,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  # AI Fixerの修正コミットがイベントを発火しない場合に ai-review.yml から起動する
+  workflow_dispatch:
 
 jobs:
   frontend:

@@ -136,7 +136,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 ### 🔍 品質基準・AIレビュー(.claude/04_quality/)
 - `01_review_checklist.md` — AIレビューの観点(機械検査できない項目のみ。lint/ArchUnitで検査可能なものは載せない)
 - `02_severity.md` — Critical/Major/Minorの定義とPASS/FAIL判定基準
-- Reviewer本体は `.claude/agents/reviewer.md`、CI連携は `.github/workflows/ai-review.yml`(PRごとに自動レビューコメント)
+- Reviewer本体は `.claude/agents/reviewer.md`、Fixer本体は `.claude/agents/fixer.md`、CI連携は `.github/workflows/ai-review.yml`(PRごとに自動レビュー。FAIL時はCritical/MajorのみFixerが自動修正 → 再レビュー。上限3回・domain/serviceは聖域・行き詰まったら `needs-human` ラベルで人間へ)
 
 ### クイックリファレンスマップ
 
