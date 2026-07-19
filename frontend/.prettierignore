@@ -1,0 +1,2 @@
+# openapi-typescriptによる生成物(npm run generate:api)
+src/types/generated/
