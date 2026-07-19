@@ -14,9 +14,9 @@ export interface Standing {
 
 /**
  * グループ別順位表(backend: GroupStandingsDto)。
- * 常にこの形で返り、グループなし大会は group=null の単一要素
+ * グループごとに1要素(group は常に非null。グループが1つだけの大会は単一要素)
  */
 export interface GroupStandings {
-  group: Group | null;
+  group: Group;
   standings: Standing[];
 }

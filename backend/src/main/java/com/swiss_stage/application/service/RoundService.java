@@ -124,9 +124,8 @@ public class RoundService {
         List<Participant> participants = participantRepository.findAllByTournamentId(tournamentId);
         List<Match> previousMatches = matchRepository.findAllByTournamentId(tournamentId);
         List<Group> groups = groupRepository.findAllByTournamentId(tournamentId);
-        GeneratedMatches generated = groups.isEmpty()
-                ? generateUngrouped(participants, previousMatches, nextRoundNumber)
-                : generateGrouped(groups, participants, previousMatches, nextRoundNumber);
+        GeneratedMatches generated =
+                generateGrouped(groups, participants, previousMatches, nextRoundNumber);
 
         Round round = Round.pairing(nextRoundNumber);
         try {
@@ -148,16 +147,8 @@ public class RoundService {
 
     private record GeneratedMatches(List<Match> matches, List<String> relaxations) {}
 
-    private GeneratedMatches generateUngrouped(
-            List<Participant> participants, List<Match> previousMatches, int roundNumber) {
-        PairingResult pairing = pair(participants, previousMatches, roundNumber, null);
-        return new GeneratedMatches(
-                toMatches(pairing, roundNumber, null),
-                pairing.relaxations().stream().map(Enum::name).sorted().toList());
-    }
-
     /**
-     * グループ大会の一括生成(05_swiss_pairing_algorithm.md §2.4)。
+     * ラウンドの一括生成(05_swiss_pairing_algorithm.md §2.4)。
      * グループごとに独立ペアリングし、relaxations は全グループの和集合を返す。
      */
     private GeneratedMatches generateGrouped(
@@ -165,6 +156,7 @@ public class RoundService {
             List<Match> previousMatches, int roundNumber) {
         List<Match> matches = new ArrayList<>();
         TreeSet<String> relaxations = new TreeSet<>();
+        boolean single = groups.size() == 1;
         for (Group group : groups) {
             List<Participant> members = participants.stream()
                     .filter(p -> group.id().equals(p.groupId()))
@@ -187,7 +179,8 @@ public class RoundService {
                 matches.add(Match.byeOf(roundNumber, 1, only.id(), group.id()));
                 continue;
             }
-            PairingResult pairing = pair(members, groupPrevious, roundNumber, group);
+            // グループが1つだけの大会はエラー文言にグループ名を出さない(表示上グループ概念を見せないため)
+            PairingResult pairing = pair(members, groupPrevious, roundNumber, single ? null : group);
             matches.addAll(toMatches(pairing, roundNumber, group.id()));
             pairing.relaxations().forEach(r -> relaxations.add(r.name()));
         }
@@ -199,12 +192,12 @@ public class RoundService {
 
     private PairingResult pair(
             List<Participant> participants, List<Match> previousMatches,
-            int roundNumber, Group group) {
+            int roundNumber, Group labeledGroup) {
         try {
             return pairingService.pair(
                     participants, previousMatches, roundNumber, PairingOptions.defaults());
         } catch (DomainException e) {
-            String prefix = group == null ? "" : "グループ「" + group.name() + "」: ";
+            String prefix = labeledGroup == null ? "" : "グループ「" + labeledGroup.name() + "」: ";
             throw new PairingException(prefix + e.getMessage());
         }
     }
@@ -300,8 +293,7 @@ public class RoundService {
             Round round, List<Match> matches, Map<ParticipantId, Participant> participants,
             Map<GroupId, Group> groups) {
         List<MatchDto> matchDtos = matches.stream()
-                .sorted(Comparator.comparing(
-                        (Match m) -> m.groupId() == null ? "" : m.groupId().value())
+                .sorted(Comparator.comparing((Match m) -> m.groupId().value())
                         .thenComparingInt(Match::tableNumber))
                 .map(m -> MatchDto.from(m, participants, groups))
                 .toList();

@@ -8,12 +8,20 @@ export interface MatchResultControlProps {
   match: Match;
   /** ラウンド確定後・大会終了後は false(表示のみ) */
   editable: boolean;
+  /** 複数グループ大会なら true(卓番号を「A-1」形式で表示) */
+  multiGroup: boolean;
   saving: boolean;
   onInput: (result: MatchResult) => void;
 }
 
 /** 運営者の結果入力。BYEは自動確定のため入力不可 */
-export function MatchResultControl({ match, editable, saving, onInput }: MatchResultControlProps) {
+export function MatchResultControl({
+  match,
+  editable,
+  multiGroup,
+  saving,
+  onInput,
+}: MatchResultControlProps) {
   if (match.result === 'BYE') {
     return <Chip label="不戦勝" size="small" variant="outlined" />;
   }
@@ -30,7 +38,9 @@ export function MatchResultControl({ match, editable, saving, onInput }: MatchRe
       disabled={saving}
       // aria-label はルート要素ではなく combobox 役割を持つ表示要素に付ける
       slotProps={{
-        select: { SelectDisplayProps: { 'aria-label': `卓${tableLabel(match)}の結果` } },
+        select: {
+          SelectDisplayProps: { 'aria-label': `卓${tableLabel(match, multiGroup)}の結果` },
+        },
       }}
       sx={{ minWidth: 180 }}
     >

@@ -43,6 +43,7 @@ export interface GroupManagerDialogProps {
 /**
  * グループ管理(PREPARING中のみ開ける)。
  * 棋力帯グループの定義(追加・改名・削除)と「段級位で自動振り分け」を行う。
+ * 大会作成時にデフォルトグループ「A」が作成済み。グループは常に1つ以上(最後の1つは削除不可)。
  * グループは強い帯から順に定義する(自動振り分けは定義順に強い側から割り当てる)
  */
 export function GroupManagerDialog({ open, tournamentId, onClose }: GroupManagerDialogProps) {
@@ -118,7 +119,8 @@ export function GroupManagerDialog({ open, tournamentId, onClose }: GroupManager
         <DialogTitle>グループ管理</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            棋力帯ごとにグループ分けする場合に定義します。強い帯から順に(A→B→C)作成してください。
+            棋力帯ごとにグループ分けする場合は「A」に続けて、強い帯から順に(B→C→…)作成してください。
+            グループ分けしない場合はそのままで構いません。
           </Typography>
           <List dense disablePadding>
             {(groups ?? []).map((group) =>
@@ -167,14 +169,21 @@ export function GroupManagerDialog({ open, tournamentId, onClose }: GroupManager
                           <EditIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="削除">
-                        <IconButton
-                          size="small"
-                          aria-label={`${group.name}を削除`}
-                          onClick={() => setConfirming({ delete: group })}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
+                      <Tooltip
+                        title={
+                          (groups ?? []).length <= 1 ? '最後のグループは削除できません' : '削除'
+                        }
+                      >
+                        <span>
+                          <IconButton
+                            size="small"
+                            aria-label={`${group.name}を削除`}
+                            onClick={() => setConfirming({ delete: group })}
+                            disabled={(groups ?? []).length <= 1}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                     </>
                   }
@@ -190,7 +199,7 @@ export function GroupManagerDialog({ open, tournamentId, onClose }: GroupManager
               onChange={(e) => setNewName(e.target.value)}
               size="small"
               fullWidth
-              placeholder="グループ名(例: A)"
+              placeholder="グループ名(例: B)"
               slotProps={{ htmlInput: { 'aria-label': '新しいグループ名', maxLength: 50 } }}
             />
             <Button
@@ -245,7 +254,7 @@ export function GroupManagerDialog({ open, tournamentId, onClose }: GroupManager
         title="グループを削除しますか?"
         message={
           confirming !== null && confirming !== 'auto-assign'
-            ? `グループ「${confirming.delete.name}」を削除します。割当済みの参加者は未割当に戻ります。`
+            ? `グループ「${confirming.delete.name}」を削除します。割当済みの参加者は隣のグループへ移動します。`
             : ''
         }
         confirmLabel="削除する"

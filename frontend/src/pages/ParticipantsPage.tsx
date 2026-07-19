@@ -53,8 +53,6 @@ export function ParticipantsPage() {
   const errorMessage = (error: unknown, fallback: string) =>
     error instanceof ApiError ? error.message : fallback;
 
-  const hasGroups = (groups ?? []).length > 0;
-
   const handleFormSubmit = (values: ParticipantFormValues) => {
     const organization = values.organization.trim();
     if (dialog?.kind === 'add') {
@@ -63,7 +61,8 @@ export function ParticipantsPage() {
           name: values.name.trim(),
           organization: organization === '' ? null : organization,
           rank: values.rank === '' ? null : values.rank,
-          ...(hasGroups && values.groupId !== '' ? { groupId: values.groupId } : {}),
+          // 省略時はバックエンドが先頭グループに割り当てる
+          ...(values.groupId !== '' ? { groupId: values.groupId } : {}),
         },
         {
           onSuccess: () => {
@@ -81,11 +80,7 @@ export function ParticipantsPage() {
             name: values.name.trim(),
             organization,
             ...(values.rank === '' ? { clearRank: true } : { rank: values.rank }),
-            ...(hasGroups
-              ? values.groupId === ''
-                ? { clearGroup: true }
-                : { groupId: values.groupId }
-              : {}),
+            ...(values.groupId !== '' ? { groupId: values.groupId } : {}),
           },
         },
         {
@@ -124,12 +119,9 @@ export function ParticipantsPage() {
     });
   };
 
-  const handleChangeGroup = (participant: Participant, groupId: string | null) => {
+  const handleChangeGroup = (participant: Participant, groupId: string) => {
     updateMutation.mutate(
-      {
-        participantId: participant.id,
-        input: groupId === null ? { clearGroup: true } : { groupId },
-      },
+      { participantId: participant.id, input: { groupId } },
       {
         onError: (error) => showError(errorMessage(error, 'グループの変更に失敗しました')),
       },

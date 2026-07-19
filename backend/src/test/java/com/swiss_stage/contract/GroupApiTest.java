@@ -43,7 +43,8 @@ class GroupApiTest extends ApiContractTestSupport {
     @Test
     @DisplayName("グループの作成・一覧(作成順)・改名・削除ができ、重複名や上限超過は400になる")
     void グループCRUD() throws Exception {
-        String groupA = createGroup("A");
+        // 大会作成時にデフォルトグループ「A」が自動作成されている
+        String groupA = defaultGroupId();
         String groupB = createGroup("B");
 
         mockMvc.perform(get(groupsPath()).cookie(ownerCookie()))
@@ -84,6 +85,11 @@ class GroupApiTest extends ApiContractTestSupport {
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].id").value(groupA));
 
+        // 最後の1グループは削除できない
+        mockMvc.perform(delete(groupsPath() + "/" + groupA).cookie(ownerCookie()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+
         // 上限10個(残り1個の状態から9個追加すると11個目で400)
         for (int i = 2; i <= 10; i++) {
             createGroup("G" + i);
@@ -96,9 +102,9 @@ class GroupApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("段級位の自動振り分けは強い順に均等分割(端数は先頭)し、個別調整・解除もできる")
+    @DisplayName("段級位の自動振り分けは強い順に均等分割(端数は先頭)し、個別調整もできる")
     void 自動振り分けと個別調整() throws Exception {
-        String groupA = createGroup("A");
+        String groupA = defaultGroupId();
         String groupB = createGroup("B");
         // 強い順: 一(9段) > 二(初段) > 三(1級) > 四(10級) > 五(未入力)
         List<String> ids = List.of(
@@ -126,58 +132,84 @@ class GroupApiTest extends ApiContractTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.groupId").value(groupB));
 
-        // 解除(clearGroup)と同時指定エラー・未知グループ
-        mockMvc.perform(patch(participantsPath() + "/" + ids.get(2)).cookie(ownerCookie())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"clearGroup\":true}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.groupId").isEmpty());
-        mockMvc.perform(patch(participantsPath() + "/" + ids.get(2)).cookie(ownerCookie())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"groupId\":\"" + groupB + "\",\"clearGroup\":true}"))
-                .andExpect(status().isBadRequest());
+        // 未知グループへの変更は400
         mockMvc.perform(patch(participantsPath() + "/" + ids.get(2)).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"groupId\":\"" + "0".repeat(26) + "\"}"))
                 .andExpect(status().isBadRequest());
 
-        // グループ削除で割当済み参加者は未割当に戻る
+        // グループ削除で割当済み参加者は直前のグループ(A)へ移動する
         mockMvc.perform(delete(groupsPath() + "/" + groupB).cookie(ownerCookie()))
                 .andExpect(status().isNoContent());
         mockMvc.perform(get(participantsPath()).cookie(ownerCookie()))
-                .andExpect(jsonPath("$.data[3].groupId").isEmpty())
-                .andExpect(jsonPath("$.data[4].groupId").isEmpty());
+                .andExpect(jsonPath("$.data[3].groupId").value(groupA))
+                .andExpect(jsonPath("$.data[4].groupId").value(groupA));
     }
 
     @Test
-    @DisplayName("グループ未定義での自動振り分けは400になる")
-    void グループなし自動振り分け() throws Exception {
-        addParticipant("参加 一郎", "DAN_1");
+    @DisplayName("自動振り分けは棄権中の参加者の割当を変更しない")
+    void 自動振り分けは棄権者の割当を維持() throws Exception {
+        String groupA = defaultGroupId();
+        String groupB = createGroup("B");
+        addParticipant("参加 一郎", "DAN_9");
+        addParticipant("参加 二郎", "DAN_5");
+        String withdrawnId = addParticipant("参加 三郎", "KYU_9");
+        assignGroup(withdrawnId, groupB);
+        mockMvc.perform(patch(participantsPath() + "/" + withdrawnId).cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"WITHDRAWN\"}"))
+                .andExpect(status().isOk());
+
+        // ACTIVE 2名は A/B へ1名ずつ。棄権者(三郎)の割当は B のまま変わらない
         mockMvc.perform(post(groupsPath() + "/auto-assign").cookie(ownerCookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].groupId").value(groupA))
+                .andExpect(jsonPath("$.data[1].groupId").value(groupB))
+                .andExpect(jsonPath("$.data[2].status").value("WITHDRAWN"))
+                .andExpect(jsonPath("$.data[2].groupId").value(groupB));
+    }
+
+    @Test
+    @DisplayName("参加者追加はグループ省略時に先頭グループへ割り当てられ、指定時はそのグループになる")
+    void 参加者追加のグループ割当() throws Exception {
+        String groupA = defaultGroupId();
+        String groupB = createGroup("B");
+
+        String withoutGroup = addParticipant("参加 一郎", "DAN_1");
+        mockMvc.perform(get(participantsPath()).cookie(ownerCookie()))
+                .andExpect(jsonPath("$.data[0].id").value(withoutGroup))
+                .andExpect(jsonPath("$.data[0].groupId").value(groupA));
+
+        mockMvc.perform(post(participantsPath()).cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"参加 二郎\",\"groupId\":\"" + groupB + "\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.groupId").value(groupB));
+
+        // 未知グループの指定は400
+        mockMvc.perform(post(participantsPath()).cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"参加 三郎\",\"groupId\":\"" + "0".repeat(26) + "\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
     }
 
     @Test
-    @DisplayName("開始時検証: 未割当参加者や2名未満のグループがあると開始できない")
+    @DisplayName("開始時検証: 空グループや2名未満のグループがあると開始できない")
     void 開始時検証() throws Exception {
-        String groupA = createGroup("A");
         String groupB = createGroup("B");
         List<String> ids = List.of(
                 addParticipant("参加 一郎", "DAN_1"),
                 addParticipant("参加 二郎", "KYU_1"),
                 addParticipant("参加 三郎", "KYU_5"),
                 addParticipant("参加 四郎", "KYU_9"));
-        assignGroup(ids.get(0), groupA);
-        assignGroup(ids.get(1), groupA);
-        assignGroup(ids.get(2), groupA);
 
-        // 四郎が未割当
+        // 全員デフォルトグループAのまま → Bが0名で開始不可
         mockMvc.perform(post(base() + "/start").cookie(ownerCookie()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
 
-        // Bが1名のみ
+        // Bが1名のみでも開始不可
         assignGroup(ids.get(3), groupB);
         mockMvc.perform(post(base() + "/start").cookie(ownerCookie()))
                 .andExpect(status().isConflict());
@@ -198,19 +230,19 @@ class GroupApiTest extends ApiContractTestSupport {
                 .andExpect(status().isConflict());
         mockMvc.perform(patch(participantsPath() + "/" + ids.get(0)).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"clearGroup\":true}"))
+                        .content("{\"groupId\":\"" + groupB + "\"}"))
                 .andExpect(status().isConflict());
     }
 
     @Test
     @DisplayName("グループ大会の一巡: グループ独立ペアリング・グループ内卓番号/BYE・グループ別順位")
     void グループ大会の一巡() throws Exception {
-        String groupA = createGroup("A");
+        String groupA = defaultGroupId();
         String groupB = createGroup("B");
-        // A: 3名(奇数なのでグループ内BYE) / B: 2名
-        assignGroup(addParticipant("参加 一郎", "DAN_5"), groupA);
-        assignGroup(addParticipant("参加 二郎", "DAN_3"), groupA);
-        assignGroup(addParticipant("参加 三郎", "DAN_1"), groupA);
+        // A: 3名(奇数なのでグループ内BYE) / B: 2名。追加時の省略で先頭グループAに入る
+        addParticipant("参加 一郎", "DAN_5");
+        addParticipant("参加 二郎", "DAN_3");
+        addParticipant("参加 三郎", "DAN_1");
         assignGroup(addParticipant("参加 四郎", "KYU_1"), groupB);
         assignGroup(addParticipant("参加 五郎", "KYU_5"), groupB);
         mockMvc.perform(post(base() + "/start").cookie(ownerCookie()))
@@ -268,7 +300,7 @@ class GroupApiTest extends ApiContractTestSupport {
     @Test
     @DisplayName("CSVのグループ列(4列)で割当付きインポートでき、未知のグループ名は行エラーになる")
     void CSVグループ列() throws Exception {
-        String groupA = createGroup("A");
+        String groupA = defaultGroupId();
         String groupB = createGroup("B");
 
         String csv = "氏名,所属,段級位,グループ\n"
@@ -282,7 +314,8 @@ class GroupApiTest extends ApiContractTestSupport {
                 .andExpect(jsonPath("$.data.importedCount").value(3))
                 .andExpect(jsonPath("$.data.participants[0].groupId").value(groupA))
                 .andExpect(jsonPath("$.data.participants[1].groupId").value(groupB))
-                .andExpect(jsonPath("$.data.participants[2].groupId").isEmpty());
+                // グループ列が空欄の行は先頭グループに割り当てられる
+                .andExpect(jsonPath("$.data.participants[2].groupId").value(groupA));
 
         // 未知のグループ名は行番号付きエラーで1件も取り込まれない
         String invalid = "氏名,所属,段級位,グループ\n正常 太郎,,初段,A\n異常 次郎,,1級,X\n";
@@ -294,6 +327,15 @@ class GroupApiTest extends ApiContractTestSupport {
                 .andExpect(jsonPath("$.error.details[0].field").value("3行目"));
         mockMvc.perform(get(participantsPath()).cookie(ownerCookie()))
                 .andExpect(jsonPath("$.data.length()").value(3));
+    }
+
+    /** 大会作成時に自動作成されるデフォルトグループ「A」のID */
+    private String defaultGroupId() throws Exception {
+        MvcResult result = mockMvc.perform(get(groupsPath()).cookie(ownerCookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].name").value("A"))
+                .andReturn();
+        return dataOf(result).path(0).path("id").asText();
     }
 
     private String createGroup(String name) throws Exception {

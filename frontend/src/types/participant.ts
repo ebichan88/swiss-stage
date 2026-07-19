@@ -7,8 +7,8 @@ export interface Participant {
   rank: Rank | null;
   seedOrder: number;
   status: ParticipantStatus;
-  /** グループ割当(null = 未割当。グループなし大会は常にnull) */
-  groupId: string | null;
+  /** グループ割当(必須。常にいずれかのグループに帰属する) */
+  groupId: string;
 }
 
 /** 対局・順位表で使う参加者の要約 */
@@ -18,18 +18,18 @@ export interface ParticipantSummary {
   organization: string | null;
 }
 
-/** POST /participants(backend: CreateParticipantRequest) */
+/** POST /participants(backend: CreateParticipantRequest)。groupId 省略時は先頭グループに割当 */
 export interface CreateParticipantInput {
   name: string;
   organization: string | null;
   rank: Rank | null;
-  groupId?: string | null;
+  groupId?: string;
 }
 
 /**
  * PATCH /participants/{pid}(backend: UpdateParticipantRequest)。未指定の項目は変更しない。
  * 棋力を未入力に戻すには clearRank: true(rank との同時指定は400)。
- * グループ割当も同型: 未割当に戻すには clearGroup: true(変更は PREPARING 中のみ)
+ * groupId は割当先グループの変更(PREPARING 中のみ。未割当状態は存在しない)
  */
 export interface UpdateParticipantInput {
   name?: string;
@@ -37,7 +37,6 @@ export interface UpdateParticipantInput {
   rank?: Rank;
   clearRank?: boolean;
   groupId?: string;
-  clearGroup?: boolean;
   status?: ParticipantStatus;
 }
 

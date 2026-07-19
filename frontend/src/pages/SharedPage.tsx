@@ -44,18 +44,19 @@ function playerLabel(player: ParticipantSummary | null, mark: string | null): st
 interface SharedMatchCardProps {
   token: string;
   match: Match;
+  multiGroup: boolean;
   canInput: boolean;
 }
 
 /** 共有ページの1対局カード(スマホ優先: 卓番号・対戦・結果・入力導線) */
-function SharedMatchCard({ token, match, canInput }: SharedMatchCardProps) {
+function SharedMatchCard({ token, match, multiGroup, canInput }: SharedMatchCardProps) {
   return (
     <Card variant="outlined">
       <CardContent
         sx={{ display: 'flex', alignItems: 'center', gap: 2, '&:last-child': { pb: 2 } }}
       >
         <Typography variant="h3" component="span" sx={{ flexShrink: 0 }}>
-          {tableLabel(match)}卓
+          {tableLabel(match, multiGroup)}卓
         </Typography>
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography variant="body1">
@@ -117,6 +118,8 @@ export function SharedPage() {
   const { tournament, rounds, standings } = data;
   const latestRound: Round | null = rounds.length > 0 ? rounds[rounds.length - 1] : null;
   const currentRound = rounds.find((round) => round.roundNumber === selectedRound) ?? latestRound;
+  // グループが1つだけの大会は表示上グループを見せない(見出し・卓番号プレフィックスなし)
+  const multiGroup = standings.length > 1;
   const canInput =
     tournament.resultInputEnabled &&
     tournament.status === 'IN_PROGRESS' &&
@@ -187,8 +190,8 @@ export function SharedPage() {
               />
             ) : (
               matchSections(currentRound.matches).map(({ group, matches }) => (
-                <Stack key={group?.id ?? 'all'} spacing={1.5}>
-                  {group && (
+                <Stack key={group.id} spacing={1.5}>
+                  {multiGroup && (
                     <Typography variant="h4" component="h2">
                       {group.name}
                     </Typography>
@@ -198,6 +201,7 @@ export function SharedPage() {
                       key={match.id}
                       token={token}
                       match={match}
+                      multiGroup={multiGroup}
                       canInput={canInput}
                     />
                   ))}
@@ -215,8 +219,8 @@ export function SharedPage() {
           />
         ) : (
           standings.map(({ group, standings: groupStandings }) => (
-            <Box key={group?.id ?? 'all'} sx={{ mb: 3 }}>
-              {group && (
+            <Box key={group.id} sx={{ mb: 3 }}>
+              {multiGroup && (
                 <Typography variant="h4" component="h2" sx={{ mb: 1 }}>
                   {group.name}
                 </Typography>

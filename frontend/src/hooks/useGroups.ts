@@ -44,7 +44,7 @@ export function useDeleteGroup(tournamentId: string) {
     mutationFn: (groupId: string) => deleteGroup(tournamentId, groupId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.groups(tournamentId) });
-      // 削除で割当済み参加者が未割当に戻る
+      // 削除で割当済み参加者は隣のグループへ移動する
       void queryClient.invalidateQueries({ queryKey: queryKeys.participants(tournamentId) });
     },
   });

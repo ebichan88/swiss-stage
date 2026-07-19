@@ -59,12 +59,13 @@ public class ParticipantService {
             TournamentId tournamentId, String ownerSub, CreateParticipantRequest request) {
         Tournament tournament = access.loadOwned(tournamentId, ownerSub);
         requirePreparing(tournament, "参加者の追加は大会開始前のみ可能です");
+        List<Group> groups = groupRepository.findAllByTournamentId(tournamentId);
         GroupId groupId = request.groupId() == null
-                ? null
-                : resolveGroup(tournamentId, request.groupId()).id();
+                ? firstGroup(groups).id()
+                : resolveGroup(groups, request.groupId()).id();
         Participant participant = Participant.create(
                 request.name(), normalize(request.organization()), request.rank(),
-                nextSeedOrder(tournamentId)).withGroup(groupId);
+                nextSeedOrder(tournamentId), groupId);
         participantRepository.save(tournamentId, participant);
         sharedViewCache.evict(tournamentId);
         return ParticipantDto.from(participant);
@@ -74,18 +75,20 @@ public class ParticipantService {
         Tournament tournament = access.loadOwned(tournamentId, ownerSub);
         requirePreparing(tournament, "CSVインポートは大会開始前のみ可能です");
         List<ParticipantCsvParser.Row> rows = csvParser.parse(csv);
-        Map<String, GroupId> groupsByName = groupRepository.findAllByTournamentId(tournamentId)
-                .stream()
+        List<Group> groups = groupRepository.findAllByTournamentId(tournamentId);
+        Map<String, GroupId> groupsByName = groups.stream()
                 .collect(Collectors.toMap(Group::name, Group::id));
         validateGroupNames(rows, groupsByName);
 
         int seedOrder = nextSeedOrder(tournamentId);
+        GroupId defaultGroupId = firstGroup(groups).id();
         List<Participant> participants = new ArrayList<>();
         for (ParticipantCsvParser.Row row : rows) {
-            GroupId groupId = row.groupName() == null ? null : groupsByName.get(row.groupName());
+            GroupId groupId = row.groupName() == null
+                    ? defaultGroupId
+                    : groupsByName.get(row.groupName());
             participants.add(Participant.create(
-                    row.name(), normalize(row.organization()), row.rank(), seedOrder++)
-                    .withGroup(groupId));
+                    row.name(), normalize(row.organization()), row.rank(), seedOrder++, groupId));
         }
         participantRepository.saveAll(tournamentId, participants);
         sharedViewCache.evict(tournamentId);
@@ -102,17 +105,14 @@ public class ParticipantService {
         if (clearRank && request.rank() != null) {
             throw new ValidationException("rank と clearRank は同時に指定できません");
         }
-        boolean clearGroup = Boolean.TRUE.equals(request.clearGroup());
-        if (clearGroup && request.groupId() != null) {
-            throw new ValidationException("groupId と clearGroup は同時に指定できません");
-        }
         Participant participant = participantRepository.findById(tournamentId, participantId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.PARTICIPANT_NOT_FOUND));
 
         GroupId groupId = participant.groupId();
-        if (clearGroup || request.groupId() != null) {
+        if (request.groupId() != null) {
             requirePreparing(tournament, "グループ割当の変更は大会開始前のみ可能です");
-            groupId = clearGroup ? null : resolveGroup(tournamentId, request.groupId()).id();
+            groupId = resolveGroup(
+                    groupRepository.findAllByTournamentId(tournamentId), request.groupId()).id();
         }
         Participant updated = new Participant(
                 participant.id(),
@@ -141,11 +141,19 @@ public class ParticipantService {
      * グループの解決。ユーザー入力をキー組み立てに使わないため、
      * 大会のグループ一覧(最大10件)から突き合わせる
      */
-    private Group resolveGroup(TournamentId tournamentId, String groupIdValue) {
-        return groupRepository.findAllByTournamentId(tournamentId).stream()
+    private static Group resolveGroup(List<Group> groups, String groupIdValue) {
+        return groups.stream()
                 .filter(g -> g.id().value().equals(groupIdValue))
                 .findFirst()
                 .orElseThrow(() -> new ValidationException("指定されたグループが存在しません"));
+    }
+
+    /** グループ指定の省略時に割り当てる先頭グループ(定義順。大会は常に1つ以上のグループを持つ) */
+    private static Group firstGroup(List<Group> groups) {
+        if (groups.isEmpty()) {
+            throw new InvalidStateException("大会にグループが存在しません");
+        }
+        return groups.getFirst();
     }
 
     /** CSVのグループ列は定義済みグループ名に完全一致(未知の名前は行エラー。自動作成しない) */

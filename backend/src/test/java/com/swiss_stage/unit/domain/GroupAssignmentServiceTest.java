@@ -100,10 +100,10 @@ class GroupAssignmentServiceTest {
     }
 
     @Test
-    @DisplayName("開始時検証: グループ未定義の大会は検証をスキップする")
-    void 検証はグループ未定義をスキップ() {
-        assertThatCode(() -> service.validateForStart(List.of(), TestData.participants(4)))
-                .doesNotThrowAnyException();
+    @DisplayName("開始時検証: グループ未定義はエラー(大会は常に1つ以上のグループを持つ)")
+    void 検証はグループ未定義でエラー() {
+        assertThatThrownBy(() -> service.validateForStart(List.of(), TestData.participants(4)))
+                .isInstanceOf(DomainException.class);
     }
 
     @Test
@@ -114,24 +114,11 @@ class GroupAssignmentServiceTest {
                 TestData.participant(2).withGroup(groupA.id()),
                 TestData.participant(3).withGroup(groupB.id()),
                 TestData.participant(4).withGroup(groupB.id()),
-                // 棄権者は未割当でも数に入らない
+                // 棄権者は割当先が定義外グループでも数に入らない
                 TestData.participant(5).withdraw());
 
         assertThatCode(() -> service.validateForStart(List.of(groupA, groupB), participants))
                 .doesNotThrowAnyException();
-    }
-
-    @Test
-    @DisplayName("開始時検証: 未割当のACTIVE参加者がいると開始できない")
-    void 未割当はエラー() {
-        List<Participant> participants = List.of(
-                TestData.participant(1).withGroup(groupA.id()),
-                TestData.participant(2).withGroup(groupA.id()),
-                TestData.participant(3));
-
-        assertThatThrownBy(() -> service.validateForStart(List.of(groupA), participants))
-                .isInstanceOf(DomainException.class)
-                .hasMessageContaining("未割当");
     }
 
     @Test

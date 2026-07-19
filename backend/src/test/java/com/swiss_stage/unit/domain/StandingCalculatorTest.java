@@ -68,7 +68,7 @@ class StandingCalculatorTest {
     void 未入力は無視() {
         List<Participant> ps = participants(2);
         List<Match> matches = List.of(
-                Match.pairOf(1, 1, ps.get(0).id(), ps.get(1).id())); // result = NONE
+                Match.pairOf(1, 1, ps.get(0).id(), ps.get(1).id(), TestData.GROUP_ID)); // result = NONE
 
         var standings = byId(calculator.calculate(ps, matches));
 

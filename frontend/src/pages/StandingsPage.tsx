@@ -37,8 +37,8 @@ export function StandingsPage() {
       {groupStandings &&
         !isEmpty &&
         groupStandings.map(({ group, standings }) => (
-          <Box key={group?.id ?? 'all'} sx={{ mb: 3 }}>
-            {group && (
+          <Box key={group.id} sx={{ mb: 3 }}>
+            {groupStandings.length > 1 && (
               <Typography variant="h4" component="h3" sx={{ mb: 1 }}>
                 {group.name}
               </Typography>

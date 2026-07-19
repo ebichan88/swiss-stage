@@ -1,5 +1,6 @@
 package com.swiss_stage.unit.domain;
 
+import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Match;
 import com.swiss_stage.domain.model.MatchResult;
 import com.swiss_stage.domain.model.Participant;
@@ -14,6 +15,9 @@ final class TestData {
 
     private TestData() {}
 
+    /** groupId必須のため、グループを区別しないテストはこの単一グループに全員帰属させる */
+    static final GroupId GROUP_ID = new GroupId("01TESTGROUP000000000000000");
+
     static Participant participant(int seedOrder) {
         return participant(seedOrder, (String) null);
     }
@@ -25,7 +29,8 @@ final class TestData {
                 organization,
                 null,
                 seedOrder,
-                ParticipantStatus.ACTIVE);
+                ParticipantStatus.ACTIVE,
+                GROUP_ID);
     }
 
     static Participant participant(int seedOrder, Rank rank) {
@@ -35,7 +40,8 @@ final class TestData {
                 null,
                 rank,
                 seedOrder,
-                ParticipantStatus.ACTIVE);
+                ParticipantStatus.ACTIVE,
+                GROUP_ID);
     }
 
     static List<Participant> participants(int count) {
@@ -47,10 +53,10 @@ final class TestData {
     }
 
     static Match match(int round, Participant p1, Participant p2, MatchResult result) {
-        return Match.pairOf(round, 1, p1.id(), p2.id()).withResult(result);
+        return Match.pairOf(round, 1, p1.id(), p2.id(), GROUP_ID).withResult(result);
     }
 
     static Match bye(int round, Participant p) {
-        return Match.byeOf(round, 99, p.id());
+        return Match.byeOf(round, 99, p.id(), GROUP_ID);
     }
 }

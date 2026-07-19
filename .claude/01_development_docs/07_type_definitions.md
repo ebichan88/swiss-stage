@@ -68,19 +68,26 @@ interface Participant {
   rank: Rank | null;             // 棋力(段級位enum。null = 未入力)
   seedOrder: number;
   status: ParticipantStatus;
-  groupId: string | null;        // グループ割当(null = 未割当。グループなし大会は常にnull)
+  groupId: string;               // グループ割当(必須。常にいずれかのグループに帰属する)
+}
+
+// POST /participants(CreateParticipantRequest)
+interface CreateParticipantInput {
+  name: string;
+  organization: string | null;
+  rank: Rank | null;
+  groupId?: string;              // 省略時は先頭グループ(定義順)に割当
 }
 
 // PATCH /participants/{pid}(UpdateParticipantRequest)。未指定(null)の項目は変更しない。
 // rank は null で「変更なし」のため、未入力に戻す場合は clearRank: true を送る(rankとの同時指定は400)
-// groupId / clearGroup も同型パターン(groupId との同時指定は400。変更は PREPARING 中のみ)
+// groupId は割当先グループの変更(PREPARING 中のみ。未割当状態は存在しないため clear系は無い)
 interface UpdateParticipantInput {
   name?: string;
   organization?: string;         // 空文字で未入力に戻せる
   rank?: Rank;
   clearRank?: boolean;
   groupId?: string;
-  clearGroup?: boolean;
   status?: ParticipantStatus;    // WITHDRAWN で途中棄権
 }
 ```
@@ -88,7 +95,8 @@ interface UpdateParticipantInput {
 ### Group(棋力帯グループ)
 
 ```typescript
-// GET/POST /tournaments/{id}/groups。作成順(ULID順)で返す
+// GET/POST /tournaments/{id}/groups。作成順(ULID順)で返す。
+// 大会は常に1つ以上のグループを持つ(大会作成時に「A」を自動作成)
 interface Group {
   id: string;                    // ULID
   name: string;                  // 大会内で一意。50文字以内
@@ -106,8 +114,8 @@ interface GroupInput {
 interface Match {
   id: string;
   roundNumber: number;
-  tableNumber: number;                  // グループ大会ではグループ内で1始まり
-  group: Group | null;                  // null = グループなし大会。卓表示は group ? `${group.name}-${tableNumber}` : tableNumber
+  tableNumber: number;                  // グループ内で1始まり
+  group: Group;                         // 帰属グループ(必須)。卓表示は「A-1」形式(グループが1つだけの大会は表示上プレフィックスを省略)
   player1: ParticipantSummary;          // { id, name, organization }
   player2: ParticipantSummary | null;   // null = BYE
   result: MatchResult;
@@ -142,9 +150,9 @@ interface Standing {
 }
 
 // GET /standings・SharedTournament.standings のレスポンス要素。
-// 常にこの形で返し、グループなし大会は group=null の単一要素(フロントの分岐を最小化)
+// グループごとに1要素(group は常に非null。グループが1つだけの大会は単一要素)
 interface GroupStandings {
-  group: Group | null;
+  group: Group;
   standings: Standing[];
 }
 ```
@@ -157,7 +165,7 @@ interface GroupStandings {
 interface SharedTournament {
   tournament: SharedTournamentSummary;
   rounds: Round[];
-  standings: GroupStandings[];   // グループなし大会は group=null の単一要素
+  standings: GroupStandings[];   // グループごとに1要素(group は常に非null)
 }
 
 interface SharedTournamentSummary {

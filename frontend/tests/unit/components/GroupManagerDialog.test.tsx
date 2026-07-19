@@ -66,11 +66,15 @@ describe('GroupManagerDialog', () => {
     ).toBeInTheDocument();
   });
 
-  it('グループ削除は確認ダイアログで割当解除の注意を表示する', async () => {
+  it('グループ削除は確認ダイアログで参加者の移動先の注意を表示する', async () => {
     let deleted = false;
     server.use(
-      http.get(GROUPS_URL, () => HttpResponse.json(apiSuccess([groupOf({ id: 'g1', name: 'A' })]))),
-      http.delete(`${GROUPS_URL}/g1`, () => {
+      http.get(GROUPS_URL, () =>
+        HttpResponse.json(
+          apiSuccess([groupOf({ id: 'g1', name: 'A' }), groupOf({ id: 'g2', name: 'B' })]),
+        ),
+      ),
+      http.delete(`${GROUPS_URL}/g2`, () => {
         deleted = true;
         return new HttpResponse(null, { status: 204 });
       }),
@@ -78,23 +82,24 @@ describe('GroupManagerDialog', () => {
 
     renderDialog();
 
-    await screen.findByText('A');
-    await userEvent.click(screen.getByRole('button', { name: 'Aを削除' }));
+    await screen.findByText('B');
+    await userEvent.click(screen.getByRole('button', { name: 'Bを削除' }));
     expect(
-      screen.getByText('グループ「A」を削除します。割当済みの参加者は未割当に戻ります。'),
+      screen.getByText('グループ「B」を削除します。割当済みの参加者は隣のグループへ移動します。'),
     ).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '削除する' }));
 
     await waitFor(() => expect(deleted).toBe(true));
   });
 
-  it('グループ未定義のときは自動振り分けボタンが無効になる', async () => {
-    server.use(http.get(GROUPS_URL, () => HttpResponse.json(apiSuccess([]))));
+  it('最後の1グループは削除ボタンが無効になる', async () => {
+    server.use(
+      http.get(GROUPS_URL, () => HttpResponse.json(apiSuccess([groupOf({ id: 'g1', name: 'A' })]))),
+    );
 
     renderDialog();
 
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: '段級位で自動振り分け' })).toBeDisabled(),
-    );
+    await screen.findByText('A');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Aを削除' })).toBeDisabled());
   });
 });

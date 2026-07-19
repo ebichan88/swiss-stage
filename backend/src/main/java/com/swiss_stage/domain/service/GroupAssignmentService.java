@@ -45,17 +45,17 @@ public class GroupAssignmentService {
     }
 
     /**
-     * 大会開始時の検証。グループが定義されている場合、全ACTIVE参加者が割当済みで、
+     * 大会開始時の検証。全ACTIVE参加者の割当先が定義済みグループで、
      * 各グループのACTIVE参加者が2名以上であること。違反時はDomainException。
      */
     public void validateForStart(List<Group> groups, List<Participant> participants) {
         if (groups.isEmpty()) {
-            return;
+            throw new DomainException("グループが定義されていません");
         }
         Set<GroupId> groupIds = groups.stream().map(Group::id).collect(Collectors.toSet());
         List<Participant> active = participants.stream().filter(Participant::isActive).toList();
         long unassigned = active.stream()
-                .filter(p -> p.groupId() == null || !groupIds.contains(p.groupId()))
+                .filter(p -> !groupIds.contains(p.groupId()))
                 .count();
         if (unassigned > 0) {
             throw new DomainException(

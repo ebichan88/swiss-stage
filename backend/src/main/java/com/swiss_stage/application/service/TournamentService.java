@@ -8,6 +8,7 @@ import com.swiss_stage.application.exception.ErrorCode;
 import com.swiss_stage.application.exception.InvalidStateException;
 import com.swiss_stage.application.exception.NotFoundException;
 import com.swiss_stage.domain.DomainException;
+import com.swiss_stage.domain.model.Group;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
@@ -57,6 +58,14 @@ public class TournamentService {
                 request.name(), request.gameType(), request.totalRounds(), ownerSub,
                 Instant.now(clock));
         tournamentRepository.save(tournament);
+        // 大会は常に1つ以上のグループを持つ(05 §2.4)。デフォルトグループを同時に作成する
+        try {
+            groupRepository.save(tournament.id(), Group.create(Group.DEFAULT_NAME));
+        } catch (RuntimeException e) {
+            // グループのない大会を残さない(残ると以後の参加者追加・自動振り分けが失敗し続ける)
+            tournamentRepository.delete(tournament.id());
+            throw e;
+        }
         return reload(tournament.id());
     }
 

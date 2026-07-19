@@ -21,7 +21,7 @@ import { rankLabel } from '../../../utils/labels';
 
 export interface ParticipantTableProps {
   participants: Participant[];
-  /** グループ定義(空ならグループ列を表示しない) */
+  /** グループ定義(1つだけの大会ではグループ列を表示しない) */
   groups: Group[];
   /** 追加・編集・削除可(大会状態 PREPARING) */
   canEdit: boolean;
@@ -30,8 +30,8 @@ export interface ParticipantTableProps {
   onEdit: (participant: Participant) => void;
   onWithdraw: (participant: Participant) => void;
   onDelete: (participant: Participant) => void;
-  /** グループ割当の変更(null = 未割当に戻す)。PREPARING のみ呼ばれる */
-  onChangeGroup: (participant: Participant, groupId: string | null) => void;
+  /** グループ割当の変更。PREPARING のみ呼ばれる */
+  onChangeGroup: (participant: Participant, groupId: string) => void;
 }
 
 export function ParticipantTable({
@@ -45,8 +45,8 @@ export function ParticipantTable({
   onChangeGroup,
 }: ParticipantTableProps) {
   const showActions = canEdit || canWithdraw;
-  const showGroup = groups.length > 0;
-  const groupName = (groupId: string | null) => groups.find((g) => g.id === groupId)?.name ?? '';
+  const showGroup = groups.length > 1;
+  const groupName = (groupId: string) => groups.find((g) => g.id === groupId)?.name ?? '';
   return (
     <TableContainer sx={{ overflowX: 'auto' }}>
       <Table size="small">
@@ -78,10 +78,8 @@ export function ParticipantTable({
                       <TextField
                         select
                         size="small"
-                        value={participant.groupId ?? ''}
-                        onChange={(e) =>
-                          onChangeGroup(participant, e.target.value === '' ? null : e.target.value)
-                        }
+                        value={participant.groupId}
+                        onChange={(e) => onChangeGroup(participant, e.target.value)}
                         slotProps={{
                           select: {
                             SelectDisplayProps: {
@@ -91,7 +89,6 @@ export function ParticipantTable({
                         }}
                         sx={{ minWidth: 100 }}
                       >
-                        <MenuItem value="">未割当</MenuItem>
                         {groups.map((group) => (
                           <MenuItem key={group.id} value={group.id}>
                             {group.name}

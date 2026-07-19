@@ -83,15 +83,23 @@ public class GroupService {
         return GroupDto.from(renamed);
     }
 
-    /** グループ削除。割当済みの参加者は未割当に戻す */
+    /**
+     * グループ削除。最後の1グループは削除できない(大会は常に1つ以上のグループを持つ)。
+     * 割当済みの参加者は直前のグループ(先頭グループの削除時は直後のグループ)へ移す
+     */
     public void delete(TournamentId tournamentId, GroupId groupId, String ownerSub) {
         Tournament tournament = access.loadOwned(tournamentId, ownerSub);
         requirePreparing(tournament, "グループの削除は大会開始前のみ可能です");
-        load(tournamentId, groupId);
+        List<Group> groups = groupRepository.findAllByTournamentId(tournamentId);
+        int index = indexOf(groups, groupId);
+        if (groups.size() <= 1) {
+            throw new ValidationException("最後のグループは削除できません");
+        }
+        Group fallback = groups.get(index == 0 ? 1 : index - 1);
         List<Participant> assigned = participantRepository.findAllByTournamentId(tournamentId)
                 .stream()
                 .filter(p -> groupId.equals(p.groupId()))
-                .map(p -> p.withGroup(null))
+                .map(p -> p.withGroup(fallback.id()))
                 .toList();
         participantRepository.saveAll(tournamentId, assigned);
         groupRepository.delete(tournamentId, groupId);
@@ -108,8 +116,9 @@ public class GroupService {
         }
         List<Participant> participants = participantRepository.findAllByTournamentId(tournamentId);
         Map<ParticipantId, GroupId> assignment = assignmentService.propose(groups, participants);
+        // 棄権中の参加者は振り分け対象外(propose結果に含まれない)のため現在の割当を維持する
         List<Participant> updated = participants.stream()
-                .map(p -> p.withGroup(assignment.get(p.id())))
+                .map(p -> p.withGroup(assignment.getOrDefault(p.id(), p.groupId())))
                 .toList();
         participantRepository.saveAll(tournamentId, updated);
         sharedViewCache.evict(tournamentId);
@@ -122,6 +131,15 @@ public class GroupService {
     private Group load(TournamentId tournamentId, GroupId groupId) {
         return groupRepository.findById(tournamentId, groupId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.GROUP_NOT_FOUND));
+    }
+
+    private static int indexOf(List<Group> groups, GroupId groupId) {
+        for (int i = 0; i < groups.size(); i++) {
+            if (groups.get(i).id().equals(groupId)) {
+                return i;
+            }
+        }
+        throw new NotFoundException(ErrorCode.GROUP_NOT_FOUND);
     }
 
     private Group createGroup(String name) {
