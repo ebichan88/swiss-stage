@@ -27,12 +27,13 @@ class DynamoDbMatchRepositoryTest extends DynamoDbRepositoryTestSupport {
     @DisplayName("対局を保存してラウンド別・全件・ID指定で取得できる(RoundアイテムはSK前方一致でも混ざらない)")
     void 保存と取得() {
         TournamentId tournamentId = TournamentId.generate();
+        GroupId groupId = GroupId.generate();
         ParticipantId p1 = ParticipantId.generate();
         ParticipantId p2 = ParticipantId.generate();
         ParticipantId p3 = ParticipantId.generate();
-        Match r1m1 = Match.pairOf(1, 1, p1, p2);
-        Match r1bye = Match.byeOf(1, 2, p3);
-        Match r2m1 = Match.pairOf(2, 1, p1, p3);
+        Match r1m1 = Match.pairOf(1, 1, p1, p2, groupId);
+        Match r1bye = Match.byeOf(1, 2, p3, groupId);
+        Match r2m1 = Match.pairOf(2, 1, p1, p3, groupId);
         // ROUND#プレフィックスを共有するRoundアイテムが混入しないことを確認するために作る
         roundRepository.create(tournamentId, Round.pairing(1));
         repository.saveAll(tournamentId, List.of(r1m1, r1bye));
@@ -51,21 +52,18 @@ class DynamoDbMatchRepositoryTest extends DynamoDbRepositoryTestSupport {
     }
 
     @Test
-    @DisplayName("対局のグループ帰属を保存して復元できる(グループなしはnullのまま)")
+    @DisplayName("対局のグループ帰属を保存して復元できる")
     void グループ帰属の往復() {
         TournamentId tournamentId = TournamentId.generate();
         GroupId groupId = GroupId.generate();
         Match grouped = Match.pairOf(1, 1, ParticipantId.generate(), ParticipantId.generate(), groupId);
         Match groupedBye = Match.byeOf(1, 2, ParticipantId.generate(), groupId);
-        Match ungrouped = Match.pairOf(1, 3, ParticipantId.generate(), ParticipantId.generate());
-        repository.saveAll(tournamentId, List.of(grouped, groupedBye, ungrouped));
+        repository.saveAll(tournamentId, List.of(grouped, groupedBye));
 
         assertThat(repository.findById(tournamentId, grouped.id()).orElseThrow().groupId())
                 .isEqualTo(groupId);
         assertThat(repository.findById(tournamentId, groupedBye.id()).orElseThrow().groupId())
                 .isEqualTo(groupId);
-        assertThat(repository.findById(tournamentId, ungrouped.id()).orElseThrow().groupId())
-                .isNull();
 
         // 結果入力してもグループ帰属は保たれる
         Match loaded = repository.findById(tournamentId, grouped.id()).orElseThrow();
@@ -78,7 +76,8 @@ class DynamoDbMatchRepositoryTest extends DynamoDbRepositoryTestSupport {
     @DisplayName("結果入力は保存後のversionで更新でき、古いversionは楽観ロック競合になる")
     void 結果入力の楽観ロック() {
         TournamentId tournamentId = TournamentId.generate();
-        Match match = Match.pairOf(1, 1, ParticipantId.generate(), ParticipantId.generate());
+        Match match = Match.pairOf(
+                1, 1, ParticipantId.generate(), ParticipantId.generate(), GroupId.generate());
         repository.save(tournamentId, match);
 
         Match loaded = repository.findById(tournamentId, match.id()).orElseThrow();

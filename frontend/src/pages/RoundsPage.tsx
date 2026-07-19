@@ -145,6 +145,8 @@ export function RoundsPage() {
 
   const undecidedCount = selectedRound?.matches.filter((m) => m.result === 'NONE').length ?? 0;
   const isEditable = tournament.status === 'IN_PROGRESS' && selectedRound?.status !== 'CONFIRMED';
+  const sections = selectedRound ? matchSections(selectedRound.matches) : [];
+  const multiGroup = sections.length > 1;
 
   return (
     <Box>
@@ -217,9 +219,9 @@ export function RoundsPage() {
             </Alert>
           )}
 
-          {matchSections(selectedRound.matches).map(({ group, matches }) => (
-            <Box key={group?.id ?? 'all'} sx={{ mb: 3 }}>
-              {group && (
+          {sections.map(({ group, matches }) => (
+            <Box key={group.id} sx={{ mb: 3 }}>
+              {multiGroup && (
                 <Typography variant="h4" component="h3" sx={{ mb: 1 }}>
                   {group.name}
                 </Typography>
@@ -227,6 +229,7 @@ export function RoundsPage() {
               <PairingTable
                 matches={matches}
                 editable={isEditable}
+                multiGroup={multiGroup}
                 savingMatchId={
                   inputResultMutation.isPending
                     ? (inputResultMutation.variables?.matchId ?? null)

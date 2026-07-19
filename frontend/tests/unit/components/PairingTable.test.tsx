@@ -21,6 +21,7 @@ describe('PairingTable', () => {
           }),
         ]}
         editable
+        multiGroup={false}
         savingMatchId={null}
         onInputResult={() => {}}
       />,
@@ -39,6 +40,7 @@ describe('PairingTable', () => {
       <PairingTable
         matches={[matchOf({ id: 'm1', tableNumber: 1, group: groupOf({ name: 'A' }) })]}
         editable
+        multiGroup
         savingMatchId={null}
         onInputResult={() => {}}
       />,
@@ -57,6 +59,7 @@ describe('PairingTable', () => {
       <PairingTable
         matches={[match]}
         editable
+        multiGroup={false}
         savingMatchId={null}
         onInputResult={onInputResult}
       />,
@@ -73,6 +76,7 @@ describe('PairingTable', () => {
       <PairingTable
         matches={[matchOf({ result: 'DRAW' })]}
         editable={false}
+        multiGroup={false}
         savingMatchId={null}
         onInputResult={() => {}}
       />,

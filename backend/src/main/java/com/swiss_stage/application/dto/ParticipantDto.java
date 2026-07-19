@@ -16,6 +16,6 @@ public record ParticipantDto(
     public static ParticipantDto from(Participant p) {
         return new ParticipantDto(
                 p.id().value(), p.name(), p.organization(), p.rank(), p.seedOrder(), p.status(),
-                p.groupId() == null ? null : p.groupId().value());
+                p.groupId().value());
     }
 }

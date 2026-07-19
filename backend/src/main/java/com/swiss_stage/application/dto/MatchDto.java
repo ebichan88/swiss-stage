@@ -10,7 +10,7 @@ import java.util.Map;
 
 /**
  * 対局DTO。player2 が null なら不戦勝(BYE)。
- * group はグループ大会での帰属グループ(null = グループなし大会)。卓表示は「A-1」形式に使う。
+ * group は帰属グループ(必須)。卓表示は「A-1」形式に使う。
  */
 public record MatchDto(
         String id,
@@ -26,12 +26,15 @@ public record MatchDto(
             Match m,
             Map<ParticipantId, Participant> participants,
             Map<GroupId, Group> groups) {
-        Group group = m.groupId() == null ? null : groups.get(m.groupId());
+        Group group = groups.get(m.groupId());
         return new MatchDto(
                 m.id().value(),
                 m.roundNumber(),
                 m.tableNumber(),
-                group == null ? null : GroupDto.from(group),
+                // グループが見つからない不整合データでもレスポンス全体を壊さない
+                group == null
+                        ? new GroupDto(m.groupId().value(), "(不明なグループ)")
+                        : GroupDto.from(group),
                 summaryOf(m.player1Id(), participants),
                 m.player2Id() == null ? null : summaryOf(m.player2Id(), participants),
                 m.result(),

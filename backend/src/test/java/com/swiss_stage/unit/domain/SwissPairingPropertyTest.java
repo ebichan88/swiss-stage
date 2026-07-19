@@ -82,11 +82,12 @@ class SwissPairingPropertyTest {
                 MatchResult matchResult = random.nextBoolean()
                         ? MatchResult.PLAYER1_WIN
                         : MatchResult.PLAYER2_WIN;
-                allMatches.add(Match.pairOf(round, table++, pair.player1Id(), pair.player2Id())
+                allMatches.add(Match.pairOf(
+                        round, table++, pair.player1Id(), pair.player2Id(), TestData.GROUP_ID)
                         .withResult(matchResult));
             }
             if (result.hasBye()) {
-                allMatches.add(Match.byeOf(round, table, result.byeParticipantId()));
+                allMatches.add(Match.byeOf(round, table, result.byeParticipantId(), TestData.GROUP_ID));
             }
         }
     }

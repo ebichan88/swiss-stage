@@ -21,16 +21,17 @@ test('CP5: グループ大会をグループ独立で運営できる', async ({ 
   await loginAsOrganizer(page);
   const tournamentId = await createTournament(page, `CP5グループ大会 ${Date.now()}`, 3);
 
-  // グループ管理: A・Bを定義(強い帯から順に作成する)
+  // グループ管理: デフォルトの「A」が作成済み。続けて「B」を追加する(強い帯から順)
   await page.goto(`/tournaments/${tournamentId}/participants`);
   await page.getByRole('button', { name: 'グループ管理' }).click();
-  for (const name of ['A', 'B']) {
-    await page.getByRole('textbox', { name: '新しいグループ名' }).fill(name);
-    await page.getByRole('button', { name: '追加' }).click();
-    await expect(
-      page.getByRole('dialog', { name: 'グループ管理' }).getByText(name, { exact: true }),
-    ).toBeVisible();
-  }
+  await expect(
+    page.getByRole('dialog', { name: 'グループ管理' }).getByText('A', { exact: true }),
+  ).toBeVisible();
+  await page.getByRole('textbox', { name: '新しいグループ名' }).fill('B');
+  await page.getByRole('button', { name: '追加' }).click();
+  await expect(
+    page.getByRole('dialog', { name: 'グループ管理' }).getByText('B', { exact: true }),
+  ).toBeVisible();
   await page.getByRole('button', { name: '閉じる' }).click();
 
   // CSVインポート(4列目のグループ列で A:3名 / B:2名 を割当)

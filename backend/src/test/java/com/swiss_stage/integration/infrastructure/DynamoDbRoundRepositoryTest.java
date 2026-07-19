@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.swiss_stage.domain.DuplicateRoundException;
+import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Match;
 import com.swiss_stage.domain.model.ParticipantId;
 import com.swiss_stage.domain.model.Round;
@@ -43,7 +44,8 @@ class DynamoDbRoundRepositoryTest extends DynamoDbRepositoryTestSupport {
         repository.save(tournamentId, round1.startPlaying());
         repository.create(tournamentId, Round.pairing(2));
         matchRepository.save(tournamentId,
-                Match.pairOf(1, 1, ParticipantId.generate(), ParticipantId.generate()));
+                Match.pairOf(1, 1, ParticipantId.generate(), ParticipantId.generate(),
+                        GroupId.generate()));
 
         assertThat(repository.findByRoundNumber(tournamentId, 1).orElseThrow().status())
                 .isEqualTo(RoundStatus.PLAYING);

@@ -161,13 +161,16 @@ class ParticipantApiTest extends ApiContractTestSupport {
                 .andExpect(status().isCreated()).andReturn();
         String participantId = dataOf(created).path("id").asText();
 
+        String groupId = dataOf(created).path("groupId").asText();
         mockMvc.perform(patch(participantsPath() + "/" + participantId)
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"clearRank\":true}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.rank").doesNotExist())
-                .andExpect(jsonPath("$.data.name").value("棋力 未定"));
+                .andExpect(jsonPath("$.data.name").value("棋力 未定"))
+                // グループ割当は他項目の更新で失われない
+                .andExpect(jsonPath("$.data.groupId").value(groupId));
 
         mockMvc.perform(patch(participantsPath() + "/" + participantId)
                         .cookie(ownerCookie())

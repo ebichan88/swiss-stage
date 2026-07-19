@@ -3,8 +3,8 @@ package com.swiss_stage.domain.model;
 import com.swiss_stage.domain.DomainException;
 
 /**
- * 参加者。organization / rank / groupId は任意(null許容)。
- * groupId はグループ大会での帰属先(null = 未割当。グループなし大会は常にnull)。
+ * 参加者。organization / rank は任意(null許容)。
+ * groupId は必須。参加者は常にいずれかのグループに帰属する(05_swiss_pairing_algorithm.md §2.4)。
  */
 public record Participant(
         ParticipantId id,
@@ -22,21 +22,16 @@ public record Participant(
         if (seedOrder < 1) {
             throw new DomainException("シード順は1以上である必要があります");
         }
+        if (groupId == null) {
+            throw new DomainException("参加者の帰属グループは必須です");
+        }
     }
 
-    public Participant(
-            ParticipantId id,
-            String name,
-            String organization,
-            Rank rank,
-            int seedOrder,
-            ParticipantStatus status) {
-        this(id, name, organization, rank, seedOrder, status, null);
-    }
-
-    public static Participant create(String name, String organization, Rank rank, int seedOrder) {
+    public static Participant create(
+            String name, String organization, Rank rank, int seedOrder, GroupId groupId) {
         return new Participant(
-                ParticipantId.generate(), name, organization, rank, seedOrder, ParticipantStatus.ACTIVE);
+                ParticipantId.generate(), name, organization, rank, seedOrder,
+                ParticipantStatus.ACTIVE, groupId);
     }
 
     public boolean isActive() {
@@ -48,7 +43,7 @@ public record Participant(
         return new Participant(id, name, organization, rank, seedOrder, ParticipantStatus.WITHDRAWN, groupId);
     }
 
-    /** グループ割当の変更。null で未割当に戻す */
+    /** グループ割当の変更 */
     public Participant withGroup(GroupId newGroupId) {
         return new Participant(id, name, organization, rank, seedOrder, status, newGroupId);
     }

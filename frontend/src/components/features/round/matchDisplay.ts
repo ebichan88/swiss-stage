@@ -1,25 +1,28 @@
 import type { Group } from '../../../types/group';
 import type { Match } from '../../../types/round';
 
-/** 卓番号の表示。グループ大会は「A-1」形式、グループなしは数字のみ */
-export function tableLabel(match: Match): string {
-  return match.group ? `${match.group.name}-${match.tableNumber}` : String(match.tableNumber);
+/**
+ * 卓番号の表示。複数グループ大会は「A-1」形式、
+ * グループが1つだけの大会は表示上グループを見せないため数字のみ
+ */
+export function tableLabel(match: Match, multiGroup: boolean): string {
+  return multiGroup ? `${match.group.name}-${match.tableNumber}` : String(match.tableNumber);
 }
 
 export interface MatchSection {
-  group: Group | null;
+  group: Group;
   matches: Match[];
 }
 
 /**
  * 対局をグループごとのセクションに分ける(入力はグループ→卓番号順で並んでいる前提)。
- * グループなし大会は group=null の単一セクション
+ * グループ見出しはセクションが2つ以上のときのみ表示する
  */
 export function matchSections(matches: Match[]): MatchSection[] {
   const sections: MatchSection[] = [];
   for (const match of matches) {
     const last = sections.at(-1);
-    if (last && (last.group?.id ?? null) === (match.group?.id ?? null)) {
+    if (last && last.group.id === match.group.id) {
       last.matches.push(match);
     } else {
       sections.push({ group: match.group, matches: [match] });

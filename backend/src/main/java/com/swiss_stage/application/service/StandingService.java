@@ -47,15 +47,12 @@ public class StandingService {
 
     /**
      * 順位表の組み立て(認可済みの呼び出し元専用。共有ページからも使う)。
-     * グループ大会はグループごとに独立計算し、グループなし大会は group=null の単一要素で返す。
+     * グループごとに独立計算する(全大会が1つ以上のグループを持つ。05 §2.4/§3.3)。
      */
     List<GroupStandingsDto> assembleStandings(TournamentId tournamentId) {
         List<Participant> participants = participantRepository.findAllByTournamentId(tournamentId);
         List<Match> matches = matchRepository.findAllByTournamentId(tournamentId);
         List<Group> groups = groupRepository.findAllByTournamentId(tournamentId);
-        if (groups.isEmpty()) {
-            return List.of(new GroupStandingsDto(null, calculate(participants, matches)));
-        }
         List<GroupStandingsDto> result = new ArrayList<>();
         for (Group group : groups) {
             List<Participant> groupParticipants = participants.stream()

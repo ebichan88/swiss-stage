@@ -22,7 +22,7 @@ final class ParticipantItemMapper {
         item.setRank(p.rank() == null ? null : p.rank().name());
         item.setSeedOrder(p.seedOrder());
         item.setStatus(p.status().name());
-        item.setGroupId(p.groupId() == null ? null : p.groupId().value());
+        item.setGroupId(p.groupId().value());
         return item;
     }
 
@@ -34,6 +34,6 @@ final class ParticipantItemMapper {
                 item.getRank() == null ? null : Rank.valueOf(item.getRank()),
                 item.getSeedOrder(),
                 ParticipantStatus.valueOf(item.getStatus()),
-                item.getGroupId() == null ? null : new GroupId(item.getGroupId()));
+                new GroupId(item.getGroupId()));
     }
 }

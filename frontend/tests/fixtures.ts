@@ -33,7 +33,7 @@ export function participantOf(overrides: Partial<Participant> = {}): Participant
     rank: 'DAN_3',
     seedOrder: 1,
     status: 'ACTIVE',
-    groupId: null,
+    groupId: '01TESTGROUP000000000000000',
     ...overrides,
   };
 }
@@ -52,7 +52,7 @@ export function matchOf(overrides: Partial<Match> = {}): Match {
     id: '01TESTMATCH000000000000000',
     roundNumber: 1,
     tableNumber: 1,
-    group: null,
+    group: groupOf(),
     player1: summaryOf({ id: 'p1', name: '架空 太郎' }),
     player2: summaryOf({ id: 'p2', name: '仮名 花子', organization: null }),
     result: 'NONE',
@@ -101,10 +101,10 @@ export function groupOf(overrides: Partial<Group> = {}): Group {
   };
 }
 
-/** グループなし大会の形(group=null の単一要素)。グループ大会は group を上書きする */
+/** 単一グループ大会の形(デフォルトグループの単一要素)。複数グループ大会は group を上書きする */
 export function groupStandingsOf(overrides: Partial<GroupStandings> = {}): GroupStandings {
   return {
-    group: null,
+    group: groupOf(),
     standings: [standingOf()],
     ...overrides,
   };

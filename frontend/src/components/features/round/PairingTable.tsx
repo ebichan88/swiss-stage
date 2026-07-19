@@ -23,6 +23,8 @@ import { resultMark, tableLabel } from './matchDisplay';
 export interface PairingTableProps {
   matches: Match[];
   editable: boolean;
+  /** 複数グループ大会なら true(卓番号を「A-1」形式で表示) */
+  multiGroup: boolean;
   /** 結果送信中の対局ID(該当行のみ入力を無効化) */
   savingMatchId: string | null;
   onInputResult: (match: Match, result: MatchResult) => void;
@@ -40,6 +42,7 @@ function playerText(player: ParticipantSummary | null, mark: string | null): str
 export function PairingTable({
   matches,
   editable,
+  multiGroup,
   savingMatchId,
   onInputResult,
 }: PairingTableProps) {
@@ -53,7 +56,7 @@ export function PairingTable({
           <Card key={match.id} variant="outlined">
             <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Typography variant="h2" component="p" sx={{ minWidth: 48, textAlign: 'center' }}>
-                {tableLabel(match)}
+                {tableLabel(match, multiGroup)}
               </Typography>
               <Box sx={{ flexGrow: 1 }}>
                 <Typography variant="body1">
@@ -66,6 +69,7 @@ export function PairingTable({
                   <MatchResultControl
                     match={match}
                     editable={editable}
+                    multiGroup={multiGroup}
                     saving={savingMatchId === match.id}
                     onInput={(result) => onInputResult(match, result)}
                   />
@@ -94,7 +98,7 @@ export function PairingTable({
             <TableRow key={match.id}>
               <TableCell>
                 <Typography variant="h3" component="span">
-                  {tableLabel(match)}
+                  {tableLabel(match, multiGroup)}
                 </Typography>
               </TableCell>
               <TableCell>{playerText(match.player1, resultMark(match, 'player1'))}</TableCell>
@@ -103,6 +107,7 @@ export function PairingTable({
                 <MatchResultControl
                   match={match}
                   editable={editable}
+                  multiGroup={multiGroup}
                   saving={savingMatchId === match.id}
                   onInput={(result) => onInputResult(match, result)}
                 />

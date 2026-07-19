@@ -4,14 +4,14 @@ import type { ParticipantSummary } from './participant';
 
 /**
  * 対局。player2 が null なら不戦勝(BYE)。
- * group はグループ大会での帰属(null = グループなし大会)。
- * tableNumber はグループ大会ではグループ内で1始まり(表示は「A-1」形式)
+ * group は帰属グループ(必須)。
+ * tableNumber はグループ内で1始まり(複数グループ大会の表示は「A-1」形式)
  */
 export interface Match {
   id: string;
   roundNumber: number;
   tableNumber: number;
-  group: Group | null;
+  group: Group;
   player1: ParticipantSummary;
   player2: ParticipantSummary | null;
   result: MatchResult;

@@ -138,11 +138,12 @@ class ModelTest {
 
         private final ParticipantId p1 = ParticipantId.generate();
         private final ParticipantId p2 = ParticipantId.generate();
+        private final GroupId groupId = GroupId.generate();
 
         @Test
         @DisplayName("結果の入力・上書きができ、BYEへの変更はできない")
         void 結果入力() {
-            Match match = Match.pairOf(1, 1, p1, p2);
+            Match match = Match.pairOf(1, 1, p1, p2, groupId);
             assertThat(match.resultInputBy()).isNull();
             Match decided = match.withResult(MatchResult.PLAYER1_WIN);
             assertThat(decided.pointsFor(p1)).isEqualTo(2);
@@ -157,7 +158,7 @@ class ModelTest {
         @Test
         @DisplayName("BYE対局の結果は変更できない")
         void BYEの結果変更禁止() {
-            Match byeMatch = Match.byeOf(1, 1, p1);
+            Match byeMatch = Match.byeOf(1, 1, p1, groupId);
             assertThat(byeMatch.isBye()).isTrue();
             assertThat(byeMatch.pointsFor(p1)).isEqualTo(2);
             assertThatThrownBy(() -> byeMatch.withResult(MatchResult.PLAYER1_WIN))
@@ -165,21 +166,26 @@ class ModelTest {
         }
 
         @Test
-        @DisplayName("同一参加者同士・不正なBYE指定は作成できない")
+        @DisplayName("同一参加者同士・不正なBYE指定・グループなしは作成できない")
         void バリデーション() {
-            assertThatThrownBy(() -> Match.pairOf(1, 1, p1, p1)).isInstanceOf(DomainException.class);
-            assertThatThrownBy(
-                    () -> new Match(MatchId.generate(), 1, 1, p1, null, MatchResult.NONE, null, 0L))
+            assertThatThrownBy(() -> Match.pairOf(1, 1, p1, p1, groupId))
                     .isInstanceOf(DomainException.class);
             assertThatThrownBy(
-                    () -> new Match(MatchId.generate(), 1, 1, p1, p2, MatchResult.BYE, null, 0L))
+                    () -> new Match(
+                            MatchId.generate(), 1, 1, p1, null, MatchResult.NONE, null, 0L, groupId))
+                    .isInstanceOf(DomainException.class);
+            assertThatThrownBy(
+                    () -> new Match(
+                            MatchId.generate(), 1, 1, p1, p2, MatchResult.BYE, null, 0L, groupId))
+                    .isInstanceOf(DomainException.class);
+            assertThatThrownBy(() -> Match.pairOf(1, 1, p1, p2, null))
                     .isInstanceOf(DomainException.class);
         }
 
         @Test
         @DisplayName("対戦相手・関与判定が正しく動く")
         void 対戦相手の取得() {
-            Match match = Match.pairOf(1, 1, p1, p2);
+            Match match = Match.pairOf(1, 1, p1, p2, groupId);
             assertThat(match.opponentOf(p1)).contains(p2);
             assertThat(match.opponentOf(p2)).contains(p1);
             assertThat(match.opponentOf(ParticipantId.generate())).isEmpty();
@@ -192,10 +198,12 @@ class ModelTest {
     @Nested
     class ParticipantTest {
 
+        private final GroupId groupId = GroupId.generate();
+
         @Test
         @DisplayName("棄権すると非アクティブになる")
         void 棄権() {
-            Participant p = Participant.create("参加者一", "A社", Rank.DAN_3, 1);
+            Participant p = Participant.create("参加者一", "A社", Rank.DAN_3, 1, groupId);
             assertThat(p.isActive()).isTrue();
             assertThat(p.withdraw().isActive()).isFalse();
         }
@@ -203,34 +211,36 @@ class ModelTest {
         @Test
         @DisplayName("同一所属判定は所属未設定(null・空)ではfalseになる")
         void 同一所属判定() {
-            Participant a1 = Participant.create("a", "A社", null, 1);
-            Participant a2 = Participant.create("b", "A社", null, 2);
-            Participant none1 = Participant.create("c", null, null, 3);
-            Participant none2 = Participant.create("d", null, null, 4);
+            Participant a1 = Participant.create("a", "A社", null, 1, groupId);
+            Participant a2 = Participant.create("b", "A社", null, 2, groupId);
+            Participant none1 = Participant.create("c", null, null, 3, groupId);
+            Participant none2 = Participant.create("d", null, null, 4, groupId);
             assertThat(a1.hasSameOrganization(a2)).isTrue();
             assertThat(a1.hasSameOrganization(none1)).isFalse();
             assertThat(none1.hasSameOrganization(none2)).isFalse();
         }
 
         @Test
-        @DisplayName("氏名なし・シード順0は作成できない")
+        @DisplayName("氏名なし・シード順0・グループなしは作成できない")
         void バリデーション() {
-            assertThatThrownBy(() -> Participant.create(" ", null, null, 1))
+            assertThatThrownBy(() -> Participant.create(" ", null, null, 1, groupId))
                     .isInstanceOf(DomainException.class);
-            assertThatThrownBy(() -> Participant.create("x", null, null, 0))
+            assertThatThrownBy(() -> Participant.create("x", null, null, 0, groupId))
+                    .isInstanceOf(DomainException.class);
+            assertThatThrownBy(() -> Participant.create("x", null, null, 1, null))
                     .isInstanceOf(DomainException.class);
         }
 
         @Test
-        @DisplayName("グループ割当は変更・解除でき、棄権しても保たれる")
+        @DisplayName("グループ割当は変更でき、棄権しても保たれる。未割当には戻せない")
         void グループ割当() {
-            GroupId groupId = GroupId.generate();
-            Participant p = Participant.create("参加者一", null, null, 1);
-            assertThat(p.groupId()).isNull();
-            Participant assigned = p.withGroup(groupId);
-            assertThat(assigned.groupId()).isEqualTo(groupId);
-            assertThat(assigned.withdraw().groupId()).isEqualTo(groupId);
-            assertThat(assigned.withGroup(null).groupId()).isNull();
+            GroupId other = GroupId.generate();
+            Participant p = Participant.create("参加者一", null, null, 1, groupId);
+            assertThat(p.groupId()).isEqualTo(groupId);
+            Participant moved = p.withGroup(other);
+            assertThat(moved.groupId()).isEqualTo(other);
+            assertThat(moved.withdraw().groupId()).isEqualTo(other);
+            assertThatThrownBy(() -> p.withGroup(null)).isInstanceOf(DomainException.class);
         }
     }
 

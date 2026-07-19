@@ -31,9 +31,10 @@ export function SharedResultPage() {
     return <ErrorState message="対局情報の取得に失敗しました" onRetry={() => void refetch()} />;
   }
 
-  const { tournament, rounds } = data;
+  const { tournament, rounds, standings } = data;
   const round = rounds.find((r) => r.matches.some((m) => m.id === mid)) ?? null;
   const match = round?.matches.find((m) => m.id === mid) ?? null;
+  const multiGroup = standings.length > 1;
 
   const backButton = (
     <Button variant="text" startIcon={<ArrowBackIcon />} component={Link} to={paths.shared(token)}>
@@ -91,7 +92,7 @@ export function SharedResultPage() {
       <Card variant="outlined" sx={{ mt: 2 }}>
         <CardContent>
           <Typography variant="body2" color="text.secondary">
-            第{round.roundNumber}ラウンド・{tableLabel(match)}卓
+            第{round.roundNumber}ラウンド・{tableLabel(match, multiGroup)}卓
           </Typography>
           <Typography variant="h2" component="h1" sx={{ mt: 1 }}>
             {match.player1.name} vs {match.player2.name}

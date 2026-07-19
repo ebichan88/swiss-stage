@@ -85,7 +85,7 @@ class SharedApiTest extends ApiContractTestSupport {
                 .andExpect(jsonPath("$.data.rounds.length()").value(1))
                 .andExpect(jsonPath("$.data.rounds[0].matches.length()").value(2))
                 .andExpect(jsonPath("$.data.standings.length()").value(1))
-                .andExpect(jsonPath("$.data.standings[0].group").isEmpty())
+                .andExpect(jsonPath("$.data.standings[0].group.name").value("A"))
                 .andExpect(jsonPath("$.data.standings[0].standings.length()").value(4))
                 .andReturn();
         String body = shared.getResponse().getContentAsString();

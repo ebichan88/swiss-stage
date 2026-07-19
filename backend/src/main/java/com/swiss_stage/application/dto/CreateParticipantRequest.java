@@ -14,5 +14,5 @@ public record CreateParticipantRequest(
 
         Rank rank,
 
-        /** 割当先グループのID(任意。グループなし大会はnull) */
+        /** 割当先グループのID(省略時は先頭グループ〈定義順〉に割当) */
         String groupId) {}

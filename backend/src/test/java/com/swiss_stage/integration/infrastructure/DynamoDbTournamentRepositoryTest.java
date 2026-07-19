@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.swiss_stage.domain.OptimisticLockException;
 import com.swiss_stage.domain.model.GameType;
+import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Match;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.Rank;
@@ -115,11 +116,12 @@ class DynamoDbTournamentRepositoryTest extends DynamoDbRepositoryTestSupport {
     void 一括削除() {
         Tournament tournament = Tournament.create("削除対象", GameType.GO, 3, uniqueSub(), NOW);
         repository.save(tournament);
-        Participant p1 = Participant.create("削除 一郎", "A社", Rank.DAN_1, 1);
-        Participant p2 = Participant.create("削除 二郎", null, null, 2);
+        GroupId groupId = GroupId.generate();
+        Participant p1 = Participant.create("削除 一郎", "A社", Rank.DAN_1, 1, groupId);
+        Participant p2 = Participant.create("削除 二郎", null, null, 2, groupId);
         participantRepository.saveAll(tournament.id(), List.of(p1, p2));
         roundRepository.create(tournament.id(), Round.pairing(1));
-        matchRepository.save(tournament.id(), Match.pairOf(1, 1, p1.id(), p2.id()));
+        matchRepository.save(tournament.id(), Match.pairOf(1, 1, p1.id(), p2.id(), groupId));
 
         repository.delete(tournament.id());
 

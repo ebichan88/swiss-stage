@@ -17,7 +17,7 @@ import type { Group } from '../../../types/group';
 import type { Participant } from '../../../types/participant';
 import { rankLabel } from '../../../utils/labels';
 
-/** rank / groupId は Select で扱うため未入力(未割当)を空文字で表現する */
+/** rank は Select で扱うため未入力を空文字で表現する */
 export interface ParticipantFormValues {
   name: string;
   organization: string;
@@ -29,7 +29,7 @@ export interface ParticipantFormDialogProps {
   open: boolean;
   /** 編集時は対象参加者、追加時は undefined */
   participant?: Participant;
-  /** グループ定義(空ならグループ選択を表示しない) */
+  /** グループ定義(1つだけの大会ではグループ選択を表示しない) */
   groups: Group[];
   loading: boolean;
   onSubmit: (values: ParticipantFormValues) => void;
@@ -49,7 +49,8 @@ export function ParticipantFormDialog({
       name: participant?.name ?? '',
       organization: participant?.organization ?? '',
       rank: participant?.rank ?? '',
-      groupId: participant?.groupId ?? '',
+      // 追加時は先頭グループ(定義順)を初期選択する
+      groupId: participant?.groupId ?? groups[0]?.id ?? '',
     },
   });
 
@@ -112,13 +113,12 @@ export function ParticipantFormDialog({
                 </TextField>
               )}
             />
-            {groups.length > 0 && (
+            {groups.length > 1 && (
               <Controller
                 name="groupId"
                 control={control}
                 render={({ field }) => (
                   <TextField {...field} label="グループ" select fullWidth>
-                    <MenuItem value="">未割当</MenuItem>
                     {groups.map((group) => (
                       <MenuItem key={group.id} value={group.id}>
                         {group.name}
