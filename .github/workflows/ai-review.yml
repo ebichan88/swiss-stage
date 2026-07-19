@@ -4,27 +4,46 @@ on:
   pull_request:
     types: [opened, synchronize, ready_for_review]
 
-# 同一PRで連続pushされたら古いレビューをキャンセルして最新だけ実行する
+# 同一PRで連続pushされたら古い実行をキャンセルして最新だけ実行する。
+# Fixerのpushがsynchronizeイベントを発火する環境では、実行中のランは
+# キャンセルされ新しいランに引き継がれる(Fixerはpush前にレポートを投稿済み)
 concurrency:
   group: ai-review-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write # Fixerの修正コミットpush
   pull-requests: write
+  issues: write # needs-humanラベルの作成・付与
   id-token: write
+
+env:
+  MAX_FIX_ATTEMPTS: 3
+  # 自動修正禁止領域(正確性の心臓部)。.claude/agents/fixer.md の聖域定義と同期させること
+  SANCTUARY_PATTERN: '^(backend/src/main/java/com/swiss_stage/domain/service/|\.claude/01_development_docs/05_swiss_pairing_algorithm\.md)'
 
 jobs:
   review:
-    if: ${{ !github.event.pull_request.draft }}
+    # needs-humanラベル付きPRは自動ループを停止する(人間がラベルを外すと再開)
+    if: ${{ !github.event.pull_request.draft && !contains(github.event.pull_request.labels.*.name, 'needs-human') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
+    services:
+      # Fixerのバックエンド検証(./gradlew check)用
+      dynamodb-local:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8000:8000
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          # merge refではなくPRブランチ実体をcheckoutする(Fixerがpushするため)
+          ref: ${{ github.event.pull_request.head.ref }}
+          # ゲートの試行回数カウント(git log)に履歴が必要
+          fetch-depth: 0
 
-      - uses: anthropics/claude-code-action@v1
+      - name: AI Reviewer
+        uses: anthropics/claude-code-action@v1
         with:
           # Claude Pro/Maxサブスクリプション認証。`claude setup-token` で発行したトークンを
           # リポジトリSecretsに登録する。従量課金に切り替える場合は
@@ -36,6 +55,209 @@ jobs:
 
             あなたはこのリポジトリのAIレビュアーです。
             `.claude/agents/reviewer.md` を読み、その指示に厳密に従ってこのPRをレビューしてください。
+            差分は `gh pr diff ${{ github.event.pull_request.number }}` で取得します。
+
+            レポートの投稿(1PRにつき1コメントを更新し続けるsticky方式):
+            1. レポートを一時ファイル(例: /tmp/review-report.md)に書き出す
+            2. `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --paginate --jq '.[] | select(.body | startswith("<!-- swiss-stage-ai-review -->")) | .id'` で既存のAIレビューコメントを探す
+            3. 見つかったら `gh api --method PATCH repos/${{ github.repository }}/issues/comments/<ID> -F body=@/tmp/review-report.md` で更新する
+            4. 見つからなければ `gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/review-report.md` で新規投稿する
+
+            レポートはPRコメントとしてのみ投稿してください。レビュー結果をメッセージ本文に出力しないでください。
+          claude_args: |
+            --allowedTools "Read,Grep,Glob,Write,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*)"
+
+      - name: Fixerゲート判定
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+
+          BODY=$(gh api "repos/$REPO/issues/$PR/comments" --paginate \
+            --jq '[.[] | select(.body | startswith("<!-- swiss-stage-ai-review -->"))] | (last // {}) | .body // ""')
+          VERDICT=$(printf '%s\n' "$BODY" | grep -m1 -oE 'VERDICT: *(PASS|FAIL)' | grep -oE 'PASS|FAIL' || echo "UNKNOWN")
+          echo "verdict=$VERDICT" >> "$GITHUB_OUTPUT"
+          echo "AIレビューのVERDICT: $VERDICT"
+
+          if [ "$VERDICT" != "FAIL" ]; then
+            echo "run_fixer=false" >> "$GITHUB_OUTPUT"
+            echo "stop_reason=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Critical/Majorセクション(## Critical 〜 ## Minor の手前)から指摘スラッグと対象パスを抽出
+          CM=$(printf '%s\n' "$BODY" | awk '/^## Critical/{f=1} /^## Minor/{f=0} f')
+          SLUGS=$(printf '%s\n' "$CM" | grep -oE '^#+ +\[[CM][0-9]+\] +[A-Za-z0-9._-]+' | awk '{print $NF}' || true)
+          PATHS=$(printf '%s\n' "$CM" | grep -oE '対象: *`[^`]+' | sed -E 's/対象: *`//' | cut -d: -f1 || true)
+
+          STOP=""
+
+          # FAILなのに指摘を抽出できない場合はレポートの形式崩れ。安全側に倒して人間へ
+          if [ -z "$SLUGS" ]; then
+            STOP="レポートからCritical/Major指摘を抽出できませんでした(形式崩れの可能性)"
+          fi
+
+          # 聖域チェック: マッチング・順位計算への指摘は自動修正しない
+          if [ -z "$STOP" ] && printf '%s\n' "$PATHS" | grep -qE "$SANCTUARY_PATTERN"; then
+            STOP="聖域(domain/service または 05_swiss_pairing_algorithm.md)への指摘のため自動修正しません"
+          fi
+
+          # 自動修正の試行回数上限([ai-fix]コミット数で数える)
+          git fetch origin "$BASE" -q
+          ATTEMPTS=$(git log "origin/$BASE..HEAD" --grep='\[ai-fix\]' --oneline | wc -l)
+          echo "これまでの自動修正回数: $ATTEMPTS"
+          if [ -z "$STOP" ] && [ "$ATTEMPTS" -ge "$MAX_FIX_ATTEMPTS" ]; then
+            STOP="自動修正の上限(${MAX_FIX_ATTEMPTS}回)に達しました"
+          fi
+
+          # 同一指摘の再発チェック: 過去の[ai-fix]コミットが直したはずの指摘が再指摘されたら停止
+          if [ -z "$STOP" ]; then
+            for s in $SLUGS; do
+              if git log "origin/$BASE..HEAD" --grep='\[ai-fix\]' --format=%B | grep -q "Fixed: $s"; then
+                STOP="指摘 $s が自動修正後も再指摘されています(修正が無効か、指摘が不安定)"
+                break
+              fi
+            done
+          fi
+
+          if [ -n "$STOP" ]; then
+            echo "run_fixer=false" >> "$GITHUB_OUTPUT"
+            echo "stop_reason=$STOP" >> "$GITHUB_OUTPUT"
+            echo "Fixerを起動しません: $STOP"
+          else
+            echo "run_fixer=true" >> "$GITHUB_OUTPUT"
+            echo "stop_reason=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: needs-humanラベルを用意
+        if: steps.gate.outputs.verdict == 'FAIL'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create needs-human --color B60205 \
+            --description "AIレビューの自動対応範囲外。人間の判断が必要(外すと自動レビュー再開)" --force
+
+      - name: 人間レビュー要求(自動修正の対象外)
+        if: steps.gate.outputs.verdict == 'FAIL' && steps.gate.outputs.run_fixer != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REASON: ${{ steps.gate.outputs.stop_reason }}
+        run: |
+          gh pr edit "$PR" --add-label needs-human
+          {
+            echo "🚨 **AI Fixerは実行されません**: ${REASON}"
+            echo ""
+            echo "対応後、\`needs-human\` ラベルを外すと自動レビューが再開されます。"
+          } > /tmp/needs-human.md
+          gh pr comment "$PR" --body-file /tmp/needs-human.md
+
+      # ---- 以下はFixerが起動する場合のみ ----
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.run_fixer == 'true'
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-java@v4
+        if: steps.gate.outputs.run_fixer == 'true'
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: フロントエンド依存とDynamoDB Localテーブルを準備
+        if: steps.gate.outputs.run_fixer == 'true'
+        env:
+          DYNAMODB_ENDPOINT: http://localhost:8000
+        run: |
+          (cd frontend && npm ci)
+          (cd backend && ./scripts/create-table.sh)
+
+      - name: AI Fixer
+        if: steps.gate.outputs.run_fixer == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            あなたはこのリポジトリのAI Fixerです。
+            `.claude/agents/fixer.md` を読み、その指示に厳密に従って直近のAIレビュー指摘を修正してください。
+
+            前提:
+            - レビューレポートは `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --paginate --jq '[.[] | select(.body | startswith("<!-- swiss-stage-ai-review -->"))] | (last // {}) | .body // ""'` で取得できます
+            - カレントディレクトリはPRブランチ(${{ github.event.pull_request.head.ref }})のcheckoutです
+            - フロントエンドの依存(npm ci)とDynamoDB Local(localhost:8000、テーブル作成済み)は準備済みです
+
+            手順はfixer.mdの通りですが、CI実行のため順序に注意:
+            コミット後、**pushする前に**結果レポート(`<!-- swiss-stage-ai-fixer -->` 形式)をPRコメントに投稿し、pushは最後に行ってください。
+
+            結果レポートの投稿(sticky方式):
+            1. レポートを /tmp/fixer-report.md に書き出す
+            2. `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --paginate --jq '.[] | select(.body | startswith("<!-- swiss-stage-ai-fixer -->")) | .id'` で既存コメントを探す
+            3. 見つかったら `gh api --method PATCH repos/${{ github.repository }}/issues/comments/<ID> -F body=@/tmp/fixer-report.md` で更新する
+            4. 見つからなければ `gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/fixer-report.md` で新規投稿する
+
+            DISPUTED / SKIPPED / FAILED が1件でもある場合は
+            `gh pr edit ${{ github.event.pull_request.number }} --add-label needs-human` も実行してください。
+          claude_args: |
+            --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh pr edit:*),Bash(gh api:*),Bash(cd:*),Bash(npm:*),Bash(npx:*),Bash(./gradlew:*),Bash(ls:*),Bash(cat:*)"
+
+      - name: 修正pushの有無を確認
+        id: post_fix
+        if: steps.gate.outputs.run_fixer == 'true'
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          EVENT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          LOCAL=$(git rev-parse HEAD)
+          REMOTE=$(git ls-remote origin "refs/heads/$BRANCH" | cut -f1)
+          if [ "$LOCAL" != "$EVENT_SHA" ] && [ "$LOCAL" = "$REMOTE" ]; then
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+            echo "修正コミット $LOCAL がpushされました"
+          else
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            echo "修正pushはありません(local=$LOCAL remote=$REMOTE event=$EVENT_SHA)"
+          fi
+
+      # Fixerのpushがpull_requestイベントを発火しない環境向けの保険。
+      # 発火する環境ではこのラン自体がキャンセルされ、新しいランがCI・再レビューを担う
+      - name: 修正コミットのCIを起動(イベント未発火時の保険)
+        if: steps.post_fix.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          sleep 20
+          SHA=$(git rev-parse HEAD)
+          if [ -z "$(gh run list --workflow ci.yml --commit "$SHA" --json databaseId --jq '.[].databaseId')" ]; then
+            echo "修正コミットのCIが起動していないため手動起動します"
+            gh workflow run ci.yml --ref "$BRANCH"
+          else
+            echo "修正コミットのCIは自動起動済みです"
+          fi
+
+      - name: AI Reviewer(修正後の再レビュー)
+        if: steps.post_fix.outputs.pushed == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            あなたはこのリポジトリのAIレビュアーです。AI Fixerによる修正pushの直後の再レビューです。
+            `.claude/agents/reviewer.md` を読み、その指示に厳密に従ってこのPRの**現在の状態**をレビューしてください。
             差分は `gh pr diff ${{ github.event.pull_request.number }}` で取得します。
 
             レポートの投稿(1PRにつき1コメントを更新し続けるsticky方式):
