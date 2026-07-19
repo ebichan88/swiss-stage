@@ -1,0 +1,1285 @@
+# Swiss Stage API契約(SSoT)
+#
+# このファイルがAPI境界(リクエスト/レスポンスの形)の唯一の正。
+# - backend: contractテストが swagger-request-validator でこのスキーマに対して検証する
+# - frontend: openapi-typescript で src/types/generated/api.d.ts を生成する
+# - 変更手順: このファイルを先に更新 → backend実装 → `npm run generate:api` → contractテスト
+# - スキーマで表現できない設計方針(命名規約・DTO分離・エラーコード表)は
+#   .claude/01_development_docs/ の 03/06/07 を参照
+#
+# OpenAPI 3.0.3 を使う(swagger-request-validator が 3.1 に未対応のため)。
+openapi: 3.0.3
+info:
+  title: Swiss Stage API
+  description: >
+    囲碁・将棋大会運営プラットフォームのREST API。
+    レスポンスは統一フォーマット(success/data/meta または success/error)。
+    IDはULID文字列、日時はISO8601文字列、JSONはcamelCase。
+    更新系はversionによる楽観ロック(競合は409)。
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: 同一オリジン(SPAと同居)
+
+# デフォルトは運営者のセッションCookie認証。公開エンドポイントは operation 側で security: [] を明示
+security:
+  - sessionCookie: []
+
+paths:
+  # ---- 認証 ----
+  /api/v1/auth/login:
+    get:
+      operationId: authLogin
+      summary: Google OAuth2認可フローへの入口(/api/v1/auth/login/google へリダイレクト)
+      security: []
+      responses:
+        "302":
+          description: 認可エンドポイントへリダイレクト
+  /api/v1/auth/login/google:
+    get:
+      operationId: authLoginGoogle
+      summary: Spring SecurityのOAuth2認可エンドポイント(Googleへリダイレクト)
+      security: []
+      responses:
+        "302":
+          description: Googleの認可画面へリダイレクト
+  /api/v1/auth/callback:
+    get:
+      operationId: authCallback
+      summary: OAuth2コールバック(Spring Securityが処理し、JWT Cookie発行後にSPAへ戻す)
+      security: []
+      responses:
+        "302":
+          description: SPAへリダイレクト
+  /api/v1/auth/me:
+    get:
+      operationId: getMe
+      summary: ログイン中ユーザー情報
+      responses:
+        "200":
+          $ref: "#/components/responses/Me"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      summary: ログアウト(セッションCookieを失効させる)
+      security: []
+      responses:
+        "200":
+          $ref: "#/components/responses/Void"
+  /api/v1/auth/test-login:
+    post:
+      operationId: testLogin
+      summary: 開発・テスト用の仮ログイン(local/testプロファイル限定。本番には存在しない)
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestLoginRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Me"
+
+  # ---- 大会 ----
+  /api/v1/tournaments:
+    get:
+      operationId: listTournaments
+      summary: 自分の大会一覧
+      responses:
+        "200":
+          $ref: "#/components/responses/TournamentList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createTournament
+      summary: 大会作成(デフォルトグループ「A」も自動作成される)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTournamentRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/Tournament"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/tournaments/{id}:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+    get:
+      operationId: getTournament
+      summary: 大会詳細(他人の大会は404で存在を漏らさない)
+      responses:
+        "200":
+          $ref: "#/components/responses/Tournament"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateTournament
+      summary: 大会更新(名前・公開範囲・結果入力許可。nullの項目は変更しない)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTournamentRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Tournament"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: deleteTournament
+      summary: 大会削除(物理削除)
+      responses:
+        "204":
+          description: 削除済み
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/tournaments/{id}/start:
+    post:
+      operationId: startTournament
+      summary: 大会開始(PREPARING→IN_PROGRESS。参加者2名未満・空/1名グループありは409)
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Tournament"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/finish:
+    post:
+      operationId: finishTournament
+      summary: 大会終了(IN_PROGRESS→FINISHED)
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Tournament"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/share-token/regenerate:
+    post:
+      operationId: regenerateShareToken
+      summary: 共有トークンの発行・再発行(旧トークンは即時無効)
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Tournament"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---- 参加者 ----
+  /api/v1/tournaments/{id}/participants:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+    get:
+      operationId: listParticipants
+      summary: 参加者一覧(シード順)
+      responses:
+        "200":
+          $ref: "#/components/responses/ParticipantList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: createParticipant
+      summary: 参加者追加(大会開始後は409)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateParticipantRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/Participant"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/participants/import:
+    post:
+      operationId: importParticipants
+      summary: CSVインポート(UTF-8/Shift_JIS自動判定。1行でもエラーがあれば全行取り込まない)
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: ヘッダー行必須(氏名,所属,段級位[,グループ])。上限500行・1MB
+      responses:
+        "201":
+          $ref: "#/components/responses/CsvImportResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/participants/{pid}:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+      - $ref: "#/components/parameters/ParticipantId"
+    patch:
+      operationId: updateParticipant
+      summary: 参加者更新(棄権・グループ割当変更を含む。nullの項目は変更しない)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateParticipantRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Participant"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: deleteParticipant
+      summary: 参加者削除(大会開始前のみ。開始後は409)
+      responses:
+        "204":
+          description: 削除済み
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  # ---- グループ(棋力帯クラス分け。PREPARING中のみ変更可) ----
+  /api/v1/tournaments/{id}/groups:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+    get:
+      operationId: listGroups
+      summary: グループ一覧(作成順)
+      responses:
+        "200":
+          $ref: "#/components/responses/GroupList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: createGroup
+      summary: グループ作成(最大10個。同名重複は400、開始後は409)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/Group"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/groups/{gid}:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+      - $ref: "#/components/parameters/GroupId"
+    patch:
+      operationId: renameGroup
+      summary: グループ改名(同名のままの改名は可)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Group"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: deleteGroup
+      summary: グループ削除(割当済み参加者は直前のグループへ移動。最後の1グループは400)
+      responses:
+        "204":
+          description: 削除済み
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/groups/auto-assign:
+    post:
+      operationId: autoAssignGroups
+      summary: 段級位で全ACTIVE参加者を強い順に均等振り分け(棄権者の割当は変更しない)
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+      responses:
+        "200":
+          $ref: "#/components/responses/ParticipantList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  # ---- ラウンド・対局・順位 ----
+  /api/v1/tournaments/{id}/rounds:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+    get:
+      operationId: listRounds
+      summary: ラウンド一覧(対局含む)
+      responses:
+        "200":
+          $ref: "#/components/responses/RoundList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: generateRound
+      summary: 次ラウンドの組み合わせ生成(現在ラウンド未確定・全ラウンド消化済みは409)
+      responses:
+        "201":
+          $ref: "#/components/responses/GeneratedRound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/rounds/{n}/confirm:
+    post:
+      operationId: confirmRound
+      summary: ラウンド確定(未入力の対局があると409)
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+        - name: n
+          in: path
+          required: true
+          description: ラウンド番号(1始まり)
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          $ref: "#/components/responses/Round"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/matches/{mid}/result:
+    put:
+      operationId: inputResult
+      summary: 対局結果入力(べき等。version不一致・確定済みラウンドは409)
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+        - $ref: "#/components/parameters/MatchId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InputResultRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Match"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/standings:
+    get:
+      operationId: getStandings
+      summary: 順位表(保存せず都度計算。グループごとに1要素)
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+      responses:
+        "200":
+          $ref: "#/components/responses/GroupStandingsList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---- 共有(トークン保持者向け。IPレート制限あり) ----
+  /api/v1/shared/{token}:
+    get:
+      operationId: getSharedTournament
+      summary: 共有ページ用の大会集約(shareToken・ownerSubは含めない)
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/ShareToken"
+      responses:
+        "200":
+          $ref: "#/components/responses/SharedTournament"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/shared/{token}/matches/{mid}/result:
+    put:
+      operationId: inputSharedResult
+      summary: トークン経由の結果入力(大会設定 resultInputEnabled が有効な場合のみ)
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/ShareToken"
+        - $ref: "#/components/parameters/MatchId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InputResultRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Match"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: swiss_stage_session
+      description: Google OAuth2ログイン後に発行されるJWTセッションCookie(運営者)
+
+  parameters:
+    TournamentId:
+      name: id
+      in: path
+      required: true
+      description: 大会ID(ULID)
+      schema:
+        $ref: "#/components/schemas/Ulid"
+    ParticipantId:
+      name: pid
+      in: path
+      required: true
+      description: 参加者ID(ULID)
+      schema:
+        $ref: "#/components/schemas/Ulid"
+    GroupId:
+      name: gid
+      in: path
+      required: true
+      description: グループID(ULID)
+      schema:
+        $ref: "#/components/schemas/Ulid"
+    MatchId:
+      name: mid
+      in: path
+      required: true
+      description: 対局ID(ULID)
+      schema:
+        $ref: "#/components/schemas/Ulid"
+    ShareToken:
+      name: token
+      in: path
+      required: true
+      description: 共有トークン(URL-safe文字列)
+      schema:
+        type: string
+
+  responses:
+    # 成功レスポンス(統一フォーマット success/data/meta)
+    Void:
+      description: 成功(dataなし)
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessEnvelope"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+                    description: 常にnull
+    Me:
+      description: ログイン中ユーザー
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessEnvelope"
+              - type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Me"
+    Tournament:
+      description: 大会
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessEnvelope"
+              - type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Tournament"
+    TournamentList:
+      description: 大会一覧
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessEnvelope"
+              - type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Tournament"
+    Participant:
+      description: 参加者
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessEnvelope"
+              - type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Participant"
+    ParticipantList:
+      description: 参加者一覧
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessEnvelope"
+              - type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Participant"
+    CsvImportResult:
+      description: CSVインポート結果
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessEnvelope"
+              - type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CsvImportResult"
+    Group:
+      description: グループ
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessEnvelope"
+              - type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Group"
+    GroupList:
+      description: グループ一覧
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessEnvelope"
+              - type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Group"
+    Round:
+      description: ラウンド
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessEnvelope"
+              - type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Round"
+    RoundList:
+      description: ラウンド一覧
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessEnvelope"
+              - type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Round"
+    GeneratedRound:
+      description: 組み合わせ生成結果
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessEnvelope"
+              - type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/GeneratedRound"
+    Match:
+      description: 対局
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessEnvelope"
+              - type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Match"
+    GroupStandingsList:
+      description: グループ別順位表
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessEnvelope"
+              - type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/GroupStandings"
+    SharedTournament:
+      description: 共有ページ用の大会集約
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessEnvelope"
+              - type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SharedTournament"
+
+    # エラーレスポンス(統一フォーマット success/error)
+    BadRequest:
+      description: バリデーションエラー・入力不正
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: 未認証
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: 権限なし・無効トークン
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: 未存在(他人のリソースを含む。存在を漏らさない)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: 競合・状態遷移違反(楽観ロック・確定済み等)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    RateLimited:
+      description: レート制限超過
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    # ---- 共通 ----
+    Ulid:
+      type: string
+      description: ULID(26文字のCrockford Base32)
+      pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+    SuccessEnvelope:
+      type: object
+      required: [success, meta]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        meta:
+          $ref: "#/components/schemas/Meta"
+    Meta:
+      type: object
+      additionalProperties: false
+      required: [timestamp]
+      properties:
+        timestamp:
+          type: string
+          description: サーバー時刻(ISO8601)
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [success, error]
+      properties:
+        success:
+          type: boolean
+          enum: [false]
+        error:
+          $ref: "#/components/schemas/ApiErrorBody"
+    ApiErrorBody:
+      type: object
+      additionalProperties: false
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: エラーコード(06_error_handling_design.md の一覧に従う)
+        message:
+          type: string
+          description: そのままUIに表示できる日本語メッセージ
+        details:
+          type: array
+          description: バリデーションエラー時のみ(空なら出力しない)
+          items:
+            $ref: "#/components/schemas/FieldError"
+    FieldError:
+      type: object
+      additionalProperties: false
+      required: [field, reason]
+      properties:
+        field:
+          type: string
+          description: フィールド名(CSVインポートでは「n行目」)
+        reason:
+          type: string
+
+    # ---- enum ----
+    GameType:
+      type: string
+      enum: [GO, SHOGI]
+    TournamentStatus:
+      type: string
+      enum: [PREPARING, IN_PROGRESS, FINISHED]
+    Visibility:
+      type: string
+      enum: [PRIVATE, TOKEN, PUBLIC]
+    ParticipantStatus:
+      type: string
+      enum: [ACTIVE, WITHDRAWN]
+    RoundStatus:
+      type: string
+      enum: [PAIRING, PLAYING, CONFIRMED]
+    Rank:
+      type: string
+      nullable: true
+      description: >
+        棋力(段級位)。29段階。弱→強: KYU_20 < … < KYU_1 < DAN_1(初段)< … < DAN_9。
+        順序はordinalではなくsortOrder(段=負・級=正・小さいほど強い)で判定する。
+        null = 未入力(このenumを参照する全フィールドがnull許容のため、ここでnullableを定義)。
+      enum:
+        - KYU_20
+        - KYU_19
+        - KYU_18
+        - KYU_17
+        - KYU_16
+        - KYU_15
+        - KYU_14
+        - KYU_13
+        - KYU_12
+        - KYU_11
+        - KYU_10
+        - KYU_9
+        - KYU_8
+        - KYU_7
+        - KYU_6
+        - KYU_5
+        - KYU_4
+        - KYU_3
+        - KYU_2
+        - KYU_1
+        - DAN_1
+        - DAN_2
+        - DAN_3
+        - DAN_4
+        - DAN_5
+        - DAN_6
+        - DAN_7
+        - DAN_8
+        - DAN_9
+    MatchResult:
+      type: string
+      description: BYE は組み合わせ生成時にのみ設定される(結果入力のリクエストでBYEは400)
+      enum: [NONE, PLAYER1_WIN, PLAYER2_WIN, DRAW, BOTH_LOSE, BYE]
+
+    # ---- リソース ----
+    Me:
+      type: object
+      additionalProperties: false
+      required: [sub, name]
+      properties:
+        sub:
+          type: string
+          description: 運営者の識別子(GoogleのOAuth2 sub)
+        name:
+          type: string
+    Tournament:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - name
+        - gameType
+        - totalRounds
+        - currentRound
+        - status
+        - visibility
+        - resultInputEnabled
+        - version
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          $ref: "#/components/schemas/Ulid"
+        name:
+          type: string
+          maxLength: 100
+        gameType:
+          $ref: "#/components/schemas/GameType"
+        totalRounds:
+          type: integer
+          minimum: 1
+          maximum: 20
+        currentRound:
+          type: integer
+          minimum: 0
+          description: 0 = 未開始
+        status:
+          $ref: "#/components/schemas/TournamentStatus"
+        visibility:
+          $ref: "#/components/schemas/Visibility"
+        shareToken:
+          type: string
+          nullable: true
+          description: 運営者にのみ返す(共有ページ集約には含めない)。null = 未発行
+        resultInputEnabled:
+          type: boolean
+          description: 共有トークン経由の結果入力を許可するか
+        version:
+          type: integer
+          format: int64
+          description: 楽観ロック用
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+    Participant:
+      type: object
+      additionalProperties: false
+      required: [id, name, organization, rank, seedOrder, status, groupId]
+      properties:
+        id:
+          $ref: "#/components/schemas/Ulid"
+        name:
+          type: string
+          maxLength: 50
+        organization:
+          type: string
+          nullable: true
+          maxLength: 100
+        rank:
+          $ref: "#/components/schemas/Rank"
+        seedOrder:
+          type: integer
+          minimum: 1
+        status:
+          $ref: "#/components/schemas/ParticipantStatus"
+        groupId:
+          $ref: "#/components/schemas/Ulid"
+    ParticipantSummary:
+      type: object
+      additionalProperties: false
+      required: [id, name, organization]
+      properties:
+        id:
+          $ref: "#/components/schemas/Ulid"
+        name:
+          type: string
+        organization:
+          type: string
+          nullable: true
+    Group:
+      type: object
+      additionalProperties: false
+      required: [id, name]
+      properties:
+        id:
+          $ref: "#/components/schemas/Ulid"
+        name:
+          type: string
+          maxLength: 50
+          description: 大会内で一意
+    Match:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - roundNumber
+        - tableNumber
+        - group
+        - player1
+        - player2
+        - result
+        - version
+      properties:
+        id:
+          $ref: "#/components/schemas/Ulid"
+        roundNumber:
+          type: integer
+          minimum: 1
+        tableNumber:
+          type: integer
+          minimum: 1
+          description: グループ内で1始まり(卓表示は「A-1」形式)
+        group:
+          $ref: "#/components/schemas/Group"
+        player1:
+          $ref: "#/components/schemas/ParticipantSummary"
+        player2:
+          # OpenAPI 3.0はnullableな$refを表現できないためインラインで定義(内容はParticipantSummaryと同一に保つ)
+          type: object
+          nullable: true
+          description: null = BYE
+          additionalProperties: false
+          required: [id, name, organization]
+          properties:
+            id:
+              $ref: "#/components/schemas/Ulid"
+            name:
+              type: string
+            organization:
+              type: string
+              nullable: true
+        result:
+          $ref: "#/components/schemas/MatchResult"
+        version:
+          type: integer
+          format: int64
+    Round:
+      type: object
+      additionalProperties: false
+      required: [roundNumber, status, matches]
+      properties:
+        roundNumber:
+          type: integer
+          minimum: 1
+        status:
+          $ref: "#/components/schemas/RoundStatus"
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/Match"
+    GeneratedRound:
+      type: object
+      additionalProperties: false
+      required: [round, relaxations]
+      properties:
+        round:
+          $ref: "#/components/schemas/Round"
+        relaxations:
+          type: array
+          description: 空でなければUIに警告を表示する(REMATCH / BYE_REPEAT / SAME_ORGANIZATION)
+          items:
+            type: string
+    Standing:
+      type: object
+      additionalProperties: false
+      required: [rank, participant, wins, losses, sos, sosos, hadBye]
+      properties:
+        rank:
+          type: integer
+          minimum: 1
+          description: 同順位あり(1,2,2,4形式)。グループ大会ではグループ内順位
+        participant:
+          $ref: "#/components/schemas/ParticipantSummary"
+        wins:
+          type: number
+          description: 勝点(0.5刻みあり得る)
+        losses:
+          type: integer
+        sos:
+          type: number
+        sosos:
+          type: number
+        hadBye:
+          type: boolean
+    GroupStandings:
+      type: object
+      additionalProperties: false
+      required: [group, standings]
+      properties:
+        group:
+          $ref: "#/components/schemas/Group"
+        standings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Standing"
+    SharedTournamentSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - gameType
+        - totalRounds
+        - currentRound
+        - status
+        - resultInputEnabled
+      properties:
+        name:
+          type: string
+        gameType:
+          $ref: "#/components/schemas/GameType"
+        totalRounds:
+          type: integer
+        currentRound:
+          type: integer
+        status:
+          $ref: "#/components/schemas/TournamentStatus"
+        resultInputEnabled:
+          type: boolean
+          description: true なら参加者(トークン保持者)が結果入力できる
+    SharedTournament:
+      type: object
+      additionalProperties: false
+      description: shareToken・ownerSub は含めない(13_security_design.md §6)
+      required: [tournament, rounds, standings]
+      properties:
+        tournament:
+          $ref: "#/components/schemas/SharedTournamentSummary"
+        rounds:
+          type: array
+          items:
+            $ref: "#/components/schemas/Round"
+        standings:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupStandings"
+    CsvImportResult:
+      type: object
+      additionalProperties: false
+      required: [importedCount, participants]
+      properties:
+        importedCount:
+          type: integer
+        participants:
+          type: array
+          description: 全行正常時のみ取り込む(エラー時は400 + details)
+          items:
+            $ref: "#/components/schemas/Participant"
+
+    # ---- リクエスト ----
+    TestLoginRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        sub:
+          type: string
+          maxLength: 100
+          description: 省略時は test-user
+        name:
+          type: string
+          maxLength: 100
+          description: 省略時は テストユーザー
+    CreateTournamentRequest:
+      type: object
+      additionalProperties: false
+      required: [name, gameType, totalRounds]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        gameType:
+          $ref: "#/components/schemas/GameType"
+        totalRounds:
+          type: integer
+          minimum: 1
+          maximum: 20
+    UpdateTournamentRequest:
+      type: object
+      additionalProperties: false
+      description: nullの項目は変更しない
+      required: [version]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        visibility:
+          $ref: "#/components/schemas/Visibility"
+        resultInputEnabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+    CreateParticipantRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        organization:
+          type: string
+          nullable: true
+          maxLength: 100
+        rank:
+          $ref: "#/components/schemas/Rank"
+        groupId:
+          type: string
+          nullable: true
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+          description: 省略時は先頭グループ(定義順)に割当
+    UpdateParticipantRequest:
+      type: object
+      additionalProperties: false
+      description: >
+        nullの項目は変更しない。棋力を未入力に戻す場合は clearRank=true
+        (rankとの同時指定は400)。groupId は割当先グループの変更(PREPARING中のみ)。
+      properties:
+        name:
+          type: string
+          maxLength: 50
+        organization:
+          type: string
+          maxLength: 100
+          description: 空文字で未入力に戻せる
+        rank:
+          $ref: "#/components/schemas/Rank"
+        clearRank:
+          type: boolean
+        groupId:
+          $ref: "#/components/schemas/Ulid"
+        status:
+          $ref: "#/components/schemas/ParticipantStatus"
+    GroupRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+    InputResultRequest:
+      type: object
+      additionalProperties: false
+      description: BYEの指定は400(BYEは組み合わせ生成時にのみ設定される)
+      required: [result, version]
+      properties:
+        result:
+          $ref: "#/components/schemas/MatchResult"
+        version:
+          type: integer
+          format: int64
