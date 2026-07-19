@@ -59,7 +59,13 @@ public class TournamentService {
                 Instant.now(clock));
         tournamentRepository.save(tournament);
         // 大会は常に1つ以上のグループを持つ(05 §2.4)。デフォルトグループを同時に作成する
-        groupRepository.save(tournament.id(), Group.create(Group.DEFAULT_NAME));
+        try {
+            groupRepository.save(tournament.id(), Group.create(Group.DEFAULT_NAME));
+        } catch (RuntimeException e) {
+            // グループのない大会を残さない(残ると以後の参加者追加・自動振り分けが失敗し続ける)
+            tournamentRepository.delete(tournament.id());
+            throw e;
+        }
         return reload(tournament.id());
     }
 

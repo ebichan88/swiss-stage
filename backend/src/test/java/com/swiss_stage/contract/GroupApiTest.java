@@ -147,6 +147,29 @@ class GroupApiTest extends ApiContractTestSupport {
     }
 
     @Test
+    @DisplayName("自動振り分けは棄権中の参加者の割当を変更しない")
+    void 自動振り分けは棄権者の割当を維持() throws Exception {
+        String groupA = defaultGroupId();
+        String groupB = createGroup("B");
+        addParticipant("参加 一郎", "DAN_9");
+        addParticipant("参加 二郎", "DAN_5");
+        String withdrawnId = addParticipant("参加 三郎", "KYU_9");
+        assignGroup(withdrawnId, groupB);
+        mockMvc.perform(patch(participantsPath() + "/" + withdrawnId).cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"WITHDRAWN\"}"))
+                .andExpect(status().isOk());
+
+        // ACTIVE 2名は A/B へ1名ずつ。棄権者(三郎)の割当は B のまま変わらない
+        mockMvc.perform(post(groupsPath() + "/auto-assign").cookie(ownerCookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].groupId").value(groupA))
+                .andExpect(jsonPath("$.data[1].groupId").value(groupB))
+                .andExpect(jsonPath("$.data[2].status").value("WITHDRAWN"))
+                .andExpect(jsonPath("$.data[2].groupId").value(groupB));
+    }
+
+    @Test
     @DisplayName("参加者追加はグループ省略時に先頭グループへ割り当てられ、指定時はそのグループになる")
     void 参加者追加のグループ割当() throws Exception {
         String groupA = defaultGroupId();
