@@ -20,6 +20,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState, LoadingState } from '../components/ui/QueryStates';
 import { RoundStatusBadge } from '../components/ui/StatusBadge';
+import { useGroups } from '../hooks/useGroups';
 import {
   useConfirmRound,
   useGenerateNextRound,
@@ -37,6 +38,7 @@ import { relaxationLabel } from '../utils/labels';
 export function RoundsPage() {
   const tournament = useTournamentContext();
   const { data: rounds, isPending, isError, refetch } = useRounds(tournament.id);
+  const { data: groups } = useGroups(tournament.id);
   const generateMutation = useGenerateNextRound(tournament.id);
   const confirmMutation = useConfirmRound(tournament.id);
   const inputResultMutation = useInputMatchResult(tournament.id);
@@ -146,7 +148,9 @@ export function RoundsPage() {
   const undecidedCount = selectedRound?.matches.filter((m) => m.result === 'NONE').length ?? 0;
   const isEditable = tournament.status === 'IN_PROGRESS' && selectedRound?.status !== 'CONFIRMED';
   const sections = selectedRound ? matchSections(selectedRound.matches) : [];
-  const multiGroup = sections.length > 1;
+  // 表示判定は大会に定義されたグループ総数で行う(そのラウンドに対局があるグループ数ではない)。
+  // 全員棄権でスキップされたグループがあっても他画面(順位表・共有)と表示形式を揃える
+  const multiGroup = (groups ?? []).length > 1;
 
   return (
     <Box>
