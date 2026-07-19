@@ -40,69 +40,14 @@
 
 ---
 
-## 3. エンドポイント一覧(MVP)
+## 3. エンドポイント一覧
 
-### 認証
+**エンドポイント・リクエスト/レスポンスの形は `schema/openapi.yaml`(リポジトリルート)が唯一の正**。
+認証区分は securityScheme(運営者=セッションCookie / 公開・トークン=security: [])、
+各エンドポイントの補足は operation の summary / description に記載する。
 
-| メソッド | パス | 説明 | 認証 |
-|---------|------|------|------|
-| GET | `/api/v1/auth/login` | Google OAuth2へリダイレクト(`/api/v1/auth/login/google` を経由) | - |
-| GET | `/api/v1/auth/callback` | OAuth2コールバック(Spring Securityが処理し、JWT Cookie発行後にSPAへ戻す) | - |
-| POST | `/api/v1/auth/logout` | ログアウト | 運営者 |
-| GET | `/api/v1/auth/me` | ログイン中ユーザー情報 | 運営者 |
-| POST | `/api/v1/auth/test-login` | 開発・テスト用の仮ログイン(**local/testプロファイル限定**。本番には存在しない) | - |
-
-### 大会
-
-| メソッド | パス | 説明 | 認証 |
-|---------|------|------|------|
-| GET | `/api/v1/tournaments` | 自分の大会一覧 | 運営者 |
-| POST | `/api/v1/tournaments` | 大会作成 | 運営者 |
-| GET | `/api/v1/tournaments/{id}` | 大会詳細 | 運営者 |
-| PATCH | `/api/v1/tournaments/{id}` | 大会更新(名前・公開範囲・結果入力許可等) | 運営者 |
-| DELETE | `/api/v1/tournaments/{id}` | 大会削除(物理削除) | 運営者 |
-| POST | `/api/v1/tournaments/{id}/start` | 大会開始(PREPARING→IN_PROGRESS) | 運営者 |
-| POST | `/api/v1/tournaments/{id}/finish` | 大会終了 | 運営者 |
-
-### 参加者
-
-| メソッド | パス | 説明 | 認証 |
-|---------|------|------|------|
-| GET | `/api/v1/tournaments/{id}/participants` | 参加者一覧 | 運営者 |
-| POST | `/api/v1/tournaments/{id}/participants` | 参加者追加(`groupId` 省略時は先頭グループに割当) | 運営者 |
-| POST | `/api/v1/tournaments/{id}/participants/import` | CSVインポート(multipart) | 運営者 |
-| PATCH | `/api/v1/tournaments/{id}/participants/{pid}` | 参加者更新・棄権処理・グループ割当変更 | 運営者 |
-| DELETE | `/api/v1/tournaments/{id}/participants/{pid}` | 参加者削除(開始前のみ) | 運営者 |
-
-### グループ(棋力帯クラス分け。すべて PREPARING 中のみ変更可)
-
-大会は常に1つ以上のグループを持つ(大会作成時に「A」を自動作成。`05_swiss_pairing_algorithm.md` §2.4)。
-
-| メソッド | パス | 説明 | 認証 |
-|---------|------|------|------|
-| GET | `/api/v1/tournaments/{id}/groups` | グループ一覧(作成順) | 運営者 |
-| POST | `/api/v1/tournaments/{id}/groups` | グループ作成(最大10個。同名重複は400) | 運営者 |
-| PATCH | `/api/v1/tournaments/{id}/groups/{gid}` | グループ改名 | 運営者 |
-| DELETE | `/api/v1/tournaments/{id}/groups/{gid}` | グループ削除(割当済み参加者は直前のグループ〈先頭削除時は直後〉へ移動。最後の1グループは削除不可=400) | 運営者 |
-| POST | `/api/v1/tournaments/{id}/groups/auto-assign` | 段級位で全ACTIVE参加者を一括振り分け(`05_swiss_pairing_algorithm.md` §2.4)。レスポンスは更新後の参加者一覧 | 運営者 |
-
-### ラウンド・対局
-
-| メソッド | パス | 説明 | 認証 |
-|---------|------|------|------|
-| GET | `/api/v1/tournaments/{id}/rounds` | ラウンド一覧(対局含む) | 運営者 |
-| POST | `/api/v1/tournaments/{id}/rounds` | 次ラウンドの組み合わせ生成。レスポンスは `GeneratedRound`(round + relaxations) | 運営者 |
-| POST | `/api/v1/tournaments/{id}/rounds/{n}/confirm` | ラウンド確定 | 運営者 |
-| PUT | `/api/v1/tournaments/{id}/matches/{mid}/result` | 対局結果入力 | 運営者 |
-| GET | `/api/v1/tournaments/{id}/standings` | 順位表取得。レスポンスは `GroupStandings[]`(`group` は常に非null) | 運営者 |
-
-### 共有(トークン保持者向け。IPレート制限あり)
-
-| メソッド | パス | 説明 | 認証 |
-|---------|------|------|------|
-| GET | `/api/v1/shared/{token}` | 共有ページ用の大会集約(`SharedTournament` = 大会概要 + ラウンド + 順位表)。`shareToken`・`ownerSub` は含めない | トークン |
-| PUT | `/api/v1/shared/{token}/matches/{mid}/result` | トークン経由の結果入力(大会設定 `resultInputEnabled` が有効な場合のみ) | トークン |
-| POST | `/api/v1/tournaments/{id}/share-token/regenerate` | トークン発行・再発行(旧トークン即時無効) | 運営者 |
+- backend: contractテストがスキーマとの一致を機械検査する(`07_type_definitions.md` §1)
+- frontend: `npm run generate:api` で型を生成する
 
 ---
 
@@ -122,5 +67,5 @@
 
 ## 5. DTOの型定義
 
-リクエスト/レスポンスDTOの型は `07_type_definitions.md` で一元管理する。
-バックエンド(Java record)とフロントエンド(TypeScript interface)の対応を必ず同期させること。
+リクエスト/レスポンスDTO・enumの定義は `schema/openapi.yaml` が唯一の正。
+運用手順(スキーマ変更→実装→型生成)と命名規約は `07_type_definitions.md` を参照。
