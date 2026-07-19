@@ -31,7 +31,7 @@ class GroupApiTest extends ApiContractTestSupport {
 
     @BeforeEach
     void setUp() throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/v1/tournaments")
+        MvcResult result = performApi(post("/api/v1/tournaments")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"グループテスト大会\",\"gameType\":\"GO\",\"totalRounds\":3}"))
@@ -48,46 +48,46 @@ class GroupApiTest extends ApiContractTestSupport {
         String groupA = defaultGroupId();
         String groupB = createGroup("B");
 
-        mockMvc.perform(get(groupsPath()).cookie(ownerCookie()))
+        performApi(get(groupsPath()).cookie(ownerCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].name").value("A"))
                 .andExpect(jsonPath("$.data[1].name").value("B"));
 
         // 重複名は作成・改名とも400
-        mockMvc.perform(post(groupsPath()).cookie(ownerCookie())
+        performApi(post(groupsPath()).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"A\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
-        mockMvc.perform(patch(groupsPath() + "/" + groupB).cookie(ownerCookie())
+        performApi(patch(groupsPath() + "/" + groupB).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"A\"}"))
                 .andExpect(status().isBadRequest());
 
         // 改名(同名のままの改名は自分自身を除外して判定される)
-        mockMvc.perform(patch(groupsPath() + "/" + groupB).cookie(ownerCookie())
+        performApi(patch(groupsPath() + "/" + groupB).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Bクラス\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("Bクラス"));
 
         // 存在しないグループは404
-        mockMvc.perform(patch(groupsPath() + "/" + "0".repeat(26)).cookie(ownerCookie())
+        performApi(patch(groupsPath() + "/" + "0".repeat(26)).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"X\"}"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("GROUP_NOT_FOUND"));
 
         // 削除すると一覧から消える
-        mockMvc.perform(delete(groupsPath() + "/" + groupB).cookie(ownerCookie()))
+        performApi(delete(groupsPath() + "/" + groupB).cookie(ownerCookie()))
                 .andExpect(status().isNoContent());
-        mockMvc.perform(get(groupsPath()).cookie(ownerCookie()))
+        performApi(get(groupsPath()).cookie(ownerCookie()))
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].id").value(groupA));
 
         // 最後の1グループは削除できない
-        mockMvc.perform(delete(groupsPath() + "/" + groupA).cookie(ownerCookie()))
+        performApi(delete(groupsPath() + "/" + groupA).cookie(ownerCookie()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
 
@@ -95,7 +95,7 @@ class GroupApiTest extends ApiContractTestSupport {
         for (int i = 2; i <= 10; i++) {
             createGroup("G" + i);
         }
-        mockMvc.perform(post(groupsPath()).cookie(ownerCookie())
+        performApi(post(groupsPath()).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"G11\"}"))
                 .andExpect(status().isBadRequest())
@@ -116,7 +116,7 @@ class GroupApiTest extends ApiContractTestSupport {
                 addParticipant("参加 五郎", null));
 
         // 5名を2グループへ → A:3名(強い側)、B:2名
-        MvcResult result = mockMvc.perform(post(groupsPath() + "/auto-assign").cookie(ownerCookie()))
+        MvcResult result = performApi(post(groupsPath() + "/auto-assign").cookie(ownerCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(5))
                 .andReturn();
@@ -127,22 +127,22 @@ class GroupApiTest extends ApiContractTestSupport {
         assertThat(assigned).containsExactly(groupA, groupA, groupA, groupB, groupB);
 
         // 個別調整: 三郎をBへ
-        mockMvc.perform(patch(participantsPath() + "/" + ids.get(2)).cookie(ownerCookie())
+        performApi(patch(participantsPath() + "/" + ids.get(2)).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"groupId\":\"" + groupB + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.groupId").value(groupB));
 
         // 未知グループへの変更は400
-        mockMvc.perform(patch(participantsPath() + "/" + ids.get(2)).cookie(ownerCookie())
+        performApi(patch(participantsPath() + "/" + ids.get(2)).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"groupId\":\"" + "0".repeat(26) + "\"}"))
                 .andExpect(status().isBadRequest());
 
         // グループ削除で割当済み参加者は直前のグループ(A)へ移動する
-        mockMvc.perform(delete(groupsPath() + "/" + groupB).cookie(ownerCookie()))
+        performApi(delete(groupsPath() + "/" + groupB).cookie(ownerCookie()))
                 .andExpect(status().isNoContent());
-        mockMvc.perform(get(participantsPath()).cookie(ownerCookie()))
+        performApi(get(participantsPath()).cookie(ownerCookie()))
                 .andExpect(jsonPath("$.data[3].groupId").value(groupA))
                 .andExpect(jsonPath("$.data[4].groupId").value(groupA));
     }
@@ -156,13 +156,13 @@ class GroupApiTest extends ApiContractTestSupport {
         addParticipant("参加 二郎", "DAN_5");
         String withdrawnId = addParticipant("参加 三郎", "KYU_9");
         assignGroup(withdrawnId, groupB);
-        mockMvc.perform(patch(participantsPath() + "/" + withdrawnId).cookie(ownerCookie())
+        performApi(patch(participantsPath() + "/" + withdrawnId).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"WITHDRAWN\"}"))
                 .andExpect(status().isOk());
 
         // ACTIVE 2名は A/B へ1名ずつ。棄権者(三郎)の割当は B のまま変わらない
-        mockMvc.perform(post(groupsPath() + "/auto-assign").cookie(ownerCookie()))
+        performApi(post(groupsPath() + "/auto-assign").cookie(ownerCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].groupId").value(groupA))
                 .andExpect(jsonPath("$.data[1].groupId").value(groupB))
@@ -177,18 +177,18 @@ class GroupApiTest extends ApiContractTestSupport {
         String groupB = createGroup("B");
 
         String withoutGroup = addParticipant("参加 一郎", "DAN_1");
-        mockMvc.perform(get(participantsPath()).cookie(ownerCookie()))
+        performApi(get(participantsPath()).cookie(ownerCookie()))
                 .andExpect(jsonPath("$.data[0].id").value(withoutGroup))
                 .andExpect(jsonPath("$.data[0].groupId").value(groupA));
 
-        mockMvc.perform(post(participantsPath()).cookie(ownerCookie())
+        performApi(post(participantsPath()).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"参加 二郎\",\"groupId\":\"" + groupB + "\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.groupId").value(groupB));
 
         // 未知グループの指定は400
-        mockMvc.perform(post(participantsPath()).cookie(ownerCookie())
+        performApi(post(participantsPath()).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"参加 三郎\",\"groupId\":\"" + "0".repeat(26) + "\"}"))
                 .andExpect(status().isBadRequest())
@@ -206,30 +206,30 @@ class GroupApiTest extends ApiContractTestSupport {
                 addParticipant("参加 四郎", "KYU_9"));
 
         // 全員デフォルトグループAのまま → Bが0名で開始不可
-        mockMvc.perform(post(base() + "/start").cookie(ownerCookie()))
+        performApi(post(base() + "/start").cookie(ownerCookie()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
 
         // Bが1名のみでも開始不可
         assignGroup(ids.get(3), groupB);
-        mockMvc.perform(post(base() + "/start").cookie(ownerCookie()))
+        performApi(post(base() + "/start").cookie(ownerCookie()))
                 .andExpect(status().isConflict());
 
         // A:2名 / B:2名 に調整すると開始できる
         assignGroup(ids.get(2), groupB);
-        mockMvc.perform(post(base() + "/start").cookie(ownerCookie()))
+        performApi(post(base() + "/start").cookie(ownerCookie()))
                 .andExpect(status().isOk());
 
         // 開始後のグループ操作・割当変更は409
-        mockMvc.perform(post(groupsPath()).cookie(ownerCookie())
+        performApi(post(groupsPath()).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"C\"}"))
                 .andExpect(status().isConflict());
-        mockMvc.perform(delete(groupsPath() + "/" + groupB).cookie(ownerCookie()))
+        performApi(delete(groupsPath() + "/" + groupB).cookie(ownerCookie()))
                 .andExpect(status().isConflict());
-        mockMvc.perform(post(groupsPath() + "/auto-assign").cookie(ownerCookie()))
+        performApi(post(groupsPath() + "/auto-assign").cookie(ownerCookie()))
                 .andExpect(status().isConflict());
-        mockMvc.perform(patch(participantsPath() + "/" + ids.get(0)).cookie(ownerCookie())
+        performApi(patch(participantsPath() + "/" + ids.get(0)).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"groupId\":\"" + groupB + "\"}"))
                 .andExpect(status().isConflict());
@@ -246,10 +246,10 @@ class GroupApiTest extends ApiContractTestSupport {
         addParticipant("参加 三郎", "DAN_1");
         assignGroup(addParticipant("参加 四郎", "KYU_1"), groupB);
         assignGroup(addParticipant("参加 五郎", "KYU_5"), groupB);
-        mockMvc.perform(post(base() + "/start").cookie(ownerCookie()))
+        performApi(post(base() + "/start").cookie(ownerCookie()))
                 .andExpect(status().isOk());
 
-        MvcResult r1 = mockMvc.perform(post(base() + "/rounds").cookie(ownerCookie()))
+        MvcResult r1 = performApi(post(base() + "/rounds").cookie(ownerCookie()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.round.matches.length()").value(3))
                 .andExpect(jsonPath("$.data.relaxations.length()").value(0))
@@ -275,7 +275,7 @@ class GroupApiTest extends ApiContractTestSupport {
         // 結果入力(BYE以外)→確定
         for (JsonNode match : matches) {
             if (!match.path("result").asText().equals("BYE")) {
-                mockMvc.perform(put(base() + "/matches/" + match.path("id").asText() + "/result")
+                performApi(put(base() + "/matches/" + match.path("id").asText() + "/result")
                                 .cookie(ownerCookie())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"result\":\"PLAYER1_WIN\",\"version\":"
@@ -283,11 +283,11 @@ class GroupApiTest extends ApiContractTestSupport {
                         .andExpect(status().isOk());
             }
         }
-        mockMvc.perform(post(base() + "/rounds/1/confirm").cookie(ownerCookie()))
+        performApi(post(base() + "/rounds/1/confirm").cookie(ownerCookie()))
                 .andExpect(status().isOk());
 
         // 順位表はグループごとに独立(グループ内順位1始まり)
-        mockMvc.perform(get(base() + "/standings").cookie(ownerCookie()))
+        performApi(get(base() + "/standings").cookie(ownerCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].group.name").value("A"))
@@ -308,7 +308,7 @@ class GroupApiTest extends ApiContractTestSupport {
                 + "蛯名 隆,〇〇株式会社,5段,A\n"
                 + "山田 花子,,初段,B\n"
                 + "佐藤 一,B社,3級,\n";
-        mockMvc.perform(multipart(participantsPath() + "/import")
+        performApi(multipart(participantsPath() + "/import")
                         .file(csvFile(csv.getBytes(StandardCharsets.UTF_8)))
                         .cookie(ownerCookie()))
                 .andExpect(status().isCreated())
@@ -320,19 +320,19 @@ class GroupApiTest extends ApiContractTestSupport {
 
         // 未知のグループ名は行番号付きエラーで1件も取り込まれない
         String invalid = "氏名,所属,段級位,グループ\n正常 太郎,,初段,A\n異常 次郎,,1級,X\n";
-        mockMvc.perform(multipart(participantsPath() + "/import")
+        performApi(multipart(participantsPath() + "/import")
                         .file(csvFile(invalid.getBytes(StandardCharsets.UTF_8)))
                         .cookie(ownerCookie()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("CSV_INVALID_FORMAT"))
                 .andExpect(jsonPath("$.error.details[0].field").value("3行目"));
-        mockMvc.perform(get(participantsPath()).cookie(ownerCookie()))
+        performApi(get(participantsPath()).cookie(ownerCookie()))
                 .andExpect(jsonPath("$.data.length()").value(3));
     }
 
     /** 大会作成時に自動作成されるデフォルトグループ「A」のID */
     private String defaultGroupId() throws Exception {
-        MvcResult result = mockMvc.perform(get(groupsPath()).cookie(ownerCookie()))
+        MvcResult result = performApi(get(groupsPath()).cookie(ownerCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].name").value("A"))
                 .andReturn();
@@ -340,7 +340,7 @@ class GroupApiTest extends ApiContractTestSupport {
     }
 
     private String createGroup(String name) throws Exception {
-        MvcResult result = mockMvc.perform(post(groupsPath()).cookie(ownerCookie())
+        MvcResult result = performApi(post(groupsPath()).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"" + name + "\"}"))
                 .andExpect(status().isCreated())
@@ -350,7 +350,7 @@ class GroupApiTest extends ApiContractTestSupport {
 
     private String addParticipant(String name, String rank) throws Exception {
         String rankJson = rank == null ? "" : ",\"rank\":\"" + rank + "\"";
-        MvcResult result = mockMvc.perform(post(participantsPath()).cookie(ownerCookie())
+        MvcResult result = performApi(post(participantsPath()).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"" + name + "\"" + rankJson + "}"))
                 .andExpect(status().isCreated())
@@ -359,7 +359,7 @@ class GroupApiTest extends ApiContractTestSupport {
     }
 
     private void assignGroup(String participantId, String groupId) throws Exception {
-        mockMvc.perform(patch(participantsPath() + "/" + participantId).cookie(ownerCookie())
+        performApi(patch(participantsPath() + "/" + participantId).cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"groupId\":\"" + groupId + "\"}"))
                 .andExpect(status().isOk());

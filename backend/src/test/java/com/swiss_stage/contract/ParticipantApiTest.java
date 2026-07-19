@@ -22,7 +22,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
 
     @BeforeEach
     void setUp() throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/v1/tournaments")
+        MvcResult result = performApi(post("/api/v1/tournaments")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"参加者テスト大会\",\"gameType\":\"GO\",\"totalRounds\":3}"))
@@ -34,7 +34,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
     @Test
     @DisplayName("PTC-AC-001: 参加者を追加するとシード順が自動採番される")
     void 追加() throws Exception {
-        mockMvc.perform(post(participantsPath())
+        performApi(post(participantsPath())
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"一人目\",\"organization\":\"A社\",\"rank\":\"DAN_3\"}"))
@@ -43,7 +43,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
                 .andExpect(jsonPath("$.data.rank").value("DAN_3"))
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"));
 
-        mockMvc.perform(post(participantsPath())
+        performApi(post(participantsPath())
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"二人目\"}"))
@@ -51,7 +51,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
                 .andExpect(jsonPath("$.data.seedOrder").value(2))
                 .andExpect(jsonPath("$.data.organization").doesNotExist());
 
-        mockMvc.perform(get(participantsPath()).cookie(ownerCookie()))
+        performApi(get(participantsPath()).cookie(ownerCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(2));
     }
@@ -60,7 +60,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
     @DisplayName("PTC-AC-002: CSVインポート(UTF-8)で全行取り込める")
     void CSVインポートUTF8() throws Exception {
         String csv = "氏名,所属,段級位\n蛯名 隆,〇〇株式会社,3級\n山田 花子,,初段\n佐藤 一,B社,\n";
-        mockMvc.perform(multipart(participantsPath() + "/import")
+        performApi(multipart(participantsPath() + "/import")
                         .file(csvFile(csv.getBytes(StandardCharsets.UTF_8)))
                         .cookie(ownerCookie()))
                 .andExpect(status().isCreated())
@@ -75,7 +75,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
     @DisplayName("PTC-AC-003: CSVインポート(Shift_JIS)も自動判定して取り込める")
     void CSVインポートShiftJIS() throws Exception {
         String csv = "氏名,所属,段級位\n蛯名 隆,囲碁部,5段\n";
-        mockMvc.perform(multipart(participantsPath() + "/import")
+        performApi(multipart(participantsPath() + "/import")
                         .file(csvFile(csv.getBytes(Charset.forName("windows-31j"))))
                         .cookie(ownerCookie()))
                 .andExpect(status().isCreated())
@@ -89,7 +89,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
     @DisplayName("PTC-AC-004: CSVの行エラーは行番号付きdetailsで400になり、1件も取り込まれない")
     void CSVインポート行エラー() throws Exception {
         String csv = "氏名,所属,段級位\n,A社,3級\n正常 太郎,B社,初段\n異常 次郎,C社,超段\n";
-        mockMvc.perform(multipart(participantsPath() + "/import")
+        performApi(multipart(participantsPath() + "/import")
                         .file(csvFile(csv.getBytes(StandardCharsets.UTF_8)))
                         .cookie(ownerCookie()))
                 .andExpect(status().isBadRequest())
@@ -98,14 +98,14 @@ class ParticipantApiTest extends ApiContractTestSupport {
                 .andExpect(jsonPath("$.error.details[0].field").value("2行目"))
                 .andExpect(jsonPath("$.error.details[1].field").value("4行目"));
 
-        mockMvc.perform(get(participantsPath()).cookie(ownerCookie()))
+        performApi(get(participantsPath()).cookie(ownerCookie()))
                 .andExpect(jsonPath("$.data.length()").value(0));
     }
 
     @Test
     @DisplayName("PTC-AC-005: ヘッダー行が不正なCSVは400になる")
     void CSVヘッダー不正() throws Exception {
-        mockMvc.perform(multipart(participantsPath() + "/import")
+        performApi(multipart(participantsPath() + "/import")
                         .file(csvFile("name,org,rank\nx,y,z\n".getBytes(StandardCharsets.UTF_8)))
                         .cookie(ownerCookie()))
                 .andExpect(status().isBadRequest())
@@ -116,34 +116,34 @@ class ParticipantApiTest extends ApiContractTestSupport {
     @Test
     @DisplayName("PTC-AC-006,PTC-AC-007: 棄権(PATCH)はいつでもでき、大会開始後の追加・削除は409になる")
     void 開始後の制約と棄権() throws Exception {
-        MvcResult p1 = mockMvc.perform(post(participantsPath())
+        MvcResult p1 = performApi(post(participantsPath())
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"参加 一郎\"}"))
                 .andExpect(status().isCreated()).andReturn();
-        mockMvc.perform(post(participantsPath())
+        performApi(post(participantsPath())
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"参加 二郎\"}"))
                 .andExpect(status().isCreated());
         String participantId = dataOf(p1).path("id").asText();
 
-        mockMvc.perform(post("/api/v1/tournaments/" + tournamentId + "/start").cookie(ownerCookie()))
+        performApi(post("/api/v1/tournaments/" + tournamentId + "/start").cookie(ownerCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"));
 
-        mockMvc.perform(post(participantsPath())
+        performApi(post(participantsPath())
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"遅刻 三郎\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
 
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+        performApi(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .delete(participantsPath() + "/" + participantId).cookie(ownerCookie()))
                 .andExpect(status().isConflict());
 
-        mockMvc.perform(patch(participantsPath() + "/" + participantId)
+        performApi(patch(participantsPath() + "/" + participantId)
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"WITHDRAWN\"}"))
@@ -154,7 +154,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
     @Test
     @DisplayName("PTC-AC-008,PTC-AC-009: clearRank=trueで棋力を未入力に戻せ(rankとの同時指定は400)、未指定項目は失われない")
     void 棋力のクリア() throws Exception {
-        MvcResult created = mockMvc.perform(post(participantsPath())
+        MvcResult created = performApi(post(participantsPath())
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"棋力 未定\",\"rank\":\"DAN_3\"}"))
@@ -162,7 +162,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
         String participantId = dataOf(created).path("id").asText();
 
         String groupId = dataOf(created).path("groupId").asText();
-        mockMvc.perform(patch(participantsPath() + "/" + participantId)
+        performApi(patch(participantsPath() + "/" + participantId)
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"clearRank\":true}"))
@@ -172,7 +172,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
                 // グループ割当は他項目の更新で失われない
                 .andExpect(jsonPath("$.data.groupId").value(groupId));
 
-        mockMvc.perform(patch(participantsPath() + "/" + participantId)
+        performApi(patch(participantsPath() + "/" + participantId)
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"rank\":\"KYU_1\",\"clearRank\":true}"))

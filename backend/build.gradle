@@ -57,7 +57,18 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'net.jqwik:jqwik:1.9.2'
     testImplementation 'com.tngtech.archunit:archunit-junit5:1.3.0'
+    // contractテストのOpenAPIスキーマ検証(schema/openapi.yaml がAPI契約のSSoT)
+    testImplementation 'com.atlassian.oai:swagger-request-validator-mockmvc:2.44.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// schema/openapi.yaml をテストのclasspathに載せる(contractテストのスキーマ検証用)
+sourceSets {
+    test {
+        resources {
+            srcDir '../schema'
+        }
+    }
 }
 
 tasks.named('test') {

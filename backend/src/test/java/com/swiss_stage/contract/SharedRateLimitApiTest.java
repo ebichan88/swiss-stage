@@ -22,9 +22,9 @@ class SharedRateLimitApiTest extends ApiContractTestSupport {
     void レート制限() throws Exception {
         String path = "/api/v1/shared/" + "B".repeat(43);
         for (int i = 0; i < 3; i++) {
-            mockMvc.perform(get(path)).andExpect(status().isForbidden());
+            performApi(get(path)).andExpect(status().isForbidden());
         }
-        mockMvc.perform(get(path))
+        performApi(get(path))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("RATE_LIMITED"))
