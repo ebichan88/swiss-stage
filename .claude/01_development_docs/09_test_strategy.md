@@ -33,6 +33,13 @@ backend/src/test/java/com/swiss_stage/
 └── contract/            # MockMvcによるAPIコントラクトテスト
 ```
 
+### contract/ はコンポーネント単位の受け入れテスト
+
+`contract/` はAPIを外から叩いてレスポンス・DB状態・認可を検証する「コンポーネント単位の受け入れテスト」であり、受け入れケース台帳(`.claude/05_acceptance/01_acceptance_scope.md`)と対応する。
+
+- `@DisplayName` の先頭に受け入れケースID(例: `TRN-AC-003: ...`)を付ける(複数はカンマ区切り)
+- ID体系・運用は `.claude/05_acceptance/00_acceptance_policy.md` を参照
+
 ### domain層テストの必須項目
 
 `05_swiss_pairing_algorithm.md` のテスト要件を全て実装する。特に:

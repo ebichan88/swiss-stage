@@ -133,6 +133,10 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 - `03_dynamodb_local_testing.md` — DynamoDB Localテスト・CI設定
 - `04_react_router_patterns.md` — ルート定義・認証ガード・SPAフォールバック
 
+### ✅ 受け入れ基準(.claude/05_acceptance/)
+- `00_acceptance_policy.md` — 受け入れケースのID体系・優先度・テスト紐づけの運用ルール
+- `01_acceptance_scope.md` — 受け入れケース台帳(コンポーネント別・優先度付き・Status管理)。contractテストの `@DisplayName` / PlaywrightのテストタイトルとIDで紐づく
+
 ### 🔍 品質基準・AIレビュー(.claude/04_quality/)
 - `01_review_checklist.md` — AIレビューの観点(機械検査できない項目のみ。lint/ArchUnitで検査可能なものは載せない)
 - `02_severity.md` — Critical/Major/Minorの定義とPASS/FAIL判定基準
@@ -142,7 +146,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 
 | タスク | 参照ドキュメント |
 |-------|----------------|
-| 新機能の追加 | アーキテクチャ → DB設計 → API設計 → フロントエンド設計 |
+| 新機能の追加 | **受け入れ台帳(05_acceptance)にケース追加** → アーキテクチャ → DB設計 → API設計 → フロントエンド設計 |
 | マッチング・順位計算の実装/修正 | **05_swiss_pairing_algorithm** → テスト戦略 |
 | APIエンドポイント追加 | API設計 → エラーハンドリング → 型定義 |
 | DynamoDBの操作追加 | DB設計 → Enhanced Client → DynamoDB Localテスト |
@@ -159,6 +163,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 ## ドキュメント運用ルール
 
 - 実装と設計ドキュメントが乖離したら、**同じPRでドキュメントを更新する**
+  - 受け入れケース台帳(`.claude/05_acceptance/01_acceptance_scope.md`)もこのルールの対象: 新機能・挙動変更は実装前にケースを追加(Status=todo)し、実装PRでdoneに更新する
 - 仕様変更(特にマッチング・順位計算)は先に `05_swiss_pairing_algorithm.md` を更新してから実装する
 - 新しいエラーコード・デザイントークン・UIパターンは対応ドキュメントに追記してから使う
 - AIレビューの誤検知・見逃しに気づいたら `04_quality/01_review_checklist.md` を更新して育てる。機械検査可能な規約はチェックリストではなく lint / ArchUnit に追加する
