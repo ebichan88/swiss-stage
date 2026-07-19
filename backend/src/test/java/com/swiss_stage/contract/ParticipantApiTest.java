@@ -32,7 +32,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("参加者を追加するとシード順が自動採番される")
+    @DisplayName("PTC-AC-001: 参加者を追加するとシード順が自動採番される")
     void 追加() throws Exception {
         mockMvc.perform(post(participantsPath())
                         .cookie(ownerCookie())
@@ -57,7 +57,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("CSVインポート(UTF-8)で全行取り込める")
+    @DisplayName("PTC-AC-002: CSVインポート(UTF-8)で全行取り込める")
     void CSVインポートUTF8() throws Exception {
         String csv = "氏名,所属,段級位\n蛯名 隆,〇〇株式会社,3級\n山田 花子,,初段\n佐藤 一,B社,\n";
         mockMvc.perform(multipart(participantsPath() + "/import")
@@ -72,7 +72,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("CSVインポート(Shift_JIS)も自動判定して取り込める")
+    @DisplayName("PTC-AC-003: CSVインポート(Shift_JIS)も自動判定して取り込める")
     void CSVインポートShiftJIS() throws Exception {
         String csv = "氏名,所属,段級位\n蛯名 隆,囲碁部,5段\n";
         mockMvc.perform(multipart(participantsPath() + "/import")
@@ -86,7 +86,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("CSVの行エラーは行番号付きdetailsで400になり、1件も取り込まれない")
+    @DisplayName("PTC-AC-004: CSVの行エラーは行番号付きdetailsで400になり、1件も取り込まれない")
     void CSVインポート行エラー() throws Exception {
         String csv = "氏名,所属,段級位\n,A社,3級\n正常 太郎,B社,初段\n異常 次郎,C社,超段\n";
         mockMvc.perform(multipart(participantsPath() + "/import")
@@ -103,7 +103,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("ヘッダー行が不正なCSVは400になる")
+    @DisplayName("PTC-AC-005: ヘッダー行が不正なCSVは400になる")
     void CSVヘッダー不正() throws Exception {
         mockMvc.perform(multipart(participantsPath() + "/import")
                         .file(csvFile("name,org,rank\nx,y,z\n".getBytes(StandardCharsets.UTF_8)))
@@ -114,7 +114,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("棄権(PATCH)はいつでもでき、大会開始後の追加・削除は409になる")
+    @DisplayName("PTC-AC-006,PTC-AC-007: 棄権(PATCH)はいつでもでき、大会開始後の追加・削除は409になる")
     void 開始後の制約と棄権() throws Exception {
         MvcResult p1 = mockMvc.perform(post(participantsPath())
                         .cookie(ownerCookie())
@@ -152,7 +152,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("clearRank=trueで棋力を未入力に戻せる(rankとの同時指定は400)")
+    @DisplayName("PTC-AC-008,PTC-AC-009: clearRank=trueで棋力を未入力に戻せ(rankとの同時指定は400)、未指定項目は失われない")
     void 棋力のクリア() throws Exception {
         MvcResult created = mockMvc.perform(post(participantsPath())
                         .cookie(ownerCookie())

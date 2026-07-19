@@ -43,7 +43,7 @@ class SharedApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("トークンは運営者のみ発行・再発行でき、再発行で旧トークンは即時無効になる")
+    @DisplayName("SHR-AC-001,SHR-AC-002: トークンは運営者のみ発行・再発行でき、再発行で旧トークンは即時無効になる")
     void トークン発行と再発行() throws Exception {
         // 他人の大会は404(存在を漏らさない)
         mockMvc.perform(post(base() + "/share-token/regenerate").cookie(sessionCookie(OTHER_SUB)))
@@ -68,7 +68,7 @@ class SharedApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("共有ページ集約は大会・ラウンド・順位を返し、shareToken/ownerSubを含めない")
+    @DisplayName("SHR-AC-003,SHR-AC-004: 共有ページ集約は大会・ラウンド・順位を返し、shareToken/ownerSubを含めない")
     void 共有ページ集約() throws Exception {
         String token = regenerateToken();
         setVisibility("TOKEN");
@@ -93,7 +93,7 @@ class SharedApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("無効・不明・形式不正トークンと非公開(PRIVATE)は同じ403で大会の存在を漏らさない")
+    @DisplayName("SHR-AC-005: 無効・不明・形式不正トークンと非公開(PRIVATE)は同じ403で大会の存在を漏らさない")
     void 無効トークンと非公開() throws Exception {
         // 形式は正しいが存在しないトークン
         mockMvc.perform(get("/api/v1/shared/" + "A".repeat(43)))
@@ -112,7 +112,7 @@ class SharedApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("トークン経由の結果入力は大会設定で許可時のみ可能で、確定済み・競合は409になる")
+    @DisplayName("SHR-AC-006,SHR-AC-007: トークン経由の結果入力は大会設定で許可時のみ可能で、確定済み・競合は409になる")
     void トークン経由の結果入力() throws Exception {
         String token = regenerateToken();
         setVisibility("TOKEN");
@@ -160,7 +160,7 @@ class SharedApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("キャッシュ済みの共有ページも結果入力・確定後は即時反映される(evict)")
+    @DisplayName("SHR-AC-008: キャッシュ済みの共有ページも結果入力・確定後は即時反映される(evict)")
     void キャッシュevict() throws Exception {
         String token = regenerateToken();
         setVisibility("TOKEN");

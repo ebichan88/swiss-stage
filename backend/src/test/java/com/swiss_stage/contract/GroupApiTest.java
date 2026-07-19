@@ -41,7 +41,8 @@ class GroupApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("グループの作成・一覧(作成順)・改名・削除ができ、重複名や上限超過は400になる")
+    @DisplayName("GRP-AC-001,GRP-AC-002,GRP-AC-003,GRP-AC-004,GRP-AC-005: "
+            + "グループの作成・一覧(作成順)・改名・削除ができ、重複名や上限超過は400になる")
     void グループCRUD() throws Exception {
         // 大会作成時にデフォルトグループ「A」が自動作成されている
         String groupA = defaultGroupId();
@@ -102,7 +103,7 @@ class GroupApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("段級位の自動振り分けは強い順に均等分割(端数は先頭)し、個別調整もできる")
+    @DisplayName("GRP-AC-006,GRP-AC-008,GRP-AC-009: 段級位の自動振り分けは強い順に均等分割(端数は先頭)し、個別調整もできる")
     void 自動振り分けと個別調整() throws Exception {
         String groupA = defaultGroupId();
         String groupB = createGroup("B");
@@ -147,7 +148,7 @@ class GroupApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("自動振り分けは棄権中の参加者の割当を変更しない")
+    @DisplayName("GRP-AC-007: 自動振り分けは棄権中の参加者の割当を変更しない")
     void 自動振り分けは棄権者の割当を維持() throws Exception {
         String groupA = defaultGroupId();
         String groupB = createGroup("B");
@@ -170,7 +171,7 @@ class GroupApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("参加者追加はグループ省略時に先頭グループへ割り当てられ、指定時はそのグループになる")
+    @DisplayName("GRP-AC-010: 参加者追加はグループ省略時に先頭グループへ割り当てられ、指定時はそのグループになる")
     void 参加者追加のグループ割当() throws Exception {
         String groupA = defaultGroupId();
         String groupB = createGroup("B");
@@ -195,7 +196,7 @@ class GroupApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("開始時検証: 空グループや2名未満のグループがあると開始できない")
+    @DisplayName("GRP-AC-011,GRP-AC-012: 空グループや2名未満のグループがあると開始できず、開始後のグループ操作は409になる")
     void 開始時検証() throws Exception {
         String groupB = createGroup("B");
         List<String> ids = List.of(
@@ -235,7 +236,7 @@ class GroupApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("グループ大会の一巡: グループ独立ペアリング・グループ内卓番号/BYE・グループ別順位")
+    @DisplayName("GRP-AC-013,GRP-AC-014: グループ大会の一巡: グループ独立ペアリング・グループ内卓番号/BYE・グループ別順位")
     void グループ大会の一巡() throws Exception {
         String groupA = defaultGroupId();
         String groupB = createGroup("B");
@@ -298,7 +299,7 @@ class GroupApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("CSVのグループ列(4列)で割当付きインポートでき、未知のグループ名は行エラーになる")
+    @DisplayName("GRP-AC-015,GRP-AC-016: CSVのグループ列(4列)で割当付きインポートでき、未知のグループ名は行エラーになる")
     void CSVグループ列() throws Exception {
         String groupA = defaultGroupId();
         String groupB = createGroup("B");

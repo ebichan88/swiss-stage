@@ -47,7 +47,8 @@ class RoundApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("生成→結果入力→確定→次ラウンド→順位表の一巡が通り、再戦が発生しない")
+    @DisplayName("RND-AC-001,RND-AC-002,RND-AC-003,RND-AC-004,RND-AC-005,RND-AC-006,RND-AC-007: "
+            + "生成→結果入力→確定→次ラウンド→順位表の一巡が通り、再戦が発生しない")
     void 一巡シナリオ() throws Exception {
         // ラウンド1生成(棋力順の隣接ペア・4名なのでBYEなし)
         MvcResult r1 = mockMvc.perform(post(base() + "/rounds").cookie(ownerCookie()))
@@ -110,7 +111,7 @@ class RoundApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("結果入力はversion不一致・確定済みラウンドで409になる")
+    @DisplayName("RND-AC-008,RND-AC-009,RND-AC-010,RND-AC-011: 結果入力はversion不一致・確定済みラウンドで409、不正値は400になる")
     void 結果入力の競合と確定後変更() throws Exception {
         MvcResult r1 = mockMvc.perform(post(base() + "/rounds").cookie(ownerCookie()))
                 .andExpect(status().isCreated())

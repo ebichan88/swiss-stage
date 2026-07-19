@@ -26,7 +26,7 @@ class TournamentApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("大会を作成すると201で統一フォーマットのDTOが返る")
+    @DisplayName("TRN-AC-001: 大会を作成すると201で統一フォーマットのDTOが返る")
     void 作成() throws Exception {
         mockMvc.perform(post("/api/v1/tournaments")
                         .cookie(ownerCookie())
@@ -45,7 +45,7 @@ class TournamentApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("バリデーションエラーは400 VALIDATION_ERROR + detailsで返る")
+    @DisplayName("TRN-AC-002: バリデーションエラーは400 VALIDATION_ERROR + detailsで返る")
     void バリデーション() throws Exception {
         mockMvc.perform(post("/api/v1/tournaments")
                         .cookie(ownerCookie())
@@ -58,7 +58,7 @@ class TournamentApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("一覧・詳細が取得でき、他人の大会は404になる(存在を漏らさない)")
+    @DisplayName("TRN-AC-003,TRN-AC-004,TRN-AC-005: 一覧・詳細が取得でき、他人の大会・不正形式IDは404になる(存在を漏らさない)")
     void 取得と認可() throws Exception {
         String id = createTournament().path("id").asText();
 
@@ -84,7 +84,7 @@ class TournamentApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("更新はversion一致で成功し、不一致は409 CONFLICTになる")
+    @DisplayName("TRN-AC-006,TRN-AC-007: 更新はversion一致で成功し、不一致は409 CONFLICTになる")
     void 更新と楽観ロック() throws Exception {
         JsonNode created = createTournament();
         String id = created.path("id").asText();
@@ -107,7 +107,7 @@ class TournamentApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("参加者2名未満の大会は開始できず、削除は204で消える")
+    @DisplayName("TRN-AC-008,TRN-AC-009: 参加者2名未満の大会は開始できず、削除は204で消える")
     void 開始制約と削除() throws Exception {
         String id = createTournament().path("id").asText();
 
@@ -122,7 +122,7 @@ class TournamentApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("未認証はすべて401になる")
+    @DisplayName("TRN-AC-010: 未認証はすべて401になる")
     void 未認証() throws Exception {
         mockMvc.perform(get("/api/v1/tournaments"))
                 .andExpect(status().isUnauthorized())

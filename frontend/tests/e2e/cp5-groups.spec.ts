@@ -17,7 +17,7 @@ import {
  * グループ定義 → CSV(グループ列)インポート → 自動振り分け → 開始
  * → ラウンド生成(グループ内卓番号・グループ内BYE) → 確定 → グループ別順位表 → 共有ページ
  */
-test('CP5: グループ大会をグループ独立で運営できる', async ({ page }) => {
+test('E2E-AC-006: CP5: グループ大会をグループ独立で運営できる', async ({ page }) => {
   await loginAsOrganizer(page);
   const tournamentId = await createTournament(page, `CP5グループ大会 ${Date.now()}`, 3);
 

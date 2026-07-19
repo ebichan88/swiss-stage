@@ -18,7 +18,7 @@ import org.springframework.test.context.TestPropertySource;
 class SharedRateLimitApiTest extends ApiContractTestSupport {
 
     @Test
-    @DisplayName("上限を超えた共有トークンアクセスは429を統一フォーマットで返す")
+    @DisplayName("SHR-AC-009: 上限を超えた共有トークンアクセスは429を統一フォーマットで返す")
     void レート制限() throws Exception {
         String path = "/api/v1/shared/" + "B".repeat(43);
         for (int i = 0; i < 3; i++) {

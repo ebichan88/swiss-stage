@@ -18,7 +18,7 @@ import org.springframework.test.web.servlet.MvcResult;
 class AuthApiTest extends ApiContractTestSupport {
 
     @Test
-    @DisplayName("未認証の /auth/me は401を統一エラーフォーマットで返し、X-Request-Idが付く")
+    @DisplayName("AUTH-AC-001: 未認証の /auth/me は401を統一エラーフォーマットで返し、X-Request-Idが付く")
     void 未認証() throws Exception {
         mockMvc.perform(get("/api/v1/auth/me"))
                 .andExpect(status().isUnauthorized())
@@ -29,7 +29,7 @@ class AuthApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("test-loginでHttpOnlyのセッションCookieが発行され、/auth/me が通る")
+    @DisplayName("AUTH-AC-002: test-loginでHttpOnlyのセッションCookieが発行され、/auth/me が通る")
     void テストログイン() throws Exception {
         MvcResult login = mockMvc.perform(post("/api/v1/auth/test-login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -50,7 +50,7 @@ class AuthApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("/auth/login はGoogleのOAuth2認可フローへ2段リダイレクトする")
+    @DisplayName("AUTH-AC-003: /auth/login はGoogleのOAuth2認可フローへ2段リダイレクトする")
     void Googleログインへのリダイレクト() throws Exception {
         MvcResult entry = mockMvc.perform(get("/api/v1/auth/login"))
                 .andExpect(status().isFound())
@@ -69,7 +69,7 @@ class AuthApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("logoutでCookieが失効し、不正なCookieは未認証扱いになる")
+    @DisplayName("AUTH-AC-004,AUTH-AC-005: logoutでCookieが失効し、不正なCookieは未認証扱いになる")
     void ログアウトと不正Cookie() throws Exception {
         mockMvc.perform(post("/api/v1/auth/logout"))
                 .andExpect(status().isOk())

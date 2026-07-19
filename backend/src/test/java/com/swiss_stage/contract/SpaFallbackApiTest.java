@@ -18,7 +18,7 @@ import org.springframework.test.web.servlet.MvcResult;
 class SpaFallbackApiTest extends ApiContractTestSupport {
 
     @Test
-    @DisplayName("SPAルートへの直アクセスはindex.htmlを返す(no-cache)")
+    @DisplayName("SPA-AC-001: SPAルートへの直アクセスはindex.htmlを返す(no-cache)")
     void SPAフォールバック() throws Exception {
         for (String path : new String[] {
                 "/tournaments", "/tournaments/01ARZ3NDEKTSV4RRFFQ69G5FAV/rounds",
@@ -33,7 +33,7 @@ class SpaFallbackApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("index.html自体とルート(/)もSPAを返す")
+    @DisplayName("SPA-AC-002: index.html自体とルート(/)もSPAを返す")
     void ルートアクセス() throws Exception {
         mockMvc.perform(get("/index.html"))
                 .andExpect(status().isOk())
@@ -44,7 +44,7 @@ class SpaFallbackApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("ハッシュ付きアセットは1年+immutableでキャッシュされる")
+    @DisplayName("SPA-AC-003: ハッシュ付きアセットは1年+immutableでキャッシュされる")
     void アセットの長期キャッシュ() throws Exception {
         mockMvc.perform(get("/assets/app-test.js"))
                 .andExpect(status().isOk())
@@ -53,7 +53,7 @@ class SpaFallbackApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("未知のAPIパスはindex.htmlにフォールバックせず404になる")
+    @DisplayName("SPA-AC-004: 未知のAPIパスはindex.htmlにフォールバックせず404になる")
     void APIは対象外() throws Exception {
         MvcResult result = mockMvc.perform(get("/api/v1/unknown-endpoint"))
                 .andExpect(status().isNotFound())
