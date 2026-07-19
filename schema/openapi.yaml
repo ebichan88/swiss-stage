@@ -563,198 +563,261 @@ components:
         type: string
 
   responses:
-    # 成功レスポンス(統一フォーマット success/data/meta)
+    # 成功レスポンス(統一フォーマット success/data/meta)。
+    # allOf合成は使わない: swagger-request-validatorがレスポンス検証時に
+    # additionalProperties:false を暗黙適用するため、allOfと組み合わせると必ず失敗する
     Void:
       description: 成功(dataなし)
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/SuccessEnvelope"
-              - type: object
-                properties:
-                  data:
-                    type: object
-                    nullable: true
-                    description: 常にnull
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                type: object
+                nullable: true
+                description: 常にnull
+              meta:
+                $ref: "#/components/schemas/Meta"
     Me:
       description: ログイン中ユーザー
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/SuccessEnvelope"
-              - type: object
-                required: [data]
-                properties:
-                  data:
-                    $ref: "#/components/schemas/Me"
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/Me"
+              meta:
+                $ref: "#/components/schemas/Meta"
     Tournament:
       description: 大会
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/SuccessEnvelope"
-              - type: object
-                required: [data]
-                properties:
-                  data:
-                    $ref: "#/components/schemas/Tournament"
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/Tournament"
+              meta:
+                $ref: "#/components/schemas/Meta"
     TournamentList:
       description: 大会一覧
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/SuccessEnvelope"
-              - type: object
-                required: [data]
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Tournament"
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tournament"
+              meta:
+                $ref: "#/components/schemas/Meta"
     Participant:
       description: 参加者
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/SuccessEnvelope"
-              - type: object
-                required: [data]
-                properties:
-                  data:
-                    $ref: "#/components/schemas/Participant"
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/Participant"
+              meta:
+                $ref: "#/components/schemas/Meta"
     ParticipantList:
       description: 参加者一覧
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/SuccessEnvelope"
-              - type: object
-                required: [data]
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Participant"
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Participant"
+              meta:
+                $ref: "#/components/schemas/Meta"
     CsvImportResult:
       description: CSVインポート結果
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/SuccessEnvelope"
-              - type: object
-                required: [data]
-                properties:
-                  data:
-                    $ref: "#/components/schemas/CsvImportResult"
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/CsvImportResult"
+              meta:
+                $ref: "#/components/schemas/Meta"
     Group:
       description: グループ
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/SuccessEnvelope"
-              - type: object
-                required: [data]
-                properties:
-                  data:
-                    $ref: "#/components/schemas/Group"
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/Group"
+              meta:
+                $ref: "#/components/schemas/Meta"
     GroupList:
       description: グループ一覧
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/SuccessEnvelope"
-              - type: object
-                required: [data]
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Group"
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Group"
+              meta:
+                $ref: "#/components/schemas/Meta"
     Round:
       description: ラウンド
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/SuccessEnvelope"
-              - type: object
-                required: [data]
-                properties:
-                  data:
-                    $ref: "#/components/schemas/Round"
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/Round"
+              meta:
+                $ref: "#/components/schemas/Meta"
     RoundList:
       description: ラウンド一覧
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/SuccessEnvelope"
-              - type: object
-                required: [data]
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Round"
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Round"
+              meta:
+                $ref: "#/components/schemas/Meta"
     GeneratedRound:
       description: 組み合わせ生成結果
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/SuccessEnvelope"
-              - type: object
-                required: [data]
-                properties:
-                  data:
-                    $ref: "#/components/schemas/GeneratedRound"
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/GeneratedRound"
+              meta:
+                $ref: "#/components/schemas/Meta"
     Match:
       description: 対局
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/SuccessEnvelope"
-              - type: object
-                required: [data]
-                properties:
-                  data:
-                    $ref: "#/components/schemas/Match"
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/Match"
+              meta:
+                $ref: "#/components/schemas/Meta"
     GroupStandingsList:
       description: グループ別順位表
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/SuccessEnvelope"
-              - type: object
-                required: [data]
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/GroupStandings"
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GroupStandings"
+              meta:
+                $ref: "#/components/schemas/Meta"
     SharedTournament:
       description: 共有ページ用の大会集約
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/SuccessEnvelope"
-              - type: object
-                required: [data]
-                properties:
-                  data:
-                    $ref: "#/components/schemas/SharedTournament"
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/SharedTournament"
+              meta:
+                $ref: "#/components/schemas/Meta"
 
     # エラーレスポンス(統一フォーマット success/error)
     BadRequest:
@@ -800,15 +863,6 @@ components:
       type: string
       description: ULID(26文字のCrockford Base32)
       pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
-    SuccessEnvelope:
-      type: object
-      required: [success, meta]
-      properties:
-        success:
-          type: boolean
-          enum: [true]
-        meta:
-          $ref: "#/components/schemas/Meta"
     Meta:
       type: object
       additionalProperties: false
