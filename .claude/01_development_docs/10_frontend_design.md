@@ -11,7 +11,7 @@ frontend/src/
 ├── pages/               # ルーティング単位(1画面1ファイル、ロジックは持たない)
 ├── services/            # API通信(apiClient + リソース別service)
 ├── hooks/               # カスタムHooks(データ取得・状態管理)
-├── types/               # 型定義(07_type_definitions.mdと同期)
+├── types/               # 型定義(schema/openapi.yamlから生成した型のre-export)
 ├── utils/               # 純粋関数ユーティリティ
 └── theme/               # MUIテーマ定義(デザインシステムの実装)
 ```

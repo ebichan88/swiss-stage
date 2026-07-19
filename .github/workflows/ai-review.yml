@@ -19,8 +19,8 @@ permissions:
 
 env:
   MAX_FIX_ATTEMPTS: 3
-  # 自動修正禁止領域(正確性の心臓部)。.claude/agents/fixer.md の聖域定義と同期させること
-  SANCTUARY_PATTERN: '^(backend/src/main/java/com/swiss_stage/domain/service/|\.claude/01_development_docs/05_swiss_pairing_algorithm\.md)'
+  # 自動修正禁止領域(正確性の心臓部とAPI契約=仕様)。.claude/agents/fixer.md の聖域定義と同期させること
+  SANCTUARY_PATTERN: '^(backend/src/main/java/com/swiss_stage/domain/service/|\.claude/01_development_docs/05_swiss_pairing_algorithm\.md|schema/)'
 
 jobs:
   review:

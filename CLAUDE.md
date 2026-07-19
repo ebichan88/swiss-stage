@@ -66,6 +66,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 
 ## API・データ規約(要点)
 
+- **API契約(エンドポイント・DTO・enum)は `schema/openapi.yaml` が唯一の正**。変更はスキーマが先(contractテストとCIが実装・生成型との一致を機械検査。`07_type_definitions.md`)
 - ベースパス `/api/v1`、レスポンスは統一フォーマット(`success`/`data`/`error`)。エラーコードは `06_error_handling_design.md` の表に従う
 - ID は ULID 文字列。日時は ISO8601 文字列。JSONは camelCase
 - 更新系は `version` による楽観ロック(競合は409)
@@ -106,11 +107,11 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 ### 🏗️ 技術設計(.claude/01_development_docs/)
 - `01_architecture_design.md` — DDDレイヤー構造と責任、ロジック配置基準
 - `02_database_design.md` — DynamoDBシングルテーブル設計、アクセスパターン
-- `03_api_design.md` — エンドポイント一覧、レスポンス形式、ステータスコード
+- `03_api_design.md` — API基本方針・レスポンス形式・設計ルール(エンドポイント定義は `schema/openapi.yaml`)
 - `04_screen_transition_design.md` — 画面一覧・遷移図・UXルール
 - `05_swiss_pairing_algorithm.md` — **スイス方式マッチング・順位計算の仕様(心臓部)**
 - `06_error_handling_design.md` — エラーコード表、例外階層、表示方法
-- `07_type_definitions.md` — DTO型定義(TS/Java同期)、enum一覧
+- `07_type_definitions.md` — 型・スキーマ運用(定義のSSoTは `schema/openapi.yaml`。変更手順・命名規約・DTO分離)
 - `08_development_setup.md` — 環境構築、コマンド、Git運用
 - `09_test_strategy.md` — カバレッジ目標、層別テスト方針
 - `10_frontend_design.md` — コンポーネント設計、状態管理(TanStack Query)
