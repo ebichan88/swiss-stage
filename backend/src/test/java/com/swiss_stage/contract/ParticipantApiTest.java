@@ -32,14 +32,14 @@ class ParticipantApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("PTC-AC-001: 参加者を追加するとシード順が自動採番される")
+    @DisplayName("PTC-AC-001: 参加者を追加するとエントリー順が自動採番される")
     void 追加() throws Exception {
         performApi(post(participantsPath())
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"一人目\",\"organization\":\"A社\",\"rank\":\"DAN_3\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.seedOrder").value(1))
+                .andExpect(jsonPath("$.data.entryOrder").value(1))
                 .andExpect(jsonPath("$.data.rank").value("DAN_3"))
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"));
 
@@ -48,7 +48,7 @@ class ParticipantApiTest extends ApiContractTestSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"二人目\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.seedOrder").value(2))
+                .andExpect(jsonPath("$.data.entryOrder").value(2))
                 .andExpect(jsonPath("$.data.organization").doesNotExist());
 
         performApi(get(participantsPath()).cookie(ownerCookie()))

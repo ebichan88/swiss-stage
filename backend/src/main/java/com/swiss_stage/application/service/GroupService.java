@@ -123,7 +123,7 @@ public class GroupService {
         participantRepository.saveAll(tournamentId, updated);
         sharedViewCache.evict(tournamentId);
         return updated.stream()
-                .sorted(Comparator.comparingInt(Participant::seedOrder))
+                .sorted(Comparator.comparingInt(Participant::entryOrder))
                 .map(ParticipantDto::from)
                 .toList();
     }

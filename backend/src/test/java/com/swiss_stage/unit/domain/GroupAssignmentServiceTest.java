@@ -147,8 +147,8 @@ class GroupAssignmentServiceTest {
                 .hasMessageContaining("未割当");
     }
 
-    private static ParticipantId id(int seedOrder) {
-        return TestData.participant(seedOrder).id();
+    private static ParticipantId id(int entryOrder) {
+        return TestData.participant(entryOrder).id();
     }
 
     private static long countOf(Map<ParticipantId, GroupId> assignment, Group group) {

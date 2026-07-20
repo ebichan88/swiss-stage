@@ -9,13 +9,13 @@ public record ParticipantDto(
         String name,
         String organization,
         Rank rank,
-        int seedOrder,
+        int entryOrder,
         ParticipantStatus status,
         String groupId) {
 
     public static ParticipantDto from(Participant p) {
         return new ParticipantDto(
-                p.id().value(), p.name(), p.organization(), p.rank(), p.seedOrder(), p.status(),
+                p.id().value(), p.name(), p.organization(), p.rank(), p.entryOrder(), p.status(),
                 p.groupId().value());
     }
 }

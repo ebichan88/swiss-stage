@@ -31,7 +31,7 @@ export function participantOf(overrides: Partial<Participant> = {}): Participant
     name: '架空 太郎',
     organization: 'テスト囲碁会',
     rank: 'DAN_3',
-    seedOrder: 1,
+    entryOrder: 1,
     status: 'ACTIVE',
     groupId: '01TESTGROUP000000000000000',
     ...overrides,

@@ -207,7 +207,7 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** 参加者一覧(シード順) */
+        /** 参加者一覧(エントリー順) */
         get: operations["listParticipants"];
         put?: never;
         /** 参加者追加(大会開始後は409) */
@@ -504,7 +504,7 @@ export interface components {
             name: string;
             organization: string | null;
             rank: components["schemas"]["Rank"];
-            seedOrder: number;
+            entryOrder: number;
             status: components["schemas"]["ParticipantStatus"];
             groupId: components["schemas"]["Ulid"];
         };

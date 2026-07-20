@@ -61,7 +61,7 @@ public final class SwissPairingService {
         List<Participant> ordered = new ArrayList<>(active);
         ordered.sort(Comparator
                 .comparing(Participant::rank, Rank.strongestFirst())
-                .thenComparingInt(Participant::seedOrder));
+                .thenComparingInt(Participant::entryOrder));
         if (options.randomFirstRound()) {
             Collections.shuffle(ordered, new Random(options.randomSeed()));
         }
@@ -99,12 +99,12 @@ public final class SwissPairingService {
             toPair.removeIf(p -> p.id().equals(byeId));
         }
 
-        // 勝点降順 → SOS降順 → シード順。この順で先頭から相手を探す
+        // 勝点降順 → SOS降順 → エントリー順。この順で先頭から相手を探す
         toPair.sort(Comparator
                 .comparingInt((Participant p) -> standings.get(p.id()).points()).reversed()
                 .thenComparing(Comparator.comparingInt(
                         (Participant p) -> standings.get(p.id()).sos()).reversed())
-                .thenComparing(Comparator.comparingInt(Participant::seedOrder)));
+                .thenComparing(Comparator.comparingInt(Participant::entryOrder)));
 
         // 制約レベルを段階的に緩和して探索する
         boolean avoidOrg = options.avoidSameOrganization();
@@ -138,7 +138,7 @@ public final class SwissPairingService {
         Comparator<Participant> lowestFirst = Comparator
                 .comparingInt((Participant p) -> standings.get(p.id()).points())
                 .thenComparingInt(p -> standings.get(p.id()).sos())
-                .thenComparing(Comparator.comparingInt(Participant::seedOrder).reversed());
+                .thenComparing(Comparator.comparingInt(Participant::entryOrder).reversed());
         Optional<Participant> candidate = active.stream()
                 .filter(p -> !standings.get(p.id()).hadBye())
                 .min(lowestFirst);

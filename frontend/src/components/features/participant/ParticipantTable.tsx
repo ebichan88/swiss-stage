@@ -66,7 +66,7 @@ export function ParticipantTable({
             const withdrawn = participant.status === 'WITHDRAWN';
             return (
               <TableRow key={participant.id} sx={withdrawn ? { opacity: 0.55 } : undefined}>
-                <TableCell>{participant.seedOrder}</TableCell>
+                <TableCell>{participant.entryOrder}</TableCell>
                 <TableCell>{participant.name}</TableCell>
                 <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                   {participant.organization ?? ''}

@@ -18,28 +18,28 @@ final class TestData {
     /** groupId必須のため、グループを区別しないテストはこの単一グループに全員帰属させる */
     static final GroupId GROUP_ID = new GroupId("01TESTGROUP000000000000000");
 
-    static Participant participant(int seedOrder) {
-        return participant(seedOrder, (String) null);
+    static Participant participant(int entryOrder) {
+        return participant(entryOrder, (String) null);
     }
 
-    static Participant participant(int seedOrder, String organization) {
+    static Participant participant(int entryOrder, String organization) {
         return new Participant(
-                new ParticipantId("P" + String.format("%03d", seedOrder)),
-                "参加者" + seedOrder,
+                new ParticipantId("P" + String.format("%03d", entryOrder)),
+                "参加者" + entryOrder,
                 organization,
                 null,
-                seedOrder,
+                entryOrder,
                 ParticipantStatus.ACTIVE,
                 GROUP_ID);
     }
 
-    static Participant participant(int seedOrder, Rank rank) {
+    static Participant participant(int entryOrder, Rank rank) {
         return new Participant(
-                new ParticipantId("P" + String.format("%03d", seedOrder)),
-                "参加者" + seedOrder,
+                new ParticipantId("P" + String.format("%03d", entryOrder)),
+                "参加者" + entryOrder,
                 null,
                 rank,
-                seedOrder,
+                entryOrder,
                 ParticipantStatus.ACTIVE,
                 GROUP_ID);
     }

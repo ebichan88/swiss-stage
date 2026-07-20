@@ -29,7 +29,7 @@ class SwissPairingServiceTest {
     private final PairingOptions defaults = PairingOptions.defaults();
 
     @Test
-    @DisplayName("初回ラウンド(偶数): 棋力未入力ならシード順で隣同士が組まれる")
+    @DisplayName("初回ラウンド(偶数): 棋力未入力ならエントリー順で隣同士が組まれる")
     void 初回ラウンド偶数() {
         List<Participant> ps = participants(8);
 
@@ -37,7 +37,7 @@ class SwissPairingServiceTest {
 
         assertThat(result.pairs()).hasSize(4);
         assertThat(result.hasBye()).isFalse();
-        // シード1位 vs 2位、3位 vs 4位 …
+        // エントリー順1位 vs 2位、3位 vs 4位 …
         assertThat(result.pairs().get(0).player1Id()).isEqualTo(ps.get(0).id());
         assertThat(result.pairs().get(0).player2Id()).isEqualTo(ps.get(1).id());
         assertThat(result.pairs().get(3).player1Id()).isEqualTo(ps.get(6).id());
@@ -47,7 +47,7 @@ class SwissPairingServiceTest {
     @Test
     @DisplayName("初回ラウンド: 棋力の強い順にソートされ、棋力の近い者同士が組まれる")
     void 初回ラウンド棋力順() {
-        // シード順と棋力順をずらして、棋力が優先されることを確認する
+        // エントリー順と棋力順をずらして、棋力が優先されることを確認する
         Participant kyu5 = participant(1, Rank.KYU_5);
         Participant dan3 = participant(2, Rank.DAN_3);
         Participant kyu1 = participant(3, Rank.KYU_1);

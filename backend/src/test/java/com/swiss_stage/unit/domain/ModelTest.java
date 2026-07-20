@@ -221,7 +221,7 @@ class ModelTest {
         }
 
         @Test
-        @DisplayName("氏名なし・シード順0・グループなしは作成できない")
+        @DisplayName("氏名なし・エントリー順0・グループなしは作成できない")
         void バリデーション() {
             assertThatThrownBy(() -> Participant.create(" ", null, null, 1, groupId))
                     .isInstanceOf(DomainException.class);
