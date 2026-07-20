@@ -27,6 +27,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 
 - `backend/src/main/java/com/swiss_stage/domain/service/` 配下(マッチング・順位計算)
 - `.claude/01_development_docs/05_swiss_pairing_algorithm.md` の変更を伴う修正(仕様変更は「先にドキュメント、人間の判断」が原則)
+- `schema/` 配下(API契約のSSoT。スキーマ検証の指摘を閉じるためにスキーマ側を書き換えることは仕様変更にあたる)
 
 # 手順
 
@@ -59,7 +60,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 |------|------|------|
 | [C1] match-rematch-guard | SKIPPED | 聖域(domain/service)のため人間対応 |
 | [M1] error-code-missing | FIXED | |
-| [M2] dto-sync-mismatch | DISPUTED | 07_type_definitions.md §3 と一致しており指摘が誤り(根拠: types/match.ts:12) |
+| [M2] dto-sync-mismatch | DISPUTED | schema/openapi.yaml と一致しており指摘が誤り(根拠: types/match.ts:12) |
 
 DISPUTED / SKIPPED / FAILED があるため、人間の確認が必要です。
 ```

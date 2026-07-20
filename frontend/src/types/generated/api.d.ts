@@ -294,7 +294,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** グループ削除(割当済み参加者は直前のグループへ移動。最後の1グループは400) */
+        /** グループ削除(割当済み参加者は直前のグループ〈先頭削除時は直後〉へ移動。最後の1グループは400) */
         delete: operations["deleteGroup"];
         options?: never;
         head?: never;

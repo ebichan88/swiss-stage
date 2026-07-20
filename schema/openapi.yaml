@@ -358,7 +358,7 @@ paths:
           $ref: "#/components/responses/Conflict"
     delete:
       operationId: deleteGroup
-      summary: グループ削除(割当済み参加者は直前のグループへ移動。最後の1グループは400)
+      summary: グループ削除(割当済み参加者は直前のグループ〈先頭削除時は直後〉へ移動。最後の1グループは400)
       responses:
         "204":
           description: 削除済み
