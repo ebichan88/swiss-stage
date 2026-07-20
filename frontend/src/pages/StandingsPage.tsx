@@ -1,17 +1,32 @@
 import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 import { Box, Typography } from '@mui/material';
 
+import { CrossTable } from '../components/features/standing/CrossTable';
 import { StandingsTable } from '../components/features/standing/StandingsTable';
 import { useTournamentContext } from '../components/layouts/TournamentLayout';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState, LoadingState } from '../components/ui/QueryStates';
+import { useRounds } from '../hooks/useRounds';
 import { useStandings } from '../hooks/useStandings';
 
 /** S08 順位表。順位は保存されずバックエンドで都度計算される。グループ大会はグループごとに表示 */
 export function StandingsPage() {
   const tournament = useTournamentContext();
-  const { data: groupStandings, isPending, isError, refetch } = useStandings(tournament.id);
+  const {
+    data: groupStandings,
+    isPending: standingsPending,
+    isError: standingsError,
+    refetch: refetchStandings,
+  } = useStandings(tournament.id);
+  const {
+    data: rounds,
+    isPending: roundsPending,
+    isError: roundsError,
+    refetch: refetchRounds,
+  } = useRounds(tournament.id);
 
+  const isPending = standingsPending || roundsPending;
+  const isError = standingsError || roundsError;
   const isEmpty = groupStandings?.every((g) => g.standings.length === 0) ?? false;
 
   return (
@@ -26,24 +41,41 @@ export function StandingsPage() {
       </Typography>
       {isPending && <LoadingState />}
       {isError && (
-        <ErrorState message="順位表の取得に失敗しました" onRetry={() => void refetch()} />
+        <ErrorState
+          message="順位表の取得に失敗しました"
+          onRetry={() => {
+            void refetchStandings();
+            void refetchRounds();
+          }}
+        />
       )}
-      {groupStandings && isEmpty && (
+      {groupStandings && rounds && isEmpty && (
         <EmptyState
           icon={<LeaderboardIcon fontSize="inherit" />}
           message="順位はまだありません。ラウンドを確定すると表示されます"
         />
       )}
       {groupStandings &&
+        rounds &&
         !isEmpty &&
         groupStandings.map(({ group, standings }) => (
-          <Box key={group.id} sx={{ mb: 3 }}>
+          <Box key={group.id} sx={{ mb: 4 }}>
             {groupStandings.length > 1 && (
               <Typography variant="h4" component="h3" sx={{ mb: 1 }}>
                 {group.name}
               </Typography>
             )}
             <StandingsTable standings={standings} />
+            <Typography variant="h4" component="h3" sx={{ mt: 3, mb: 1 }}>
+              戦績一覧
+            </Typography>
+            <CrossTable
+              rounds={rounds.map((round) => ({
+                ...round,
+                matches: round.matches.filter((m) => m.group.id === group.id),
+              }))}
+              standings={standings}
+            />
           </Box>
         ))}
     </Box>

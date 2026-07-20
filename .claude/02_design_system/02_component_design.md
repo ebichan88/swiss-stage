@@ -48,6 +48,14 @@
 - 上位3位は行背景を `primary.light` で強調
 - 自分の行(共有ページで名前検索時)はハイライト
 
+### 戦績一覧表(CrossTable)
+
+- MUI `Table` ベース。列: No.・氏名(所属)・段級位・(ラウンドごとに相手・結果)・勝点・SOS・SOSOS・順位
+- ヘッダー行は `primary.main` 背景+白文字(コントラスト強調)
+- データ行は `background.paper`/`background.default` を交互に敷くゼブラストライプ
+- 結果の○は `success.main`、●は `error.main` で色分け(△は無色)。記号自体も必ず表示し、色だけに頼らない
+- 相手列は氏名の代わりにNo.(entryOrder)を表示し、Tooltipで氏名(所属)を補足する
+
 ### 組み合わせ表(PairingTable)
 
 - 卓番号を最も大きく表示(会場で自分の卓を探すため)
