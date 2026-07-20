@@ -1,18 +1,47 @@
-import type { components } from './generated/api';
+import type { ParticipantStatus, Rank } from './enums';
 
-export type Participant = components['schemas']['Participant'];
+export interface Participant {
+  id: string;
+  name: string;
+  organization: string | null;
+  rank: Rank | null;
+  seedOrder: number;
+  status: ParticipantStatus;
+  /** グループ割当(必須。常にいずれかのグループに帰属する) */
+  groupId: string;
+}
 
 /** 対局・順位表で使う参加者の要約 */
-export type ParticipantSummary = components['schemas']['ParticipantSummary'];
+export interface ParticipantSummary {
+  id: string;
+  name: string;
+  organization: string | null;
+}
 
-/** POST /participants。groupId 省略時は先頭グループに割当 */
-export type CreateParticipantInput = components['schemas']['CreateParticipantRequest'];
+/** POST /participants(backend: CreateParticipantRequest)。groupId 省略時は先頭グループに割当 */
+export interface CreateParticipantInput {
+  name: string;
+  organization: string | null;
+  rank: Rank | null;
+  groupId?: string;
+}
 
 /**
- * PATCH /participants/{pid}。未指定の項目は変更しない。
- * 棋力を未入力に戻すには clearRank: true(rank との同時指定は400)
+ * PATCH /participants/{pid}(backend: UpdateParticipantRequest)。未指定の項目は変更しない。
+ * 棋力を未入力に戻すには clearRank: true(rank との同時指定は400)。
+ * groupId は割当先グループの変更(PREPARING 中のみ。未割当状態は存在しない)
  */
-export type UpdateParticipantInput = components['schemas']['UpdateParticipantRequest'];
+export interface UpdateParticipantInput {
+  name?: string;
+  organization?: string;
+  rank?: Rank;
+  clearRank?: boolean;
+  groupId?: string;
+  status?: ParticipantStatus;
+}
 
 /** CSVインポート結果(全行正常時のみ取り込む) */
-export type CsvImportResult = components['schemas']['CsvImportResult'];
+export interface CsvImportResult {
+  importedCount: number;
+  participants: Participant[];
+}

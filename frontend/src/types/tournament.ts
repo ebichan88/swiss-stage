@@ -1,10 +1,33 @@
-import type { components } from './generated/api';
+import type { GameType, TournamentStatus, Visibility } from './enums';
 
-/** 大会DTO。shareToken は運営者にのみ返る */
-export type Tournament = components['schemas']['Tournament'];
+/** 大会DTO(07_type_definitions.md §3)。shareToken は運営者にのみ返る */
+export interface Tournament {
+  id: string;
+  name: string;
+  gameType: GameType;
+  totalRounds: number;
+  currentRound: number;
+  status: TournamentStatus;
+  visibility: Visibility;
+  shareToken: string | null;
+  /** 共有トークン経由の結果入力を許可するか */
+  resultInputEnabled: boolean;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
-/** POST /tournaments */
-export type CreateTournamentInput = components['schemas']['CreateTournamentRequest'];
+/** POST /tournaments(backend: CreateTournamentRequest) */
+export interface CreateTournamentInput {
+  name: string;
+  gameType: GameType;
+  totalRounds: number;
+}
 
-/** PATCH /tournaments/{id}。未指定の項目は変更しない */
-export type UpdateTournamentInput = components['schemas']['UpdateTournamentRequest'];
+/** PATCH /tournaments/{id}(backend: UpdateTournamentRequest)。nullの項目は変更しない */
+export interface UpdateTournamentInput {
+  name?: string;
+  visibility?: Visibility;
+  resultInputEnabled?: boolean;
+  version: number;
+}
