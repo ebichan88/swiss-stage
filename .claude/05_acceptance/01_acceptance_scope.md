@@ -100,6 +100,7 @@
 | SHR-AC-007 | P0 | トークン経由の結果入力もversion競合409・確定後409の制約に従う | done | SharedApiTest |
 | SHR-AC-008 | P1 | キャッシュ済みの共有ページも結果入力・確定・参加者改名後は即時反映される(evict) | done | SharedApiTest |
 | SHR-AC-009 | P2 | 共有APIはIPベースのレート制限超過で429を統一フォーマットで返す | done | SharedRateLimitApiTest |
+| SHR-AC-010 | P2 | 共有ページの参加者要約(ParticipantSummary)にrank・entryOrderを含む(戦績一覧表での参照用) | done | SharedApiTest |
 
 ## SPA: SPA配信
 

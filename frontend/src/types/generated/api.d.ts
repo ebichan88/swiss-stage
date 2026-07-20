@@ -512,6 +512,9 @@ export interface components {
             id: components["schemas"]["Ulid"];
             name: string;
             organization: string | null;
+            rank: components["schemas"]["Rank"];
+            /** @description 参加者の登録順に自動採番される参照番号。不明な参加者を指す場合は0 (`MatchDto` の欠損参加者フォールバック等)。 */
+            entryOrder: number;
         };
         Group: {
             id: components["schemas"]["Ulid"];
@@ -530,6 +533,8 @@ export interface components {
                 id: components["schemas"]["Ulid"];
                 name: string;
                 organization: string | null;
+                rank: components["schemas"]["Rank"];
+                entryOrder: number;
             } | null;
             result: components["schemas"]["MatchResult"];
             /** Format: int64 */

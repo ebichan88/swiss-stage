@@ -65,6 +65,55 @@ describe('SharedPage', () => {
     expect(await screen.findByRole('table')).toBeInTheDocument();
   });
 
+  it('戦績一覧タブに切り替えるとラウンドごとの対戦相手・結果を含む一覧表が表示される', async () => {
+    server.use(
+      http.get(`/api/v1/shared/${TOKEN}`, () =>
+        HttpResponse.json(
+          apiSuccess(
+            sharedTournamentOf({
+              rounds: [
+                roundOf({
+                  roundNumber: 1,
+                  matches: [
+                    matchOf({
+                      player1: summaryOf({ id: 'p1', name: '架空 太郎', entryOrder: 1 }),
+                      player2: summaryOf({ id: 'p2', name: '仮名 花子', entryOrder: 2 }),
+                      result: 'PLAYER1_WIN',
+                    }),
+                  ],
+                }),
+              ],
+              standings: [
+                groupStandingsOf({
+                  standings: [
+                    standingOf({
+                      rank: 1,
+                      participant: summaryOf({ id: 'p1', name: '架空 太郎', entryOrder: 1 }),
+                    }),
+                    standingOf({
+                      rank: 2,
+                      participant: summaryOf({ id: 'p2', name: '仮名 花子', entryOrder: 2 }),
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ),
+        ),
+      ),
+    );
+
+    renderSharedPage();
+
+    await screen.findByRole('heading', { name: '第1回テスト囲碁大会' });
+    await userEvent.click(screen.getByRole('tab', { name: '戦績一覧' }));
+
+    expect(await screen.findByRole('columnheader', { name: '第1ラウンド' })).toBeInTheDocument();
+    const rows = screen.getAllByRole('row');
+    expect(rows[2]).toHaveTextContent('架空 太郎');
+    expect(rows[2]).toHaveTextContent('○');
+  });
+
   it('グループ大会の順位表はグループごとに見出し付きで表示する', async () => {
     server.use(
       http.get(`/api/v1/shared/${TOKEN}`, () =>
