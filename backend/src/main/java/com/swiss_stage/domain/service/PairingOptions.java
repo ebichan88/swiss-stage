@@ -3,7 +3,7 @@ package com.swiss_stage.domain.service;
 /**
  * マッチングのオプション。
  *
- * @param randomFirstRound 初回ラウンドをランダムペアリングにする(デフォルトはシード順)
+ * @param randomFirstRound 初回ラウンドをランダムペアリングにする(デフォルトはエントリー順)
  * @param avoidSameOrganization 同一所属同士の対戦を可能な限り避ける(デフォルトON)
  * @param randomSeed ランダムペアリング時のシード(再現性のため)
  */

@@ -50,7 +50,7 @@ public class ParticipantService {
     public List<ParticipantDto> list(TournamentId tournamentId, String ownerSub) {
         access.loadOwned(tournamentId, ownerSub);
         return participantRepository.findAllByTournamentId(tournamentId).stream()
-                .sorted(Comparator.comparingInt(Participant::seedOrder))
+                .sorted(Comparator.comparingInt(Participant::entryOrder))
                 .map(ParticipantDto::from)
                 .toList();
     }
@@ -65,7 +65,7 @@ public class ParticipantService {
                 : resolveGroup(groups, request.groupId()).id();
         Participant participant = Participant.create(
                 request.name(), normalize(request.organization()), request.rank(),
-                nextSeedOrder(tournamentId), groupId);
+                nextEntryOrder(tournamentId), groupId);
         participantRepository.save(tournamentId, participant);
         sharedViewCache.evict(tournamentId);
         return ParticipantDto.from(participant);
@@ -80,7 +80,7 @@ public class ParticipantService {
                 .collect(Collectors.toMap(Group::name, Group::id));
         validateGroupNames(rows, groupsByName);
 
-        int seedOrder = nextSeedOrder(tournamentId);
+        int entryOrder = nextEntryOrder(tournamentId);
         GroupId defaultGroupId = firstGroup(groups).id();
         List<Participant> participants = new ArrayList<>();
         for (ParticipantCsvParser.Row row : rows) {
@@ -88,7 +88,7 @@ public class ParticipantService {
                     ? defaultGroupId
                     : groupsByName.get(row.groupName());
             participants.add(Participant.create(
-                    row.name(), normalize(row.organization()), row.rank(), seedOrder++, groupId));
+                    row.name(), normalize(row.organization()), row.rank(), entryOrder++, groupId));
         }
         participantRepository.saveAll(tournamentId, participants);
         sharedViewCache.evict(tournamentId);
@@ -120,7 +120,7 @@ public class ParticipantService {
                 request.organization() != null
                         ? normalize(request.organization()) : participant.organization(),
                 clearRank ? null : request.rank() != null ? request.rank() : participant.rank(),
-                participant.seedOrder(),
+                participant.entryOrder(),
                 request.status() != null ? request.status() : participant.status(),
                 groupId);
         participantRepository.save(tournamentId, updated);
@@ -171,9 +171,9 @@ public class ParticipantService {
         }
     }
 
-    private int nextSeedOrder(TournamentId tournamentId) {
+    private int nextEntryOrder(TournamentId tournamentId) {
         return participantRepository.findAllByTournamentId(tournamentId).stream()
-                .mapToInt(Participant::seedOrder)
+                .mapToInt(Participant::entryOrder)
                 .max()
                 .orElse(0) + 1;
     }

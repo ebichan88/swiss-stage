@@ -56,7 +56,7 @@
 | name | `蛯名 隆` | 必須 |
 | organization | `〇〇株式会社` | 任意 |
 | rank | `DAN_3` | 任意(棋力enum。定義は `schema/openapi.yaml` の `Rank`) |
-| seedOrder | `1` | 初回マッチングのシード順 |
+| entryOrder | `1` | 初回マッチングのエントリー順(参加者追加時に自動採番) |
 | status | `ACTIVE` / `WITHDRAWN` | 途中棄権対応 |
 | groupId | `01J...`(GroupのULID) | **必須**。常にいずれかのグループに帰属する(未割当状態は存在しない。`05_swiss_pairing_algorithm.md` §2.4) |
 

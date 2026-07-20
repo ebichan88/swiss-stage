@@ -47,9 +47,9 @@ public final class StandingCalculator {
             sosos.put(p.id(), opponents.get(p.id()).stream().mapToInt(sos::get).sum());
         }
 
-        Map<ParticipantId, Integer> seedOrders = new HashMap<>();
+        Map<ParticipantId, Integer> entryOrders = new HashMap<>();
         for (Participant p : participants) {
-            seedOrders.put(p.id(), p.seedOrder());
+            entryOrders.put(p.id(), p.entryOrder());
         }
 
         List<Standing> standings = new ArrayList<>();
@@ -59,12 +59,12 @@ public final class StandingCalculator {
                     points.get(p.id()), sos.get(p.id()), sosos.get(p.id()), hadBye.get(p.id())));
         }
 
-        // 勝点 → SOS → SOSOS で降順ソート(表示順の安定のため最後にシード順)
+        // 勝点 → SOS → SOSOS で降順ソート(表示順の安定のため最後にエントリー順)
         Comparator<Standing> byKeys = Comparator
                 .comparingInt(Standing::points).reversed()
                 .thenComparing(Comparator.comparingInt(Standing::sos).reversed())
                 .thenComparing(Comparator.comparingInt(Standing::sosos).reversed());
-        standings.sort(byKeys.thenComparing(s -> seedOrders.get(s.participantId())));
+        standings.sort(byKeys.thenComparing(s -> entryOrders.get(s.participantId())));
 
         applyHeadToHead(standings, decided, byKeys);
         return assignRanks(standings, decided, byKeys);

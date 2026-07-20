@@ -40,7 +40,7 @@
 
 | ID | P | 受け入れ基準 | Status | 検証 |
 |----|---|------------|--------|------|
-| PTC-AC-001 | P1 | 参加者を追加するとシード順が自動採番される | done | ParticipantApiTest |
+| PTC-AC-001 | P1 | 参加者を追加するとエントリー順(entryOrder)が自動採番される | done | ParticipantApiTest |
 | PTC-AC-002 | P1 | CSVインポート(UTF-8)で全行取り込め、段級位表記が正しくenumに変換される | done | ParticipantApiTest |
 | PTC-AC-003 | P1 | CSVインポート(Shift_JIS)も文字コード自動判定で取り込める | done | ParticipantApiTest |
 | PTC-AC-004 | P1 | CSVの行エラーは行番号付きdetailsの400になり、1件も取り込まれない | done | ParticipantApiTest |

@@ -203,7 +203,7 @@ paths:
       - $ref: "#/components/parameters/TournamentId"
     get:
       operationId: listParticipants
-      summary: 参加者一覧(シード順)
+      summary: 参加者一覧(エントリー順)
       responses:
         "200":
           $ref: "#/components/responses/ParticipantList"
@@ -1030,7 +1030,7 @@ components:
     Participant:
       type: object
       additionalProperties: false
-      required: [id, name, organization, rank, seedOrder, status, groupId]
+      required: [id, name, organization, rank, entryOrder, status, groupId]
       properties:
         id:
           $ref: "#/components/schemas/Ulid"
@@ -1043,7 +1043,7 @@ components:
           maxLength: 100
         rank:
           $ref: "#/components/schemas/Rank"
-        seedOrder:
+        entryOrder:
           type: integer
           minimum: 1
         status:

@@ -20,7 +20,7 @@ public class ParticipantItem {
     private String name;
     private String organization;
     private String rank;
-    private Integer seedOrder;
+    private Integer entryOrder;
     private String status;
     private String groupId;
 
@@ -84,12 +84,12 @@ public class ParticipantItem {
         this.rank = rank;
     }
 
-    public Integer getSeedOrder() {
-        return seedOrder;
+    public Integer getEntryOrder() {
+        return entryOrder;
     }
 
-    public void setSeedOrder(Integer seedOrder) {
-        this.seedOrder = seedOrder;
+    public void setEntryOrder(Integer entryOrder) {
+        this.entryOrder = entryOrder;
     }
 
     public String getStatus() {

@@ -11,7 +11,7 @@ public record Participant(
         String name,
         String organization,
         Rank rank,
-        int seedOrder,
+        int entryOrder,
         ParticipantStatus status,
         GroupId groupId) {
 
@@ -19,8 +19,8 @@ public record Participant(
         if (name == null || name.isBlank()) {
             throw new DomainException("参加者の氏名は必須です");
         }
-        if (seedOrder < 1) {
-            throw new DomainException("シード順は1以上である必要があります");
+        if (entryOrder < 1) {
+            throw new DomainException("エントリー順は1以上である必要があります");
         }
         if (groupId == null) {
             throw new DomainException("参加者の帰属グループは必須です");
@@ -28,9 +28,9 @@ public record Participant(
     }
 
     public static Participant create(
-            String name, String organization, Rank rank, int seedOrder, GroupId groupId) {
+            String name, String organization, Rank rank, int entryOrder, GroupId groupId) {
         return new Participant(
-                ParticipantId.generate(), name, organization, rank, seedOrder,
+                ParticipantId.generate(), name, organization, rank, entryOrder,
                 ParticipantStatus.ACTIVE, groupId);
     }
 
@@ -40,12 +40,12 @@ public record Participant(
 
     /** 途中棄権。以降のマッチング対象から外れる(過去の結果は順位計算に残る) */
     public Participant withdraw() {
-        return new Participant(id, name, organization, rank, seedOrder, ParticipantStatus.WITHDRAWN, groupId);
+        return new Participant(id, name, organization, rank, entryOrder, ParticipantStatus.WITHDRAWN, groupId);
     }
 
     /** グループ割当の変更 */
     public Participant withGroup(GroupId newGroupId) {
-        return new Participant(id, name, organization, rank, seedOrder, status, newGroupId);
+        return new Participant(id, name, organization, rank, entryOrder, status, newGroupId);
     }
 
     public boolean hasSameOrganization(Participant other) {

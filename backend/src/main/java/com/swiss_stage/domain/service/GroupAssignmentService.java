@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 public class GroupAssignmentService {
 
     /**
-     * 段級位による自動振り分け案。棋力の強い順(同棋力・未入力はシード順、未入力は末尾)に
+     * 段級位による自動振り分け案。棋力の強い順(同棋力・未入力はエントリー順、未入力は末尾)に
      * ソートし、グループ定義順にできるだけ均等な人数で先頭から分割する(端数は先頭側へ)。
      */
     public Map<ParticipantId, GroupId> propose(List<Group> groups, List<Participant> participants) {
@@ -73,6 +73,6 @@ public class GroupAssignmentService {
     private static Comparator<Participant> byStrength() {
         return Comparator
                 .comparing(Participant::rank, Rank.strongestFirst())
-                .thenComparingInt(Participant::seedOrder);
+                .thenComparingInt(Participant::entryOrder);
     }
 }
