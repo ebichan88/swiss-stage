@@ -46,7 +46,7 @@ public record MatchDto(
         Participant p = participants.get(id);
         // 参加者が見つからない不整合データでもレスポンス全体を壊さない
         return p == null
-                ? new ParticipantSummaryDto(id.value(), "(不明な参加者)", null, null, 0)
+                ? new ParticipantSummaryDto(id.value(), "(不明な参加者)", null)
                 : ParticipantSummaryDto.from(p);
     }
 }

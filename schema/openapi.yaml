@@ -1053,7 +1053,7 @@ components:
     ParticipantSummary:
       type: object
       additionalProperties: false
-      required: [id, name, organization, rank, entryOrder]
+      required: [id, name, organization]
       properties:
         id:
           $ref: "#/components/schemas/Ulid"
@@ -1062,14 +1062,6 @@ components:
         organization:
           type: string
           nullable: true
-        rank:
-          $ref: "#/components/schemas/Rank"
-        entryOrder:
-          type: integer
-          minimum: 0
-          description: >
-            参加者の登録順に自動採番される参照番号。不明な参加者を指す場合は0
-            (`MatchDto` の欠損参加者フォールバック等)。
     Group:
       type: object
       additionalProperties: false
@@ -1113,7 +1105,7 @@ components:
           nullable: true
           description: null = BYE
           additionalProperties: false
-          required: [id, name, organization, rank, entryOrder]
+          required: [id, name, organization]
           properties:
             id:
               $ref: "#/components/schemas/Ulid"
@@ -1122,11 +1114,6 @@ components:
             organization:
               type: string
               nullable: true
-            rank:
-              $ref: "#/components/schemas/Rank"
-            entryOrder:
-              type: integer
-              minimum: 0
         result:
           $ref: "#/components/schemas/MatchResult"
         version:

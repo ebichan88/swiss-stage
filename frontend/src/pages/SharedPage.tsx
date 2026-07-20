@@ -23,7 +23,6 @@ import {
   resultMark,
   tableLabel,
 } from '../components/features/round/matchDisplay';
-import { CrossTable } from '../components/features/standing/CrossTable';
 import { StandingsTable } from '../components/features/standing/StandingsTable';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState, FullPageSpinner } from '../components/ui/QueryStates';
@@ -94,7 +93,7 @@ function SharedMatchCard({ token, match, multiGroup, canInput }: SharedMatchCard
 export function SharedPage() {
   const { token = '' } = useParams();
   const { data, isPending, isError, error, refetch } = useSharedTournament(token);
-  const [tab, setTab] = useState<'pairings' | 'standings' | 'crosstable'>('pairings');
+  const [tab, setTab] = useState<'pairings' | 'standings'>('pairings');
   const [selectedRound, setSelectedRound] = useState<number | null>(null);
 
   if (isPending) {
@@ -143,13 +142,12 @@ export function SharedPage() {
 
       <Tabs
         value={tab}
-        onChange={(_event, newTab: 'pairings' | 'standings' | 'crosstable') => setTab(newTab)}
+        onChange={(_event, newTab: 'pairings' | 'standings') => setTab(newTab)}
         sx={{ mt: 2, mb: 3, borderBottom: 1, borderColor: 'divider' }}
         variant="fullWidth"
       >
         <Tab label="組み合わせ" value="pairings" />
         <Tab label="順位表" value="standings" />
-        <Tab label="戦績一覧" value="crosstable" />
       </Tabs>
 
       {tab === 'pairings' &&
@@ -228,31 +226,6 @@ export function SharedPage() {
                 </Typography>
               )}
               <StandingsTable standings={groupStandings} />
-            </Box>
-          ))
-        ))}
-
-      {tab === 'crosstable' &&
-        (standings.every((g) => g.standings.length === 0) ? (
-          <EmptyState
-            icon={<HourglassEmptyIcon fontSize="inherit" />}
-            message="戦績はまだありません。"
-          />
-        ) : (
-          standings.map(({ group, standings: groupStandings }) => (
-            <Box key={group.id} sx={{ mb: 3 }}>
-              {multiGroup && (
-                <Typography variant="h4" component="h2" sx={{ mb: 1 }}>
-                  {group.name}
-                </Typography>
-              )}
-              <CrossTable
-                rounds={rounds.map((round) => ({
-                  ...round,
-                  matches: round.matches.filter((m) => m.group.id === group.id),
-                }))}
-                standings={groupStandings}
-              />
             </Box>
           ))
         ))}
