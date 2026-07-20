@@ -1,0 +1,10 @@
+# Redocly CLI設定(schema/openapi.yaml のlint。CIは ci.yml の schema-lint ステップ)
+extends:
+  - recommended
+
+rules:
+  # 内部APIのためライセンス表記は不要
+  info-license: off
+  # OAuth2リダイレクト系(/auth/login 等)は302のみが正しく、2xx/4xxを持たない
+  operation-2xx-response: off
+  operation-4xx-response: off
