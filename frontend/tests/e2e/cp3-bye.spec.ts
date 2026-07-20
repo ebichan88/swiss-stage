@@ -15,7 +15,7 @@ import {
  * CP3: 奇数人数・BYE(12_e2e_test_design.md)。
  * 15名で開始 → 各ラウンドにBYEがちょうど1件 → 全ラウンドを通して同一参加者にBYEが2回付かない
  */
-test('CP3: 15名の大会で全ラウンドを通してBYEが重複しない', async ({ page }) => {
+test('E2E-AC-004: CP3: 15名の大会で全ラウンドを通してBYEが重複しない', async ({ page }) => {
   const totalRounds = 3;
   await loginAsOrganizer(page);
   const tournamentId = await createTournament(page, `CP3奇数BYE ${Date.now()}`, totalRounds);

@@ -15,7 +15,10 @@ import {
  * 共有URLにモバイルビューポートでアクセス → 自分の卓を確認 → 結果入力 → 送信
  * → 運営者側に反映されていること
  */
-test('CP2: 参加者がスマホの共有ページから結果を送信できる', async ({ page, browser }) => {
+test('E2E-AC-003: CP2: 参加者がスマホの共有ページから結果を送信できる', async ({
+  page,
+  browser,
+}) => {
   // 運営者: 大会準備 + 共有URL発行(結果入力許可)
   await loginAsOrganizer(page);
   const tournamentId = await createTournament(page, `CP2共有 ${Date.now()}`, 3);

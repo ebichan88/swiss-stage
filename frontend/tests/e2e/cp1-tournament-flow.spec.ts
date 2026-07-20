@@ -16,7 +16,7 @@ import {
  * ログイン → 大会作成 → CSVインポート(16名) → 開始 → 第1R生成 → 全結果入力
  * → 確定 → 第2R生成(再戦なし) → 順位表(勝点順・同点はSOS順)
  */
-test('CP1: ログインから順位表まで大会運営を一気通貫できる', async ({ page }) => {
+test('E2E-AC-001: CP1: ログインから順位表まで大会運営を一気通貫できる', async ({ page }) => {
   await loginAsOrganizer(page);
   const tournamentId = await createTournament(page, `CP1一気通貫 ${Date.now()}`, 5);
   await importParticipantsCsv(page, tournamentId, 'participants_16.csv', 16);
@@ -75,7 +75,7 @@ test('CP1: ログインから順位表まで大会運営を一気通貫できる
   }
 });
 
-test('CP1補: Shift_JISのCSVもインポートできる', async ({ page }) => {
+test('E2E-AC-002: CP1補: Shift_JISのCSVもインポートできる', async ({ page }) => {
   await loginAsOrganizer(page);
   const tournamentId = await createTournament(page, `CP1 SJIS ${Date.now()}`, 3);
   await importParticipantsCsv(page, tournamentId, 'participants_16_sjis.csv', 16);
