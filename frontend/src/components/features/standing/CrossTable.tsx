@@ -28,6 +28,17 @@ function opponentLabel(participant: ParticipantSummary): string {
     : participant.name;
 }
 
+/** ○=success/●=error。△は勝敗色分けの対象トークンが無いため無色のまま(01_design_principles.md) */
+function markColor(mark: string | null): string | undefined {
+  if (mark === '○') {
+    return 'success.main';
+  }
+  if (mark === '●') {
+    return 'error.main';
+  }
+  return undefined;
+}
+
 /**
  * 戦績一覧表(参加者×ラウンドの対戦相手・結果を1画面に集約)。
  * 相手列は氏名の代わりにNo.(entryOrder)を表示し、Tooltipで氏名を補足する
@@ -37,7 +48,12 @@ export function CrossTable({ rounds, standings }: CrossTableProps) {
   return (
     <TableContainer sx={{ overflowX: 'auto' }}>
       <Table size="small">
-        <TableHead>
+        <TableHead
+          sx={{
+            bgcolor: 'primary.main',
+            '& .MuiTableCell-root': { color: 'primary.contrastText', fontWeight: 600 },
+          }}
+        >
           <TableRow>
             <TableCell rowSpan={2}>No.</TableCell>
             <TableCell rowSpan={2}>氏名(所属)</TableCell>
@@ -68,8 +84,11 @@ export function CrossTable({ rounds, standings }: CrossTableProps) {
           </TableRow>
         </TableHead>
         <TableBody>
-          {rows.map(({ standing, cells }) => (
-            <TableRow key={standing.participant.id}>
+          {rows.map(({ standing, cells }, index) => (
+            <TableRow
+              key={standing.participant.id}
+              sx={{ bgcolor: index % 2 === 0 ? 'background.paper' : 'background.default' }}
+            >
               <TableCell>{standing.participant.entryOrder}</TableCell>
               <TableCell>
                 {standing.participant.name}
@@ -93,7 +112,11 @@ export function CrossTable({ rounds, standings }: CrossTableProps) {
                       '―'
                     )}
                   </TableCell>
-                  <TableCell align="center">{cell.mark ?? ''}</TableCell>
+                  <TableCell align="center">
+                    <Typography component="span" color={markColor(cell.mark)}>
+                      {cell.mark ?? ''}
+                    </Typography>
+                  </TableCell>
                 </Fragment>
               ))}
               <TableCell align="right">{formatPoints(standing.wins)}</TableCell>
