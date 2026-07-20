@@ -26,7 +26,7 @@ class SharedApiTest extends ApiContractTestSupport {
 
     @BeforeEach
     void setUp() throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/v1/tournaments")
+        MvcResult result = performApi(post("/api/v1/tournaments")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"共有テスト大会\",\"gameType\":\"GO\",\"totalRounds\":3}"))
@@ -34,7 +34,7 @@ class SharedApiTest extends ApiContractTestSupport {
                 .andReturn();
         tournamentId = dataOf(result).path("id").asText();
         for (String name : new String[] {"参加 一郎", "参加 二郎", "参加 三郎", "参加 四郎"}) {
-            mockMvc.perform(post(base() + "/participants")
+            performApi(post(base() + "/participants")
                             .cookie(ownerCookie())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"name\":\"" + name + "\"}"))
@@ -46,25 +46,25 @@ class SharedApiTest extends ApiContractTestSupport {
     @DisplayName("SHR-AC-001,SHR-AC-002: トークンは運営者のみ発行・再発行でき、再発行で旧トークンは即時無効になる")
     void トークン発行と再発行() throws Exception {
         // 他人の大会は404(存在を漏らさない)
-        mockMvc.perform(post(base() + "/share-token/regenerate").cookie(sessionCookie(OTHER_SUB)))
+        performApi(post(base() + "/share-token/regenerate").cookie(sessionCookie(OTHER_SUB)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("TOURNAMENT_NOT_FOUND"));
         // 未認証は401
-        mockMvc.perform(post(base() + "/share-token/regenerate"))
+        performApi(post(base() + "/share-token/regenerate"))
                 .andExpect(status().isUnauthorized());
 
         String token1 = regenerateToken();
         assertThat(token1).hasSizeGreaterThanOrEqualTo(32).matches("[A-Za-z0-9_-]+");
         setVisibility("TOKEN");
-        mockMvc.perform(get("/api/v1/shared/" + token1)).andExpect(status().isOk());
+        performApi(get("/api/v1/shared/" + token1)).andExpect(status().isOk());
 
         // 再発行 → 別トークンになり、旧トークンは403
         String token2 = regenerateToken();
         assertThat(token2).isNotEqualTo(token1);
-        mockMvc.perform(get("/api/v1/shared/" + token1))
+        performApi(get("/api/v1/shared/" + token1))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("INVALID_SHARE_TOKEN"));
-        mockMvc.perform(get("/api/v1/shared/" + token2)).andExpect(status().isOk());
+        performApi(get("/api/v1/shared/" + token2)).andExpect(status().isOk());
     }
 
     @Test
@@ -72,11 +72,11 @@ class SharedApiTest extends ApiContractTestSupport {
     void 共有ページ集約() throws Exception {
         String token = regenerateToken();
         setVisibility("TOKEN");
-        mockMvc.perform(post(base() + "/start").cookie(ownerCookie())).andExpect(status().isOk());
-        mockMvc.perform(post(base() + "/rounds").cookie(ownerCookie()))
+        performApi(post(base() + "/start").cookie(ownerCookie())).andExpect(status().isOk());
+        performApi(post(base() + "/rounds").cookie(ownerCookie()))
                 .andExpect(status().isCreated());
 
-        MvcResult shared = mockMvc.perform(get("/api/v1/shared/" + token))
+        MvcResult shared = performApi(get("/api/v1/shared/" + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.tournament.name").value("共有テスト大会"))
                 .andExpect(jsonPath("$.data.tournament.status").value("IN_PROGRESS"))
@@ -96,17 +96,17 @@ class SharedApiTest extends ApiContractTestSupport {
     @DisplayName("SHR-AC-005: 無効・不明・形式不正トークンと非公開(PRIVATE)は同じ403で大会の存在を漏らさない")
     void 無効トークンと非公開() throws Exception {
         // 形式は正しいが存在しないトークン
-        mockMvc.perform(get("/api/v1/shared/" + "A".repeat(43)))
+        performApi(get("/api/v1/shared/" + "A".repeat(43)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("INVALID_SHARE_TOKEN"));
         // 形式不正(短すぎ)
-        mockMvc.perform(get("/api/v1/shared/short"))
+        performApi(get("/api/v1/shared/short"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("INVALID_SHARE_TOKEN"));
 
         // トークンは有効でも公開範囲がPRIVATEなら403
         String token = regenerateToken();
-        mockMvc.perform(get("/api/v1/shared/" + token))
+        performApi(get("/api/v1/shared/" + token))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("INVALID_SHARE_TOKEN"));
     }
@@ -116,8 +116,8 @@ class SharedApiTest extends ApiContractTestSupport {
     void トークン経由の結果入力() throws Exception {
         String token = regenerateToken();
         setVisibility("TOKEN");
-        mockMvc.perform(post(base() + "/start").cookie(ownerCookie())).andExpect(status().isOk());
-        MvcResult round = mockMvc.perform(post(base() + "/rounds").cookie(ownerCookie()))
+        performApi(post(base() + "/start").cookie(ownerCookie())).andExpect(status().isOk());
+        MvcResult round = performApi(post(base() + "/rounds").cookie(ownerCookie()))
                 .andExpect(status().isCreated())
                 .andReturn();
         JsonNode match = dataOf(round).path("round").path("matches").get(0);
@@ -125,26 +125,26 @@ class SharedApiTest extends ApiContractTestSupport {
         long version = match.path("version").asLong();
 
         // 許可前(resultInputEnabled=false)は403
-        mockMvc.perform(putSharedResult(token, matchId, "PLAYER1_WIN", version))
+        performApi(putSharedResult(token, matchId, "PLAYER1_WIN", version))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
 
         // 運営者が許可 → 入力できる
         setResultInputEnabled(true);
-        mockMvc.perform(putSharedResult(token, matchId, "PLAYER1_WIN", version))
+        performApi(putSharedResult(token, matchId, "PLAYER1_WIN", version))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.result").value("PLAYER1_WIN"))
                 .andExpect(jsonPath("$.data.version").value(version + 1));
 
         // 古いversionは409 CONFLICT
-        mockMvc.perform(putSharedResult(token, matchId, "PLAYER2_WIN", version))
+        performApi(putSharedResult(token, matchId, "PLAYER2_WIN", version))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("CONFLICT"));
 
         // 残りを運営者が入力して確定 → 確定後のトークン入力は409
         for (JsonNode m : dataOf(round).path("round").path("matches")) {
             if (!m.path("id").asText().equals(matchId)) {
-                mockMvc.perform(put(base() + "/matches/" + m.path("id").asText() + "/result")
+                performApi(put(base() + "/matches/" + m.path("id").asText() + "/result")
                                 .cookie(ownerCookie())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"result\":\"PLAYER1_WIN\",\"version\":"
@@ -152,9 +152,9 @@ class SharedApiTest extends ApiContractTestSupport {
                         .andExpect(status().isOk());
             }
         }
-        mockMvc.perform(post(base() + "/rounds/1/confirm").cookie(ownerCookie()))
+        performApi(post(base() + "/rounds/1/confirm").cookie(ownerCookie()))
                 .andExpect(status().isOk());
-        mockMvc.perform(putSharedResult(token, matchId, "PLAYER2_WIN", version + 1))
+        performApi(putSharedResult(token, matchId, "PLAYER2_WIN", version + 1))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
     }
@@ -164,40 +164,40 @@ class SharedApiTest extends ApiContractTestSupport {
     void キャッシュevict() throws Exception {
         String token = regenerateToken();
         setVisibility("TOKEN");
-        mockMvc.perform(post(base() + "/start").cookie(ownerCookie())).andExpect(status().isOk());
-        MvcResult round = mockMvc.perform(post(base() + "/rounds").cookie(ownerCookie()))
+        performApi(post(base() + "/start").cookie(ownerCookie())).andExpect(status().isOk());
+        MvcResult round = performApi(post(base() + "/rounds").cookie(ownerCookie()))
                 .andExpect(status().isCreated())
                 .andReturn();
 
         // 共有ページを一度取得してキャッシュを温める
-        mockMvc.perform(get("/api/v1/shared/" + token))
+        performApi(get("/api/v1/shared/" + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.rounds[0].matches[0].result").value("NONE"));
 
         // 運営者が結果入力 → キャッシュ済みでも新しい結果が返る
         JsonNode match = dataOf(round).path("round").path("matches").get(0);
-        mockMvc.perform(put(base() + "/matches/" + match.path("id").asText() + "/result")
+        performApi(put(base() + "/matches/" + match.path("id").asText() + "/result")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"result\":\"PLAYER1_WIN\",\"version\":"
                                 + match.path("version").asLong() + "}"))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/api/v1/shared/" + token))
+        performApi(get("/api/v1/shared/" + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.rounds[0].matches[0].result").value("PLAYER1_WIN"));
 
         // 参加者名の変更も反映される(順位表の表示名)
-        MvcResult participants = mockMvc.perform(get(base() + "/participants")
+        MvcResult participants = performApi(get(base() + "/participants")
                         .cookie(ownerCookie()))
                 .andExpect(status().isOk())
                 .andReturn();
         String participantId = dataOf(participants).get(0).path("id").asText();
-        mockMvc.perform(patch(base() + "/participants/" + participantId)
+        performApi(patch(base() + "/participants/" + participantId)
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"改名 太郎\"}"))
                 .andExpect(status().isOk());
-        MvcResult shared = mockMvc.perform(get("/api/v1/shared/" + token))
+        MvcResult shared = performApi(get("/api/v1/shared/" + token))
                 .andExpect(status().isOk())
                 .andReturn();
         assertThat(shared.getResponse().getContentAsString()).contains("改名 太郎");
@@ -211,7 +211,7 @@ class SharedApiTest extends ApiContractTestSupport {
     }
 
     private String regenerateToken() throws Exception {
-        MvcResult result = mockMvc.perform(post(base() + "/share-token/regenerate")
+        MvcResult result = performApi(post(base() + "/share-token/regenerate")
                         .cookie(ownerCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.shareToken").isNotEmpty())
@@ -220,7 +220,7 @@ class SharedApiTest extends ApiContractTestSupport {
     }
 
     private void setVisibility(String visibility) throws Exception {
-        mockMvc.perform(patch(base())
+        performApi(patch(base())
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"visibility\":\"" + visibility + "\",\"version\":"
@@ -229,7 +229,7 @@ class SharedApiTest extends ApiContractTestSupport {
     }
 
     private void setResultInputEnabled(boolean enabled) throws Exception {
-        mockMvc.perform(patch(base())
+        performApi(patch(base())
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"resultInputEnabled\":" + enabled + ",\"version\":"
@@ -239,7 +239,7 @@ class SharedApiTest extends ApiContractTestSupport {
     }
 
     private long currentVersion() throws Exception {
-        MvcResult result = mockMvc.perform(get(base()).cookie(ownerCookie()))
+        MvcResult result = performApi(get(base()).cookie(ownerCookie()))
                 .andExpect(status().isOk())
                 .andReturn();
         return dataOf(result).path("version").asLong();

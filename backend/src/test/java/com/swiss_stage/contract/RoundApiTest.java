@@ -25,7 +25,7 @@ class RoundApiTest extends ApiContractTestSupport {
 
     @BeforeEach
     void setUp() throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/v1/tournaments")
+        MvcResult result = performApi(post("/api/v1/tournaments")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"ラウンドテスト大会\",\"gameType\":\"GO\",\"totalRounds\":3}"))
@@ -36,13 +36,13 @@ class RoundApiTest extends ApiContractTestSupport {
                 {"参加 一郎", "DAN_3"}, {"参加 二郎", "DAN_1"},
                 {"参加 三郎", "KYU_1"}, {"参加 四郎", "KYU_5"}};
         for (String[] entry : entries) {
-            mockMvc.perform(post(base() + "/participants")
+            performApi(post(base() + "/participants")
                             .cookie(ownerCookie())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"name\":\"" + entry[0] + "\",\"rank\":\"" + entry[1] + "\"}"))
                     .andExpect(status().isCreated());
         }
-        mockMvc.perform(post(base() + "/start").cookie(ownerCookie()))
+        performApi(post(base() + "/start").cookie(ownerCookie()))
                 .andExpect(status().isOk());
     }
 
@@ -51,7 +51,7 @@ class RoundApiTest extends ApiContractTestSupport {
             + "生成→結果入力→確定→次ラウンド→順位表の一巡が通り、再戦が発生しない")
     void 一巡シナリオ() throws Exception {
         // ラウンド1生成(棋力順の隣接ペア・4名なのでBYEなし)
-        MvcResult r1 = mockMvc.perform(post(base() + "/rounds").cookie(ownerCookie()))
+        MvcResult r1 = performApi(post(base() + "/rounds").cookie(ownerCookie()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.round.roundNumber").value(1))
                 .andExpect(jsonPath("$.data.round.status").value("PLAYING"))
@@ -60,12 +60,12 @@ class RoundApiTest extends ApiContractTestSupport {
                 .andReturn();
 
         // 確定前の再生成は409(現在ラウンド未確定)
-        mockMvc.perform(post(base() + "/rounds").cookie(ownerCookie()))
+        performApi(post(base() + "/rounds").cookie(ownerCookie()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
 
         // 未入力のまま確定は409
-        mockMvc.perform(post(base() + "/rounds/1/confirm").cookie(ownerCookie()))
+        performApi(post(base() + "/rounds/1/confirm").cookie(ownerCookie()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
 
@@ -77,11 +77,11 @@ class RoundApiTest extends ApiContractTestSupport {
         }
 
         // 確定 → ラウンド2生成
-        mockMvc.perform(post(base() + "/rounds/1/confirm").cookie(ownerCookie()))
+        performApi(post(base() + "/rounds/1/confirm").cookie(ownerCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("CONFIRMED"));
 
-        MvcResult r2 = mockMvc.perform(post(base() + "/rounds").cookie(ownerCookie()))
+        MvcResult r2 = performApi(post(base() + "/rounds").cookie(ownerCookie()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.round.roundNumber").value(2))
                 .andExpect(jsonPath("$.data.relaxations.length()").value(0))
@@ -93,14 +93,14 @@ class RoundApiTest extends ApiContractTestSupport {
         }
 
         // ラウンド一覧に2ラウンド分が対局付きで返る
-        mockMvc.perform(get(base() + "/rounds").cookie(ownerCookie()))
+        performApi(get(base() + "/rounds").cookie(ownerCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].roundNumber").value(1))
                 .andExpect(jsonPath("$.data[0].matches.length()").value(2));
 
         // 順位表: 単一グループ大会はデフォルトグループ「A」の単一要素。R1全勝の2名が上位(勝点1.0)
-        mockMvc.perform(get(base() + "/standings").cookie(ownerCookie()))
+        performApi(get(base() + "/standings").cookie(ownerCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].group.name").value("A"))
@@ -113,7 +113,7 @@ class RoundApiTest extends ApiContractTestSupport {
     @Test
     @DisplayName("RND-AC-008,RND-AC-009,RND-AC-010,RND-AC-011: 結果入力はversion不一致・確定済みラウンドで409、不正値は400になる")
     void 結果入力の競合と確定後変更() throws Exception {
-        MvcResult r1 = mockMvc.perform(post(base() + "/rounds").cookie(ownerCookie()))
+        MvcResult r1 = performApi(post(base() + "/rounds").cookie(ownerCookie()))
                 .andExpect(status().isCreated())
                 .andReturn();
         JsonNode firstMatch = dataOf(r1).path("round").path("matches").get(0);
@@ -121,14 +121,14 @@ class RoundApiTest extends ApiContractTestSupport {
         long version = firstMatch.path("version").asLong();
 
         // 不正な結果値(BYE)は400
-        mockMvc.perform(put(base() + "/matches/" + matchId + "/result")
+        performApi(put(base() + "/matches/" + matchId + "/result")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"result\":\"BYE\",\"version\":" + version + "}"))
                 .andExpect(status().isBadRequest());
 
         // 正常入力 → 200(versionが進む)
-        mockMvc.perform(put(base() + "/matches/" + matchId + "/result")
+        performApi(put(base() + "/matches/" + matchId + "/result")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"result\":\"PLAYER2_WIN\",\"version\":" + version + "}"))
@@ -137,7 +137,7 @@ class RoundApiTest extends ApiContractTestSupport {
                 .andExpect(jsonPath("$.data.version").value(version + 1));
 
         // 古いversionでの再入力は409 CONFLICT
-        mockMvc.perform(put(base() + "/matches/" + matchId + "/result")
+        performApi(put(base() + "/matches/" + matchId + "/result")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"result\":\"PLAYER1_WIN\",\"version\":" + version + "}"))
@@ -150,9 +150,9 @@ class RoundApiTest extends ApiContractTestSupport {
                 inputResult(match, "PLAYER1_WIN");
             }
         }
-        mockMvc.perform(post(base() + "/rounds/1/confirm").cookie(ownerCookie()))
+        performApi(post(base() + "/rounds/1/confirm").cookie(ownerCookie()))
                 .andExpect(status().isOk());
-        mockMvc.perform(put(base() + "/matches/" + matchId + "/result")
+        performApi(put(base() + "/matches/" + matchId + "/result")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"result\":\"DRAW\",\"version\":" + (version + 1) + "}"))
@@ -161,7 +161,7 @@ class RoundApiTest extends ApiContractTestSupport {
     }
 
     private void inputResult(JsonNode match, String result) throws Exception {
-        mockMvc.perform(put(base() + "/matches/" + match.path("id").asText() + "/result")
+        performApi(put(base() + "/matches/" + match.path("id").asText() + "/result")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"result\":\"" + result + "\",\"version\":"

@@ -16,7 +16,7 @@ import org.springframework.test.web.servlet.MvcResult;
 class TournamentApiTest extends ApiContractTestSupport {
 
     private JsonNode createTournament() throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/v1/tournaments")
+        MvcResult result = performApi(post("/api/v1/tournaments")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"契約テスト大会\",\"gameType\":\"GO\",\"totalRounds\":3}"))
@@ -28,7 +28,7 @@ class TournamentApiTest extends ApiContractTestSupport {
     @Test
     @DisplayName("TRN-AC-001: 大会を作成すると201で統一フォーマットのDTOが返る")
     void 作成() throws Exception {
-        mockMvc.perform(post("/api/v1/tournaments")
+        performApi(post("/api/v1/tournaments")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"新規大会\",\"gameType\":\"SHOGI\",\"totalRounds\":5}"))
@@ -47,6 +47,7 @@ class TournamentApiTest extends ApiContractTestSupport {
     @Test
     @DisplayName("TRN-AC-002: バリデーションエラーは400 VALIDATION_ERROR + detailsで返る")
     void バリデーション() throws Exception {
+        // 意図的にスキーマ違反のリクエストを送るため素のperform(performApiのjavadoc参照)
         mockMvc.perform(post("/api/v1/tournaments")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -62,19 +63,19 @@ class TournamentApiTest extends ApiContractTestSupport {
     void 取得と認可() throws Exception {
         String id = createTournament().path("id").asText();
 
-        mockMvc.perform(get("/api/v1/tournaments").cookie(ownerCookie()))
+        performApi(get("/api/v1/tournaments").cookie(ownerCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].id").value(id));
 
-        mockMvc.perform(get("/api/v1/tournaments/" + id).cookie(ownerCookie()))
+        performApi(get("/api/v1/tournaments/" + id).cookie(ownerCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(id));
 
-        mockMvc.perform(get("/api/v1/tournaments/" + id).cookie(sessionCookie(OTHER_SUB)))
+        performApi(get("/api/v1/tournaments/" + id).cookie(sessionCookie(OTHER_SUB)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("TOURNAMENT_NOT_FOUND"));
 
-        // ULID形式でないIDも404(キー組み立てへの入力混入禁止)
+        // ULID形式でないIDも404(キー組み立てへの入力混入禁止)。スキーマ違反のIDを送るため素のperform
         mockMvc.perform(get("/api/v1/tournaments/not-a-ulid").cookie(ownerCookie()))
                 .andExpect(status().isNotFound());
 
@@ -90,7 +91,7 @@ class TournamentApiTest extends ApiContractTestSupport {
         String id = created.path("id").asText();
         long version = created.path("version").asLong();
 
-        mockMvc.perform(patch("/api/v1/tournaments/" + id)
+        performApi(patch("/api/v1/tournaments/" + id)
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"改名後\",\"version\":" + version + "}"))
@@ -98,7 +99,7 @@ class TournamentApiTest extends ApiContractTestSupport {
                 .andExpect(jsonPath("$.data.name").value("改名後"))
                 .andExpect(jsonPath("$.data.version").value(version + 1));
 
-        mockMvc.perform(patch("/api/v1/tournaments/" + id)
+        performApi(patch("/api/v1/tournaments/" + id)
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"二重更新\",\"version\":" + version + "}"))
@@ -111,20 +112,20 @@ class TournamentApiTest extends ApiContractTestSupport {
     void 開始制約と削除() throws Exception {
         String id = createTournament().path("id").asText();
 
-        mockMvc.perform(post("/api/v1/tournaments/" + id + "/start").cookie(ownerCookie()))
+        performApi(post("/api/v1/tournaments/" + id + "/start").cookie(ownerCookie()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
 
-        mockMvc.perform(delete("/api/v1/tournaments/" + id).cookie(ownerCookie()))
+        performApi(delete("/api/v1/tournaments/" + id).cookie(ownerCookie()))
                 .andExpect(status().isNoContent());
-        mockMvc.perform(get("/api/v1/tournaments/" + id).cookie(ownerCookie()))
+        performApi(get("/api/v1/tournaments/" + id).cookie(ownerCookie()))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     @DisplayName("TRN-AC-010: 未認証はすべて401になる")
     void 未認証() throws Exception {
-        mockMvc.perform(get("/api/v1/tournaments"))
+        performApi(get("/api/v1/tournaments"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
     }
