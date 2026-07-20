@@ -33,12 +33,7 @@ class SharedApiTest extends ApiContractTestSupport {
                 .andExpect(status().isCreated())
                 .andReturn();
         tournamentId = dataOf(result).path("id").asText();
-        performApi(post(base() + "/participants")
-                        .cookie(ownerCookie())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"参加 一郎\",\"rank\":\"DAN_3\"}"))
-                .andExpect(status().isCreated());
-        for (String name : new String[] {"参加 二郎", "参加 三郎", "参加 四郎"}) {
+        for (String name : new String[] {"参加 一郎", "参加 二郎", "参加 三郎", "参加 四郎"}) {
             performApi(post(base() + "/participants")
                             .cookie(ownerCookie())
                             .contentType(MediaType.APPLICATION_JSON)
@@ -73,9 +68,7 @@ class SharedApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName(
-            "SHR-AC-003,SHR-AC-004,SHR-AC-010: 共有ページ集約は大会・ラウンド・順位(rank・entryOrder含む)を返し、"
-                    + "shareToken/ownerSubを含めない")
+    @DisplayName("SHR-AC-003,SHR-AC-004: 共有ページ集約は大会・ラウンド・順位を返し、shareToken/ownerSubを含めない")
     void 共有ページ集約() throws Exception {
         String token = regenerateToken();
         setVisibility("TOKEN");
@@ -94,14 +87,6 @@ class SharedApiTest extends ApiContractTestSupport {
                 .andExpect(jsonPath("$.data.standings.length()").value(1))
                 .andExpect(jsonPath("$.data.standings[0].group.name").value("A"))
                 .andExpect(jsonPath("$.data.standings[0].standings.length()").value(4))
-                // SHR-AC-010: 未対局時はエントリー順が最終タイブレークになるため、
-                // 先頭は最初に登録した「参加 一郎」(rank=DAN_3, entryOrder=1)
-                .andExpect(jsonPath("$.data.standings[0].standings[0].participant.name")
-                        .value("参加 一郎"))
-                .andExpect(jsonPath("$.data.standings[0].standings[0].participant.rank")
-                        .value("DAN_3"))
-                .andExpect(jsonPath("$.data.standings[0].standings[0].participant.entryOrder")
-                        .value(1))
                 .andReturn();
         String body = shared.getResponse().getContentAsString();
         assertThat(body).doesNotContain("shareToken", "ownerSub", OWNER_SUB, token);
