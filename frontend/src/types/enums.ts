@@ -1,45 +1,41 @@
 /**
- * 共通enum。型は schema/openapi.yaml からの生成型(./generated/api)を唯一の正とし、
- * ここでは実行時に使う定数オブジェクトを定義する(`satisfies` でスキーマとの網羅・整合を検査)。
+ * 共通enum(文字列リテラル + as const)。
+ * 定義: .claude/01_development_docs/07_type_definitions.md §2(バックエンドと同期)
  */
-import type { components } from './generated/api';
 
-type Schemas = components['schemas'];
-
-export type GameType = Schemas['GameType'];
 export const GameType = {
   GO: 'GO',
   SHOGI: 'SHOGI',
-} as const satisfies { [K in GameType]: K };
+} as const;
+export type GameType = (typeof GameType)[keyof typeof GameType];
 
-export type TournamentStatus = Schemas['TournamentStatus'];
 export const TournamentStatus = {
   PREPARING: 'PREPARING',
   IN_PROGRESS: 'IN_PROGRESS',
   FINISHED: 'FINISHED',
-} as const satisfies { [K in TournamentStatus]: K };
+} as const;
+export type TournamentStatus = (typeof TournamentStatus)[keyof typeof TournamentStatus];
 
-export type Visibility = Schemas['Visibility'];
 export const Visibility = {
   PRIVATE: 'PRIVATE',
   TOKEN: 'TOKEN',
   PUBLIC: 'PUBLIC',
-} as const satisfies { [K in Visibility]: K };
+} as const;
+export type Visibility = (typeof Visibility)[keyof typeof Visibility];
 
-export type ParticipantStatus = Schemas['ParticipantStatus'];
 export const ParticipantStatus = {
   ACTIVE: 'ACTIVE',
   WITHDRAWN: 'WITHDRAWN',
-} as const satisfies { [K in ParticipantStatus]: K };
+} as const;
+export type ParticipantStatus = (typeof ParticipantStatus)[keyof typeof ParticipantStatus];
 
-export type RoundStatus = Schemas['RoundStatus'];
 export const RoundStatus = {
   PAIRING: 'PAIRING',
   PLAYING: 'PLAYING',
   CONFIRMED: 'CONFIRMED',
-} as const satisfies { [K in RoundStatus]: K };
+} as const;
+export type RoundStatus = (typeof RoundStatus)[keyof typeof RoundStatus];
 
-export type MatchResult = Schemas['MatchResult'];
 export const MatchResult = {
   NONE: 'NONE',
   PLAYER1_WIN: 'PLAYER1_WIN',
@@ -47,14 +43,13 @@ export const MatchResult = {
   DRAW: 'DRAW',
   BOTH_LOSE: 'BOTH_LOSE',
   BYE: 'BYE',
-} as const satisfies { [K in MatchResult]: K };
+} as const;
+export type MatchResult = (typeof MatchResult)[keyof typeof MatchResult];
 
 /**
  * 棋力(段級位)。29段階、強い順(9段 → 20級)。
- * スキーマ上はnull許容(null = 未入力)のため、非nullの値集合をRankとする。
  * 順序はordinalではなく明示的な並び(backend Rank.sortOrder と同期)で管理する。
  */
-export type Rank = NonNullable<Schemas['Rank']>;
 export const RANKS_STRONGEST_FIRST = [
   'DAN_9',
   'DAN_8',
@@ -85,4 +80,5 @@ export const RANKS_STRONGEST_FIRST = [
   'KYU_18',
   'KYU_19',
   'KYU_20',
-] as const satisfies readonly Rank[];
+] as const;
+export type Rank = (typeof RANKS_STRONGEST_FIRST)[number];

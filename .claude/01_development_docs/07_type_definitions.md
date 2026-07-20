@@ -1,20 +1,209 @@
-# 型・スキーマ運用設計書
+# 型定義設計書
 
 ## 1. 基本方針
 
-- **API境界のDTO・enumの定義は `schema/openapi.yaml`(リポジトリルート)が唯一の正**。本ドキュメントには個別の型定義を書かない(二重管理しない)
-- バックエンド(Java record)は contractテストの OpenAPI 検証(`ApiContractTestSupport#performApi`)でスキーマとの一致が機械検査される
-- フロントエンド(TypeScript)は `npm run generate:api` で `frontend/src/types/generated/api.d.ts` を生成し、`frontend/src/types/*.ts` が生成型をre-exportする。生成物の鮮度はCIで検査される
+- フロントエンド(TypeScript)とバックエンド(Java)で**同じ概念には同じ名前**を使う
+- API境界のDTOは本ドキュメントを唯一の正とし、双方を必ず同期させる
 - TypeScriptでは `any` 禁止。`unknown` + 型ガードを使う
-- Javaでは DTO に record を使用。ドメインモデルとDTOを混同しない(§3)
+- Javaでは DTO に record を使用。ドメインモデルとDTOを混同しない
 
-### 型を変更する手順
+---
 
-1. `schema/openapi.yaml` を先に更新する(仕様変更は先にスキーマ、が原則。`schema/` はAI Fixerの聖域で人間が判断する)
-2. バックエンドのDTO・実装を追随させる(`./gradlew check` のcontractテストが一致を検証)
-3. `cd frontend && npm run generate:api` で型を再生成する(`npm run check` で追随漏れを検出)
+## 2. 共通enum(文字列リテラルで統一)
 
-## 2. 命名・変換規約
+| 名前 | 値 | 説明 |
+|------|----|------|
+| `GameType` | `GO` \| `SHOGI` | 競技 |
+| `TournamentStatus` | `PREPARING` \| `IN_PROGRESS` \| `FINISHED` | 大会状態 |
+| `Visibility` | `PRIVATE` \| `TOKEN` \| `PUBLIC` | 公開範囲 |
+| `ParticipantStatus` | `ACTIVE` \| `WITHDRAWN` | 参加状態 |
+| `RoundStatus` | `PAIRING` \| `PLAYING` \| `CONFIRMED` | ラウンド状態 |
+| `Rank` | `KYU_20` … `KYU_1` \| `DAN_1` … `DAN_9` | 棋力(段級位)。29段階。弱→強: 20級 < … < 1級 < 初段(`DAN_1`)< … < 9段。順序は `sortOrder`(段=負、級=正、小さいほど強い)で判定。表示名は `KYU_n`=「n級」、`DAN_1`=「初段」、`DAN_2`〜`DAN_9`=「2段」〜「9段」 |
+| `MatchResult` | `NONE` \| `PLAYER1_WIN` \| `PLAYER2_WIN` \| `DRAW` \| `BOTH_LOSE` \| `BYE` | 対局結果 |
+
+- Java: enum クラス、JSON化は名前そのまま(`@JsonValue` 不使用)
+- TypeScript: union型 + `as const` オブジェクトで定義(`types/enums.ts`)
+
+---
+
+## 3. 主要DTO定義
+
+### Tournament
+
+```typescript
+// frontend/src/types/tournament.ts
+interface Tournament {
+  id: string;                    // ULID
+  name: string;
+  gameType: GameType;
+  totalRounds: number;
+  currentRound: number;          // 0 = 未開始
+  status: TournamentStatus;
+  visibility: Visibility;
+  shareToken: string | null;     // 運営者にのみ返す
+  resultInputEnabled: boolean;   // 共有トークン経由の結果入力を許可するか
+  version: number;               // 楽観ロック用
+  createdAt: string;             // ISO8601
+  updatedAt: string;
+}
+```
+
+```java
+// backend: application/dto/TournamentDto.java
+public record TournamentDto(
+    String id, String name, GameType gameType,
+    int totalRounds, int currentRound,
+    TournamentStatus status, Visibility visibility,
+    String shareToken, boolean resultInputEnabled, long version,
+    String createdAt, String updatedAt) {}
+```
+
+### Participant
+
+```typescript
+interface Participant {
+  id: string;
+  name: string;
+  organization: string | null;
+  rank: Rank | null;             // 棋力(段級位enum。null = 未入力)
+  seedOrder: number;
+  status: ParticipantStatus;
+  groupId: string;               // グループ割当(必須。常にいずれかのグループに帰属する)
+}
+
+// POST /participants(CreateParticipantRequest)
+interface CreateParticipantInput {
+  name: string;
+  organization: string | null;
+  rank: Rank | null;
+  groupId?: string;              // 省略時は先頭グループ(定義順)に割当
+}
+
+// PATCH /participants/{pid}(UpdateParticipantRequest)。未指定(null)の項目は変更しない。
+// rank は null で「変更なし」のため、未入力に戻す場合は clearRank: true を送る(rankとの同時指定は400)
+// groupId は割当先グループの変更(PREPARING 中のみ。未割当状態は存在しないため clear系は無い)
+interface UpdateParticipantInput {
+  name?: string;
+  organization?: string;         // 空文字で未入力に戻せる
+  rank?: Rank;
+  clearRank?: boolean;
+  groupId?: string;
+  status?: ParticipantStatus;    // WITHDRAWN で途中棄権
+}
+```
+
+### Group(棋力帯グループ)
+
+```typescript
+// GET/POST /tournaments/{id}/groups。作成順(ULID順)で返す。
+// 大会は常に1つ以上のグループを持つ(大会作成時に「A」を自動作成)
+interface Group {
+  id: string;                    // ULID
+  name: string;                  // 大会内で一意。50文字以内
+}
+
+// POST /groups(作成)・PATCH /groups/{gid}(改名)のリクエスト
+interface GroupInput {
+  name: string;
+}
+```
+
+### Match / Round
+
+```typescript
+interface Match {
+  id: string;
+  roundNumber: number;
+  tableNumber: number;                  // グループ内で1始まり
+  group: Group;                         // 帰属グループ(必須)。卓表示は「A-1」形式(グループが1つだけの大会は表示上プレフィックスを省略)
+  player1: ParticipantSummary;          // { id, name, organization }
+  player2: ParticipantSummary | null;   // null = BYE
+  result: MatchResult;
+  version: number;
+}
+
+interface Round {
+  roundNumber: number;
+  status: RoundStatus;
+  matches: Match[];
+}
+
+// POST /rounds(組み合わせ生成)のレスポンス。
+// relaxations が空でなければUIに警告を表示する(例: "REMATCH", "BYE_REPEAT", "SAME_ORGANIZATION")
+interface GeneratedRound {
+  round: Round;
+  relaxations: string[];
+}
+```
+
+### Standing(順位)
+
+```typescript
+interface Standing {
+  rank: number;                  // 同順位あり(1,2,2,4 形式)。グループ大会ではグループ内順位
+  participant: ParticipantSummary;
+  wins: number;                  // 勝点(0.5刻みあり得るため number)
+  losses: number;
+  sos: number;
+  sosos: number;
+  hadBye: boolean;
+}
+
+// GET /standings・SharedTournament.standings のレスポンス要素。
+// グループごとに1要素(group は常に非null。グループが1つだけの大会は単一要素)
+interface GroupStandings {
+  group: Group;
+  standings: Standing[];
+}
+```
+
+### SharedTournament(共有ページ用の大会集約)
+
+```typescript
+// GET /api/v1/shared/{token} のレスポンス。
+// shareToken・ownerSub は含めない(13_security_design.md §6)
+interface SharedTournament {
+  tournament: SharedTournamentSummary;
+  rounds: Round[];
+  standings: GroupStandings[];   // グループごとに1要素(group は常に非null)
+}
+
+interface SharedTournamentSummary {
+  name: string;
+  gameType: GameType;
+  totalRounds: number;
+  currentRound: number;
+  status: TournamentStatus;
+  resultInputEnabled: boolean;   // true なら参加者(トークン保持者)が結果入力できる
+}
+```
+
+### CsvImportResult(参加者CSVインポート)
+
+```typescript
+interface CsvImportResult {
+  importedCount: number;
+  participants: Participant[];   // 全行正常時のみ取り込む(エラー時は400 + details)
+}
+```
+
+### APIレスポンスラッパー
+
+```typescript
+type ApiResponse<T> =
+  | { success: true; data: T; meta: { timestamp: string } }
+  | { success: false; error: ApiErrorBody };
+
+interface ApiErrorBody {
+  code: string;                  // ErrorCode(06_error_handling_design.md)
+  message: string;
+  details?: { field: string; reason: string }[];
+}
+```
+
+---
+
+## 4. 命名・変換規約
 
 | 項目 | 規約 |
 |------|------|
@@ -24,9 +213,9 @@
 | null許容 | 「値がない」は null(undefined をAPIで返さない)。TypeScriptでは `| null` を明示 |
 | 金額・勝点等の数値 | 勝点は number(0.5刻み)。それ以外の個数は integer |
 
-enumの順序・優先度は宣言順(ordinal)に依存しない。明示的な数値フィールド(`sortOrder` 等)で比較する(例: `Rank`。フロントの並び順定数 `RANKS_STRONGEST_FIRST` は `satisfies` でスキーマとの整合を型検査している)。
+---
 
-## 3. ドメインモデルとDTOの分離(バックエンド)
+## 5. ドメインモデルとDTOの分離(バックエンド)
 
 - domain層のモデル(`Tournament`, `Participant` 等)はビジネスルールを持つクラス。**そのままJSONにしない**
 - application層で `XxxDto.from(domainModel)` の静的ファクトリで変換する
