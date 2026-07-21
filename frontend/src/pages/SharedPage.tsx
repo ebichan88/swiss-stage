@@ -41,7 +41,7 @@ function matchStatusText(match: Match): string {
     case 'WAITING':
       return '申告待ち(片方のみ申告済み)';
     case 'CONFLICTING':
-      return '申告が一致しません';
+      return '申告が一致しません(結果入力から内容を確認できます)';
     default:
       return matchResultText(match);
   }

@@ -105,6 +105,8 @@
 | SHR-AC-011 | P0 | トークン経由の結果入力は「自分がplayer1/player2のどちらか」の申告として記録され、片方の申告のみでは対局結果は確定しない | done | SharedApiTest |
 | SHR-AC-012 | P0 | 両者の申告が一致すると対局結果が自動確定し、一致しない場合は結果を確定せず双方の申告内容が参照できる | done | SharedApiTest |
 | SHR-AC-013 | P0 | 運営者が直接確定した結果は、その後の参加者の自己申告(一致・不一致問わず)で上書きされない | done | SharedApiTest |
+| SHR-AC-014 | P0 | 自己申告一致で自動確定した結果も、その後の自己申告の変更(一致・不一致問わず)で上書き・巻き戻りしない | done | ModelTest |
+| SHR-AC-015 | P1 | 申告不一致・確定後の食い違いは、状態語だけでなく誰が何を申告したかが運営者画面・共有画面の両方に具体的に表示される | done | MatchResultControl.test / SharedResultPage.test |
 
 ## SPA: SPA配信
 

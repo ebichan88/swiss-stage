@@ -103,7 +103,7 @@ describe('SharedResultPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('片方のみ申告済みは相手の申告待ちである旨を表示する', async () => {
+  it('片方のみ申告済みは自分・相手の申告内容と申告待ちである旨を表示する', async () => {
     server.use(
       http.get(`/api/v1/shared/${TOKEN}`, () =>
         HttpResponse.json(
@@ -131,6 +131,77 @@ describe('SharedResultPage', () => {
 
     renderResultPage();
 
-    expect(await screen.findByText(/架空 太郎が申告しました/)).toBeInTheDocument();
+    expect(await screen.findByText('架空 太郎の申告: 架空 太郎 の勝ち')).toBeInTheDocument();
+    expect(await screen.findByText('仮名 花子の申告: 未申告')).toBeInTheDocument();
+    expect(await screen.findByText('もう一方の申告をお待ちください。')).toBeInTheDocument();
+  });
+
+  it('申告が一致しない場合は両者の申告内容を具体的に表示する', async () => {
+    server.use(
+      http.get(`/api/v1/shared/${TOKEN}`, () =>
+        HttpResponse.json(
+          apiSuccess(
+            sharedTournamentOf({
+              tournament: sharedSummaryOf({ resultInputEnabled: true }),
+              rounds: [
+                roundOf({
+                  matches: [
+                    matchOf({
+                      id: 'm1',
+                      version: 3,
+                      player1: summaryOf({ id: 'p1', name: '架空 太郎' }),
+                      player2: summaryOf({ id: 'p2', name: '仮名 花子', organization: null }),
+                      player1ReportedResult: 'PLAYER1_WIN',
+                      player2ReportedResult: 'PLAYER2_WIN',
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ),
+        ),
+      ),
+    );
+
+    renderResultPage();
+
+    expect(await screen.findByText('架空 太郎の申告: 架空 太郎 の勝ち')).toBeInTheDocument();
+    expect(await screen.findByText('仮名 花子の申告: 仮名 花子 の勝ち')).toBeInTheDocument();
+    expect(await screen.findByText(/両者の申告が一致しませんでした/)).toBeInTheDocument();
+  });
+
+  it('確定済みの結果と自己申告が食い違う場合は運営者への連絡を案内する', async () => {
+    server.use(
+      http.get(`/api/v1/shared/${TOKEN}`, () =>
+        HttpResponse.json(
+          apiSuccess(
+            sharedTournamentOf({
+              tournament: sharedSummaryOf({ resultInputEnabled: true }),
+              rounds: [
+                roundOf({
+                  matches: [
+                    matchOf({
+                      id: 'm1',
+                      version: 3,
+                      player1: summaryOf({ id: 'p1', name: '架空 太郎' }),
+                      player2: summaryOf({ id: 'p2', name: '仮名 花子', organization: null }),
+                      result: 'PLAYER1_WIN',
+                      player1ReportedResult: 'PLAYER2_WIN',
+                      player2ReportedResult: 'PLAYER2_WIN',
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ),
+        ),
+      ),
+    );
+
+    renderResultPage();
+
+    expect(await screen.findByText('現在の結果: 架空 太郎 の勝ち')).toBeInTheDocument();
+    expect(await screen.findByText('架空 太郎の申告: 仮名 花子 の勝ち')).toBeInTheDocument();
+    expect(await screen.findByText(/確定結果と自己申告の内容が異なります/)).toBeInTheDocument();
   });
 });

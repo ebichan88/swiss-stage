@@ -225,6 +225,30 @@ class ModelTest {
         }
 
         @Test
+        @DisplayName("自己申告一致で自動確定した結果も、その後の自己申告の変更で上書き・巻き戻りしない")
+        void 自動確定は自己申告の変更で上書きされない() {
+            Match autoDecided = Match.pairOf(1, 1, p1, p2, groupId)
+                    .withReportedResult(MatchSide.PLAYER1, MatchResult.PLAYER1_WIN)
+                    .withReportedResult(MatchSide.PLAYER2, MatchResult.PLAYER1_WIN);
+            assertThat(autoDecided.result()).isEqualTo(MatchResult.PLAYER1_WIN);
+            assertThat(autoDecided.resultInputBy()).isEqualTo(ResultInputBy.SHARE_TOKEN);
+
+            // 片方が申告を変え、もう一方の申告と食い違っても結果は変わらない(未確定への巻き戻りもしない)
+            Match afterChange =
+                    autoDecided.withReportedResult(MatchSide.PLAYER1, MatchResult.PLAYER2_WIN);
+            assertThat(afterChange.result()).isEqualTo(MatchResult.PLAYER1_WIN);
+            assertThat(afterChange.resultInputBy()).isEqualTo(ResultInputBy.SHARE_TOKEN);
+            assertThat(afterChange.player1ReportedResult()).isEqualTo(MatchResult.PLAYER2_WIN);
+            assertThat(afterChange.player2ReportedResult()).isEqualTo(MatchResult.PLAYER1_WIN);
+
+            // 両者が同じ新しい値に申告を変えても、確定結果は書き換わらない
+            Match afterBothChange =
+                    afterChange.withReportedResult(MatchSide.PLAYER2, MatchResult.PLAYER2_WIN);
+            assertThat(afterBothChange.result()).isEqualTo(MatchResult.PLAYER1_WIN);
+            assertThat(afterBothChange.resultInputBy()).isEqualTo(ResultInputBy.SHARE_TOKEN);
+        }
+
+        @Test
         @DisplayName("自己申告にNONE・BYEは指定できず、BYE対局には自己申告できない")
         void 自己申告のバリデーション() {
             Match match = Match.pairOf(1, 1, p1, p2, groupId);

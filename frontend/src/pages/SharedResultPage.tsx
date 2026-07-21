@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import {
+  hasReportMismatch,
   matchReportStatus,
   matchResultText,
+  reportedResultLabel,
   tableLabel,
 } from '../components/features/round/matchDisplay';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
@@ -191,31 +193,49 @@ export function SharedResultPage() {
   );
 }
 
-/** 現在の確定状況・申告状況の表示 */
+/**
+ * 現在の確定状況・申告状況の表示。
+ * 申告が1件でもあれば「誰が何を申告したか」を常に表示する(送信後に自分の申告内容を
+ * いつでも確認できるようにし、「本当に勝ちを申告したっけ?」というトラブルを防ぐ)
+ */
 function ReportStatus({ match }: { match: Match }) {
   const status = matchReportStatus(match);
-  if (status === 'DECIDED') {
-    return (
-      <Typography variant="body1" sx={{ mt: 1 }}>
-        現在の結果: {matchResultText(match)}
-      </Typography>
-    );
-  }
-  if (status === 'WAITING') {
-    const reportedName =
-      match.player1ReportedResult !== 'NONE' ? match.player1.name : match.player2?.name;
-    return (
-      <Alert severity="info" sx={{ mt: 2 }}>
-        {reportedName}が申告しました。もう一方の申告をお待ちください。
-      </Alert>
-    );
-  }
-  if (status === 'CONFLICTING') {
-    return (
-      <Alert severity="warning" sx={{ mt: 2 }}>
-        両者の申告が一致しませんでした。内容を確認のうえ、再度申告するか運営者に連絡してください。
-      </Alert>
-    );
-  }
-  return null;
+  const anyReported =
+    match.player1ReportedResult !== 'NONE' || match.player2ReportedResult !== 'NONE';
+  const mismatch = hasReportMismatch(match);
+
+  return (
+    <>
+      {status === 'DECIDED' && (
+        <Typography variant="body1" sx={{ mt: 1 }}>
+          現在の結果: {matchResultText(match)}
+        </Typography>
+      )}
+      {anyReported && (
+        <Box sx={{ mt: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            {match.player1.name}の申告: {reportedResultLabel(match, 'player1')}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {match.player2?.name ?? ''}の申告: {reportedResultLabel(match, 'player2')}
+          </Typography>
+        </Box>
+      )}
+      {status === 'WAITING' && (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          もう一方の申告をお待ちください。
+        </Alert>
+      )}
+      {status === 'CONFLICTING' && (
+        <Alert severity="warning" sx={{ mt: 2 }}>
+          両者の申告が一致しませんでした。内容を確認のうえ、再度申告するか運営者に連絡してください。
+        </Alert>
+      )}
+      {mismatch && (
+        <Alert severity="warning" sx={{ mt: 2 }}>
+          確定結果と自己申告の内容が異なります。内容に誤りがある場合は運営者に直接お知らせください。
+        </Alert>
+      )}
+    </>
+  );
 }

@@ -8,8 +8,9 @@ import java.util.Optional;
  * version は楽観ロック用(結果入力の競合検出。0 = 未保存)。
  * resultInputBy は結果を確定した主体(監査用。未確定・BYEは null。
  * OWNER = 運営者が直接確定、SHARE_TOKEN = 両者の自己申告が一致して自動確定)。
- * player1/2ReportedResult はトークン経由の自己申告(NONE = 未申告)。運営者確定後は
- * 記録だけ更新され、確定値(result)には影響しない(運営者確定が最終権威)。
+ * player1/2ReportedResult はトークン経由の自己申告(NONE = 未申告)。確定済み(OWNER・
+ * SHARE_TOKENいずれも)の対局は、以後の自己申告で記録だけ更新され、確定値(result)には
+ * 影響しない(確定が最終権威。食い違いの検知はDTO側で申告内容と確定結果を比較して行う)。
  * groupId は必須。対局は常にいずれかのグループに帰属する(05_swiss_pairing_algorithm.md §2.4)。
  */
 public record Match(
@@ -112,7 +113,9 @@ public record Match(
     /**
      * トークン経由の自己申告(05_swiss_pairing_algorithm.mdの対象外・結果確定の運用ルール)。
      * side側の申告を記録し、両者の申告が一致すればresultを自動確定する。
-     * 運営者が既に直接確定済み(resultInputBy=OWNER)の場合は申告の記録のみでresultは変えない。
+     * 既に確定済み(resultが決定済み。運営者直接確定・自己申告一致の自動確定いずれも)の場合は
+     * 申告の記録のみでresultは変えない(確定後の再申告でサイレントに結果が書き換わる/
+     * 未確定へ巻き戻ることを防ぐ)。
      */
     public Match withReportedResult(MatchSide side, MatchResult claimed) {
         if (isBye()) {
@@ -124,7 +127,7 @@ public record Match(
         MatchResult newP1 = side == MatchSide.PLAYER1 ? claimed : player1ReportedResult;
         MatchResult newP2 = side == MatchSide.PLAYER2 ? claimed : player2ReportedResult;
 
-        if (resultInputBy == ResultInputBy.OWNER) {
+        if (result.isDecided()) {
             return new Match(
                     id, roundNumber, tableNumber, player1Id, player2Id, result, resultInputBy,
                     newP1, newP2, version, groupId);

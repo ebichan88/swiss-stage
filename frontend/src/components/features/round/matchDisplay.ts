@@ -1,4 +1,5 @@
 import type { Group } from '../../../types/group';
+import type { MatchResult } from '../../../types/enums';
 import type { Match } from '../../../types/round';
 
 /**
@@ -67,11 +68,11 @@ export function matchReportStatus(match: Match): MatchReportStatus {
   return 'CONFLICTING';
 }
 
-/** 結果の表示テキスト(確定済みラウンド等、入力コントロールを出さない場面用) */
-export function matchResultText(match: Match): string {
-  switch (match.result) {
+/** 任意のMatchResult値のラベル化(確定結果・自己申告いずれの表示にも使う) */
+export function outcomeLabel(match: Match, value: MatchResult): string {
+  switch (value) {
     case 'NONE':
-      return '未入力';
+      return '未申告';
     case 'PLAYER1_WIN':
       return `${match.player1.name} の勝ち`;
     case 'PLAYER2_WIN':
@@ -83,4 +84,27 @@ export function matchResultText(match: Match): string {
     case 'BYE':
       return '不戦勝';
   }
+}
+
+/** 結果の表示テキスト(確定済みラウンド等、入力コントロールを出さない場面用) */
+export function matchResultText(match: Match): string {
+  return match.result === 'NONE' ? '未入力' : outcomeLabel(match, match.result);
+}
+
+/** side側が申告した内容のラベル(未申告は「未申告」) */
+export function reportedResultLabel(match: Match, side: 'player1' | 'player2'): string {
+  const value = side === 'player1' ? match.player1ReportedResult : match.player2ReportedResult;
+  return outcomeLabel(match, value);
+}
+
+/**
+ * 確定済みの結果と、確定後に変化した自己申告が食い違うか(13_security_design.mdの結果確定の運用ルール§5)。
+ * バックエンドの追加フィールドなしで既存の result/player1ReportedResult/player2ReportedResult から算出する
+ */
+export function hasReportMismatch(match: Match): boolean {
+  if (match.result === 'NONE' || match.result === 'BYE') {
+    return false;
+  }
+  const { player1ReportedResult: p1, player2ReportedResult: p2 } = match;
+  return (p1 !== 'NONE' && p1 !== match.result) || (p2 !== 'NONE' && p2 !== match.result);
 }
