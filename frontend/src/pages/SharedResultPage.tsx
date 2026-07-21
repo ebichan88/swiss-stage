@@ -1,7 +1,7 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Alert, Box, Button, Card, CardContent, Container, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import {
   matchReportStatus,
@@ -21,10 +21,13 @@ import type { Match } from '../types/round';
  * S11 共有・結果入力(スマホ優先)。
  * 「あなたはどちらですか」→ 自分から見た勝敗を選ぶ → 確認 → 送信、の順で自己申告する。
  * 両者の申告が一致すると対局結果が自動確定する(片方だけでは確定しない)。
- * 送信失敗(電波状況等)はスナックバーで通知し、同じ画面から再試行できる
+ * 送信失敗(電波状況等)はスナックバーで通知し、同じ画面から再試行できる。
+ * 送信成功時は組み合わせタブ(paths.shared)へ遷移する(この画面に戻すと選択ミスで
+ * 差し戻されたと誤解されるため)。
  */
 export function SharedResultPage() {
   const { token = '', mid = '' } = useParams();
+  const navigate = useNavigate();
   const { data, isPending, isError, refetch } = useSharedTournament(token);
   const inputMutation = useInputSharedResult(token);
   const { showSuccess, showError } = useSnackbar();
@@ -87,9 +90,8 @@ export function SharedResultPage() {
       { matchId: match.id, input: { reportedBy: side, result: selected, version: match.version } },
       {
         onSuccess: () => {
-          setSide(null);
-          setSelected(null);
           showSuccess('申告を送信しました');
+          navigate(paths.shared(token));
         },
         onError: (error) => {
           setSelected(null);

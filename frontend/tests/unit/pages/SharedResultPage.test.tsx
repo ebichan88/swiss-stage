@@ -65,8 +65,9 @@ describe('SharedResultPage', () => {
 
     expect(await screen.findByText('申告を送信しました')).toBeInTheDocument();
     expect(putBody).toEqual({ reportedBy: 'PLAYER1', result: 'PLAYER1_WIN', version: 2 });
-    // 送信後は同じ画面(申告状態選択)に留まる
-    expect(await screen.findByText('あなたはどちらですか?')).toBeInTheDocument();
+    // 送信後は組み合わせタブへ遷移する(同じ画面に戻すと選択ミスと誤解されるため)
+    expect(await screen.findByRole('tab', { name: '組み合わせ' })).toBeInTheDocument();
+    expect(screen.queryByText('あなたはどちらですか?')).not.toBeInTheDocument();
   });
 
   it('許可されていない場合は選択ボタンを出さず締め切りメッセージを表示する', async () => {
