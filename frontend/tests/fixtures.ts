@@ -58,6 +58,8 @@ export function matchOf(overrides: Partial<Match> = {}): Match {
     player1: summaryOf({ id: 'p1', name: '架空 太郎' }),
     player2: summaryOf({ id: 'p2', name: '仮名 花子', organization: null }),
     result: 'NONE',
+    player1ReportedResult: 'NONE',
+    player2ReportedResult: 'NONE',
     version: 0,
     ...overrides,
   };

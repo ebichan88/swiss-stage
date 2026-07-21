@@ -12,6 +12,7 @@ import com.swiss_stage.domain.model.MatchId;
 import com.swiss_stage.domain.model.MatchResult;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
+import com.swiss_stage.domain.model.MatchSide;
 import com.swiss_stage.domain.model.Rank;
 import com.swiss_stage.domain.model.ResultInputBy;
 import com.swiss_stage.domain.model.Round;
@@ -172,13 +173,68 @@ class ModelTest {
                     .isInstanceOf(DomainException.class);
             assertThatThrownBy(
                     () -> new Match(
-                            MatchId.generate(), 1, 1, p1, null, MatchResult.NONE, null, 0L, groupId))
+                            MatchId.generate(), 1, 1, p1, null, MatchResult.NONE, null,
+                            MatchResult.NONE, MatchResult.NONE, 0L, groupId))
                     .isInstanceOf(DomainException.class);
             assertThatThrownBy(
                     () -> new Match(
-                            MatchId.generate(), 1, 1, p1, p2, MatchResult.BYE, null, 0L, groupId))
+                            MatchId.generate(), 1, 1, p1, p2, MatchResult.BYE, null,
+                            MatchResult.NONE, MatchResult.NONE, 0L, groupId))
                     .isInstanceOf(DomainException.class);
             assertThatThrownBy(() -> Match.pairOf(1, 1, p1, p2, null))
+                    .isInstanceOf(DomainException.class);
+        }
+
+        @Test
+        @DisplayName("両者の自己申告が一致すると自動確定し、一致しない間は未確定のまま")
+        void 自己申告の一致で自動確定() {
+            Match match = Match.pairOf(1, 1, p1, p2, groupId);
+            assertThat(match.isUntouched()).isTrue();
+
+            Match waiting = match.withReportedResult(MatchSide.PLAYER1, MatchResult.PLAYER1_WIN);
+            assertThat(waiting.result()).isEqualTo(MatchResult.NONE);
+            assertThat(waiting.player1ReportedResult()).isEqualTo(MatchResult.PLAYER1_WIN);
+            assertThat(waiting.player2ReportedResult()).isEqualTo(MatchResult.NONE);
+            assertThat(waiting.isUntouched()).isFalse();
+
+            Match conflicting =
+                    waiting.withReportedResult(MatchSide.PLAYER2, MatchResult.PLAYER2_WIN);
+            assertThat(conflicting.result()).isEqualTo(MatchResult.NONE);
+            assertThat(conflicting.resultInputBy()).isNull();
+
+            Match matched = conflicting.withReportedResult(MatchSide.PLAYER2, MatchResult.PLAYER1_WIN);
+            assertThat(matched.result()).isEqualTo(MatchResult.PLAYER1_WIN);
+            assertThat(matched.resultInputBy()).isEqualTo(ResultInputBy.SHARE_TOKEN);
+        }
+
+        @Test
+        @DisplayName("運営者が直接確定した結果は、その後の自己申告(一致・不一致とも)で上書きされない")
+        void 運営者確定は自己申告で上書きされない() {
+            Match ownerDecided = Match.pairOf(1, 1, p1, p2, groupId)
+                    .withResult(MatchResult.DRAW, ResultInputBy.OWNER);
+
+            Match afterReport = ownerDecided
+                    .withReportedResult(MatchSide.PLAYER1, MatchResult.PLAYER1_WIN)
+                    .withReportedResult(MatchSide.PLAYER2, MatchResult.PLAYER1_WIN);
+
+            assertThat(afterReport.result()).isEqualTo(MatchResult.DRAW);
+            assertThat(afterReport.resultInputBy()).isEqualTo(ResultInputBy.OWNER);
+            // 申告自体は記録として残る
+            assertThat(afterReport.player1ReportedResult()).isEqualTo(MatchResult.PLAYER1_WIN);
+            assertThat(afterReport.player2ReportedResult()).isEqualTo(MatchResult.PLAYER1_WIN);
+        }
+
+        @Test
+        @DisplayName("自己申告にNONE・BYEは指定できず、BYE対局には自己申告できない")
+        void 自己申告のバリデーション() {
+            Match match = Match.pairOf(1, 1, p1, p2, groupId);
+            assertThatThrownBy(() -> match.withReportedResult(MatchSide.PLAYER1, MatchResult.NONE))
+                    .isInstanceOf(DomainException.class);
+            assertThatThrownBy(() -> match.withReportedResult(MatchSide.PLAYER1, MatchResult.BYE))
+                    .isInstanceOf(DomainException.class);
+            Match byeMatch = Match.byeOf(1, 1, p1, groupId);
+            assertThatThrownBy(
+                    () -> byeMatch.withReportedResult(MatchSide.PLAYER1, MatchResult.PLAYER1_WIN))
                     .isInstanceOf(DomainException.class);
         }
 

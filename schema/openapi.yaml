@@ -417,7 +417,9 @@ paths:
   /api/v1/tournaments/{id}/rounds/{n}/confirm:
     post:
       operationId: confirmRound
-      summary: ラウンド確定(未入力の対局があると409)
+      summary: >-
+        ラウンド確定(申告・入力が一切ない対局が残っていると409。片方のみ申告・
+        申告不一致の対局はブロックしない)
       parameters:
         - $ref: "#/components/parameters/TournamentId"
         - name: n
@@ -492,7 +494,9 @@ paths:
   /api/v1/shared/{token}/matches/{mid}/result:
     put:
       operationId: inputSharedResult
-      summary: トークン経由の結果入力(大会設定 resultInputEnabled が有効な場合のみ)
+      summary: >-
+        トークン経由の結果自己申告(大会設定 resultInputEnabled が有効な場合のみ)。
+        reportedBy側の申告として記録し、両者の申告が一致すると結果が自動確定する
       security: []
       parameters:
         - $ref: "#/components/parameters/ShareToken"
@@ -502,7 +506,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/InputResultRequest"
+              $ref: "#/components/schemas/ReportMatchResultRequest"
       responses:
         "200":
           $ref: "#/components/responses/Match"
@@ -965,6 +969,10 @@ components:
       type: string
       description: BYE は組み合わせ生成時にのみ設定される(結果入力のリクエストでBYEは400)
       enum: [NONE, PLAYER1_WIN, PLAYER2_WIN, DRAW, BOTH_LOSE, BYE]
+    MatchSide:
+      type: string
+      description: トークン経由の自己申告(ReportMatchResultRequest)で「自分がどちらか」を表す
+      enum: [PLAYER1, PLAYER2]
 
     # ---- リソース ----
     Me:
@@ -1092,6 +1100,8 @@ components:
         - player1
         - player2
         - result
+        - player1ReportedResult
+        - player2ReportedResult
         - version
       properties:
         id:
@@ -1129,6 +1139,14 @@ components:
               minimum: 0
         result:
           $ref: "#/components/schemas/MatchResult"
+        player1ReportedResult:
+          allOf:
+            - $ref: "#/components/schemas/MatchResult"
+          description: player1本人としてトークン経由で申告された結果。NONE = 未申告
+        player2ReportedResult:
+          allOf:
+            - $ref: "#/components/schemas/MatchResult"
+          description: player2本人としてトークン経由で申告された結果。NONE = 未申告
         version:
           type: integer
           format: int64
@@ -1342,9 +1360,28 @@ components:
     InputResultRequest:
       type: object
       additionalProperties: false
-      description: BYEの指定は400(BYEは組み合わせ生成時にのみ設定される)
+      description: >
+        運営者による直接確定用(BYEの指定は400。BYEは組み合わせ生成時にのみ設定される)。
+        一度この経路で確定した結果は、その後の参加者の自己申告(ReportMatchResultRequest)では上書きされない
       required: [result, version]
       properties:
+        result:
+          $ref: "#/components/schemas/MatchResult"
+        version:
+          type: integer
+          format: int64
+    ReportMatchResultRequest:
+      type: object
+      additionalProperties: false
+      description: >
+        トークン経由の自己申告用(BYE・NONEの指定は400)。
+        自分が reportedBy 側であるという前提で result を申告する(値はMatchResultの正規表現、
+        例: 自分がPLAYER2で勝った場合は reportedBy=PLAYER2, result=PLAYER2_WIN)。
+        両者の申告(player1ReportedResult/player2ReportedResult)が一致すると対局結果が自動確定する
+      required: [reportedBy, result, version]
+      properties:
+        reportedBy:
+          $ref: "#/components/schemas/MatchSide"
         result:
           $ref: "#/components/schemas/MatchResult"
         version:

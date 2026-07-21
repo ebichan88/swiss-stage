@@ -24,6 +24,8 @@ public class MatchItem {
     private String player2Id;
     private String result;
     private String resultInputBy;
+    private String player1ReportedResult;
+    private String player2ReportedResult;
     private Long version;
     private String groupId;
 
@@ -109,6 +111,22 @@ public class MatchItem {
 
     public void setResultInputBy(String resultInputBy) {
         this.resultInputBy = resultInputBy;
+    }
+
+    public String getPlayer1ReportedResult() {
+        return player1ReportedResult;
+    }
+
+    public void setPlayer1ReportedResult(String player1ReportedResult) {
+        this.player1ReportedResult = player1ReportedResult;
+    }
+
+    public String getPlayer2ReportedResult() {
+        return player2ReportedResult;
+    }
+
+    public void setPlayer2ReportedResult(String player2ReportedResult) {
+        this.player2ReportedResult = player2ReportedResult;
     }
 
     @DynamoDbVersionAttribute

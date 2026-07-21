@@ -1,12 +1,11 @@
 package com.swiss_stage.application.service;
 
-import com.swiss_stage.application.dto.InputResultRequest;
 import com.swiss_stage.application.dto.MatchDto;
+import com.swiss_stage.application.dto.ReportMatchResultRequest;
 import com.swiss_stage.application.dto.SharedTournamentDto;
 import com.swiss_stage.application.exception.ErrorCode;
 import com.swiss_stage.application.exception.ForbiddenException;
 import com.swiss_stage.domain.model.MatchId;
-import com.swiss_stage.domain.model.ResultInputBy;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.Visibility;
 import com.swiss_stage.domain.repository.TournamentRepository;
@@ -55,14 +54,16 @@ public class SharedService {
         });
     }
 
-    /** 共有トークン経由の結果入力。大会設定(resultInputEnabled)で許可時のみ */
-    public MatchDto inputResult(String token, MatchId matchId, InputResultRequest request) {
+    /**
+     * 共有トークン経由の結果自己申告。大会設定(resultInputEnabled)で許可時のみ。
+     * 両者の申告が一致すると自動確定する(RoundService#applyReport)
+     */
+    public MatchDto inputResult(String token, MatchId matchId, ReportMatchResultRequest request) {
         Tournament tournament = resolveByToken(token);
         if (!tournament.resultInputEnabled()) {
             throw new ForbiddenException(ErrorCode.FORBIDDEN);
         }
-        return roundService.applyResult(
-                tournament.id(), matchId, request, ResultInputBy.SHARE_TOKEN);
+        return roundService.applyReport(tournament.id(), matchId, request);
     }
 
     private Tournament resolveByToken(String token) {

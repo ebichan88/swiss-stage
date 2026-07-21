@@ -14,5 +14,11 @@ export type Round = components['schemas']['Round'];
  */
 export type GeneratedRound = components['schemas']['GeneratedRound'];
 
-/** PUT /matches/{mid}/result。versionは楽観ロック用 */
+/** PUT /matches/{mid}/result(運営者による直接確定)。versionは楽観ロック用 */
 export type InputResultInput = components['schemas']['InputResultRequest'];
+
+/**
+ * PUT /shared/{token}/matches/{mid}/result(トークン経由の自己申告)。
+ * reportedBy側の申告として送信し、両者の申告が一致すると自動確定する
+ */
+export type ReportMatchResultInput = components['schemas']['ReportMatchResultRequest'];

@@ -2,6 +2,7 @@ package com.swiss_stage.contract;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
 
 /**
  * ラウンド生成 → 結果入力 → 確定 → 次ラウンド → 順位表 の一巡(Phase 3の受け入れシナリオ)。
@@ -158,6 +160,83 @@ class RoundApiTest extends ApiContractTestSupport {
                         .content("{\"result\":\"DRAW\",\"version\":" + (version + 1) + "}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
+    }
+
+    @Test
+    @DisplayName("RND-AC-012: 片方のみ申告・申告不一致の対局が残っていてもラウンド確定はブロックしない")
+    void 申告未確定でもラウンド確定できる() throws Exception {
+        String token = regenerateToken();
+        setVisibility("TOKEN");
+        setResultInputEnabled(true);
+
+        MvcResult r1 = performApi(post(base() + "/rounds").cookie(ownerCookie()))
+                .andExpect(status().isCreated())
+                .andReturn();
+        JsonNode matches = dataOf(r1).path("round").path("matches");
+        JsonNode waitingMatch = matches.get(0);
+        JsonNode conflictingMatch = matches.get(1);
+
+        // 片方のみ申告(待ち状態)。resultはNONEのまま
+        reportSharedResult(token, waitingMatch.path("id").asText(), "PLAYER1",
+                "PLAYER1_WIN", waitingMatch.path("version").asLong())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.result").value("NONE"))
+                .andExpect(jsonPath("$.data.player1ReportedResult").value("PLAYER1_WIN"))
+                .andExpect(jsonPath("$.data.player2ReportedResult").value("NONE"));
+
+        // 両者が異なる結果を申告(不一致)。resultはNONEのまま
+        reportSharedResult(token, conflictingMatch.path("id").asText(), "PLAYER1",
+                "PLAYER1_WIN", conflictingMatch.path("version").asLong())
+                .andExpect(status().isOk());
+        reportSharedResult(token, conflictingMatch.path("id").asText(), "PLAYER2",
+                "PLAYER2_WIN", conflictingMatch.path("version").asLong() + 1)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.result").value("NONE"));
+
+        // どちらの対局も未確定だが、ラウンド確定はブロックされない(運営者の裁量)
+        performApi(post(base() + "/rounds/1/confirm").cookie(ownerCookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("CONFIRMED"));
+    }
+
+    private ResultActions reportSharedResult(
+            String token, String matchId, String reportedBy, String result, long version)
+            throws Exception {
+        return performApi(put("/api/v1/shared/" + token + "/matches/" + matchId + "/result")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reportedBy\":\"" + reportedBy + "\",\"result\":\"" + result
+                        + "\",\"version\":" + version + "}"));
+    }
+
+    private String regenerateToken() throws Exception {
+        MvcResult result = performApi(post(base() + "/share-token/regenerate")
+                        .cookie(ownerCookie()))
+                .andExpect(status().isOk())
+                .andReturn();
+        return dataOf(result).path("shareToken").asText();
+    }
+
+    private void setVisibility(String visibility) throws Exception {
+        performApi(patch(base())
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"visibility\":\"" + visibility + "\",\"version\":"
+                                + currentVersion() + "}"))
+                .andExpect(status().isOk());
+    }
+
+    private void setResultInputEnabled(boolean enabled) throws Exception {
+        performApi(patch(base())
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"resultInputEnabled\":" + enabled + ",\"version\":"
+                                + currentVersion() + "}"))
+                .andExpect(status().isOk());
+    }
+
+    private long currentVersion() throws Exception {
+        MvcResult result = performApi(get(base()).cookie(ownerCookie())).andReturn();
+        return dataOf(result).path("version").asLong();
     }
 
     private void inputResult(JsonNode match, String result) throws Exception {

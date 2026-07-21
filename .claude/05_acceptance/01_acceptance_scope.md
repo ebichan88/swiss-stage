@@ -77,15 +77,16 @@
 |----|---|------------|--------|------|
 | RND-AC-001 | P0 | ラウンド生成で全ACTIVE参加者が1回ずつ対局に割り当てられる(status=PLAYING) | done | RoundApiTest |
 | RND-AC-002 | P0 | 現在ラウンドが未確定のうちは次ラウンドを生成できない(409) | done | RoundApiTest |
-| RND-AC-003 | P0 | 未入力の対局があるラウンドは確定できない(409) | done | RoundApiTest |
+| RND-AC-003 | P0 | 申告・入力が一切ない対局が1件でも残るラウンドは確定できない(409) | done | RoundApiTest |
 | RND-AC-004 | P1 | 全対局入力後の確定でラウンドがCONFIRMEDになり、次ラウンドを生成できる | done | RoundApiTest |
 | RND-AC-005 | P0 | 次ラウンドで再戦(同一ペアの再対局)が発生しない | done | RoundApiTest |
 | RND-AC-006 | P1 | ラウンド一覧が対局付きで取得できる | done | RoundApiTest |
 | RND-AC-007 | P0 | 順位表が仕様(05_swiss_pairing_algorithm.md §3)の順で計算されて返る | done | RoundApiTest |
-| RND-AC-008 | P1 | 結果入力で対局結果が更新されversionが進む | done | RoundApiTest |
+| RND-AC-008 | P1 | 結果入力(運営者)で対局結果が更新されversionが進む | done | RoundApiTest |
 | RND-AC-009 | P0 | 古いversionでの結果入力は409 CONFLICTになる(後勝ちしない) | done | RoundApiTest |
 | RND-AC-010 | P0 | 確定済みラウンドの結果は変更できない(409) | done | RoundApiTest |
 | RND-AC-011 | P1 | 不正な結果値(BYE等)の入力は400になる | done | RoundApiTest |
+| RND-AC-012 | P1 | 片方のみ申告・申告不一致の対局が残っていてもラウンド確定はブロックしない(警告のみ・運営者の裁量) | done | RoundApiTest |
 
 ## SHR: 共有(トークン)
 
@@ -101,6 +102,9 @@
 | SHR-AC-008 | P1 | キャッシュ済みの共有ページも結果入力・確定・参加者改名後は即時反映される(evict) | done | SharedApiTest |
 | SHR-AC-009 | P2 | 共有APIはIPベースのレート制限超過で429を統一フォーマットで返す | done | SharedRateLimitApiTest |
 | SHR-AC-010 | P2 | 共有ページの参加者要約(ParticipantSummary)にrank・entryOrderを含む(戦績一覧表での参照用) | done | SharedApiTest |
+| SHR-AC-011 | P0 | トークン経由の結果入力は「自分がplayer1/player2のどちらか」の申告として記録され、片方の申告のみでは対局結果は確定しない | done | SharedApiTest |
+| SHR-AC-012 | P0 | 両者の申告が一致すると対局結果が自動確定し、一致しない場合は結果を確定せず双方の申告内容が参照できる | done | SharedApiTest |
+| SHR-AC-013 | P0 | 運営者が直接確定した結果は、その後の参加者の自己申告(一致・不一致問わず)で上書きされない | done | SharedApiTest |
 
 ## SPA: SPA配信
 

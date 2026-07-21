@@ -349,7 +349,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** ラウンド確定(未入力の対局があると409) */
+        /** ラウンド確定(申告・入力が一切ない対局が残っていると409。片方のみ申告・ 申告不一致の対局はブロックしない) */
         post: operations["confirmRound"];
         delete?: never;
         options?: never;
@@ -416,7 +416,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** トークン経由の結果入力(大会設定 resultInputEnabled が有効な場合のみ) */
+        /** トークン経由の結果自己申告(大会設定 resultInputEnabled が有効な場合のみ)。 reportedBy側の申告として記録し、両者の申告が一致すると結果が自動確定する */
         put: operations["inputSharedResult"];
         post?: never;
         delete?: never;
@@ -473,6 +473,11 @@ export interface components {
          * @enum {string}
          */
         MatchResult: "NONE" | "PLAYER1_WIN" | "PLAYER2_WIN" | "DRAW" | "BOTH_LOSE" | "BYE";
+        /**
+         * @description トークン経由の自己申告(ReportMatchResultRequest)で「自分がどちらか」を表す
+         * @enum {string}
+         */
+        MatchSide: "PLAYER1" | "PLAYER2";
         Me: {
             /** @description 運営者の識別子(GoogleのOAuth2 sub) */
             sub: string;
@@ -537,6 +542,10 @@ export interface components {
                 entryOrder: number;
             } | null;
             result: components["schemas"]["MatchResult"];
+            /** @description player1本人としてトークン経由で申告された結果。NONE = 未申告 */
+            player1ReportedResult: components["schemas"]["MatchResult"];
+            /** @description player2本人としてトークン経由で申告された結果。NONE = 未申告 */
+            player2ReportedResult: components["schemas"]["MatchResult"];
             /** Format: int64 */
             version: number;
         };
@@ -624,8 +633,15 @@ export interface components {
         GroupRequest: {
             name: string;
         };
-        /** @description BYEの指定は400(BYEは組み合わせ生成時にのみ設定される) */
+        /** @description 運営者による直接確定用(BYEの指定は400。BYEは組み合わせ生成時にのみ設定される)。 一度この経路で確定した結果は、その後の参加者の自己申告(ReportMatchResultRequest)では上書きされない */
         InputResultRequest: {
+            result: components["schemas"]["MatchResult"];
+            /** Format: int64 */
+            version: number;
+        };
+        /** @description トークン経由の自己申告用(BYE・NONEの指定は400)。 自分が reportedBy 側であるという前提で result を申告する(値はMatchResultの正規表現、 例: 自分がPLAYER2で勝った場合は reportedBy=PLAYER2, result=PLAYER2_WIN)。 両者の申告(player1ReportedResult/player2ReportedResult)が一致すると対局結果が自動確定する */
+        ReportMatchResultRequest: {
+            reportedBy: components["schemas"]["MatchSide"];
             result: components["schemas"]["MatchResult"];
             /** Format: int64 */
             version: number;
@@ -1517,7 +1533,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["InputResultRequest"];
+                "application/json": components["schemas"]["ReportMatchResultRequest"];
             };
         };
         responses: {

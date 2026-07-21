@@ -20,6 +20,8 @@ public record MatchDto(
         ParticipantSummaryDto player1,
         ParticipantSummaryDto player2,
         MatchResult result,
+        MatchResult player1ReportedResult,
+        MatchResult player2ReportedResult,
         long version) {
 
     public static MatchDto from(
@@ -38,6 +40,8 @@ public record MatchDto(
                 summaryOf(m.player1Id(), participants),
                 m.player2Id() == null ? null : summaryOf(m.player2Id(), participants),
                 m.result(),
+                m.player1ReportedResult(),
+                m.player2ReportedResult(),
                 m.version());
     }
 

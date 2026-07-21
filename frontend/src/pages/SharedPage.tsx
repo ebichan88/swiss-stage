@@ -18,6 +18,7 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import {
+  matchReportStatus,
   matchResultText,
   matchSections,
   resultMark,
@@ -33,6 +34,18 @@ import { ApiError } from '../services/apiClient';
 import { paths } from '../routes';
 import type { Match, Round } from '../types/round';
 import type { ParticipantSummary } from '../types/participant';
+
+/** 対局カードの状態テキスト。申告待ち・不一致は結果と区別して案内する */
+function matchStatusText(match: Match): string {
+  switch (matchReportStatus(match)) {
+    case 'WAITING':
+      return '申告待ち(片方のみ申告済み)';
+    case 'CONFLICTING':
+      return '申告が一致しません';
+    default:
+      return matchResultText(match);
+  }
+}
 
 function playerLabel(player: ParticipantSummary | null, mark: string | null): string {
   if (player === null) {
@@ -66,8 +79,11 @@ function SharedMatchCard({ token, match, multiGroup, canInput }: SharedMatchCard
           <Typography variant="body1">
             {playerLabel(match.player2, resultMark(match, 'player2'))}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {matchResultText(match)}
+          <Typography
+            variant="body2"
+            color={matchReportStatus(match) === 'CONFLICTING' ? 'warning.main' : 'text.secondary'}
+          >
+            {matchStatusText(match)}
           </Typography>
         </Box>
         {canInput && match.player2 !== null && (

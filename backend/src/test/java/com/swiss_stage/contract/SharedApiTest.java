@@ -127,7 +127,7 @@ class SharedApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("SHR-AC-006,SHR-AC-007: トークン経由の結果入力は大会設定で許可時のみ可能で、確定済み・競合は409になる")
+    @DisplayName("SHR-AC-006,SHR-AC-007: トークン経由の自己申告は大会設定で許可時のみ可能で、確定済み・競合は409になる")
     void トークン経由の結果入力() throws Exception {
         String token = regenerateToken();
         setVisibility("TOKEN");
@@ -140,23 +140,23 @@ class SharedApiTest extends ApiContractTestSupport {
         long version = match.path("version").asLong();
 
         // 許可前(resultInputEnabled=false)は403
-        performApi(putSharedResult(token, matchId, "PLAYER1_WIN", version))
+        performApi(reportSharedResult(token, matchId, "PLAYER1", "PLAYER1_WIN", version))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
 
-        // 運営者が許可 → 入力できる
+        // 運営者が許可 → 自己申告できる(片方のみでは未確定のまま)
         setResultInputEnabled(true);
-        performApi(putSharedResult(token, matchId, "PLAYER1_WIN", version))
+        performApi(reportSharedResult(token, matchId, "PLAYER1", "PLAYER1_WIN", version))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.result").value("PLAYER1_WIN"))
+                .andExpect(jsonPath("$.data.result").value("NONE"))
                 .andExpect(jsonPath("$.data.version").value(version + 1));
 
         // 古いversionは409 CONFLICT
-        performApi(putSharedResult(token, matchId, "PLAYER2_WIN", version))
+        performApi(reportSharedResult(token, matchId, "PLAYER1", "PLAYER2_WIN", version))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("CONFLICT"));
 
-        // 残りを運営者が入力して確定 → 確定後のトークン入力は409
+        // 残りを運営者が入力して確定 → 未確定(NONE)の対局が残っていても確定でき、確定後のトークン申告は409
         for (JsonNode m : dataOf(round).path("round").path("matches")) {
             if (!m.path("id").asText().equals(matchId)) {
                 performApi(put(base() + "/matches/" + m.path("id").asText() + "/result")
@@ -169,9 +169,77 @@ class SharedApiTest extends ApiContractTestSupport {
         }
         performApi(post(base() + "/rounds/1/confirm").cookie(ownerCookie()))
                 .andExpect(status().isOk());
-        performApi(putSharedResult(token, matchId, "PLAYER2_WIN", version + 1))
+        performApi(reportSharedResult(token, matchId, "PLAYER2", "PLAYER2_WIN", version + 1))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
+    }
+
+    @Test
+    @DisplayName(
+            "SHR-AC-011,SHR-AC-012: 片方のみの申告では確定せず、両者の申告が一致すると自動確定する。"
+                    + "一致しない間は結果を確定せず双方の申告が参照できる")
+    void 自己申告の一致で自動確定() throws Exception {
+        String token = regenerateToken();
+        setVisibility("TOKEN");
+        setResultInputEnabled(true);
+        performApi(post(base() + "/start").cookie(ownerCookie())).andExpect(status().isOk());
+        MvcResult round = performApi(post(base() + "/rounds").cookie(ownerCookie()))
+                .andExpect(status().isCreated())
+                .andReturn();
+        JsonNode match = dataOf(round).path("round").path("matches").get(0);
+        String matchId = match.path("id").asText();
+        long version = match.path("version").asLong();
+
+        // player1のみ申告 → 未確定・player1の申告のみ記録される(SHR-AC-011)
+        performApi(reportSharedResult(token, matchId, "PLAYER1", "PLAYER1_WIN", version))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.result").value("NONE"))
+                .andExpect(jsonPath("$.data.player1ReportedResult").value("PLAYER1_WIN"))
+                .andExpect(jsonPath("$.data.player2ReportedResult").value("NONE"));
+
+        // player2が異なる結果を申告(不一致) → 確定せず、双方の申告が参照できる
+        performApi(reportSharedResult(token, matchId, "PLAYER2", "PLAYER2_WIN", version + 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.result").value("NONE"))
+                .andExpect(jsonPath("$.data.player1ReportedResult").value("PLAYER1_WIN"))
+                .andExpect(jsonPath("$.data.player2ReportedResult").value("PLAYER2_WIN"));
+
+        // player2が申告を訂正し一致 → 自動確定(SHR-AC-012)
+        performApi(reportSharedResult(token, matchId, "PLAYER2", "PLAYER1_WIN", version + 2))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.result").value("PLAYER1_WIN"));
+    }
+
+    @Test
+    @DisplayName("SHR-AC-013: 運営者が直接確定した結果は、その後の参加者の自己申告で上書きされない")
+    void 運営者確定は自己申告で上書きされない() throws Exception {
+        String token = regenerateToken();
+        setVisibility("TOKEN");
+        setResultInputEnabled(true);
+        performApi(post(base() + "/start").cookie(ownerCookie())).andExpect(status().isOk());
+        MvcResult round = performApi(post(base() + "/rounds").cookie(ownerCookie()))
+                .andExpect(status().isCreated())
+                .andReturn();
+        JsonNode match = dataOf(round).path("round").path("matches").get(0);
+        String matchId = match.path("id").asText();
+        long version = match.path("version").asLong();
+
+        // 運営者が直接DRAWで確定
+        performApi(put(base() + "/matches/" + matchId + "/result")
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"result\":\"DRAW\",\"version\":" + version + "}"))
+                .andExpect(status().isOk());
+
+        // 両者がPLAYER1_WINで一致申告しても、運営者確定(DRAW)のままで上書きされない
+        performApi(reportSharedResult(token, matchId, "PLAYER1", "PLAYER1_WIN", version + 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.result").value("DRAW"));
+        performApi(reportSharedResult(token, matchId, "PLAYER2", "PLAYER1_WIN", version + 2))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.result").value("DRAW"))
+                .andExpect(jsonPath("$.data.player1ReportedResult").value("PLAYER1_WIN"))
+                .andExpect(jsonPath("$.data.player2ReportedResult").value("PLAYER1_WIN"));
     }
 
     @Test
@@ -218,11 +286,12 @@ class SharedApiTest extends ApiContractTestSupport {
         assertThat(shared.getResponse().getContentAsString()).contains("改名 太郎");
     }
 
-    private MockHttpServletRequestBuilder putSharedResult(
-            String token, String matchId, String result, long version) {
+    private MockHttpServletRequestBuilder reportSharedResult(
+            String token, String matchId, String reportedBy, String result, long version) {
         return put("/api/v1/shared/" + token + "/matches/" + matchId + "/result")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"result\":\"" + result + "\",\"version\":" + version + "}");
+                .content("{\"reportedBy\":\"" + reportedBy + "\",\"result\":\"" + result
+                        + "\",\"version\":" + version + "}");
     }
 
     private String regenerateToken() throws Exception {

@@ -1,27 +1,34 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { Box, Button, Card, CardContent, Container, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, CardContent, Container, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 
-import { matchResultText, tableLabel } from '../components/features/round/matchDisplay';
+import {
+  matchReportStatus,
+  matchResultText,
+  tableLabel,
+} from '../components/features/round/matchDisplay';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { ErrorState, FullPageSpinner } from '../components/ui/QueryStates';
 import { useInputSharedResult, useSharedTournament } from '../hooks/useShared';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { ApiError } from '../services/apiClient';
 import { paths } from '../routes';
-import type { MatchResult } from '../types/enums';
+import type { MatchResult, MatchSide } from '../types/enums';
+import type { Match } from '../types/round';
 
 /**
- * S11 共有・結果入力(スマホ優先)。結果をタップ → 確認 → 完了の2タップで登録する。
+ * S11 共有・結果入力(スマホ優先)。
+ * 「あなたはどちらですか」→ 自分から見た勝敗を選ぶ → 確認 → 送信、の順で自己申告する。
+ * 両者の申告が一致すると対局結果が自動確定する(片方だけでは確定しない)。
  * 送信失敗(電波状況等)はスナックバーで通知し、同じ画面から再試行できる
  */
 export function SharedResultPage() {
   const { token = '', mid = '' } = useParams();
   const { data, isPending, isError, refetch } = useSharedTournament(token);
   const inputMutation = useInputSharedResult(token);
-  const navigate = useNavigate();
   const { showSuccess, showError } = useSnackbar();
+  const [side, setSide] = useState<MatchSide | null>(null);
   const [selected, setSelected] = useState<MatchResult | null>(null);
 
   if (isPending) {
@@ -58,15 +65,31 @@ export function SharedResultPage() {
     tournament.status !== 'IN_PROGRESS' ||
     round.status === 'CONFIRMED';
 
+  const outcomeOptions: { result: MatchResult; label: string }[] =
+    side === 'PLAYER2'
+      ? [
+          { result: 'PLAYER2_WIN', label: '勝ち' },
+          { result: 'PLAYER1_WIN', label: '負け' },
+          { result: 'DRAW', label: '引き分け' },
+          { result: 'BOTH_LOSE', label: '両者負け' },
+        ]
+      : [
+          { result: 'PLAYER1_WIN', label: '勝ち' },
+          { result: 'PLAYER2_WIN', label: '負け' },
+          { result: 'DRAW', label: '引き分け' },
+          { result: 'BOTH_LOSE', label: '両者負け' },
+        ];
+  const selectedLabel = outcomeOptions.find((o) => o.result === selected)?.label ?? '';
+
   const handleConfirm = () => {
-    if (selected === null) return;
+    if (side === null || selected === null) return;
     inputMutation.mutate(
-      { matchId: match.id, input: { result: selected, version: match.version } },
+      { matchId: match.id, input: { reportedBy: side, result: selected, version: match.version } },
       {
         onSuccess: () => {
+          setSide(null);
           setSelected(null);
-          showSuccess('結果を登録しました');
-          navigate(paths.shared(token));
+          showSuccess('申告を送信しました');
         },
         onError: (error) => {
           setSelected(null);
@@ -77,14 +100,6 @@ export function SharedResultPage() {
       },
     );
   };
-
-  const options: { result: MatchResult; label: string }[] = [
-    { result: 'PLAYER1_WIN', label: `${match.player1.name} の勝ち` },
-    { result: 'PLAYER2_WIN', label: `${match.player2.name} の勝ち` },
-    { result: 'DRAW', label: '引き分け' },
-    { result: 'BOTH_LOSE', label: '両者負け' },
-  ];
-  const selectedLabel = options.find((o) => o.result === selected)?.label ?? '';
 
   return (
     <Container maxWidth="sm" sx={{ py: 4 }}>
@@ -97,22 +112,44 @@ export function SharedResultPage() {
           <Typography variant="h2" component="h1" sx={{ mt: 1 }}>
             {match.player1.name} vs {match.player2.name}
           </Typography>
-          {match.result !== 'NONE' && (
-            <Typography variant="body1" sx={{ mt: 1 }}>
-              現在の結果: {matchResultText(match)}
-            </Typography>
-          )}
+
+          <ReportStatus match={match} />
+
           {inputClosed ? (
             <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
               この対局の結果入力は締め切られています。修正が必要な場合は運営者に連絡してください。
             </Typography>
+          ) : side === null ? (
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                あなたはどちらですか?
+              </Typography>
+              <Stack spacing={1.5} sx={{ mt: 1 }}>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={() => setSide('PLAYER1')}
+                  disabled={inputMutation.isPending}
+                >
+                  {match.player1.name}
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={() => setSide('PLAYER2')}
+                  disabled={inputMutation.isPending}
+                >
+                  {match.player2.name}
+                </Button>
+              </Stack>
+            </Box>
           ) : (
             <Box sx={{ mt: 3 }}>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                結果を選んでください
+                あなたの結果を選んでください
               </Typography>
               <Stack spacing={1.5} sx={{ mt: 1 }}>
-                {options.map((option) => (
+                {outcomeOptions.map((option) => (
                   <Button
                     key={option.result}
                     variant="outlined"
@@ -124,6 +161,15 @@ export function SharedResultPage() {
                   </Button>
                 ))}
               </Stack>
+              <Button
+                variant="text"
+                size="small"
+                sx={{ mt: 1.5 }}
+                onClick={() => setSide(null)}
+                disabled={inputMutation.isPending}
+              >
+                選び直す
+              </Button>
             </Box>
           )}
         </CardContent>
@@ -131,9 +177,9 @@ export function SharedResultPage() {
 
       <ConfirmDialog
         open={selected !== null}
-        title="結果を登録しますか?"
-        message={`「${selectedLabel}」で登録します。`}
-        confirmLabel="登録する"
+        title="結果を申告しますか?"
+        message={`「${selectedLabel}」で申告します。相手の申告と一致すると結果が確定します。`}
+        confirmLabel="申告する"
         confirmColor="primary"
         loading={inputMutation.isPending}
         onConfirm={handleConfirm}
@@ -141,4 +187,33 @@ export function SharedResultPage() {
       />
     </Container>
   );
+}
+
+/** 現在の確定状況・申告状況の表示 */
+function ReportStatus({ match }: { match: Match }) {
+  const status = matchReportStatus(match);
+  if (status === 'DECIDED') {
+    return (
+      <Typography variant="body1" sx={{ mt: 1 }}>
+        現在の結果: {matchResultText(match)}
+      </Typography>
+    );
+  }
+  if (status === 'WAITING') {
+    const reportedName =
+      match.player1ReportedResult !== 'NONE' ? match.player1.name : match.player2?.name;
+    return (
+      <Alert severity="info" sx={{ mt: 2 }}>
+        {reportedName}が申告しました。もう一方の申告をお待ちください。
+      </Alert>
+    );
+  }
+  if (status === 'CONFLICTING') {
+    return (
+      <Alert severity="warning" sx={{ mt: 2 }}>
+        両者の申告が一致しませんでした。内容を確認のうえ、再度申告するか運営者に連絡してください。
+      </Alert>
+    );
+  }
+  return null;
 }
