@@ -18,6 +18,7 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import {
+  hasReportMismatch,
   matchReportStatus,
   matchResultText,
   matchSections,
@@ -35,14 +36,25 @@ import { paths } from '../routes';
 import type { Match, Round } from '../types/round';
 import type { ParticipantSummary } from '../types/participant';
 
-/** 対局カードの状態テキスト。申告待ち・不一致は結果と区別して案内する */
-function matchStatusText(match: Match): string {
+/**
+ * 対局カードの状態テキスト。申告待ち・不一致・確定後の食い違いは結果と区別して案内する。
+ * 「結果入力から確認できます」という案内は、実際に結果入力の導線(canReview)がある場合のみ付ける
+ * (ラウンド確定後は結果入力ボタンが出ないため、案内だけ残ると誤誘導になる)
+ */
+function matchStatusText(match: Match, canReview: boolean): string {
   switch (matchReportStatus(match)) {
     case 'WAITING':
       return '申告待ち(片方のみ申告済み)';
     case 'CONFLICTING':
-      return '申告が一致しません';
+      return canReview
+        ? '申告が一致しません(結果入力から内容を確認できます)'
+        : '申告が一致しません';
     default:
+      if (hasReportMismatch(match)) {
+        return canReview
+          ? `${matchResultText(match)}(申告が一致しません・結果入力から内容を確認できます)`
+          : `${matchResultText(match)}(申告が一致しません)`;
+      }
       return matchResultText(match);
   }
 }
@@ -64,6 +76,8 @@ interface SharedMatchCardProps {
 
 /** 共有ページの1対局カード(スマホ優先: 卓番号・対戦・結果・入力導線) */
 function SharedMatchCard({ token, match, multiGroup, canInput }: SharedMatchCardProps) {
+  // 「結果入力」ボタンの表示条件と揃える(BYEはボタンが出ないため案内文でも触れない)
+  const canReview = canInput && match.player2 !== null;
   return (
     <Card variant="outlined">
       <CardContent
@@ -81,12 +95,16 @@ function SharedMatchCard({ token, match, multiGroup, canInput }: SharedMatchCard
           </Typography>
           <Typography
             variant="body2"
-            color={matchReportStatus(match) === 'CONFLICTING' ? 'warning.main' : 'text.secondary'}
+            color={
+              matchReportStatus(match) === 'CONFLICTING' || hasReportMismatch(match)
+                ? 'warning.main'
+                : 'text.secondary'
+            }
           >
-            {matchStatusText(match)}
+            {matchStatusText(match, canReview)}
           </Typography>
         </Box>
-        {canInput && match.player2 !== null && (
+        {canReview && (
           <Button
             variant={match.result === 'NONE' ? 'contained' : 'outlined'}
             size="small"

@@ -14,7 +14,11 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { PairingTable } from '../components/features/round/PairingTable';
-import { matchReportStatus, matchSections } from '../components/features/round/matchDisplay';
+import {
+  hasReportMismatch,
+  matchReportStatus,
+  matchSections,
+} from '../components/features/round/matchDisplay';
 import { useTournamentContext } from '../components/layouts/TournamentLayout';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -159,6 +163,7 @@ export function RoundsPage() {
       const status = matchReportStatus(m);
       return status === 'WAITING' || status === 'CONFLICTING';
     }).length ?? 0;
+  const mismatchCount = selectedRound?.matches.filter((m) => hasReportMismatch(m)).length ?? 0;
   const isEditable = tournament.status === 'IN_PROGRESS' && selectedRound?.status !== 'CONFIRMED';
   const sections = selectedRound ? matchSections(selectedRound.matches) : [];
   // 表示判定は大会に定義されたグループ総数で行う(そのラウンドに対局があるグループ数ではない)。
@@ -241,6 +246,13 @@ export function RoundsPage() {
               参加者の申告待ち・申告不一致の対局が{needsAttentionCount}
               件あります。内容を確認してから
               結果を入力・確定してください(確定のブロックはしません)。
+            </Alert>
+          )}
+
+          {isEditable && mismatchCount > 0 && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              確定済みですが参加者の申告と異なる対局が{mismatchCount}
+              件あります。対局の申告内容を確認し、必要なら結果を修正してください。
             </Alert>
           )}
 

@@ -16,13 +16,13 @@ Devが実装・テストを書き、Reviewerがコード品質を見るのに対
 2. レビュー対象の差分を取得する(CIでは `gh pr diff`、ローカルでは指定範囲の `git diff`)
 3. 下の4つの責務の観点で検証する。IDの抽出・突合には次のコマンドを使う:
    - 台帳のID: `grep -oE '^\| [A-Z0-9]+-AC-[0-9]+' .claude/05_acceptance/01_acceptance_scope.md`
-   - テストのID: `grep -rhoE '[A-Z0-9]+-AC-[0-9]+' backend/src/test/java/com/swiss_stage/contract/ frontend/tests/e2e/`
+   - テストのID: `grep -rhoE '[A-Z0-9]+-AC-[0-9]+' backend/src/test/java/com/swiss_stage/contract/ frontend/tests/e2e/ frontend/tests/unit/`
 4. 指摘を分類し、下の出力形式でレポートを作成する
 
 # 責務(4つ)
 
 1. **台帳整合**: 差分がAPI・ドメインの挙動を追加・変更しているのに、台帳が更新されていない(新ケースの追加なし・Status未更新)ことを指摘する
-2. **対応検証**: Status=doneのP0/P1ケースのIDが実テスト(`@DisplayName` / Playwrightタイトル)に存在するか、逆にテストにあるIDが台帳に存在するかを双方向で突合し、宙に浮いたIDを指摘する
+2. **対応検証**: Status=doneのP0/P1ケースのIDが実テスト(`@DisplayName` / Playwrightタイトル / フロントエンドVitestテストタイトル)に存在するか、逆にテストにあるIDが台帳に存在するかを双方向で突合し、宙に浮いたIDを指摘する
 3. **基準hack検出**: ケースIDを名乗るテストが差分の中で実質を失っていないか(アサーションの削除・弱体化、検証対象のすり替え、`@Disabled`/skip化)を指摘する
 4. **不足提案**: 差分のエンドポイント・挙動変更に対して台帳にない受け入れケースを「提案」として列挙する。ただし台帳の「やらないこと(out-of-scope)」欄にあるものは提案しない
 
