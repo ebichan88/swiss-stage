@@ -26,6 +26,10 @@ QAエージェント(`.claude/agents/qa.md`)の判断基準はこのファイル
 | SPA | SPA配信 | SpaFallbackApiTest |
 | E2E | 一気通貫(クリティカルパス) | Playwright(`frontend/tests/e2e/`) |
 
+API契約に変化がなく**UI表示のみ**を追加・変更するケース(例: 既存のレスポンスフィールドからフロントエンドが導出する表示・警告)は、
+該当コンポーネントのPrefixのまま、検証テストをフロントエンドのVitest単体テスト(`frontend/tests/unit/`)にしてよい
+(クリティカルパスでない限りE2Eを新設しない。E2Eは`12_e2e_test_design.md`のとおりクリティカルパスのみに限定する)。
+
 ## 3. ID体系
 
 - 形式: `<PREFIX>-AC-<3桁連番>`(例: `TRN-AC-003`)
@@ -58,7 +62,8 @@ QAエージェント(`.claude/agents/qa.md`)の判断基準はこのファイル
   ```
 
 - Playwright E2E: `test('E2E-AC-001: ...')` のタイトルプレフィックス
-- IDは `grep -oE '[A-Z0-9]+-AC-[0-9]+'` で抽出できる形を保つ(QAエージェントはこのgrepで台帳と双方向突合する。プレフィックスは `E2E` のように数字を含みうる)
+- フロントエンドVitest単体テスト(§2の「UI表示のみ」のケース): `it('SHR-AC-015: ...')` のようにテストタイトルの先頭にIDを付ける(複数ケースを1つのテストで検証する場合はカンマ区切り。contractテストの`@DisplayName`と同じ規約)
+- IDは `grep -rhoE '[A-Z0-9]+-AC-[0-9]+' backend/src/test/java/com/swiss_stage/contract/ frontend/tests/e2e/ frontend/tests/unit/` で抽出できる形を保つ(QAエージェントはこのgrepで台帳と双方向突合する。プレフィックスは `E2E` のように数字を含みうる)
 - 1メソッドに詰め込みすぎない。テストを分割したら台帳の検証列は変えず、IDを付け替える
 
 ## 7. 運用フロー

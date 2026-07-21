@@ -9,7 +9,7 @@ const player1 = summaryOf({ id: 'p1', name: '架空 太郎', organization: null 
 const player2 = summaryOf({ id: 'p2', name: '仮名 花子', organization: null });
 
 describe('MatchResultControl', () => {
-  it('片方のみ申告済みは「申告待ち」Chipと両者の申告内容を表示する', () => {
+  it('SHR-AC-015: 片方のみ申告済みは「申告待ち」Chipと両者の申告内容を表示する', () => {
     renderWithProviders(
       <MatchResultControl
         match={matchOf({ player1, player2, player1ReportedResult: 'PLAYER1_WIN' })}
@@ -25,7 +25,7 @@ describe('MatchResultControl', () => {
     expect(screen.getByText('仮名 花子の申告: 未申告')).toBeInTheDocument();
   });
 
-  it('申告が一致しない場合は「申告不一致」Chipと両者の具体的な申告内容を表示する', () => {
+  it('SHR-AC-015: 申告が一致しない場合は「申告不一致」Chipと両者の具体的な申告内容を表示する', () => {
     renderWithProviders(
       <MatchResultControl
         match={matchOf({
@@ -46,7 +46,7 @@ describe('MatchResultControl', () => {
     expect(screen.getByText('仮名 花子の申告: 仮名 花子 の勝ち')).toBeInTheDocument();
   });
 
-  it('確定済みの結果と自己申告が食い違う場合は警告Chipと申告内容を表示する', () => {
+  it('SHR-AC-015: 確定済みの結果と自己申告が食い違う場合は警告Chipと申告内容を表示する', () => {
     renderWithProviders(
       <MatchResultControl
         match={matchOf({

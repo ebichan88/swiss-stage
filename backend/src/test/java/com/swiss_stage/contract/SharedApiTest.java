@@ -243,6 +243,41 @@ class SharedApiTest extends ApiContractTestSupport {
     }
 
     @Test
+    @DisplayName("SHR-AC-014: 自己申告一致で自動確定した結果も、その後の自己申告の変更で上書き・巻き戻りしない")
+    void 自動確定は自己申告の変更で上書きされない() throws Exception {
+        String token = regenerateToken();
+        setVisibility("TOKEN");
+        setResultInputEnabled(true);
+        performApi(post(base() + "/start").cookie(ownerCookie())).andExpect(status().isOk());
+        MvcResult round = performApi(post(base() + "/rounds").cookie(ownerCookie()))
+                .andExpect(status().isCreated())
+                .andReturn();
+        JsonNode match = dataOf(round).path("round").path("matches").get(0);
+        String matchId = match.path("id").asText();
+        long version = match.path("version").asLong();
+
+        // 両者がPLAYER1_WINで一致 → 自動確定(SHARE_TOKEN)
+        performApi(reportSharedResult(token, matchId, "PLAYER1", "PLAYER1_WIN", version))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.result").value("NONE"));
+        performApi(reportSharedResult(token, matchId, "PLAYER2", "PLAYER1_WIN", version + 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.result").value("PLAYER1_WIN"));
+
+        // 片方が申告を変え食い違っても、確定結果は変わらない(未確定への巻き戻りもしない)
+        performApi(reportSharedResult(token, matchId, "PLAYER1", "PLAYER2_WIN", version + 2))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.result").value("PLAYER1_WIN"))
+                .andExpect(jsonPath("$.data.player1ReportedResult").value("PLAYER2_WIN"))
+                .andExpect(jsonPath("$.data.player2ReportedResult").value("PLAYER1_WIN"));
+
+        // 両者が新しい値に揃っても、確定結果はサイレントに書き換わらない
+        performApi(reportSharedResult(token, matchId, "PLAYER2", "PLAYER2_WIN", version + 3))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.result").value("PLAYER1_WIN"));
+    }
+
+    @Test
     @DisplayName("SHR-AC-008: キャッシュ済みの共有ページも結果入力・確定後は即時反映される(evict)")
     void キャッシュevict() throws Exception {
         String token = regenerateToken();

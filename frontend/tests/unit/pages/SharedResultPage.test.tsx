@@ -103,7 +103,7 @@ describe('SharedResultPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('片方のみ申告済みは自分・相手の申告内容と申告待ちである旨を表示する', async () => {
+  it('SHR-AC-015: 片方のみ申告済みは自分・相手の申告内容と申告待ちである旨を表示する', async () => {
     server.use(
       http.get(`/api/v1/shared/${TOKEN}`, () =>
         HttpResponse.json(
@@ -136,7 +136,7 @@ describe('SharedResultPage', () => {
     expect(await screen.findByText('もう一方の申告をお待ちください。')).toBeInTheDocument();
   });
 
-  it('申告が一致しない場合は両者の申告内容を具体的に表示する', async () => {
+  it('SHR-AC-015: 申告が一致しない場合は両者の申告内容を具体的に表示する', async () => {
     server.use(
       http.get(`/api/v1/shared/${TOKEN}`, () =>
         HttpResponse.json(
@@ -170,7 +170,7 @@ describe('SharedResultPage', () => {
     expect(await screen.findByText(/両者の申告が一致しませんでした/)).toBeInTheDocument();
   });
 
-  it('確定済みの結果と自己申告が食い違う場合は運営者への連絡を案内する', async () => {
+  it('SHR-AC-015: 確定済みの結果と自己申告が食い違う場合は運営者への連絡を案内する', async () => {
     server.use(
       http.get(`/api/v1/shared/${TOKEN}`, () =>
         HttpResponse.json(
