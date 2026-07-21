@@ -169,6 +169,42 @@ describe('SharedPage', () => {
     expect(link).toHaveAttribute('href', `/s/${TOKEN}/matches/m1`);
   });
 
+  it('確定済みの結果と自己申告が食い違う対局は「XXの勝ち」のままにせず不一致を案内する', async () => {
+    server.use(
+      http.get(`/api/v1/shared/${TOKEN}`, () =>
+        HttpResponse.json(
+          apiSuccess(
+            sharedTournamentOf({
+              tournament: sharedSummaryOf({ resultInputEnabled: true }),
+              rounds: [
+                roundOf({
+                  matches: [
+                    matchOf({
+                      id: 'm1',
+                      player1: summaryOf({ id: 'p1', name: '架空 太郎' }),
+                      player2: summaryOf({ id: 'p2', name: '仮名 花子', organization: null }),
+                      result: 'PLAYER1_WIN',
+                      player1ReportedResult: 'PLAYER2_WIN',
+                      player2ReportedResult: 'PLAYER2_WIN',
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ),
+        ),
+      ),
+    );
+
+    renderSharedPage();
+
+    expect(
+      await screen.findByText(
+        '架空 太郎 の勝ち(申告が一致しません・結果入力から内容を確認できます)',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('無効トークンは専用メッセージを表示する', async () => {
     server.use(
       http.get(`/api/v1/shared/${TOKEN}`, () =>
