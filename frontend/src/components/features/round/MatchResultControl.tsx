@@ -11,7 +11,7 @@ import {
 } from './matchDisplay';
 
 /** 自己申告状態のChip(一致待ち・不一致・確定後の食い違いのみ表示。確定済み・未申告は何も出さない) */
-function ReportStatusChip({ match }: { match: Match }) {
+export function ReportStatusChip({ match }: { match: Match }) {
   const status = matchReportStatus(match);
   if (status === 'WAITING') {
     return <Chip label="申告待ち" size="small" variant="outlined" />;
@@ -55,6 +55,8 @@ export interface MatchResultControlProps {
   multiGroup: boolean;
   saving: boolean;
   onInput: (result: MatchResult) => void;
+  /** true なら申告状態Chipをこの中で表示しない(呼び出し側が別要素・別列で表示する場合) */
+  hideStatusChip?: boolean;
 }
 
 /** 運営者の結果入力。BYEは自動確定のため入力不可 */
@@ -64,6 +66,7 @@ export function MatchResultControl({
   multiGroup,
   saving,
   onInput,
+  hideStatusChip = false,
 }: MatchResultControlProps) {
   if (match.result === 'BYE') {
     return <Chip label="不戦勝" size="small" variant="outlined" />;
@@ -73,7 +76,7 @@ export function MatchResultControl({
       <Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="body2">{matchResultText(match)}</Typography>
-          <ReportStatusChip match={match} />
+          {!hideStatusChip && <ReportStatusChip match={match} />}
         </Box>
         <ReportedResultsDetail match={match} />
       </Box>
@@ -105,7 +108,7 @@ export function MatchResultControl({
           <MenuItem value="DRAW">△ 引き分け</MenuItem>
           <MenuItem value="BOTH_LOSE">● 両者負け</MenuItem>
         </TextField>
-        <ReportStatusChip match={match} />
+        {!hideStatusChip && <ReportStatusChip match={match} />}
       </Box>
       <ReportedResultsDetail match={match} />
     </Box>

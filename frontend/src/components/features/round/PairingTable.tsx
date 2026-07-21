@@ -17,7 +17,7 @@ import {
 import type { MatchResult } from '../../../types/enums';
 import type { Match } from '../../../types/round';
 import type { ParticipantSummary } from '../../../types/participant';
-import { MatchResultControl } from './MatchResultControl';
+import { MatchResultControl, ReportStatusChip } from './MatchResultControl';
 import { resultMark, tableLabel } from './matchDisplay';
 
 export interface PairingTableProps {
@@ -85,12 +85,18 @@ export function PairingTable({
   return (
     <TableContainer sx={{ overflowX: 'auto' }}>
       <Table size="small">
-        <TableHead>
+        <TableHead
+          sx={{
+            bgcolor: 'primary.main',
+            '& .MuiTableCell-root': { color: 'primary.contrastText', fontWeight: 600 },
+          }}
+        >
           <TableRow>
             <TableCell>卓</TableCell>
             <TableCell>対局者1</TableCell>
             <TableCell>対局者2</TableCell>
             <TableCell>結果</TableCell>
+            <TableCell>申告ステータス</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -110,7 +116,11 @@ export function PairingTable({
                   multiGroup={multiGroup}
                   saving={savingMatchId === match.id}
                   onInput={(result) => onInputResult(match, result)}
+                  hideStatusChip
                 />
+              </TableCell>
+              <TableCell>
+                <ReportStatusChip match={match} />
               </TableCell>
             </TableRow>
           ))}
