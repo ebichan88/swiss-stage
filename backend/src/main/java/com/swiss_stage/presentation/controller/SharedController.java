@@ -1,7 +1,7 @@
 package com.swiss_stage.presentation.controller;
 
-import com.swiss_stage.application.dto.InputResultRequest;
 import com.swiss_stage.application.dto.MatchDto;
+import com.swiss_stage.application.dto.ReportMatchResultRequest;
 import com.swiss_stage.application.dto.SharedTournamentDto;
 import com.swiss_stage.application.service.SharedService;
 import com.swiss_stage.presentation.api.ApiSuccess;
@@ -40,7 +40,7 @@ public class SharedController {
     public ApiSuccess<MatchDto> inputResult(
             @PathVariable("token") String token,
             @PathVariable("matchId") String matchId,
-            @Valid @RequestBody InputResultRequest request) {
+            @Valid @RequestBody ReportMatchResultRequest request) {
         return ApiSuccess.of(
                 sharedService.inputResult(token, PathIds.matchId(matchId), request),
                 Instant.now(clock));

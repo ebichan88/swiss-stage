@@ -14,7 +14,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { PairingTable } from '../components/features/round/PairingTable';
-import { matchSections } from '../components/features/round/matchDisplay';
+import { matchReportStatus, matchSections } from '../components/features/round/matchDisplay';
 import { useTournamentContext } from '../components/layouts/TournamentLayout';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -145,7 +145,20 @@ export function RoundsPage() {
     );
   }
 
-  const undecidedCount = selectedRound?.matches.filter((m) => m.result === 'NONE').length ?? 0;
+  // ラウンド確定をブロックするのは「運営者・参加者のいずれも一切触れていない」対局のみ。
+  // 片方のみ申告・申告不一致(needsAttentionCount)はブロックせず警告のみ(運営者の裁量)
+  const untouchedCount =
+    selectedRound?.matches.filter(
+      (m) =>
+        m.result === 'NONE' &&
+        m.player1ReportedResult === 'NONE' &&
+        m.player2ReportedResult === 'NONE',
+    ).length ?? 0;
+  const needsAttentionCount =
+    selectedRound?.matches.filter((m) => {
+      const status = matchReportStatus(m);
+      return status === 'WAITING' || status === 'CONFLICTING';
+    }).length ?? 0;
   const isEditable = tournament.status === 'IN_PROGRESS' && selectedRound?.status !== 'CONFIRMED';
   const sections = selectedRound ? matchSections(selectedRound.matches) : [];
   // 表示判定は大会に定義されたグループ総数で行う(そのラウンドに対局があるグループ数ではない)。
@@ -187,9 +200,9 @@ export function RoundsPage() {
               第{selectedRound.roundNumber}ラウンド
             </Typography>
             <RoundStatusBadge status={selectedRound.status} />
-            {isEditable && undecidedCount > 0 && (
+            {isEditable && untouchedCount > 0 && (
               <Typography variant="body2" color="text.secondary">
-                未入力 {undecidedCount}件
+                未入力 {untouchedCount}件
               </Typography>
             )}
             {isEditable && (
@@ -197,7 +210,7 @@ export function RoundsPage() {
                 variant="contained"
                 sx={{ ml: 'auto' }}
                 onClick={() => setConfirmingRound(selectedRound.roundNumber)}
-                disabled={undecidedCount > 0}
+                disabled={untouchedCount > 0}
               >
                 第{selectedRound.roundNumber}ラウンドを確定する
               </Button>
@@ -217,9 +230,17 @@ export function RoundsPage() {
               </Alert>
             )}
 
-          {isEditable && undecidedCount > 0 && (
+          {isEditable && untouchedCount > 0 && (
             <Alert severity="info" sx={{ mb: 2 }}>
               全対局の結果を入力するとラウンドを確定できます。確定すると次のラウンドを生成できます。
+            </Alert>
+          )}
+
+          {isEditable && needsAttentionCount > 0 && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              参加者の申告待ち・申告不一致の対局が{needsAttentionCount}
+              件あります。内容を確認してから
+              結果を入力・確定してください(確定のブロックはしません)。
             </Alert>
           )}
 

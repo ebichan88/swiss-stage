@@ -3,6 +3,7 @@ package com.swiss_stage.application.service;
 import com.swiss_stage.application.dto.GeneratedRoundDto;
 import com.swiss_stage.application.dto.InputResultRequest;
 import com.swiss_stage.application.dto.MatchDto;
+import com.swiss_stage.application.dto.ReportMatchResultRequest;
 import com.swiss_stage.application.dto.RoundDto;
 import com.swiss_stage.application.exception.ConflictException;
 import com.swiss_stage.application.exception.ErrorCode;
@@ -43,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
@@ -202,16 +204,20 @@ public class RoundService {
         }
     }
 
-    /** ラウンド確定。全対局の結果入力が完了している必要がある */
+    /**
+     * ラウンド確定。運営者・参加者のいずれも一切触れていない対局が残っていると確定できない。
+     * 片方のみ申告・申告不一致の対局(Match#isUntouched()がfalse)はブロックしない
+     * (05_swiss_pairing_algorithm.mdの対象外・運営者の裁量で確定できる運用ルール)
+     */
     public RoundDto confirm(TournamentId tournamentId, int roundNumber, String ownerSub) {
         access.loadOwned(tournamentId, ownerSub);
         Round round = roundRepository.findByRoundNumber(tournamentId, roundNumber)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ROUND_NOT_FOUND));
         List<Match> matches = matchRepository.findByRound(tournamentId, roundNumber);
-        long undecided = matches.stream().filter(m -> !m.result().isDecided()).count();
-        if (undecided > 0) {
+        long untouched = matches.stream().filter(Match::isUntouched).count();
+        if (untouched > 0) {
             throw new InvalidStateException(
-                    "結果未入力の対局が" + undecided + "件あります。全て入力してから確定してください");
+                    "結果未入力の対局が" + untouched + "件あります。全て入力してから確定してください");
         }
         Round confirmed;
         try {
@@ -238,6 +244,25 @@ public class RoundService {
         if (request.result() == MatchResult.NONE || request.result() == MatchResult.BYE) {
             throw new ValidationException("結果には勝敗・引き分け・両者敗けのいずれかを指定してください");
         }
+        return editMatch(tournamentId, matchId, request.version(),
+                match -> match.withResult(request.result(), inputBy));
+    }
+
+    /**
+     * トークン経由の結果自己申告の本体(認可・許可判定済みの呼び出し元専用。SharedServiceから呼ぶ)。
+     * 両者の申告が一致すると結果が自動確定する(Match#withReportedResult)
+     */
+    MatchDto applyReport(TournamentId tournamentId, MatchId matchId, ReportMatchResultRequest request) {
+        if (request.result() == MatchResult.NONE || request.result() == MatchResult.BYE) {
+            throw new ValidationException("結果には勝敗・引き分け・両者敗けのいずれかを指定してください");
+        }
+        return editMatch(tournamentId, matchId, request.version(),
+                match -> match.withReportedResult(request.reportedBy(), request.result()));
+    }
+
+    private MatchDto editMatch(
+            TournamentId tournamentId, MatchId matchId, long expectedVersion,
+            UnaryOperator<Match> edit) {
         Match match = matchRepository.findById(tournamentId, matchId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.MATCH_NOT_FOUND));
         Round round = roundRepository.findByRoundNumber(tournamentId, match.roundNumber())
@@ -245,12 +270,12 @@ public class RoundService {
         if (round.status() == RoundStatus.CONFIRMED) {
             throw new InvalidStateException("確定済みラウンドの結果は変更できません");
         }
-        if (match.version() != request.version()) {
+        if (match.version() != expectedVersion) {
             throw new ConflictException();
         }
         Match updated;
         try {
-            updated = match.withResult(request.result(), inputBy);
+            updated = edit.apply(match);
         } catch (DomainException e) {
             throw new ValidationException(e.getMessage());
         }

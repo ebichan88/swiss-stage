@@ -49,6 +49,12 @@ export const MatchResult = {
   BYE: 'BYE',
 } as const satisfies { [K in MatchResult]: K };
 
+export type MatchSide = Schemas['MatchSide'];
+export const MatchSide = {
+  PLAYER1: 'PLAYER1',
+  PLAYER2: 'PLAYER2',
+} as const satisfies { [K in MatchSide]: K };
+
 /**
  * 棋力(段級位)。29段階、強い順(9段 → 20級)。
  * スキーマ上はnull許容(null = 未入力)のため、非nullの値集合をRankとする。

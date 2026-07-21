@@ -190,7 +190,8 @@ public class InMemoryRepositoryConfig {
                 byTournament(tournamentId).put(match.id().value(), new Match(
                         match.id(), match.roundNumber(), match.tableNumber(),
                         match.player1Id(), match.player2Id(), match.result(),
-                        match.resultInputBy(), storedVersion + 1, match.groupId()));
+                        match.resultInputBy(), match.player1ReportedResult(),
+                        match.player2ReportedResult(), storedVersion + 1, match.groupId()));
             }
 
             @Override

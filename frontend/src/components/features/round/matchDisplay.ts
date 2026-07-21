@@ -47,6 +47,26 @@ export function resultMark(match: Match, side: 'player1' | 'player2'): string | 
   }
 }
 
+/**
+ * トークン経由の自己申告の状態(05_swiss_pairing_algorithm.mdの対象外・結果確定の運用ルール)。
+ * NOT_REPORTED = 未申告 / WAITING = 片方のみ申告 / CONFLICTING = 申告不一致 / DECIDED = 確定済み
+ */
+export type MatchReportStatus = 'NOT_REPORTED' | 'WAITING' | 'CONFLICTING' | 'DECIDED';
+
+export function matchReportStatus(match: Match): MatchReportStatus {
+  if (match.result !== 'NONE') {
+    return 'DECIDED';
+  }
+  const { player1ReportedResult: p1, player2ReportedResult: p2 } = match;
+  if (p1 === 'NONE' && p2 === 'NONE') {
+    return 'NOT_REPORTED';
+  }
+  if (p1 === 'NONE' || p2 === 'NONE') {
+    return 'WAITING';
+  }
+  return 'CONFLICTING';
+}
+
 /** 結果の表示テキスト(確定済みラウンド等、入力コントロールを出さない場面用) */
 export function matchResultText(match: Match): string {
   switch (match.result) {
