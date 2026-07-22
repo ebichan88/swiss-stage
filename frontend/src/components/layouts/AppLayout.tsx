@@ -24,14 +24,27 @@ export function AppLayout() {
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AppBar position="sticky">
         <Toolbar>
-          <Typography
-            variant="h3"
+          <Box
             component={Link}
             to={paths.tournaments}
-            sx={{ color: 'inherit', textDecoration: 'none', flexGrow: 1 }}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              flexGrow: 1,
+              color: 'inherit',
+              textDecoration: 'none',
+            }}
           >
-            Swiss Stage
-          </Typography>
+            <Box
+              component="img"
+              src="/swiss-stage.svg"
+              alt=""
+              sx={{ height: 40, width: 40, mr: 1.5, borderRadius: 1 }}
+            />
+            <Typography variant="h3" sx={{ color: 'inherit' }}>
+              Swiss Stage
+            </Typography>
+          </Box>
           <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', sm: 'block' } }}>
             {user?.name}
           </Typography>
