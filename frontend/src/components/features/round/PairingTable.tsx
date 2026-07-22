@@ -100,13 +100,12 @@ export function PairingTable({
           </TableRow>
         </TableHead>
         <TableBody>
-          {matches.map((match) => (
-            <TableRow key={match.id}>
-              <TableCell>
-                <Typography variant="h3" component="span">
-                  {tableLabel(match, multiGroup)}
-                </Typography>
-              </TableCell>
+          {matches.map((match, index) => (
+            <TableRow
+              key={match.id}
+              sx={{ bgcolor: index % 2 === 0 ? 'background.paper' : 'background.default' }}
+            >
+              <TableCell>{tableLabel(match, multiGroup)}</TableCell>
               <TableCell>{playerText(match.player1, resultMark(match, 'player1'))}</TableCell>
               <TableCell>{playerText(match.player2, resultMark(match, 'player2'))}</TableCell>
               <TableCell>
