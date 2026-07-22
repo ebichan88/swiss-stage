@@ -14,6 +14,11 @@ export const gameTypeLabels: Record<GameType, string> = {
   SHOGI: '将棋',
 };
 
+export const gameTypeIcons: Record<GameType, string> = {
+  GO: '/igo.svg',
+  SHOGI: '/shogi.svg',
+};
+
 export const tournamentStatusLabels: Record<TournamentStatus, string> = {
   PREPARING: '準備中',
   IN_PROGRESS: '開催中',
