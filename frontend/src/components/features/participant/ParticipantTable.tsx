@@ -50,7 +50,12 @@ export function ParticipantTable({
   return (
     <TableContainer sx={{ overflowX: 'auto' }}>
       <Table size="small">
-        <TableHead>
+        <TableHead
+          sx={{
+            bgcolor: 'primary.main',
+            '& .MuiTableCell-root': { color: 'primary.contrastText', fontWeight: 600 },
+          }}
+        >
           <TableRow>
             <TableCell>No.</TableCell>
             <TableCell>氏名</TableCell>
@@ -62,10 +67,16 @@ export function ParticipantTable({
           </TableRow>
         </TableHead>
         <TableBody>
-          {participants.map((participant) => {
+          {participants.map((participant, index) => {
             const withdrawn = participant.status === 'WITHDRAWN';
             return (
-              <TableRow key={participant.id} sx={withdrawn ? { opacity: 0.55 } : undefined}>
+              <TableRow
+                key={participant.id}
+                sx={{
+                  bgcolor: index % 2 === 0 ? 'background.paper' : 'background.default',
+                  ...(withdrawn ? { opacity: 0.55 } : {}),
+                }}
+              >
                 <TableCell>{participant.entryOrder}</TableCell>
                 <TableCell>{participant.name}</TableCell>
                 <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
