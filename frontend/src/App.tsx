@@ -95,6 +95,13 @@ const router = createBrowserRouter([
                       })),
                   },
                   {
+                    path: 'cross-table',
+                    lazy: () =>
+                      import('./pages/CrossTablePage').then((m) => ({
+                        Component: m.CrossTablePage,
+                      })),
+                  },
+                  {
                     path: 'settings',
                     lazy: () =>
                       import('./pages/SettingsPage').then((m) => ({ Component: m.SettingsPage })),

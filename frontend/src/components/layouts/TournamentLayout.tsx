@@ -3,6 +3,7 @@ import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import GroupsIcon from '@mui/icons-material/Groups';
 import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 import SettingsIcon from '@mui/icons-material/Settings';
+import TableChartIcon from '@mui/icons-material/TableChart';
 import {
   BottomNavigation,
   BottomNavigationAction,
@@ -66,6 +67,7 @@ export function TournamentLayout() {
     { label: '参加者', icon: <GroupsIcon />, to: paths.participants(id) },
     { label: 'ラウンド', icon: <FormatListNumberedIcon />, to: paths.rounds(id) },
     { label: '順位', icon: <LeaderboardIcon />, to: paths.standings(id) },
+    { label: '戦績一覧', icon: <TableChartIcon />, to: paths.crossTable(id) },
     { label: '設定', icon: <SettingsIcon />, to: paths.settings(id) },
   ];
   const currentIndex = navItems.findLastIndex((item) => location.pathname.startsWith(item.to));
@@ -110,6 +112,12 @@ export function TournamentLayout() {
             showLabels
             value={currentIndex}
             onChange={(_event, newIndex: number) => navigate(navItems[newIndex].to)}
+            sx={{
+              // 項目数が多いスマホでも6項目(概要・参加者・ラウンド・順位・戦績一覧・設定)が
+              // 横スクロールなしで収まるよう、標準より詰めた余白にする
+              '& .MuiBottomNavigationAction-root': { minWidth: 0, px: 0.5 },
+              '& .MuiBottomNavigationAction-label': { fontSize: 'caption.fontSize' },
+            }}
           >
             {navItems.map((item) => (
               <BottomNavigationAction key={item.to} label={item.label} icon={item.icon} />

@@ -49,17 +49,17 @@ test('E2E-AC-001: CP1: ログインから順位表まで大会運営を一気通
 
   // 順位表: 16名、順位1〜16、勝点降順・同勝点はSOS降順
   await page.getByRole('link', { name: '順位' }).click();
-  const table = page.getByRole('table');
-  await expect(table.getByRole('row')).toHaveCount(17); // ヘッダー + 16名
+  const rows = page.getByTestId('standing-row');
+  await expect(rows).toHaveCount(16);
 
-  const rows = table.getByRole('row');
+  const numeric = (text: string) => Number(text.replace(/[^\d.]/g, ''));
   const standings: { rank: number; wins: number; sos: number }[] = [];
-  for (let i = 1; i <= 16; i++) {
-    const cells = rows.nth(i).getByRole('cell');
+  for (let i = 0; i < 16; i++) {
+    const row = rows.nth(i);
     standings.push({
-      rank: Number(await cells.nth(0).innerText()),
-      wins: Number(await cells.nth(2).innerText()),
-      sos: Number(await cells.nth(4).innerText()),
+      rank: numeric(await row.getByTestId('standing-rank').innerText()),
+      wins: numeric(await row.getByTestId('standing-wins').innerText()),
+      sos: numeric(await row.getByTestId('standing-sos').innerText()),
     });
   }
   // 順位は同順位あり(1,2,2,4形式)。タイでなければ i+1、タイなら直前と同じ順位

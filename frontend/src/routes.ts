@@ -8,6 +8,7 @@ export const paths = {
   participants: (id: string) => `/tournaments/${id}/participants`,
   rounds: (id: string) => `/tournaments/${id}/rounds`,
   standings: (id: string) => `/tournaments/${id}/standings`,
+  crossTable: (id: string) => `/tournaments/${id}/cross-table`,
   settings: (id: string) => `/tournaments/${id}/settings`,
   shared: (token: string) => `/s/${token}`,
   sharedMatch: (token: string, matchId: string) => `/s/${token}/matches/${matchId}`,
