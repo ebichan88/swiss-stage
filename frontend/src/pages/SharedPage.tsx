@@ -26,7 +26,7 @@ import {
   tableLabel,
 } from '../components/features/round/matchDisplay';
 import { CrossTable } from '../components/features/standing/CrossTable';
-import { StandingsTable } from '../components/features/standing/StandingsTable';
+import { RankingBoard } from '../components/features/standing/RankingBoard';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState, FullPageSpinner } from '../components/ui/QueryStates';
 import { StatusBadge } from '../components/ui/StatusBadge';
@@ -261,7 +261,7 @@ export function SharedPage() {
                   {group.name}
                 </Typography>
               )}
-              <StandingsTable standings={groupStandings} />
+              <RankingBoard standings={groupStandings} />
             </Box>
           ))
         ))}

@@ -82,12 +82,16 @@ test('E2E-AC-006: CP5: グループ大会をグループ独立で運営できる
   await page.getByRole('link', { name: '順位' }).click();
   await expect(page.getByRole('heading', { name: 'A', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'B', exact: true })).toBeVisible();
-  const tables = page.getByRole('table');
-  await expect(tables).toHaveCount(2);
-  await expect(tables.nth(0).getByRole('row')).toHaveCount(4); // ヘッダー + A 3名
-  await expect(tables.nth(1).getByRole('row')).toHaveCount(3); // ヘッダー + B 2名
-  await expect(tables.nth(0).getByRole('row').nth(1).getByRole('cell').first()).toHaveText('1');
-  await expect(tables.nth(1).getByRole('row').nth(1).getByRole('cell').first()).toHaveText('1');
+  const lists = page.getByRole('list', { name: '順位' });
+  await expect(lists).toHaveCount(2);
+  await expect(lists.nth(0).getByTestId('standing-row')).toHaveCount(3); // A 3名
+  await expect(lists.nth(1).getByTestId('standing-row')).toHaveCount(2); // B 2名
+  await expect(
+    lists.nth(0).getByTestId('standing-row').first().getByTestId('standing-rank'),
+  ).toHaveText('1位');
+  await expect(
+    lists.nth(1).getByTestId('standing-row').first().getByTestId('standing-rank'),
+  ).toHaveText('1位');
 
   // 共有ページ: 組み合わせ(グループ見出し+A-1卓)と順位表(グループ別)
   const token = await publishShareUrl(page, tournamentId, { allowResultInput: false });
@@ -96,5 +100,5 @@ test('E2E-AC-006: CP5: グループ大会をグループ独立で運営できる
   await expect(page.getByText('A-1卓')).toBeVisible();
   await page.getByRole('tab', { name: '順位表' }).click();
   await expect(page.getByRole('heading', { name: 'B', exact: true })).toBeVisible();
-  await expect(page.getByRole('table')).toHaveCount(2);
+  await expect(page.getByRole('list', { name: '順位' })).toHaveCount(2);
 });

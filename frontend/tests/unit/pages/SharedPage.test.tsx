@@ -62,7 +62,7 @@ describe('SharedPage', () => {
     expect(screen.queryByRole('link', { name: '結果入力' })).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('tab', { name: '順位表' }));
-    expect(await screen.findByRole('table')).toBeInTheDocument();
+    expect(await screen.findByRole('list', { name: '順位' })).toBeInTheDocument();
   });
 
   it('戦績一覧タブに切り替えるとラウンドごとの対戦相手・結果を含む一覧表が表示される', async () => {
@@ -145,7 +145,7 @@ describe('SharedPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'A' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'B' })).toBeInTheDocument();
-    expect(screen.getAllByRole('table')).toHaveLength(2);
+    expect(screen.getAllByRole('list', { name: '順位' })).toHaveLength(2);
     expect(screen.getByText(/仮名 花子/)).toBeInTheDocument();
   });
 

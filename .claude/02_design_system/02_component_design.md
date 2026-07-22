@@ -41,11 +41,14 @@
 
 ## 3. データ表示
 
-### 順位表(StandingsTable)
+### 順位カード(RankingBoard)
 
-- MUI `Table` ベース。列: 順位・氏名(所属)・勝敗・SOS・SOSOS
-- スマホでは SOS/SOSOS 列を折りたたみ(タップで展開)
-- 上位3位は行背景を `primary.light` で強調
+- 共有ページ(順位表タブ)と管理画面(順位メニュー)で共用。「順位表」と「戦績一覧」の内容重複を避けるため、
+  順位カードは勝点・SOS/SOSOSのみを表示し、対局グリッドは持たない(それはCrossTable側の役割)
+- 1〜3位は金/銀/銅のメダルカード(`rank.gold/silver/bronze`、`01_design_principles.md`)。アイコン+氏名(所属)+
+  勝点チップ+SOS/SOSOSを表示
+- 4位以降はコンパクトなリスト行(丸い順位バッジ+氏名(所属)+SOS/SOSOS+勝点チップ)
+- 初期表示時のみ1件ずつ段階フェードイン(`03_animation_system.md`)。更新時の再フェードはしない
 - 自分の行(共有ページで名前検索時)はハイライト
 
 ### 戦績一覧表(CrossTable)
@@ -55,6 +58,7 @@
 - データ行は `background.paper`/`background.default` を交互に敷くゼブラストライプ
 - 結果の○は `success.main`、●は `error.main` で色分け(△は無色)。記号自体も必ず表示し、色だけに頼らない
 - 相手列は氏名の代わりにNo.(entryOrder)を表示し、Tooltipで氏名(所属)を補足する
+- 共有ページ(戦績一覧タブ)と管理画面(戦績一覧メニュー、順位メニューとは別画面)で共用
 
 ### 組み合わせ表(PairingTable)
 

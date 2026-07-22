@@ -1,5 +1,19 @@
 import { createTheme } from '@mui/material/styles';
 
+interface RankPaletteColor {
+  main: string;
+  background: string;
+}
+
+declare module '@mui/material/styles' {
+  interface Palette {
+    rank: { gold: RankPaletteColor; silver: RankPaletteColor; bronze: RankPaletteColor };
+  }
+  interface PaletteOptions {
+    rank?: { gold: RankPaletteColor; silver: RankPaletteColor; bronze: RankPaletteColor };
+  }
+}
+
 /**
  * デザイントークンの実装。
  * 値の定義: .claude/02_design_system/01_design_principles.md(変更時は同期すること)
@@ -15,6 +29,11 @@ export const theme = createTheme({
     text: { primary: '#1A1A1A', secondary: '#5F6368' },
     background: { default: '#FAFAF7', paper: '#FFFFFF' },
     divider: '#E0E0DC',
+    rank: {
+      gold: { main: '#F5C542', background: '#FBE8A6' },
+      silver: { main: '#9AA0A6', background: '#E4E5E7' },
+      bronze: { main: '#C97A3D', background: '#EFD3BC' },
+    },
   },
   typography: {
     fontFamily: '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif',
