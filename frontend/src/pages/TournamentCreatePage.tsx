@@ -97,8 +97,8 @@ export function TournamentCreatePage() {
               required: 'ラウンド数は必須です',
               validate: (value) => {
                 const n = Number(value);
-                if (!Number.isInteger(n) || n < 1 || n > 20) {
-                  return 'ラウンド数は1〜20の整数で入力してください';
+                if (!Number.isInteger(n) || n < 1 || n > 8) {
+                  return 'ラウンド数は1〜8の整数で入力してください';
                 }
                 return true;
               },
@@ -109,7 +109,7 @@ export function TournamentCreatePage() {
                 label="ラウンド数"
                 required
                 type="number"
-                slotProps={{ htmlInput: { min: 1, max: 20 } }}
+                slotProps={{ htmlInput: { min: 1, max: 8 } }}
                 error={!!fieldState.error}
                 helperText={fieldState.error?.message ?? '大会全体の対局回数(後から変更できません)'}
                 fullWidth

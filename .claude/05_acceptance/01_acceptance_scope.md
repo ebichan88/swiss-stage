@@ -35,6 +35,7 @@
 | TRN-AC-008 | P1 | 参加者2名未満の大会は開始できない(409 INVALID_STATE) | done | TournamentApiTest |
 | TRN-AC-009 | P1 | 大会を削除すると204で消え、以後404になる | done | TournamentApiTest |
 | TRN-AC-010 | P0 | 未認証の大会APIアクセスはすべて401になる | done | TournamentApiTest |
+| TRN-AC-011 | P2 | totalRoundsは1〜8の範囲でのみ作成でき、範囲外は400 VALIDATION_ERROR | done | TournamentApiTest |
 
 ## PTC: 参加者
 

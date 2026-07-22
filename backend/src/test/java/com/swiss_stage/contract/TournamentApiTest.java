@@ -59,6 +59,29 @@ class TournamentApiTest extends ApiContractTestSupport {
     }
 
     @Test
+    @DisplayName("TRN-AC-011: totalRoundsが上限(8)を超えると400 VALIDATION_ERRORになる")
+    void ラウンド数上限超過() throws Exception {
+        // 意図的にスキーマ違反のリクエストを送るため素のperform(performApiのjavadoc参照)
+        mockMvc.perform(post("/api/v1/tournaments")
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"上限超過大会\",\"gameType\":\"GO\",\"totalRounds\":9}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    @DisplayName("TRN-AC-011: totalRoundsが上限(8)ちょうどなら201で作成できる")
+    void ラウンド数上限ちょうど() throws Exception {
+        performApi(post("/api/v1/tournaments")
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"上限大会\",\"gameType\":\"GO\",\"totalRounds\":8}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.name").value("上限大会"));
+    }
+
+    @Test
     @DisplayName("TRN-AC-003,TRN-AC-004,TRN-AC-005: 一覧・詳細が取得でき、他人の大会・不正形式IDは404になる(存在を漏らさない)")
     void 取得と認可() throws Exception {
         String id = createTournament().path("id").asText();
