@@ -17,5 +17,5 @@ public record CreateTournamentRequest(
 
         @NotNull(message = "ラウンド数は必須です")
         @Min(value = 1, message = "ラウンド数は1以上で入力してください")
-        @Max(value = 20, message = "ラウンド数は20以下で入力してください")
+        @Max(value = 8, message = "ラウンド数は8以下で入力してください")
         Integer totalRounds) {}
