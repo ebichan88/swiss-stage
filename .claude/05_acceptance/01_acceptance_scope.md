@@ -113,7 +113,7 @@
 | TEAM-AC-016 | P0 | 順位表は個人戦と同じ基準(勝点→SOS→SOSOS→直接対決→エントリー順)でチーム単位に計算される | done | TeamRoundApiTest |
 | TEAM-AC-017 | P0 | 戦績一覧・組み合わせ・順位表のレスポンスに個人名(メンバー氏名)を含めない(チーム名のみ) | done | TeamRoundApiTest |
 | TEAM-AC-018 | P0 | 共有トークン経由の結果自己申告は「どちらのチームか」を選択しボード配列をまとめて送信する。ボードごとに両者の申告が一致した時点でそのボードのみ確定する | done | TeamSharedApiTest |
-| TEAM-AC-019 | P0 | ボード単位で申告が不一致の場合、確定させず双方の申告内容(誰が何を申告したか)を運営者画面・共有画面の両方で確認できる | todo | TeamSharedApiTest(API), フロントエンドは後続PR |
+| TEAM-AC-019 | P0 | ボード単位で申告が不一致の場合、確定させず双方の申告内容(誰が何を申告したか)を運営者画面・共有画面の両方で確認できる | done | TeamSharedApiTest(API), TeamMatchResultControl.test.tsx(運営者画面), SharedTeamResultPage.test.tsx(共有画面) |
 | TEAM-AC-020 | P0 | 運営者が直接確定したボード結果は、その後の参加者の自己申告(一致・不一致問わず)で上書きされない | done | TeamSharedApiTest |
 
 ## SHR: 共有(トークン)
