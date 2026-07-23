@@ -66,6 +66,10 @@
 7. **共有トークンによる閲覧・結果入力は `/api/v1/shared/{token}` 系エンドポイントに集約する**(Phase 5で実装済み)。
    共有ページは1リクエストで全データ(大会・ラウンド・順位)を取得でき、`/api/v1/tournaments/**` は運営者認証のみに保てる。
    無効・不明・非公開(PRIVATE)トークンはすべて 403 `INVALID_SHARE_TOKEN` で統一し、大会の存在を漏らさない。
+8. **団体戦(`competitionType=TEAM`)は個人戦とエンドポイント・DTOを分離する**(`/tournaments/{id}/teams`, `/teams/{id}/members` 等。個人戦の `/participants`, `/rounds`, `/standings` とは別スキーマ)。
+   大会作成時の `competitionType`/`teamSize` により、以後どちらのエンドポイント群を使うかが決まる(混在しない)。
+   運営者の直接確定(`InputTeamMatchResultRequest`)・トークン経由の自己申告(`ReportTeamMatchResultRequest`)は、対局1件分の全ボード結果を配列でまとめて送る点を除き、個人戦の設計ルール(§4-3)をそのまま踏襲する。
+   詳細は `05_swiss_pairing_algorithm.md` §5、`02_database_design.md` の Team/TeamMatch を参照。
 
 ---
 

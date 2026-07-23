@@ -21,6 +21,8 @@
 | AP6 | 共有トークンから大会を特定 | GSI2: PK=`SHARE#{token}` |
 | AP7 | 大会の全データ一括取得(順位計算・共有ページ用) | PK=`TOURNAMENT#{id}` を Query(全SK) |
 | AP8 | 大会のグループ一覧を取得 | PK=`TOURNAMENT#{id}`, SK begins_with `GROUP#` |
+| AP9 | 大会のチーム一覧を取得(団体戦) | PK=`TOURNAMENT#{id}`, SK begins_with `TEAM#` |
+| AP10 | 特定ラウンドのチーム対局一覧を取得(団体戦) | PK=`TOURNAMENT#{id}`, SK begins_with `ROUND#{n}#TEAM_MATCH#` |
 
 ---
 
@@ -35,6 +37,8 @@
 | entityType | `TOURNAMENT` | |
 | name | `第30回実業団囲碁大会` | |
 | gameType | `GO` / `SHOGI` | |
+| competitionType | `INDIVIDUAL` / `TEAM` | 作成後変更不可。既定は `INDIVIDUAL` |
+| teamSize | `3` / `5` / 属性なし | `competitionType=TEAM` の時のみ必須。`INDIVIDUAL` では属性を持たない |
 | totalRounds | `5` | |
 | status | `PREPARING` / `IN_PROGRESS` / `FINISHED` | |
 | visibility | `PRIVATE` / `TOKEN` / `PUBLIC` | 公開範囲 |
@@ -97,6 +101,38 @@
 | status | `PAIRING` / `PLAYING` / `CONFIRMED` | 確定後は対局結果を変更不可(運営者の明示操作を除く) |
 
 ---
+
+### Team(団体戦チーム)
+
+| 属性 | 例 | 備考 |
+|------|----|------|
+| PK | `TOURNAMENT#01J...` | |
+| SK | `TEAM#01J...` | |
+| entityType | `TEAM` | |
+| name | `〇〇株式会社Aチーム` | 必須。50文字以内。大会内で重複可 |
+| entryOrder | `1` | 初回マッチングのエントリー順(チーム追加時に自動採番。棋力シードは行わないため実質この順のみでペアリングする) |
+| status | `ACTIVE` / `WITHDRAWN` | 途中棄権対応(個人戦と同じ扱い) |
+| groupId | `01J...`(GroupのULID) | **必須**。個人戦と同じGroup機能をチーム単位で流用する |
+| members | `[{id, name, rank, boardPosition}, ...]` | 埋め込みリスト属性(最大 teamSize+補欠上限 のため別アイテム化しない)。`boardPosition` は 1..teamSize(必須ポジション)または null(補欠) |
+
+- `competitionType=TEAM` の大会でのみ存在する。`competitionType=INDIVIDUAL` の大会では `Participant`/`Group` 側のみを使う
+
+### TeamMatch(団体戦対局)
+
+| 属性 | 例 | 備考 |
+|------|----|------|
+| PK | `TOURNAMENT#01J...` | |
+| SK | `ROUND#03#TEAM_MATCH#01J...` | ラウンド番号はゼロ埋め2桁(Matchと同じ規約) |
+| entityType | `TEAM_MATCH` | |
+| roundNumber | `3` | |
+| tableNumber | `12` | 卓番号。グループ内1始まり(Matchと同じ規約) |
+| groupId | `01J...` | **必須** |
+| team1Id / team2Id | TeamId | team2Id=null なら不戦勝(Matchと同じ表現) |
+| boardResults | `[{boardPosition, result, team1ReportedResult, team2ReportedResult}, ...]` | 埋め込みリスト属性(長さ=teamSize。BYEの場合は空)。`result` は既存の `MatchResult`(NONE/PLAYER1_WIN/PLAYER2_WIN/DRAW/BOTH_LOSE)を再利用 |
+| version | number | 楽観ロック。ボード配列をまとめて1回の更新で書き換えるため、TeamMatch単位でversionを持つ(ボードごとのversionは持たない) |
+| resultInputBy | `OWNER` / `SHARE_TOKEN` | Matchと同じ監査用属性 |
+
+- チーム全体の勝敗(○/●/△相当)は保存せず、`boardResults` から都度点数集計して導出する(`05_swiss_pairing_algorithm.md` §5.3)
 
 ## 4. 設計上の決定事項
 
