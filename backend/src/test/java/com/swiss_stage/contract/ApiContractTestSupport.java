@@ -50,8 +50,11 @@ public abstract class ApiContractTestSupport {
                                     WhitelistRules.allOf(
                                             WhitelistRules.messageHasKey(
                                                     "validation.request.body.missing"),
-                                            WhitelistRules.pathContainsSubstring(
-                                                    "/participants/import"))))
+                                            WhitelistRules.anyOf(
+                                                    WhitelistRules.pathContainsSubstring(
+                                                            "/participants/import"),
+                                                    WhitelistRules.pathContainsSubstring(
+                                                            "/teams/csv-import")))))
                     .build();
 
     @Autowired protected MockMvc mockMvc;

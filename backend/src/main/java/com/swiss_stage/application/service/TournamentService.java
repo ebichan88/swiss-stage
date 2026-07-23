@@ -12,12 +12,15 @@ import com.swiss_stage.domain.DomainException;
 import com.swiss_stage.domain.model.CompetitionType;
 import com.swiss_stage.domain.model.Group;
 import com.swiss_stage.domain.model.Participant;
+import com.swiss_stage.domain.model.Team;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
 import com.swiss_stage.domain.repository.GroupRepository;
 import com.swiss_stage.domain.repository.ParticipantRepository;
+import com.swiss_stage.domain.repository.TeamRepository;
 import com.swiss_stage.domain.repository.TournamentRepository;
 import com.swiss_stage.domain.service.GroupAssignmentService;
+import com.swiss_stage.domain.service.TeamRosterValidationService;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -31,21 +34,25 @@ public class TournamentService {
 
     private final TournamentRepository tournamentRepository;
     private final ParticipantRepository participantRepository;
+    private final TeamRepository teamRepository;
     private final GroupRepository groupRepository;
     private final TournamentAccessSupport access;
     private final SharedViewCache sharedViewCache;
     private final GroupAssignmentService assignmentService = new GroupAssignmentService();
+    private final TeamRosterValidationService rosterValidation = new TeamRosterValidationService();
     private final Clock clock;
 
     public TournamentService(
             TournamentRepository tournamentRepository,
             ParticipantRepository participantRepository,
+            TeamRepository teamRepository,
             GroupRepository groupRepository,
             TournamentAccessSupport access,
             SharedViewCache sharedViewCache,
             Clock clock) {
         this.tournamentRepository = tournamentRepository;
         this.participantRepository = participantRepository;
+        this.teamRepository = teamRepository;
         this.groupRepository = groupRepository;
         this.access = access;
         this.sharedViewCache = sharedViewCache;
@@ -132,6 +139,17 @@ public class TournamentService {
 
     public TournamentDto start(TournamentId id, String ownerSub) {
         Tournament tournament = access.loadOwned(id, ownerSub);
+        if (tournament.isTeamCompetition()) {
+            validateTeamsForStart(id, tournament.teamSize());
+        } else {
+            validateParticipantsForStart(id);
+        }
+        tournamentRepository.save(tournament.start().touched(Instant.now(clock)));
+        sharedViewCache.evict(id);
+        return reload(id);
+    }
+
+    private void validateParticipantsForStart(TournamentId id) {
         List<Participant> participants = participantRepository.findAllByTournamentId(id);
         long activeCount = participants.stream()
                 .filter(Participant::isActive)
@@ -146,9 +164,20 @@ public class TournamentService {
         } catch (DomainException e) {
             throw new InvalidStateException(e.getMessage());
         }
-        tournamentRepository.save(tournament.start().touched(Instant.now(clock)));
-        sharedViewCache.evict(id);
-        return reload(id);
+    }
+
+    private void validateTeamsForStart(TournamentId id, int teamSize) {
+        List<Team> teams = teamRepository.findAllByTournamentId(id);
+        long activeCount = teams.stream().filter(Team::isActive).count();
+        if (activeCount < 2) {
+            throw new InvalidStateException("大会の開始には2チーム以上が必要です");
+        }
+        try {
+            assignmentService.validateTeamsForStart(groupRepository.findAllByTournamentId(id), teams);
+            rosterValidation.validateForStart(teams, teamSize);
+        } catch (DomainException e) {
+            throw new InvalidStateException(e.getMessage());
+        }
     }
 
     public TournamentDto finish(TournamentId id, String ownerSub) {

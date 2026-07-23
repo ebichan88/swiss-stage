@@ -5,6 +5,9 @@ import com.swiss_stage.application.exception.NotFoundException;
 import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.MatchId;
 import com.swiss_stage.domain.model.ParticipantId;
+import com.swiss_stage.domain.model.TeamId;
+import com.swiss_stage.domain.model.TeamMatchId;
+import com.swiss_stage.domain.model.TeamMemberId;
 import com.swiss_stage.domain.model.TournamentId;
 import java.util.regex.Pattern;
 
@@ -36,6 +39,21 @@ final class PathIds {
     static GroupId groupId(String value) {
         requireUlid(value, ErrorCode.GROUP_NOT_FOUND);
         return new GroupId(value);
+    }
+
+    static TeamId teamId(String value) {
+        requireUlid(value, ErrorCode.TEAM_NOT_FOUND);
+        return new TeamId(value);
+    }
+
+    static TeamMemberId teamMemberId(String value) {
+        requireUlid(value, ErrorCode.TEAM_MEMBER_NOT_FOUND);
+        return new TeamMemberId(value);
+    }
+
+    static TeamMatchId teamMatchId(String value) {
+        requireUlid(value, ErrorCode.TEAM_MATCH_NOT_FOUND);
+        return new TeamMatchId(value);
     }
 
     private static void requireUlid(String value, ErrorCode notFound) {

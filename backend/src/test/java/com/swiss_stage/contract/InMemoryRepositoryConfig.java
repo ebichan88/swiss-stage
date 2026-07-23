@@ -9,12 +9,18 @@ import com.swiss_stage.domain.model.MatchId;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
 import com.swiss_stage.domain.model.Round;
+import com.swiss_stage.domain.model.Team;
+import com.swiss_stage.domain.model.TeamId;
+import com.swiss_stage.domain.model.TeamMatch;
+import com.swiss_stage.domain.model.TeamMatchId;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
 import com.swiss_stage.domain.repository.GroupRepository;
 import com.swiss_stage.domain.repository.MatchRepository;
 import com.swiss_stage.domain.repository.ParticipantRepository;
 import com.swiss_stage.domain.repository.RoundRepository;
+import com.swiss_stage.domain.repository.TeamMatchRepository;
+import com.swiss_stage.domain.repository.TeamRepository;
 import com.swiss_stage.domain.repository.TournamentRepository;
 import java.util.Comparator;
 import java.util.List;
@@ -235,6 +241,90 @@ public class InMemoryRepositoryConfig {
             }
 
             private Map<String, Group> byTournament(TournamentId tournamentId) {
+                return store.computeIfAbsent(tournamentId.value(), k -> new ConcurrentHashMap<>());
+            }
+        };
+    }
+
+    @Bean
+    @Primary
+    public TeamRepository inMemoryTeamRepository() {
+        return new TeamRepository() {
+            private final Map<String, Map<String, Team>> store = new ConcurrentHashMap<>();
+
+            @Override
+            public Optional<Team> findById(TournamentId tournamentId, TeamId id) {
+                return Optional.ofNullable(byTournament(tournamentId).get(id.value()));
+            }
+
+            @Override
+            public List<Team> findAllByTournamentId(TournamentId tournamentId) {
+                return List.copyOf(byTournament(tournamentId).values());
+            }
+
+            @Override
+            public void save(TournamentId tournamentId, Team team) {
+                byTournament(tournamentId).put(team.id().value(), team);
+            }
+
+            @Override
+            public void saveAll(TournamentId tournamentId, List<Team> teams) {
+                teams.forEach(t -> save(tournamentId, t));
+            }
+
+            @Override
+            public void delete(TournamentId tournamentId, TeamId id) {
+                byTournament(tournamentId).remove(id.value());
+            }
+
+            private Map<String, Team> byTournament(TournamentId tournamentId) {
+                return store.computeIfAbsent(tournamentId.value(), k -> new ConcurrentHashMap<>());
+            }
+        };
+    }
+
+    @Bean
+    @Primary
+    public TeamMatchRepository inMemoryTeamMatchRepository() {
+        return new TeamMatchRepository() {
+            private final Map<String, Map<String, TeamMatch>> store = new ConcurrentHashMap<>();
+
+            @Override
+            public Optional<TeamMatch> findById(TournamentId tournamentId, TeamMatchId id) {
+                return Optional.ofNullable(byTournament(tournamentId).get(id.value()));
+            }
+
+            @Override
+            public List<TeamMatch> findAllByTournamentId(TournamentId tournamentId) {
+                return List.copyOf(byTournament(tournamentId).values());
+            }
+
+            @Override
+            public List<TeamMatch> findByRound(TournamentId tournamentId, int roundNumber) {
+                return byTournament(tournamentId).values().stream()
+                        .filter(m -> m.roundNumber() == roundNumber)
+                        .toList();
+            }
+
+            @Override
+            public void save(TournamentId tournamentId, TeamMatch match) {
+                TeamMatch stored = byTournament(tournamentId).get(match.id().value());
+                long storedVersion = stored == null ? 0 : stored.version();
+                if (match.version() != storedVersion) {
+                    throw new OptimisticLockException("対局が他の操作で更新されています");
+                }
+                byTournament(tournamentId).put(match.id().value(), new TeamMatch(
+                        match.id(), match.roundNumber(), match.tableNumber(),
+                        match.team1Id(), match.team2Id(), match.boardResults(),
+                        match.resultInputBy(), storedVersion + 1, match.groupId()));
+            }
+
+            @Override
+            public void saveAll(TournamentId tournamentId, List<TeamMatch> matches) {
+                matches.forEach(m -> save(tournamentId, m));
+            }
+
+            private Map<String, TeamMatch> byTournament(TournamentId tournamentId) {
                 return store.computeIfAbsent(tournamentId.value(), k -> new ConcurrentHashMap<>());
             }
         };
