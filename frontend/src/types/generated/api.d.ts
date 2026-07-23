@@ -649,6 +649,9 @@ export interface components {
         SharedTournamentSummary: {
             name: string;
             gameType: components["schemas"]["GameType"];
+            competitionType: components["schemas"]["CompetitionType"];
+            /** @enum {integer|null} */
+            teamSize: 3 | 5 | null;
             totalRounds: number;
             currentRound: number;
             status: components["schemas"]["TournamentStatus"];
