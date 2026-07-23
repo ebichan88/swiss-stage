@@ -1,28 +1,16 @@
 import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 import { Box, Typography } from '@mui/material';
 
-import { RankingBoard } from '../components/features/standing/RankingBoard';
+import { TeamRankingBoard } from '../components/features/team/TeamRankingBoard';
 import { useTournamentContext } from '../components/layouts/TournamentLayout';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState, LoadingState } from '../components/ui/QueryStates';
-import { useStandings } from '../hooks/useStandings';
-import { TeamStandingsPage } from './TeamStandingsPage';
+import { useTeamStandings } from '../hooks/useTeamStandings';
 
-/**
- * S08 順位表。順位は保存されずバックエンドで都度計算される。グループ大会はグループごとに表示。
- * 団体戦(competitionType=TEAM)はTeamStandingsPageに切り替わる
- */
-export function StandingsPage() {
+/** S08 順位表(団体戦)。順位は保存されずバックエンドで都度計算される。個人名は含めない */
+export function TeamStandingsPage() {
   const tournament = useTournamentContext();
-  if (tournament.competitionType === 'TEAM') {
-    return <TeamStandingsPage />;
-  }
-  return <IndividualStandingsPage />;
-}
-
-function IndividualStandingsPage() {
-  const tournament = useTournamentContext();
-  const { data: groupStandings, isPending, isError, refetch } = useStandings(tournament.id);
+  const { data: groupStandings, isPending, isError, refetch } = useTeamStandings(tournament.id);
 
   const isEmpty = groupStandings?.every((g) => g.standings.length === 0) ?? false;
 
@@ -55,7 +43,7 @@ function IndividualStandingsPage() {
                 {group.name}
               </Typography>
             )}
-            <RankingBoard standings={standings} />
+            <TeamRankingBoard standings={standings} />
           </Box>
         ))}
     </Box>

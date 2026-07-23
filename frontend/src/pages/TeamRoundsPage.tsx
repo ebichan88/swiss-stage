@@ -13,12 +13,12 @@ import {
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
-import { PairingTable } from '../components/features/round/PairingTable';
+import { TeamPairingTable } from '../components/features/team/TeamPairingTable';
 import {
-  hasReportMismatch,
-  matchReportStatus,
-  matchSections,
-} from '../components/features/round/matchDisplay';
+  teamMatchHasReportMismatch,
+  teamMatchNeedsAttention,
+  teamMatchSections,
+} from '../components/features/team/teamMatchDisplay';
 import { useTournamentContext } from '../components/layouts/TournamentLayout';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -26,38 +26,26 @@ import { ErrorState, LoadingState } from '../components/ui/QueryStates';
 import { RoundStatusBadge } from '../components/ui/StatusBadge';
 import { useGroups } from '../hooks/useGroups';
 import {
-  useConfirmRound,
-  useGenerateNextRound,
-  useInputMatchResult,
-  useRounds,
-} from '../hooks/useRounds';
+  useConfirmTeamRound,
+  useGenerateNextTeamRound,
+  useInputTeamMatchResult,
+  useTeamRounds,
+} from '../hooks/useTeamRounds';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { ApiError } from '../services/apiClient';
 import { paths } from '../routes';
 import type { MatchResult } from '../types/enums';
-import type { Match } from '../types/round';
+import type { TeamMatch } from '../types/team';
 import { relaxationLabel } from '../utils/labels';
-import { TeamRoundsPage } from './TeamRoundsPage';
 
-/**
- * S07 ラウンド管理。団体戦(competitionType=TEAM)はTeamRoundsPageに切り替わる。
- * hooksを条件分岐なしで呼ぶため、個人戦の本体は別コンポーネント(IndividualRoundsPage)に分ける
- */
-export function RoundsPage() {
+/** S07 ラウンド管理(団体戦)。組み合わせ生成・ボード結果一括入力・ラウンド確定 */
+export function TeamRoundsPage() {
   const tournament = useTournamentContext();
-  if (tournament.competitionType === 'TEAM') {
-    return <TeamRoundsPage />;
-  }
-  return <IndividualRoundsPage />;
-}
-
-function IndividualRoundsPage() {
-  const tournament = useTournamentContext();
-  const { data: rounds, isPending, isError, refetch } = useRounds(tournament.id);
+  const { data: rounds, isPending, isError, refetch } = useTeamRounds(tournament.id);
   const { data: groups } = useGroups(tournament.id);
-  const generateMutation = useGenerateNextRound(tournament.id);
-  const confirmMutation = useConfirmRound(tournament.id);
-  const inputResultMutation = useInputMatchResult(tournament.id);
+  const generateMutation = useGenerateNextTeamRound(tournament.id);
+  const confirmMutation = useConfirmTeamRound(tournament.id);
+  const inputResultMutation = useInputTeamMatchResult(tournament.id);
   const { showSuccess, showError } = useSnackbar();
   const [searchParams, setSearchParams] = useSearchParams();
   const [confirmingRound, setConfirmingRound] = useState<number | null>(null);
@@ -116,9 +104,9 @@ function IndividualRoundsPage() {
     });
   };
 
-  const handleInputResult = (match: Match, result: MatchResult) => {
+  const handleInputResult = (match: TeamMatch, boardResults: MatchResult[]) => {
     inputResultMutation.mutate(
-      { matchId: match.id, input: { result, version: match.version } },
+      { matchId: match.id, input: { boardResults, version: match.version } },
       {
         onError: (error) => showError(errorMessage(error, '結果の入力に失敗しました')),
       },
@@ -166,20 +154,19 @@ function IndividualRoundsPage() {
   const untouchedCount =
     selectedRound?.matches.filter(
       (m) =>
-        m.result === 'NONE' &&
-        m.player1ReportedResult === 'NONE' &&
-        m.player2ReportedResult === 'NONE',
+        m.team2 !== null &&
+        m.boardResults.every((b) => b.result === 'NONE') &&
+        m.boardResults.every(
+          (b) => b.team1ReportedResult === 'NONE' && b.team2ReportedResult === 'NONE',
+        ),
     ).length ?? 0;
   const needsAttentionCount =
-    selectedRound?.matches.filter((m) => {
-      const status = matchReportStatus(m);
-      return status === 'WAITING' || status === 'CONFLICTING';
-    }).length ?? 0;
-  const mismatchCount = selectedRound?.matches.filter((m) => hasReportMismatch(m)).length ?? 0;
+    selectedRound?.matches.filter((m) => teamMatchNeedsAttention(m)).length ?? 0;
+  const mismatchCount =
+    selectedRound?.matches.filter((m) => teamMatchHasReportMismatch(m)).length ?? 0;
   const isEditable = tournament.status === 'IN_PROGRESS' && selectedRound?.status !== 'CONFIRMED';
-  const sections = selectedRound ? matchSections(selectedRound.matches) : [];
-  // 表示判定は大会に定義されたグループ総数で行う(そのラウンドに対局があるグループ数ではない)。
-  // 全員棄権でスキップされたグループがあっても他画面(順位表・共有)と表示形式を揃える
+  const sections = selectedRound ? teamMatchSections(selectedRound.matches) : [];
+  // 表示判定は大会に定義されたグループ総数で行う(そのラウンドに対局があるグループ数ではない)
   const multiGroup = (groups ?? []).length > 1;
 
   return (
@@ -255,16 +242,15 @@ function IndividualRoundsPage() {
 
           {isEditable && needsAttentionCount > 0 && (
             <Alert severity="warning" sx={{ mb: 2 }}>
-              参加者の申告待ち・申告不一致の対局が{needsAttentionCount}
-              件あります。内容を確認してから
-              結果を入力・確定してください(確定のブロックはしません)。
+              参加者の申告待ち・申告不一致のボードが{needsAttentionCount}
+              件の対局にあります。内容を確認してから結果を入力・確定してください(確定のブロックはしません)。
             </Alert>
           )}
 
           {isEditable && mismatchCount > 0 && (
             <Alert severity="warning" sx={{ mb: 2 }}>
-              確定済みですが参加者の申告と異なる対局が{mismatchCount}
-              件あります。対局の申告内容を確認し、必要なら結果を修正してください。
+              確定済みですが参加者の申告と異なるボードが{mismatchCount}
+              件の対局にあります。申告内容を確認し、必要なら結果を修正してください。
             </Alert>
           )}
 
@@ -275,7 +261,7 @@ function IndividualRoundsPage() {
                   {group.name}
                 </Typography>
               )}
-              <PairingTable
+              <TeamPairingTable
                 matches={matches}
                 editable={isEditable}
                 multiGroup={multiGroup}

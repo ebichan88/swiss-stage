@@ -1,40 +1,28 @@
 import TableChartIcon from '@mui/icons-material/TableChart';
 import { Box, Typography } from '@mui/material';
 
-import { CrossTable } from '../components/features/standing/CrossTable';
+import { TeamCrossTable } from '../components/features/team/TeamCrossTable';
 import { useTournamentContext } from '../components/layouts/TournamentLayout';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState, LoadingState } from '../components/ui/QueryStates';
-import { useRounds } from '../hooks/useRounds';
-import { useStandings } from '../hooks/useStandings';
-import { TeamCrossTablePage } from './TeamCrossTablePage';
+import { useTeamRounds } from '../hooks/useTeamRounds';
+import { useTeamStandings } from '../hooks/useTeamStandings';
 
-/**
- * 戦績一覧(参加者×ラウンドの対戦相手・結果)。順位表とは別メニュー。グループ大会はグループごとに表示。
- * 団体戦(competitionType=TEAM)はTeamCrossTablePageに切り替わる
- */
-export function CrossTablePage() {
-  const tournament = useTournamentContext();
-  if (tournament.competitionType === 'TEAM') {
-    return <TeamCrossTablePage />;
-  }
-  return <IndividualCrossTablePage />;
-}
-
-function IndividualCrossTablePage() {
+/** 団体戦の戦績一覧(チーム×ラウンドの対戦相手・結果)。順位表とは別メニュー。個人名は含めない */
+export function TeamCrossTablePage() {
   const tournament = useTournamentContext();
   const {
     data: groupStandings,
     isPending: standingsPending,
     isError: standingsError,
     refetch: refetchStandings,
-  } = useStandings(tournament.id);
+  } = useTeamStandings(tournament.id);
   const {
     data: rounds,
     isPending: roundsPending,
     isError: roundsError,
     refetch: refetchRounds,
-  } = useRounds(tournament.id);
+  } = useTeamRounds(tournament.id);
 
   const isPending = standingsPending || roundsPending;
   const isError = standingsError || roundsError;
@@ -71,7 +59,7 @@ function IndividualCrossTablePage() {
                 {group.name}
               </Typography>
             )}
-            <CrossTable
+            <TeamCrossTable
               rounds={rounds.map((round) => ({
                 ...round,
                 matches: round.matches.filter((m) => m.group.id === group.id),
