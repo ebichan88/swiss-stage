@@ -38,6 +38,8 @@ export interface GroupManagerDialogProps {
   open: boolean;
   tournamentId: string;
   onClose: () => void;
+  /** 段級位による自動振り分け機能を表示するか(団体戦では棋力情報を持たないため非表示にする)。省略時はtrue */
+  showAutoAssign?: boolean;
 }
 
 /**
@@ -46,7 +48,12 @@ export interface GroupManagerDialogProps {
  * 大会作成時にデフォルトグループ「A」が作成済み。グループは常に1つ以上(最後の1つは削除不可)。
  * グループは強い帯から順に定義する(自動振り分けは定義順に強い側から割り当てる)
  */
-export function GroupManagerDialog({ open, tournamentId, onClose }: GroupManagerDialogProps) {
+export function GroupManagerDialog({
+  open,
+  tournamentId,
+  onClose,
+  showAutoAssign = true,
+}: GroupManagerDialogProps) {
   const { data: groups } = useGroups(tournamentId);
   const createMutation = useCreateGroup(tournamentId);
   const renameMutation = useRenameGroup(tournamentId);
@@ -218,37 +225,41 @@ export function GroupManagerDialog({ open, tournamentId, onClose }: GroupManager
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button
-            variant="outlined"
-            startIcon={
-              autoAssignMutation.isPending ? (
-                <CircularProgress size={16} color="inherit" />
-              ) : (
-                <AutoFixHighIcon />
-              )
-            }
-            onClick={() => setConfirming('auto-assign')}
-            disabled={(groups ?? []).length === 0 || autoAssignMutation.isPending}
-            sx={{ mr: 'auto' }}
-          >
-            段級位で自動振り分け
-          </Button>
+          {showAutoAssign && (
+            <Button
+              variant="outlined"
+              startIcon={
+                autoAssignMutation.isPending ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : (
+                  <AutoFixHighIcon />
+                )
+              }
+              onClick={() => setConfirming('auto-assign')}
+              disabled={(groups ?? []).length === 0 || autoAssignMutation.isPending}
+              sx={{ mr: 'auto' }}
+            >
+              段級位で自動振り分け
+            </Button>
+          )}
           <Button variant="contained" onClick={onClose}>
             閉じる
           </Button>
         </DialogActions>
       </Dialog>
 
-      <ConfirmDialog
-        open={confirming === 'auto-assign'}
-        title="段級位で自動振り分けしますか?"
-        message="棋力の強い順に、グループの定義順(A→B→…)へできるだけ均等に振り分けます。現在の割当は上書きされます。適用後に参加者一覧で個別調整できます。"
-        confirmLabel="振り分ける"
-        confirmColor="primary"
-        loading={autoAssignMutation.isPending}
-        onConfirm={handleAutoAssign}
-        onCancel={() => setConfirming(null)}
-      />
+      {showAutoAssign && (
+        <ConfirmDialog
+          open={confirming === 'auto-assign'}
+          title="段級位で自動振り分けしますか?"
+          message="棋力の強い順に、グループの定義順(A→B→…)へできるだけ均等に振り分けます。現在の割当は上書きされます。適用後に参加者一覧で個別調整できます。"
+          confirmLabel="振り分ける"
+          confirmColor="primary"
+          loading={autoAssignMutation.isPending}
+          onConfirm={handleAutoAssign}
+          onCancel={() => setConfirming(null)}
+        />
+      )}
       <ConfirmDialog
         open={confirming !== null && confirming !== 'auto-assign'}
         title="グループを削除しますか?"

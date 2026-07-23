@@ -243,6 +243,7 @@ export function TeamsPage() {
         open={dialog?.kind === 'groups'}
         tournamentId={tournament.id}
         onClose={() => setDialog(null)}
+        showAutoAssign={false}
       />
       <TeamCsvImportDialog
         open={dialog?.kind === 'import'}
