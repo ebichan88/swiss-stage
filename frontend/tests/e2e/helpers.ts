@@ -108,6 +108,82 @@ export async function fetchRounds(page: Page, tournamentId: string): Promise<Api
   return body.data;
 }
 
+/** 団体戦対局のAPI表現(検証用の最小限。types/team.ts と同期) */
+export interface ApiTeamMatch {
+  id: string;
+  tableNumber: number;
+  group: { id: string; name: string };
+  team1: { id: string; name: string };
+  team2: { id: string; name: string } | null;
+  boardResults: { boardPosition: number; result: string }[];
+  version: number;
+}
+
+export interface ApiTeamRound {
+  roundNumber: number;
+  status: string;
+  matches: ApiTeamMatch[];
+}
+
+/** 大会を団体戦(competitionType=TEAM)として作成し、大会概要(S05)へ遷移する。大会IDを返す */
+export async function createTeamTournament(
+  page: Page,
+  name: string,
+  totalRounds: number,
+  teamSize: 3 | 5,
+): Promise<string> {
+  await page.goto('/tournaments/new');
+  await page.getByRole('textbox', { name: '大会名' }).fill(name);
+  await page.getByRole('combobox', { name: '大会形式' }).click();
+  await page.getByRole('option', { name: '団体戦' }).click();
+  await page.getByRole('combobox', { name: 'チーム制' }).click();
+  await page.getByRole('option', { name: new RegExp(`^${teamSize}人制`) }).click();
+  await page.getByRole('spinbutton', { name: 'ラウンド数' }).fill(String(totalRounds));
+  await page.getByRole('button', { name: '作成する' }).click();
+  await expect(page).toHaveURL(/\/tournaments\/[0-9A-Z]{26}$/);
+  const id = page.url().split('/').pop();
+  if (!id) throw new Error('大会IDが取得できませんでした');
+  return id;
+}
+
+/** チーム管理(S06、団体戦)でチーム+メンバーのCSVをインポートする */
+export async function importTeamsCsv(
+  page: Page,
+  tournamentId: string,
+  fixtureFile: string,
+  expectedTeamCount: number,
+): Promise<void> {
+  await page.goto(`/tournaments/${tournamentId}/participants`);
+  await page.getByRole('button', { name: 'CSVインポート' }).click();
+  await page
+    .locator('input[type="file"]')
+    .setInputFiles(path.join(import.meta.dirname, 'fixtures', fixtureFile));
+  await page.getByRole('button', { name: 'インポートする' }).click();
+  await expect(page.getByText(`${expectedTeamCount}チームをインポートしました`)).toBeVisible();
+}
+
+/** 表示中ラウンドの全対局・全ボードに「team1の勝ち」を一括入力する(不戦勝は入力不可のため除外) */
+export async function inputAllTeamResults(page: Page): Promise<void> {
+  const combos = page.getByRole('combobox', { name: /卓.+の結果/ });
+  const count = await combos.count();
+  for (let i = 0; i < count; i++) {
+    await combos.nth(i).click();
+    await page.getByRole('option', { name: /^○/ }).first().click();
+    await expect(page.getByRole('option', { name: /^○/ }).first()).toBeHidden();
+  }
+  await expect(page.getByText(/未入力 \d+件/)).toBeHidden();
+}
+
+/** 団体戦のラウンド一覧をAPIから取得(ペア検証・ボード内訳検証用) */
+export async function fetchTeamRounds(page: Page, tournamentId: string): Promise<ApiTeamRound[]> {
+  const response: APIResponse = await page.request.get(
+    `/api/v1/tournaments/${tournamentId}/team-rounds`,
+  );
+  expect(response.ok()).toBe(true);
+  const body = (await response.json()) as { data: ApiTeamRound[] };
+  return body.data;
+}
+
 /** 設定(S09)で公開範囲=共有URL・結果入力許可を有効化し、共有URLを発行してトークンを返す */
 export async function publishShareUrl(
   page: Page,
