@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.swiss_stage.domain.OptimisticLockException;
+import com.swiss_stage.domain.model.CompetitionType;
 import com.swiss_stage.domain.model.GameType;
 import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Match;
@@ -36,7 +37,8 @@ class DynamoDbTournamentRepositoryTest extends DynamoDbRepositoryTestSupport {
     @Test
     @DisplayName("大会を保存して全属性を復元できる(初回保存でversionが払い出される)")
     void 保存と取得() {
-        Tournament tournament = Tournament.create("統合テスト大会", GameType.GO, 5, uniqueSub(), NOW)
+        Tournament tournament = Tournament.create(
+                        "統合テスト大会", GameType.GO, CompetitionType.INDIVIDUAL, null, 5, uniqueSub(), NOW)
                 .withShareToken(uniqueToken())
                 .withResultInputEnabled(true);
         repository.save(tournament);
@@ -45,6 +47,8 @@ class DynamoDbTournamentRepositoryTest extends DynamoDbRepositoryTestSupport {
         assertThat(found.id()).isEqualTo(tournament.id());
         assertThat(found.name()).isEqualTo("統合テスト大会");
         assertThat(found.gameType()).isEqualTo(GameType.GO);
+        assertThat(found.competitionType()).isEqualTo(CompetitionType.INDIVIDUAL);
+        assertThat(found.teamSize()).isNull();
         assertThat(found.totalRounds()).isEqualTo(5);
         assertThat(found.currentRound()).isZero();
         assertThat(found.status()).isEqualTo(TournamentStatus.PREPARING);
@@ -58,6 +62,18 @@ class DynamoDbTournamentRepositoryTest extends DynamoDbRepositoryTestSupport {
     }
 
     @Test
+    @DisplayName("団体戦(competitionType/teamSize)も保存・復元できる")
+    void 団体戦の保存と取得() {
+        Tournament tournament = Tournament.create(
+                "団体戦統合テスト", GameType.SHOGI, CompetitionType.TEAM, 5, 3, uniqueSub(), NOW);
+        repository.save(tournament);
+
+        Tournament found = repository.findById(tournament.id()).orElseThrow();
+        assertThat(found.competitionType()).isEqualTo(CompetitionType.TEAM);
+        assertThat(found.teamSize()).isEqualTo(5);
+    }
+
+    @Test
     @DisplayName("存在しない大会はemptyを返す")
     void 未存在() {
         assertThat(repository.findById(
@@ -67,7 +83,7 @@ class DynamoDbTournamentRepositoryTest extends DynamoDbRepositoryTestSupport {
     @Test
     @DisplayName("古いversionでの保存は楽観ロック競合になる")
     void 楽観ロック() {
-        Tournament tournament = Tournament.create("競合テスト", GameType.SHOGI, 3, uniqueSub(), NOW);
+        Tournament tournament = Tournament.create("競合テスト", GameType.SHOGI, CompetitionType.INDIVIDUAL, null, 3, uniqueSub(), NOW);
         repository.save(tournament);
 
         Tournament loaded = repository.findById(tournament.id()).orElseThrow();
@@ -85,8 +101,8 @@ class DynamoDbTournamentRepositoryTest extends DynamoDbRepositoryTestSupport {
     @DisplayName("運営者の大会一覧を新しい順で取得できる(GSI1)")
     void 運営者の大会一覧() {
         String sub = uniqueSub();
-        Tournament older = Tournament.create("古い大会", GameType.GO, 3, sub, NOW);
-        Tournament newer = Tournament.create("新しい大会", GameType.GO, 3, sub, NOW.plusSeconds(60));
+        Tournament older = Tournament.create("古い大会", GameType.GO, CompetitionType.INDIVIDUAL, null, 3, sub, NOW);
+        Tournament newer = Tournament.create("新しい大会", GameType.GO, CompetitionType.INDIVIDUAL, null, 3, sub, NOW.plusSeconds(60));
         repository.save(older);
         repository.save(newer);
 
@@ -101,7 +117,7 @@ class DynamoDbTournamentRepositoryTest extends DynamoDbRepositoryTestSupport {
     @DisplayName("共有トークンから大会を特定できる(GSI2)")
     void 共有トークン検索() {
         String token = uniqueToken();
-        Tournament tournament = Tournament.create("共有大会", GameType.GO, 3, uniqueSub(), NOW)
+        Tournament tournament = Tournament.create("共有大会", GameType.GO, CompetitionType.INDIVIDUAL, null, 3, uniqueSub(), NOW)
                 .withShareToken(token);
         repository.save(tournament);
 
@@ -114,7 +130,7 @@ class DynamoDbTournamentRepositoryTest extends DynamoDbRepositoryTestSupport {
     @Test
     @DisplayName("大会削除で配下の参加者・ラウンド・対局も物理削除される")
     void 一括削除() {
-        Tournament tournament = Tournament.create("削除対象", GameType.GO, 3, uniqueSub(), NOW);
+        Tournament tournament = Tournament.create("削除対象", GameType.GO, CompetitionType.INDIVIDUAL, null, 3, uniqueSub(), NOW);
         repository.save(tournament);
         GroupId groupId = GroupId.generate();
         Participant p1 = Participant.create("削除 一郎", "A社", Rank.DAN_1, 1, groupId);

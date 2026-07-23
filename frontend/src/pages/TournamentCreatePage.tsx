@@ -38,6 +38,8 @@ export function TournamentCreatePage() {
       {
         name: values.name.trim(),
         gameType: values.gameType,
+        competitionType: 'INDIVIDUAL',
+        teamSize: null,
         totalRounds: Number(values.totalRounds),
       },
       {

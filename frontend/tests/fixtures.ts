@@ -12,6 +12,8 @@ export function tournamentOf(overrides: Partial<Tournament> = {}): Tournament {
     id: '01TESTTOURNAMENT0000000000',
     name: '第1回テスト囲碁大会',
     gameType: 'GO',
+    competitionType: 'INDIVIDUAL',
+    teamSize: null,
     totalRounds: 5,
     currentRound: 0,
     status: 'PREPARING',
@@ -80,6 +82,8 @@ export function sharedSummaryOf(
   return {
     name: '第1回テスト囲碁大会',
     gameType: 'GO',
+    competitionType: 'INDIVIDUAL',
+    teamSize: null,
     totalRounds: 5,
     currentRound: 1,
     status: 'IN_PROGRESS',

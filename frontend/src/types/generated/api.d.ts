@@ -455,6 +455,11 @@ export interface components {
         };
         /** @enum {string} */
         GameType: "GO" | "SHOGI";
+        /**
+         * @description 個人戦(INDIVIDUAL)か団体戦(TEAM)か。大会作成後は変更不可
+         * @enum {string}
+         */
+        CompetitionType: "INDIVIDUAL" | "TEAM";
         /** @enum {string} */
         TournamentStatus: "PREPARING" | "IN_PROGRESS" | "FINISHED";
         /** @enum {string} */
@@ -487,6 +492,12 @@ export interface components {
             id: components["schemas"]["Ulid"];
             name: string;
             gameType: components["schemas"]["GameType"];
+            competitionType: components["schemas"]["CompetitionType"];
+            /**
+             * @description competitionType=TEAM の時のみ非null。INDIVIDUALでは常にnull
+             * @enum {integer|null}
+             */
+            teamSize: 3 | 5 | null;
             totalRounds: number;
             /** @description 0 = 未開始 */
             currentRound: number;
@@ -574,6 +585,67 @@ export interface components {
             group: components["schemas"]["Group"];
             standings: components["schemas"]["Standing"][];
         };
+        /** @description boardPosition: 1..teamSizeの整数(必須ポジション。1=主将,2=副将,3=三将,4=四将,5=五将)、 またはnull(補欠)。対局結果はこのboardPositionではなくボード位置単位で記録され、 実際に誰(正メンバーか補欠か)が対局したかは対局結果に紐付けない(オーダー管理はしない) */
+        TeamMember: {
+            id: components["schemas"]["Ulid"];
+            name: string;
+            rank: components["schemas"]["Rank"];
+            boardPosition: number | null;
+        };
+        Team: {
+            id: components["schemas"]["Ulid"];
+            name: string;
+            /** @description チーム登録順。団体戦の初回ラウンドはこの順のみでペアリングする(棋力シードなし) */
+            entryOrder: number;
+            status: components["schemas"]["ParticipantStatus"];
+            groupId: components["schemas"]["Ulid"];
+            members: components["schemas"]["TeamMember"][];
+        };
+        /** @description 組み合わせ・戦績一覧・順位表で使う表示用の要約。メンバーの個人名は含めない */
+        TeamSummary: {
+            id: components["schemas"]["Ulid"];
+            name: string;
+            entryOrder: number;
+        };
+        /** @description 主将戦・副将戦…の1ボード分の結果。resultはteam1視点(既存MatchResultを再利用。 NONE=未入力、BYEは不可)。team1ReportedResult/team2ReportedResultは共有トークン 経由の自己申告(NONE=未申告)。個人戦のMatch.player1ReportedResult等と同じ突き合わせを ボード単位で独立に行う(05_swiss_pairing_algorithm.md §5.4) */
+        BoardResult: {
+            boardPosition: number;
+            result: components["schemas"]["MatchResult"];
+            team1ReportedResult: components["schemas"]["MatchResult"];
+            team2ReportedResult: components["schemas"]["MatchResult"];
+        };
+        /** @description チーム対チームの対局。team2がnullなら不戦勝(BYE。boardResultsは空)。 チーム全体の勝敗は保存せず、boardResultsの各ボード点数(勝=2/分=1/負け・両者負け=0の2倍値) の合計(team1Points/team2Points)を都度比較して導出する(単一のenumは持たない) */
+        TeamMatch: {
+            id: components["schemas"]["Ulid"];
+            roundNumber: number;
+            tableNumber: number;
+            group: components["schemas"]["Group"];
+            team1: components["schemas"]["TeamSummary"];
+            /** @description null = BYE */
+            team2: {
+                id: components["schemas"]["Ulid"];
+                name: string;
+                entryOrder: number;
+            } | null;
+            boardResults: components["schemas"]["BoardResult"][];
+            /** Format: int64 */
+            version: number;
+        };
+        TeamStanding: {
+            /** @description 同順位あり。グループ大会ではグループ内順位 */
+            rank: number;
+            team: components["schemas"]["TeamSummary"];
+            /** @description 勝点(0.5刻みあり得る) */
+            wins: number;
+            losses: number;
+            sos: number;
+            sosos: number;
+            hadBye: boolean;
+        };
+        GroupTeamStandings: {
+            group: components["schemas"]["Group"];
+            standings: components["schemas"]["TeamStanding"][];
+        };
         SharedTournamentSummary: {
             name: string;
             gameType: components["schemas"]["GameType"];
@@ -600,9 +672,13 @@ export interface components {
             /** @description 省略時は テストユーザー */
             name?: string;
         };
+        /** @description competitionType=TEAM の場合は teamSize(3 または 5)が必須。INDIVIDUAL の場合は teamSize を指定できない(指定すると400)。作成後にcompetitionType/teamSizeは変更できない */
         CreateTournamentRequest: {
             name: string;
             gameType: components["schemas"]["GameType"];
+            competitionType: components["schemas"]["CompetitionType"];
+            /** @enum {integer|null} */
+            teamSize?: 3 | 5 | null;
             totalRounds: number;
         };
         /** @description nullの項目は変更しない */

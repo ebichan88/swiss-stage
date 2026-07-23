@@ -1,5 +1,6 @@
 package com.swiss_stage.infrastructure.repository;
 
+import com.swiss_stage.domain.model.CompetitionType;
 import com.swiss_stage.domain.model.GameType;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
@@ -18,6 +19,8 @@ final class TournamentItemMapper {
         item.setEntityType(TournamentItem.ENTITY_TYPE);
         item.setName(t.name());
         item.setGameType(t.gameType().name());
+        item.setCompetitionType(t.competitionType().name());
+        item.setTeamSize(t.teamSize());
         item.setTotalRounds(t.totalRounds());
         item.setCurrentRound(t.currentRound());
         item.setStatus(t.status().name());
@@ -40,6 +43,11 @@ final class TournamentItemMapper {
                 new TournamentId(item.getPk().substring("TOURNAMENT#".length())),
                 item.getName(),
                 GameType.valueOf(item.getGameType()),
+                // 団体戦導入以前の既存アイテムには属性がない(null)ため個人戦扱い
+                item.getCompetitionType() == null
+                        ? CompetitionType.INDIVIDUAL
+                        : CompetitionType.valueOf(item.getCompetitionType()),
+                item.getTeamSize(),
                 item.getTotalRounds(),
                 item.getCurrentRound(),
                 TournamentStatus.valueOf(item.getStatus()),

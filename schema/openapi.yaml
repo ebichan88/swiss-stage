@@ -916,6 +916,10 @@ components:
     GameType:
       type: string
       enum: [GO, SHOGI]
+    CompetitionType:
+      type: string
+      description: 個人戦(INDIVIDUAL)か団体戦(TEAM)か。大会作成後は変更不可
+      enum: [INDIVIDUAL, TEAM]
     TournamentStatus:
       type: string
       enum: [PREPARING, IN_PROGRESS, FINISHED]
@@ -992,6 +996,8 @@ components:
         - id
         - name
         - gameType
+        - competitionType
+        - teamSize
         - totalRounds
         - currentRound
         - status
@@ -1008,6 +1014,13 @@ components:
           maxLength: 100
         gameType:
           $ref: "#/components/schemas/GameType"
+        competitionType:
+          $ref: "#/components/schemas/CompetitionType"
+        teamSize:
+          type: integer
+          nullable: true
+          enum: [3, 5]
+          description: competitionType=TEAM の時のみ非null。INDIVIDUALでは常にnull
         totalRounds:
           type: integer
           minimum: 1
@@ -1209,12 +1222,169 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Standing"
+
+    # ---- 団体戦(competitionType=TEAM) ----
+    TeamMember:
+      type: object
+      additionalProperties: false
+      description: >
+        boardPosition: 1..teamSizeの整数(必須ポジション。1=主将,2=副将,3=三将,4=四将,5=五将)、
+        またはnull(補欠)。対局結果はこのboardPositionではなくボード位置単位で記録され、
+        実際に誰(正メンバーか補欠か)が対局したかは対局結果に紐付けない(オーダー管理はしない)
+      required: [id, name, rank, boardPosition]
+      properties:
+        id:
+          $ref: "#/components/schemas/Ulid"
+        name:
+          type: string
+          maxLength: 50
+        rank:
+          $ref: "#/components/schemas/Rank"
+        boardPosition:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 5
+    Team:
+      type: object
+      additionalProperties: false
+      required: [id, name, entryOrder, status, groupId, members]
+      properties:
+        id:
+          $ref: "#/components/schemas/Ulid"
+        name:
+          type: string
+          maxLength: 50
+        entryOrder:
+          type: integer
+          minimum: 1
+          description: チーム登録順。団体戦の初回ラウンドはこの順のみでペアリングする(棋力シードなし)
+        status:
+          $ref: "#/components/schemas/ParticipantStatus"
+        groupId:
+          $ref: "#/components/schemas/Ulid"
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamMember"
+    TeamSummary:
+      type: object
+      additionalProperties: false
+      description: 組み合わせ・戦績一覧・順位表で使う表示用の要約。メンバーの個人名は含めない
+      required: [id, name, entryOrder]
+      properties:
+        id:
+          $ref: "#/components/schemas/Ulid"
+        name:
+          type: string
+        entryOrder:
+          type: integer
+          minimum: 0
+    BoardResult:
+      type: object
+      additionalProperties: false
+      description: >
+        主将戦・副将戦…の1ボード分の結果。resultはteam1視点(既存MatchResultを再利用。
+        NONE=未入力、BYEは不可)。team1ReportedResult/team2ReportedResultは共有トークン
+        経由の自己申告(NONE=未申告)。個人戦のMatch.player1ReportedResult等と同じ突き合わせを
+        ボード単位で独立に行う(05_swiss_pairing_algorithm.md §5.4)
+      required: [boardPosition, result, team1ReportedResult, team2ReportedResult]
+      properties:
+        boardPosition:
+          type: integer
+          minimum: 1
+          maximum: 5
+        result:
+          $ref: "#/components/schemas/MatchResult"
+        team1ReportedResult:
+          $ref: "#/components/schemas/MatchResult"
+        team2ReportedResult:
+          $ref: "#/components/schemas/MatchResult"
+    TeamMatch:
+      type: object
+      additionalProperties: false
+      description: >
+        チーム対チームの対局。team2がnullなら不戦勝(BYE。boardResultsは空)。
+        チーム全体の勝敗は保存せず、boardResultsの各ボード点数(勝=2/分=1/負け・両者負け=0の2倍値)
+        の合計(team1Points/team2Points)を都度比較して導出する(単一のenumは持たない)
+      required: [id, roundNumber, tableNumber, group, team1, team2, boardResults, version]
+      properties:
+        id:
+          $ref: "#/components/schemas/Ulid"
+        roundNumber:
+          type: integer
+          minimum: 1
+        tableNumber:
+          type: integer
+          minimum: 1
+        group:
+          $ref: "#/components/schemas/Group"
+        team1:
+          $ref: "#/components/schemas/TeamSummary"
+        team2:
+          # OpenAPI 3.0はnullableな$refを表現できないためインラインで定義(内容はTeamSummaryと同一に保つ)
+          type: object
+          nullable: true
+          description: null = BYE
+          additionalProperties: false
+          required: [id, name, entryOrder]
+          properties:
+            id:
+              $ref: "#/components/schemas/Ulid"
+            name:
+              type: string
+            entryOrder:
+              type: integer
+              minimum: 0
+        boardResults:
+          type: array
+          items:
+            $ref: "#/components/schemas/BoardResult"
+        version:
+          type: integer
+          format: int64
+    TeamStanding:
+      type: object
+      additionalProperties: false
+      required: [rank, team, wins, losses, sos, sosos, hadBye]
+      properties:
+        rank:
+          type: integer
+          minimum: 1
+          description: 同順位あり。グループ大会ではグループ内順位
+        team:
+          $ref: "#/components/schemas/TeamSummary"
+        wins:
+          type: number
+          description: 勝点(0.5刻みあり得る)
+        losses:
+          type: integer
+        sos:
+          type: number
+        sosos:
+          type: number
+        hadBye:
+          type: boolean
+    GroupTeamStandings:
+      type: object
+      additionalProperties: false
+      required: [group, standings]
+      properties:
+        group:
+          $ref: "#/components/schemas/Group"
+        standings:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamStanding"
+
     SharedTournamentSummary:
       type: object
       additionalProperties: false
       required:
         - name
         - gameType
+        - competitionType
+        - teamSize
         - totalRounds
         - currentRound
         - status
@@ -1224,6 +1394,12 @@ components:
           type: string
         gameType:
           $ref: "#/components/schemas/GameType"
+        competitionType:
+          $ref: "#/components/schemas/CompetitionType"
+        teamSize:
+          type: integer
+          nullable: true
+          enum: [3, 5]
         totalRounds:
           type: integer
         currentRound:
@@ -1278,7 +1454,10 @@ components:
     CreateTournamentRequest:
       type: object
       additionalProperties: false
-      required: [name, gameType, totalRounds]
+      description: >
+        competitionType=TEAM の場合は teamSize(3 または 5)が必須。INDIVIDUAL の場合は
+        teamSize を指定できない(指定すると400)。作成後にcompetitionType/teamSizeは変更できない
+      required: [name, gameType, competitionType, totalRounds]
       properties:
         name:
           type: string
@@ -1286,6 +1465,12 @@ components:
           maxLength: 100
         gameType:
           $ref: "#/components/schemas/GameType"
+        competitionType:
+          $ref: "#/components/schemas/CompetitionType"
+        teamSize:
+          type: integer
+          nullable: true
+          enum: [3, 5]
         totalRounds:
           type: integer
           minimum: 1
