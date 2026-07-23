@@ -2,6 +2,7 @@ package com.swiss_stage.application.service;
 
 import com.swiss_stage.application.dto.GeneratedTeamRoundDto;
 import com.swiss_stage.application.dto.InputTeamMatchResultRequest;
+import com.swiss_stage.application.dto.ReportTeamMatchResultRequest;
 import com.swiss_stage.application.dto.TeamMatchDto;
 import com.swiss_stage.application.dto.TeamRoundDto;
 import com.swiss_stage.application.exception.ConflictException;
@@ -231,6 +232,19 @@ public class TeamRoundService {
         }
         return editMatch(tournamentId, matchId, request.version(),
                 match -> match.withBoardResults(request.boardResults()));
+    }
+
+    /**
+     * トークン経由のボード単位自己申告の本体(認可・許可判定済みの呼び出し元専用。SharedServiceから呼ぶ)。
+     * ボードごとに両者の申告が一致すると、そのボードの結果が自動確定する(TeamMatch#withReportedBoardResults)
+     */
+    TeamMatchDto applyReport(
+            TournamentId tournamentId, TeamMatchId matchId, ReportTeamMatchResultRequest request) {
+        if (request.boardResults().stream().anyMatch(r -> r == MatchResult.NONE || r == MatchResult.BYE)) {
+            throw new ValidationException("ボード結果には勝敗・引き分け・両者負けのいずれかを指定してください");
+        }
+        return editMatch(tournamentId, matchId, request.version(),
+                match -> match.withReportedBoardResults(request.reportedBy(), request.boardResults()));
     }
 
     private TeamMatchDto editMatch(

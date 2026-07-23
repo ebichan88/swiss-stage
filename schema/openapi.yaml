@@ -770,6 +770,36 @@ paths:
           $ref: "#/components/responses/Conflict"
         "429":
           $ref: "#/components/responses/RateLimited"
+  /api/v1/shared/{token}/team-matches/{mid}/result:
+    put:
+      operationId: inputSharedTeamMatchResult
+      summary: >-
+        団体戦の結果自己申告(大会設定 resultInputEnabled が有効な場合のみ)。
+        reportedBy側(team1/team2)のボード配列として記録し、ボードごとに両者の申告が
+        一致した時点でそのボードの結果が自動確定する
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/ShareToken"
+        - $ref: "#/components/parameters/TeamMatchId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportTeamMatchResultRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/TeamMatch"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/RateLimited"
 
 components:
   securitySchemes:
@@ -1845,19 +1875,34 @@ components:
     SharedTournament:
       type: object
       additionalProperties: false
-      description: shareToken・ownerSub は含めない(13_security_design.md §6)
-      required: [tournament, rounds, standings]
+      description: >
+        shareToken・ownerSub は含めない(13_security_design.md §6)。
+        competitionType=INDIVIDUALではrounds/standingsが非null・teamRounds/teamStandingsはnull、
+        TEAMではその逆になる(tournament.competitionTypeで判別する)
+      required: [tournament, rounds, standings, teamRounds, teamStandings]
       properties:
         tournament:
           $ref: "#/components/schemas/SharedTournamentSummary"
         rounds:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/Round"
         standings:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/GroupStandings"
+        teamRounds:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/TeamRound"
+        teamStandings:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/GroupTeamStandings"
     CsvImportResult:
       type: object
       additionalProperties: false
@@ -2094,6 +2139,26 @@ components:
         参加者の自己申告(ReportTeamMatchResultRequest)では上書きされない
       required: [boardResults, version]
       properties:
+        boardResults:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchResult"
+        version:
+          type: integer
+          format: int64
+    ReportTeamMatchResultRequest:
+      type: object
+      additionalProperties: false
+      description: >
+        トークン経由の自己申告用(ボード配列をまとめて送信するが、確定はボード単位で
+        独立に行う)。reportedBy は「自分がteam1/team2のどちらか」を表す(MatchSideを
+        TEAM1/TEAM2として読み替える)。boardResultsの各要素はNONE(未申告のまま)または
+        PLAYER1_WIN/PLAYER2_WIN/DRAW/BOTH_LOSE(BYEの指定は400)。ボードごとに両者の
+        申告(boardResults[i])が一致した時点でそのボードの結果が自動確定する
+      required: [reportedBy, boardResults, version]
+      properties:
+        reportedBy:
+          $ref: "#/components/schemas/MatchSide"
         boardResults:
           type: array
           items:

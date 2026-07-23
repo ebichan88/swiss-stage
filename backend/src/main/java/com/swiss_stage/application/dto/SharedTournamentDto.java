@@ -9,11 +9,15 @@ import java.util.List;
 /**
  * 共有ページ(S10)向けの大会集約DTO(GET /api/v1/shared/{token})。
  * 共有トークン経由のレスポンスには shareToken・ownerSub を含めない(13_security_design.md §6)。
+ * competitionType=INDIVIDUALではrounds/standingsが非null・teamRounds/teamStandingsはnull、
+ * TEAMではその逆になる。
  */
 public record SharedTournamentDto(
         SharedTournamentSummary tournament,
         List<RoundDto> rounds,
-        List<GroupStandingsDto> standings) {
+        List<GroupStandingsDto> standings,
+        List<TeamRoundDto> teamRounds,
+        List<GroupTeamStandingsDto> teamStandings) {
 
     public record SharedTournamentSummary(
             String name,

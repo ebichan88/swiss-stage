@@ -150,7 +150,10 @@ export function SharedPage() {
     return <ErrorState message="大会情報の取得に失敗しました" onRetry={() => void refetch()} />;
   }
 
-  const { tournament, rounds, standings } = data;
+  // 団体戦(teamRounds/teamStandings)の表示対応はPR8で行う。個人戦は常に非null
+  const { tournament, rounds: individualRounds, standings: individualStandings } = data;
+  const rounds = individualRounds ?? [];
+  const standings = individualStandings ?? [];
   const latestRound: Round | null = rounds.length > 0 ? rounds[rounds.length - 1] : null;
   const currentRound = rounds.find((round) => round.roundNumber === selectedRound) ?? latestRound;
   // グループが1つだけの大会は表示上グループを見せない(見出し・卓番号プレフィックスなし)
