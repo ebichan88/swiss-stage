@@ -36,7 +36,7 @@ class SharedViewCacheTest {
         return new SharedTournamentDto(
                 new SharedTournamentDto.SharedTournamentSummary(
                         name, null, null, null, 3, 0, null, false),
-                List.of(), List.of());
+                List.of(), List.of(), null, null);
     }
 
     @Test
