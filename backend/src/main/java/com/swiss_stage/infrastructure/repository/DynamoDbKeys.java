@@ -3,6 +3,8 @@ package com.swiss_stage.infrastructure.repository;
 import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.MatchId;
 import com.swiss_stage.domain.model.ParticipantId;
+import com.swiss_stage.domain.model.TeamId;
+import com.swiss_stage.domain.model.TeamMatchId;
 import com.swiss_stage.domain.model.TournamentId;
 import java.time.Instant;
 
@@ -16,6 +18,7 @@ final class DynamoDbKeys {
     static final String ROUND_PREFIX = "ROUND#";
     static final String PARTICIPANT_PREFIX = "PARTICIPANT#";
     static final String GROUP_PREFIX = "GROUP#";
+    static final String TEAM_PREFIX = "TEAM#";
 
     private DynamoDbKeys() {}
 
@@ -42,6 +45,18 @@ final class DynamoDbKeys {
 
     static String matchSkPrefix(int roundNumber) {
         return roundSk(roundNumber) + "#MATCH#";
+    }
+
+    static String teamSk(TeamId id) {
+        return TEAM_PREFIX + id.value();
+    }
+
+    static String teamMatchSk(int roundNumber, TeamMatchId id) {
+        return roundSk(roundNumber) + "#TEAM_MATCH#" + id.value();
+    }
+
+    static String teamMatchSkPrefix(int roundNumber) {
+        return roundSk(roundNumber) + "#TEAM_MATCH#";
     }
 
     static String gsi1Pk(String ownerSub) {

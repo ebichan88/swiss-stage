@@ -10,6 +10,7 @@ import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
 import com.swiss_stage.domain.model.Rank;
+import com.swiss_stage.domain.model.Team;
 import com.swiss_stage.domain.service.GroupAssignmentService;
 import java.util.List;
 import java.util.Map;
@@ -145,6 +146,33 @@ class GroupAssignmentServiceTest {
         assertThatThrownBy(() -> service.validateForStart(List.of(groupA), participants))
                 .isInstanceOf(DomainException.class)
                 .hasMessageContaining("未割当");
+    }
+
+    @Test
+    @DisplayName("団体戦の開始時検証: 全ACTIVEチームが割当済みで各グループ2チーム以上なら通る")
+    void 団体戦の検証OK() {
+        List<Team> teams = List.of(
+                TeamTestData.team(1).withGroup(groupA.id()),
+                TeamTestData.team(2).withGroup(groupA.id()),
+                TeamTestData.team(3).withGroup(groupB.id()),
+                TeamTestData.team(4).withGroup(groupB.id()),
+                TeamTestData.team(5).withdraw());
+
+        assertThatCode(() -> service.validateTeamsForStart(List.of(groupA, groupB), teams))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("団体戦の開始時検証: 2チーム未満のグループがあると開始できない")
+    void 団体戦は二チーム未満でエラー() {
+        List<Team> teams = List.of(
+                TeamTestData.team(1).withGroup(groupA.id()),
+                TeamTestData.team(2).withGroup(groupA.id()),
+                TeamTestData.team(3).withGroup(groupB.id()));
+
+        assertThatThrownBy(() -> service.validateTeamsForStart(List.of(groupA, groupB), teams))
+                .isInstanceOf(DomainException.class)
+                .hasMessageContaining("B");
     }
 
     private static ParticipantId id(int entryOrder) {
