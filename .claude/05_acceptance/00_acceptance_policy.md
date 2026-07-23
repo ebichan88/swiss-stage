@@ -22,6 +22,7 @@ QAエージェント(`.claude/agents/qa.md`)の判断基準はこのファイル
 | PTC | 参加者 | ParticipantApiTest |
 | GRP | グループ | GroupApiTest |
 | RND | ラウンド・対局・順位 | RoundApiTest |
+| TEAM | 団体戦(チーム・メンバー・団体戦ラウンド/対局/順位・共有トークン経由の自己申告) | TeamApiTest, TeamRoundApiTest, TeamSharedApiTest |
 | SHR | 共有(トークン) | SharedApiTest, SharedRateLimitApiTest |
 | SPA | SPA配信 | SpaFallbackApiTest |
 | E2E | 一気通貫(クリティカルパス) | Playwright(`frontend/tests/e2e/`) |
