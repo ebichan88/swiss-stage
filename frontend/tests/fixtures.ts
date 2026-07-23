@@ -3,6 +3,7 @@ import type { Participant, ParticipantSummary } from '../src/types/participant';
 import type { Match, Round } from '../src/types/round';
 import type { SharedTournament, SharedTournamentSummary } from '../src/types/shared';
 import type { GroupStandings, Standing } from '../src/types/standing';
+import type { Team, TeamMember } from '../src/types/team';
 import type { Tournament } from '../src/types/tournament';
 
 /** テストデータビルダー(09_test_strategy.md §5)。個人名は架空の名前のみ使用する */
@@ -127,6 +128,28 @@ export function standingOf(overrides: Partial<Standing> = {}): Standing {
     sos: 10,
     sosos: 24.5,
     hadBye: false,
+    ...overrides,
+  };
+}
+
+export function teamMemberOf(overrides: Partial<TeamMember> = {}): TeamMember {
+  return {
+    id: '01TESTMEMBER0000000000000',
+    name: '架空 主将',
+    rank: 'DAN_3',
+    boardPosition: 1,
+    ...overrides,
+  };
+}
+
+export function teamOf(overrides: Partial<Team> = {}): Team {
+  return {
+    id: '01TESTTEAM00000000000000A',
+    name: 'Aチーム',
+    entryOrder: 1,
+    status: 'ACTIVE',
+    groupId: '01TESTGROUP000000000000000',
+    members: [],
     ...overrides,
   };
 }

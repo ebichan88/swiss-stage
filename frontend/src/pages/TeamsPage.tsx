@@ -1,107 +1,91 @@
 import CategoryIcon from '@mui/icons-material/Category';
 import GroupsIcon from '@mui/icons-material/Groups';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { Box, Button, Typography } from '@mui/material';
 import { useState } from 'react';
 
-import type { ParticipantFormValues } from '../components/features/participant/ParticipantFormDialog';
-import { CsvImportDialog } from '../components/features/participant/CsvImportDialog';
 import { GroupManagerDialog } from '../components/features/participant/GroupManagerDialog';
-import { ParticipantFormDialog } from '../components/features/participant/ParticipantFormDialog';
-import { ParticipantTable } from '../components/features/participant/ParticipantTable';
+import type { TeamFormValues } from '../components/features/team/TeamFormDialog';
+import { TeamCsvImportDialog } from '../components/features/team/TeamCsvImportDialog';
+import { TeamFormDialog } from '../components/features/team/TeamFormDialog';
+import { TeamMemberManagerDialog } from '../components/features/team/TeamMemberManagerDialog';
+import { TeamTable } from '../components/features/team/TeamTable';
 import { useTournamentContext } from '../components/layouts/TournamentLayout';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState, LoadingState } from '../components/ui/QueryStates';
 import { useGroups } from '../hooks/useGroups';
 import {
-  useAddParticipant,
-  useDeleteParticipant,
-  useImportParticipantsCsv,
-  useParticipants,
-  useUpdateParticipant,
-} from '../hooks/useParticipants';
+  useCreateTeam,
+  useDeleteTeam,
+  useImportTeamsCsv,
+  useTeams,
+  useUpdateTeam,
+} from '../hooks/useTeams';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { ApiError } from '../services/apiClient';
-import type { Participant } from '../types/participant';
-import { TeamsPage } from './TeamsPage';
+import type { Team } from '../types/team';
 
 type DialogState =
   | { kind: 'add' }
-  | { kind: 'edit'; participant: Participant }
-  | { kind: 'withdraw'; participant: Participant }
-  | { kind: 'delete'; participant: Participant }
+  | { kind: 'edit'; team: Team }
+  | { kind: 'withdraw'; team: Team }
+  | { kind: 'delete'; team: Team }
+  | { kind: 'members'; team: Team }
   | { kind: 'import' }
   | { kind: 'groups' }
   | null;
 
-/**
- * S06 参加者管理。団体戦(competitionType=TEAM)はチーム管理(TeamsPage)に切り替わる。
- * hooksを条件分岐なしで呼ぶため、個人戦の本体は別コンポーネント(IndividualParticipantsPage)に分ける
- */
-export function ParticipantsPage() {
+/** S06 チーム管理(団体戦)。PREPARING=追加・編集・削除可 / IN_PROGRESS=棄権処理のみ / FINISHED=閲覧のみ */
+export function TeamsPage() {
   const tournament = useTournamentContext();
-  if (tournament.competitionType === 'TEAM') {
-    return <TeamsPage />;
-  }
-  return <IndividualParticipantsPage />;
-}
-
-/** PREPARING=追加・編集・削除可 / IN_PROGRESS=棄権処理のみ / FINISHED=閲覧のみ */
-function IndividualParticipantsPage() {
-  const tournament = useTournamentContext();
-  const { data: participants, isPending, isError, refetch } = useParticipants(tournament.id);
+  const { data: teams, isPending, isError, refetch } = useTeams(tournament.id);
   const { data: groups } = useGroups(tournament.id);
-  const addMutation = useAddParticipant(tournament.id);
-  const updateMutation = useUpdateParticipant(tournament.id);
-  const deleteMutation = useDeleteParticipant(tournament.id);
-  const importMutation = useImportParticipantsCsv(tournament.id);
+  const createMutation = useCreateTeam(tournament.id);
+  const updateMutation = useUpdateTeam(tournament.id);
+  const deleteMutation = useDeleteTeam(tournament.id);
+  const importMutation = useImportTeamsCsv(tournament.id);
   const { showSuccess, showError } = useSnackbar();
   const [dialog, setDialog] = useState<DialogState>(null);
 
   const canEdit = tournament.status === 'PREPARING';
   const canWithdraw = tournament.status === 'IN_PROGRESS';
+  const teamSize = tournament.teamSize ?? 3;
 
   const errorMessage = (error: unknown, fallback: string) =>
     error instanceof ApiError ? error.message : fallback;
 
-  const handleFormSubmit = (values: ParticipantFormValues) => {
-    const organization = values.organization.trim();
+  const handleFormSubmit = (values: TeamFormValues) => {
     if (dialog?.kind === 'add') {
-      addMutation.mutate(
+      createMutation.mutate(
         {
           name: values.name.trim(),
-          organization: organization === '' ? null : organization,
-          rank: values.rank === '' ? null : values.rank,
-          // 省略時はバックエンドが先頭グループに割り当てる
           ...(values.groupId !== '' ? { groupId: values.groupId } : {}),
         },
         {
           onSuccess: () => {
             setDialog(null);
-            showSuccess('参加者を追加しました');
+            showSuccess('チームを追加しました');
           },
-          onError: (error) => showError(errorMessage(error, '参加者の追加に失敗しました')),
+          onError: (error) => showError(errorMessage(error, 'チームの追加に失敗しました')),
         },
       );
     } else if (dialog?.kind === 'edit') {
       updateMutation.mutate(
         {
-          participantId: dialog.participant.id,
+          teamId: dialog.team.id,
           input: {
             name: values.name.trim(),
-            organization,
-            ...(values.rank === '' ? { clearRank: true } : { rank: values.rank }),
             ...(values.groupId !== '' ? { groupId: values.groupId } : {}),
           },
         },
         {
           onSuccess: () => {
             setDialog(null);
-            showSuccess('参加者を更新しました');
+            showSuccess('チームを更新しました');
           },
-          onError: (error) => showError(errorMessage(error, '参加者の更新に失敗しました')),
+          onError: (error) => showError(errorMessage(error, 'チームの更新に失敗しました')),
         },
       );
     }
@@ -110,11 +94,11 @@ function IndividualParticipantsPage() {
   const handleWithdraw = () => {
     if (dialog?.kind !== 'withdraw') return;
     updateMutation.mutate(
-      { participantId: dialog.participant.id, input: { status: 'WITHDRAWN' } },
+      { teamId: dialog.team.id, input: { status: 'WITHDRAWN' } },
       {
         onSuccess: () => {
           setDialog(null);
-          showSuccess(`${dialog.participant.name}さんを棄権にしました`);
+          showSuccess(`${dialog.team.name}を棄権にしました`);
         },
         onError: (error) => showError(errorMessage(error, '棄権処理に失敗しました')),
       },
@@ -123,21 +107,19 @@ function IndividualParticipantsPage() {
 
   const handleDelete = () => {
     if (dialog?.kind !== 'delete') return;
-    deleteMutation.mutate(dialog.participant.id, {
+    deleteMutation.mutate(dialog.team.id, {
       onSuccess: () => {
         setDialog(null);
-        showSuccess('参加者を削除しました');
+        showSuccess('チームを削除しました');
       },
-      onError: (error) => showError(errorMessage(error, '参加者の削除に失敗しました')),
+      onError: (error) => showError(errorMessage(error, 'チームの削除に失敗しました')),
     });
   };
 
-  const handleChangeGroup = (participant: Participant, groupId: string) => {
+  const handleChangeGroup = (team: Team, groupId: string) => {
     updateMutation.mutate(
-      { participantId: participant.id, input: { groupId } },
-      {
-        onError: (error) => showError(errorMessage(error, 'グループの変更に失敗しました')),
-      },
+      { teamId: team.id, input: { groupId } },
+      { onError: (error) => showError(errorMessage(error, 'グループの変更に失敗しました')) },
     );
   };
 
@@ -145,11 +127,17 @@ function IndividualParticipantsPage() {
     importMutation.mutate(file, {
       onSuccess: (result) => {
         setDialog(null);
-        showSuccess(`${result.importedCount}名をインポートしました`);
+        showSuccess(`${result.importedTeamCount}チームをインポートしました`);
       },
       // エラー詳細(行番号付き)はダイアログ内に表示するため Snackbar は出さない
     });
   };
+
+  // メンバー管理ダイアログはチームデータ更新後も同じチームを指し続けるよう最新値を引き直す
+  const managingTeam =
+    dialog?.kind === 'members'
+      ? (teams?.find((t) => t.id === dialog.team.id) ?? dialog.team)
+      : null;
 
   return (
     <Box>
@@ -164,8 +152,8 @@ function IndividualParticipantsPage() {
         }}
       >
         <Typography variant="h3" component="h2">
-          参加者
-          {participants && ` (${participants.length}名)`}
+          チーム
+          {teams && ` (${teams.length}チーム)`}
         </Typography>
         {canEdit && (
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -188,10 +176,10 @@ function IndividualParticipantsPage() {
             </Button>
             <Button
               variant="contained"
-              startIcon={<PersonAddIcon />}
+              startIcon={<GroupAddIcon />}
               onClick={() => setDialog({ kind: 'add' })}
             >
-              参加者を追加
+              チームを追加
             </Button>
           </Box>
         )}
@@ -199,12 +187,12 @@ function IndividualParticipantsPage() {
 
       {isPending && <LoadingState />}
       {isError && (
-        <ErrorState message="参加者一覧の取得に失敗しました" onRetry={() => void refetch()} />
+        <ErrorState message="チーム一覧の取得に失敗しました" onRetry={() => void refetch()} />
       )}
-      {participants && participants.length === 0 && (
+      {teams && teams.length === 0 && (
         <EmptyState
           icon={<GroupsIcon fontSize="inherit" />}
-          message="参加者がまだいません"
+          message="チームがまだいません"
           action={
             canEdit ? (
               <Button
@@ -220,25 +208,35 @@ function IndividualParticipantsPage() {
           }
         />
       )}
-      {participants && participants.length > 0 && (
-        <ParticipantTable
-          participants={participants}
+      {teams && teams.length > 0 && (
+        <TeamTable
+          teams={teams}
+          teamSize={teamSize}
           groups={groups ?? []}
           canEdit={canEdit}
           canWithdraw={canWithdraw}
-          onEdit={(participant) => setDialog({ kind: 'edit', participant })}
-          onWithdraw={(participant) => setDialog({ kind: 'withdraw', participant })}
-          onDelete={(participant) => setDialog({ kind: 'delete', participant })}
+          onEdit={(team) => setDialog({ kind: 'edit', team })}
+          onManageMembers={(team) => setDialog({ kind: 'members', team })}
+          onWithdraw={(team) => setDialog({ kind: 'withdraw', team })}
+          onDelete={(team) => setDialog({ kind: 'delete', team })}
           onChangeGroup={handleChangeGroup}
         />
       )}
 
-      <ParticipantFormDialog
+      <TeamFormDialog
         open={dialog?.kind === 'add' || dialog?.kind === 'edit'}
-        participant={dialog?.kind === 'edit' ? dialog.participant : undefined}
+        team={dialog?.kind === 'edit' ? dialog.team : undefined}
         groups={groups ?? []}
-        loading={addMutation.isPending || updateMutation.isPending}
+        loading={createMutation.isPending || updateMutation.isPending}
         onSubmit={handleFormSubmit}
+        onClose={() => setDialog(null)}
+      />
+      <TeamMemberManagerDialog
+        open={dialog?.kind === 'members'}
+        tournamentId={tournament.id}
+        teamSize={teamSize}
+        team={managingTeam}
+        canEdit={canEdit}
         onClose={() => setDialog(null)}
       />
       <GroupManagerDialog
@@ -246,7 +244,7 @@ function IndividualParticipantsPage() {
         tournamentId={tournament.id}
         onClose={() => setDialog(null)}
       />
-      <CsvImportDialog
+      <TeamCsvImportDialog
         open={dialog?.kind === 'import'}
         loading={importMutation.isPending}
         error={importMutation.error}
@@ -258,7 +256,7 @@ function IndividualParticipantsPage() {
         title="棄権にしますか?"
         message={
           dialog?.kind === 'withdraw'
-            ? `${dialog.participant.name}さんを棄権にします。以降のラウンドの組み合わせから除外されます。`
+            ? `${dialog.team.name}を棄権にします。以降のラウンドの組み合わせから除外されます。`
             : ''
         }
         confirmLabel="棄権にする"
@@ -268,8 +266,8 @@ function IndividualParticipantsPage() {
       />
       <ConfirmDialog
         open={dialog?.kind === 'delete'}
-        title="参加者を削除しますか?"
-        message={dialog?.kind === 'delete' ? `${dialog.participant.name}さんを削除します。` : ''}
+        title="チームを削除しますか?"
+        message={dialog?.kind === 'delete' ? `${dialog.team.name}を削除します。` : ''}
         confirmLabel="削除する"
         loading={deleteMutation.isPending}
         onConfirm={handleDelete}

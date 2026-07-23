@@ -62,9 +62,14 @@ export function TournamentLayout() {
     return <ErrorState message="大会情報の取得に失敗しました" onRetry={() => void refetch()} />;
   }
 
+  const isTeamCompetition = tournament.competitionType === 'TEAM';
   const navItems = [
     { label: '概要', icon: <DashboardIcon />, to: paths.tournament(id) },
-    { label: '参加者', icon: <GroupsIcon />, to: paths.participants(id) },
+    {
+      label: isTeamCompetition ? 'チーム' : '参加者',
+      icon: <GroupsIcon />,
+      to: paths.participants(id),
+    },
     { label: 'ラウンド', icon: <FormatListNumberedIcon />, to: paths.rounds(id) },
     { label: '順位', icon: <LeaderboardIcon />, to: paths.standings(id) },
     { label: '戦績一覧', icon: <TableChartIcon />, to: paths.crossTable(id) },

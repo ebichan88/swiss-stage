@@ -1,4 +1,5 @@
 import type {
+  CompetitionType,
   GameType,
   ParticipantStatus,
   Rank,
@@ -18,6 +19,24 @@ export const gameTypeIcons: Record<GameType, string> = {
   GO: '/igo.svg',
   SHOGI: '/shogi.svg',
 };
+
+export const competitionTypeLabels: Record<CompetitionType, string> = {
+  INDIVIDUAL: '個人戦',
+  TEAM: '団体戦',
+};
+
+/**
+ * ボード位置(主将〜五将)の表示名。boardPosition=nullは補欠。
+ * teamSizeを超えるboardPositionは指定されない前提(バックエンドが検証する)
+ */
+const BOARD_POSITION_LABELS = ['主将', '副将', '三将', '四将', '五将'] as const;
+
+export function boardPositionLabel(boardPosition: number | null): string {
+  if (boardPosition === null) {
+    return '補欠';
+  }
+  return BOARD_POSITION_LABELS[boardPosition - 1] ?? `${boardPosition}将`;
+}
 
 export const tournamentStatusLabels: Record<TournamentStatus, string> = {
   PREPARING: '準備中',
