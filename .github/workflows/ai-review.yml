@@ -49,6 +49,10 @@ jobs:
           # リポジトリSecretsに登録する。従量課金に切り替える場合は
           # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }} に差し替える
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Fixerの修正pushはclaude[bot]自身の識別で行われ、それが発火するsynchronize
+          # イベントのactorもclaude[bot]になる。デフォルトではbotがトリガーしたワークフロー
+          # 実行を拒否するため、明示的に許可する(このジョブ自体がそのbotのpushで再起動される前提)
+          allowed_bots: "*"
           # TODO: PR#37以降レビューコメントが投稿されなくなった原因調査用。切り分け後に削除する
           show_full_output: true
           prompt: |
@@ -187,6 +191,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "*"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
@@ -254,6 +259,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "*"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
