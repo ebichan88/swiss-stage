@@ -7,6 +7,7 @@ import {
   TableHead,
   TableRow,
   Tooltip,
+  Typography,
 } from '@mui/material';
 
 import { buildTeamCrossTableRows } from './teamCrossTableData';
@@ -95,10 +96,10 @@ export function TeamCrossTable({ rounds, standings }: TeamCrossTableProps) {
                     )}
                   </TableCell>
                   <TableCell align="center">
-                    <span style={{ color: markColor(cell.mark) }}>
+                    <Typography component="span" color={markColor(cell.mark)}>
                       {cell.mark ?? ''}
                       {cell.breakdown && ` ${cell.breakdown}`}
-                    </span>
+                    </Typography>
                   </TableCell>
                 </Fragment>
               ))}
