@@ -43,7 +43,7 @@ export function SharedResultPage() {
     return <ErrorState message="対局情報の取得に失敗しました" onRetry={() => void refetch()} />;
   }
 
-  // 団体戦(teamRounds/teamStandings)の表示対応はPR8で行う。個人戦は常に非null
+  // このページは個人戦専用(団体戦はSharedTeamResultPage)。rounds/standingsは常に非null
   const { tournament, rounds: individualRounds, standings: individualStandings } = data;
   const rounds = individualRounds ?? [];
   const standings = individualStandings ?? [];
