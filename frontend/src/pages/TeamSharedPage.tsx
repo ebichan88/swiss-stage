@@ -15,104 +15,102 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
+import { TeamCrossTable } from '../components/features/team/TeamCrossTable';
+import { TeamRankingBoard } from '../components/features/team/TeamRankingBoard';
 import {
-  hasReportMismatch,
-  matchReportStatus,
-  matchResultText,
-  matchSections,
-  resultMark,
-  tableLabel,
-} from '../components/features/round/matchDisplay';
-import { CrossTable } from '../components/features/standing/CrossTable';
-import { RankingBoard } from '../components/features/standing/RankingBoard';
+  teamAggregatePoints,
+  teamMatchHasReportMismatch,
+  teamMatchNeedsAttention,
+  teamMatchSections,
+  teamResultMark,
+  teamTableLabel,
+} from '../components/features/team/teamMatchDisplay';
 import { EmptyState } from '../components/ui/EmptyState';
-import { ErrorState, FullPageSpinner } from '../components/ui/QueryStates';
 import { StatusBadge } from '../components/ui/StatusBadge';
-import { useSharedTournament } from '../hooks/useShared';
-import { ApiError } from '../services/apiClient';
 import { paths } from '../routes';
-import type { Match, Round } from '../types/round';
-import type { ParticipantSummary } from '../types/participant';
 import type { SharedTournament } from '../types/shared';
-import { TeamSharedPage } from './TeamSharedPage';
+import type { TeamMatch, TeamRound, TeamSummary } from '../types/team';
 
 /**
- * 対局カードの状態テキスト。申告待ち・不一致・確定後の食い違いは結果と区別して案内する。
- * 「結果入力から確認できます」という案内は、実際に結果入力の導線(canReview)がある場合のみ付ける
- * (ラウンド確定後は結果入力ボタンが出ないため、案内だけ残ると誤誘導になる)
+ * 団体戦対局カードの状態テキスト。個人戦のmatchStatusTextと同じ考え方で、
+ * ボード単位の申告待ち・不一致は結果と区別して案内する
  */
-function matchStatusText(match: Match, canReview: boolean): string {
-  switch (matchReportStatus(match)) {
-    case 'WAITING':
-      return '申告待ち(片方のみ申告済み)';
-    case 'CONFLICTING':
-      return canReview
-        ? '申告が一致しません(結果入力から内容を確認できます)'
-        : '申告が一致しません';
-    default:
-      if (hasReportMismatch(match)) {
-        return canReview
-          ? `${matchResultText(match)}(申告が一致しません・結果入力から内容を確認できます)`
-          : `${matchResultText(match)}(申告が一致しません)`;
-      }
-      return matchResultText(match);
+function teamMatchStatusText(match: TeamMatch, canReview: boolean): string {
+  if (match.team2 === null) {
+    return '不戦勝';
   }
+  const needsAttention = teamMatchNeedsAttention(match);
+  const { team1, team2 } = teamAggregatePoints(match);
+  const isFullyDecided = match.boardResults.every((b) => b.result !== 'NONE');
+  if (!isFullyDecided) {
+    if (needsAttention) {
+      return canReview
+        ? '申告待ち・申告不一致のボードがあります(結果入力から内容を確認できます)'
+        : '申告待ち・申告不一致のボードがあります';
+    }
+    return '対局中';
+  }
+  const breakdown = `${team1}-${team2}`;
+  if (teamMatchHasReportMismatch(match)) {
+    return canReview
+      ? `${breakdown}(申告が一致しないボードがあります・結果入力から内容を確認できます)`
+      : `${breakdown}(申告が一致しないボードがあります)`;
+  }
+  return breakdown;
 }
 
-function playerLabel(player: ParticipantSummary | null, mark: string | null): string {
-  if (player === null) {
+function teamLabel(team: TeamSummary | null, mark: string | null): string {
+  if (team === null) {
     return '(不戦勝)';
   }
-  const name = player.organization ? `${player.name}(${player.organization})` : player.name;
-  return mark ? `${mark} ${name}` : name;
+  return mark ? `${mark} ${team.name}` : team.name;
 }
 
-interface SharedMatchCardProps {
+interface SharedTeamMatchCardProps {
   token: string;
-  match: Match;
+  match: TeamMatch;
   multiGroup: boolean;
   canInput: boolean;
 }
 
-/** 共有ページの1対局カード(スマホ優先: 卓番号・対戦・結果・入力導線) */
-function SharedMatchCard({ token, match, multiGroup, canInput }: SharedMatchCardProps) {
-  // 「結果入力」ボタンの表示条件と揃える(BYEはボタンが出ないため案内文でも触れない)
-  const canReview = canInput && match.player2 !== null;
+/** 共有ページの1団体戦対局カード(スマホ優先: 卓番号・対戦・結果・入力導線)。個人名は含めない */
+function SharedTeamMatchCard({ token, match, multiGroup, canInput }: SharedTeamMatchCardProps) {
+  const canReview = canInput && match.team2 !== null;
   return (
     <Card variant="outlined">
       <CardContent
         sx={{ display: 'flex', alignItems: 'center', gap: 2, '&:last-child': { pb: 2 } }}
       >
         <Typography variant="h3" component="span" sx={{ flexShrink: 0 }}>
-          {tableLabel(match, multiGroup)}卓
+          {teamTableLabel(match, multiGroup)}卓
         </Typography>
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography variant="body1">
-            {playerLabel(match.player1, resultMark(match, 'player1'))}
+            {teamLabel(match.team1, teamResultMark(match, 'team1'))}
           </Typography>
           <Typography variant="body1">
-            {playerLabel(match.player2, resultMark(match, 'player2'))}
+            {teamLabel(match.team2, teamResultMark(match, 'team2'))}
           </Typography>
           <Typography
             variant="body2"
             color={
-              matchReportStatus(match) === 'CONFLICTING' || hasReportMismatch(match)
+              teamMatchNeedsAttention(match) || teamMatchHasReportMismatch(match)
                 ? 'warning.main'
                 : 'text.secondary'
             }
           >
-            {matchStatusText(match, canReview)}
+            {teamMatchStatusText(match, canReview)}
           </Typography>
         </Box>
         {canReview && (
           <Button
-            variant={match.result === 'NONE' ? 'contained' : 'outlined'}
+            variant="outlined"
             size="small"
             startIcon={<EditIcon />}
             component={Link}
-            to={paths.sharedMatch(token, match.id)}
+            to={paths.sharedTeamMatch(token, match.id)}
             sx={{ flexShrink: 0 }}
           >
             結果入力
@@ -123,57 +121,21 @@ function SharedMatchCard({ token, match, multiGroup, canInput }: SharedMatchCard
   );
 }
 
-/**
- * S10 共有ページ(参加者向け・スマホ優先)。
- * ヘッダーに大会名と現在ラウンドを常時表示し、組み合わせ/順位表をタブで切り替える。
- * 団体戦(competitionType=TEAM)はTeamSharedPageに切り替わる。
- * competitionTypeはデータ取得(useSharedTournament)完了後にしか分からないため、
- * ローディング・エラー状態をこの共通コンポーネントで処理してから分岐する
- */
-export function SharedPage() {
-  const { token = '' } = useParams();
-  const { data, isPending, isError, error, refetch } = useSharedTournament(token);
-
-  if (isPending) {
-    return <FullPageSpinner />;
-  }
-  if (isError) {
-    if (error instanceof ApiError && error.code === 'INVALID_SHARE_TOKEN') {
-      return (
-        <Container maxWidth="sm" sx={{ py: 8, textAlign: 'center' }}>
-          <Typography variant="h2" component="h1" gutterBottom>
-            このURLは無効です
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            共有URLが再発行されたか、大会が非公開になった可能性があります。運営者に確認してください。
-          </Typography>
-        </Container>
-      );
-    }
-    return <ErrorState message="大会情報の取得に失敗しました" onRetry={() => void refetch()} />;
-  }
-
-  if (data.tournament.competitionType === 'TEAM') {
-    return <TeamSharedPage token={token} data={data} />;
-  }
-  return <IndividualSharedPage token={token} data={data} />;
-}
-
-interface IndividualSharedPageProps {
+interface TeamSharedPageProps {
   token: string;
   data: SharedTournament;
 }
 
-function IndividualSharedPage({ token, data }: IndividualSharedPageProps) {
+/** S10 共有ページの団体戦版。個人戦のSharedPageと同じ構成(タブ・ラウンド選択)を踏襲する */
+export function TeamSharedPage({ token, data }: TeamSharedPageProps) {
   const [tab, setTab] = useState<'pairings' | 'standings' | 'crosstable'>('pairings');
   const [selectedRound, setSelectedRound] = useState<number | null>(null);
 
-  const { tournament, rounds: individualRounds, standings: individualStandings } = data;
-  const rounds = individualRounds ?? [];
-  const standings = individualStandings ?? [];
-  const latestRound: Round | null = rounds.length > 0 ? rounds[rounds.length - 1] : null;
+  const { tournament, teamRounds, teamStandings } = data;
+  const rounds = teamRounds ?? [];
+  const standings = teamStandings ?? [];
+  const latestRound: TeamRound | null = rounds.length > 0 ? rounds[rounds.length - 1] : null;
   const currentRound = rounds.find((round) => round.roundNumber === selectedRound) ?? latestRound;
-  // グループが1つだけの大会は表示上グループを見せない(見出し・卓番号プレフィックスなし)
   const multiGroup = standings.length > 1;
   const canInput =
     tournament.resultInputEnabled &&
@@ -236,7 +198,7 @@ function IndividualSharedPage({ token, data }: IndividualSharedPageProps) {
             )}
             {canInput && (
               <Typography variant="body2" color="text.secondary">
-                対局が終わったら「結果入力」から勝敗を登録してください。
+                対局が終わったら「結果入力」から各ボードの勝敗を登録してください。
               </Typography>
             )}
             {currentRound.matches.length === 0 ? (
@@ -245,7 +207,7 @@ function IndividualSharedPage({ token, data }: IndividualSharedPageProps) {
                 message="このラウンドの対局はありません。"
               />
             ) : (
-              matchSections(currentRound.matches).map(({ group, matches }) => (
+              teamMatchSections(currentRound.matches).map(({ group, matches }) => (
                 <Stack key={group.id} spacing={1.5}>
                   {multiGroup && (
                     <Typography variant="h4" component="h2">
@@ -253,7 +215,7 @@ function IndividualSharedPage({ token, data }: IndividualSharedPageProps) {
                     </Typography>
                   )}
                   {matches.map((match) => (
-                    <SharedMatchCard
+                    <SharedTeamMatchCard
                       key={match.id}
                       token={token}
                       match={match}
@@ -281,7 +243,7 @@ function IndividualSharedPage({ token, data }: IndividualSharedPageProps) {
                   {group.name}
                 </Typography>
               )}
-              <RankingBoard standings={groupStandings} />
+              <TeamRankingBoard standings={groupStandings} />
             </Box>
           ))
         ))}
@@ -300,7 +262,7 @@ function IndividualSharedPage({ token, data }: IndividualSharedPageProps) {
                   {group.name}
                 </Typography>
               )}
-              <CrossTable
+              <TeamCrossTable
                 rounds={rounds.map((round) => ({
                   ...round,
                   matches: round.matches.filter((m) => m.group.id === group.id),

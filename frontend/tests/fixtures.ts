@@ -107,6 +107,8 @@ export function sharedTournamentOf(overrides: Partial<SharedTournament> = {}): S
     tournament: sharedSummaryOf(),
     rounds: [roundOf()],
     standings: [groupStandingsOf()],
+    teamRounds: null,
+    teamStandings: null,
     ...overrides,
   };
 }
