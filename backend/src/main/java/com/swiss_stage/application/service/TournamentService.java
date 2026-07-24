@@ -7,7 +7,9 @@ import com.swiss_stage.application.exception.ConflictException;
 import com.swiss_stage.application.exception.ErrorCode;
 import com.swiss_stage.application.exception.InvalidStateException;
 import com.swiss_stage.application.exception.NotFoundException;
+import com.swiss_stage.application.exception.ValidationException;
 import com.swiss_stage.domain.DomainException;
+import com.swiss_stage.domain.model.CompetitionType;
 import com.swiss_stage.domain.model.Group;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.Tournament;
@@ -19,10 +21,13 @@ import com.swiss_stage.domain.service.GroupAssignmentService;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 
 @Service
 public class TournamentService {
+
+    private static final Set<Integer> VALID_TEAM_SIZES = Set.of(3, 5);
 
     private final TournamentRepository tournamentRepository;
     private final ParticipantRepository participantRepository;
@@ -54,9 +59,10 @@ public class TournamentService {
     }
 
     public TournamentDto create(String ownerSub, CreateTournamentRequest request) {
+        validateCompetitionType(request);
         Tournament tournament = Tournament.create(
-                request.name(), request.gameType(), request.totalRounds(), ownerSub,
-                Instant.now(clock));
+                request.name(), request.gameType(), request.competitionType(), request.teamSize(),
+                request.totalRounds(), ownerSub, Instant.now(clock));
         tournamentRepository.save(tournament);
         // 大会は常に1つ以上のグループを持つ(05 §2.4)。デフォルトグループを同時に作成する
         try {
@@ -67,6 +73,20 @@ public class TournamentService {
             throw e;
         }
         return reload(tournament.id());
+    }
+
+    /**
+     * competitionType=TEAM は teamSize(3/5)必須、INDIVIDUALはteamSize指定不可
+     * (OpenAPIのCreateTournamentRequest.descriptionが示すクロスフィールド制約)。
+     */
+    private void validateCompetitionType(CreateTournamentRequest request) {
+        if (request.competitionType() == CompetitionType.TEAM
+                && (request.teamSize() == null || !VALID_TEAM_SIZES.contains(request.teamSize()))) {
+            throw new ValidationException("団体戦のチーム制は3人制または5人制である必要があります");
+        }
+        if (request.competitionType() == CompetitionType.INDIVIDUAL && request.teamSize() != null) {
+            throw new ValidationException("個人戦にチーム制は指定できません");
+        }
     }
 
     public TournamentDto get(TournamentId id, String ownerSub) {

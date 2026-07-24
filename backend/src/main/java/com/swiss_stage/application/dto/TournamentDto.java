@@ -1,5 +1,6 @@
 package com.swiss_stage.application.dto;
 
+import com.swiss_stage.domain.model.CompetitionType;
 import com.swiss_stage.domain.model.GameType;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentStatus;
@@ -10,6 +11,8 @@ public record TournamentDto(
         String id,
         String name,
         GameType gameType,
+        CompetitionType competitionType,
+        Integer teamSize,
         int totalRounds,
         int currentRound,
         TournamentStatus status,
@@ -22,8 +25,9 @@ public record TournamentDto(
 
     public static TournamentDto from(Tournament t) {
         return new TournamentDto(
-                t.id().value(), t.name(), t.gameType(), t.totalRounds(), t.currentRound(),
-                t.status(), t.visibility(), t.shareToken(), t.resultInputEnabled(), t.version(),
-                t.createdAt().toString(), t.updatedAt().toString());
+                t.id().value(), t.name(), t.gameType(), t.competitionType(), t.teamSize(),
+                t.totalRounds(), t.currentRound(), t.status(), t.visibility(), t.shareToken(),
+                t.resultInputEnabled(), t.version(), t.createdAt().toString(),
+                t.updatedAt().toString());
     }
 }

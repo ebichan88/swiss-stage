@@ -22,6 +22,8 @@ public class TournamentItem {
     private String entityType;
     private String name;
     private String gameType;
+    private String competitionType;
+    private Integer teamSize;
     private Integer totalRounds;
     private Integer currentRound;
     private String status;
@@ -78,6 +80,22 @@ public class TournamentItem {
 
     public void setGameType(String gameType) {
         this.gameType = gameType;
+    }
+
+    public String getCompetitionType() {
+        return competitionType;
+    }
+
+    public void setCompetitionType(String competitionType) {
+        this.competitionType = competitionType;
+    }
+
+    public Integer getTeamSize() {
+        return teamSize;
+    }
+
+    public void setTeamSize(Integer teamSize) {
+        this.teamSize = teamSize;
     }
 
     public Integer getTotalRounds() {

@@ -34,7 +34,7 @@ class GroupApiTest extends ApiContractTestSupport {
         MvcResult result = performApi(post("/api/v1/tournaments")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"グループテスト大会\",\"gameType\":\"GO\",\"totalRounds\":3}"))
+                        .content("{\"name\":\"グループテスト大会\",\"gameType\":\"GO\",\"competitionType\":\"INDIVIDUAL\",\"totalRounds\":3}"))
                 .andExpect(status().isCreated())
                 .andReturn();
         tournamentId = dataOf(result).path("id").asText();

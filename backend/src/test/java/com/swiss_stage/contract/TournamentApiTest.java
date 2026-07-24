@@ -19,7 +19,7 @@ class TournamentApiTest extends ApiContractTestSupport {
         MvcResult result = performApi(post("/api/v1/tournaments")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"契約テスト大会\",\"gameType\":\"GO\",\"totalRounds\":3}"))
+                        .content("{\"name\":\"契約テスト大会\",\"gameType\":\"GO\",\"competitionType\":\"INDIVIDUAL\",\"totalRounds\":3}"))
                 .andExpect(status().isCreated())
                 .andReturn();
         return dataOf(result);
@@ -31,7 +31,7 @@ class TournamentApiTest extends ApiContractTestSupport {
         performApi(post("/api/v1/tournaments")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"新規大会\",\"gameType\":\"SHOGI\",\"totalRounds\":5}"))
+                        .content("{\"name\":\"新規大会\",\"gameType\":\"SHOGI\",\"competitionType\":\"INDIVIDUAL\",\"totalRounds\":5}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").isNotEmpty())
@@ -51,7 +51,7 @@ class TournamentApiTest extends ApiContractTestSupport {
         mockMvc.perform(post("/api/v1/tournaments")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"\",\"gameType\":\"GO\",\"totalRounds\":0}"))
+                        .content("{\"name\":\"\",\"gameType\":\"GO\",\"competitionType\":\"INDIVIDUAL\",\"totalRounds\":0}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.error.details").isArray())
@@ -65,7 +65,7 @@ class TournamentApiTest extends ApiContractTestSupport {
         mockMvc.perform(post("/api/v1/tournaments")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"上限超過大会\",\"gameType\":\"GO\",\"totalRounds\":9}"))
+                        .content("{\"name\":\"上限超過大会\",\"gameType\":\"GO\",\"competitionType\":\"INDIVIDUAL\",\"totalRounds\":9}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
     }
@@ -76,7 +76,7 @@ class TournamentApiTest extends ApiContractTestSupport {
         performApi(post("/api/v1/tournaments")
                         .cookie(ownerCookie())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"上限大会\",\"gameType\":\"GO\",\"totalRounds\":8}"))
+                        .content("{\"name\":\"上限大会\",\"gameType\":\"GO\",\"competitionType\":\"INDIVIDUAL\",\"totalRounds\":8}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.name").value("上限大会"));
     }

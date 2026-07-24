@@ -27,9 +27,21 @@ describe('tournamentService', () => {
       }),
     );
 
-    await createTournament({ name: 'テスト大会', gameType: 'SHOGI', totalRounds: 4 });
+    await createTournament({
+      name: 'テスト大会',
+      gameType: 'SHOGI',
+      competitionType: 'INDIVIDUAL',
+      teamSize: null,
+      totalRounds: 4,
+    });
 
-    expect(requestBody).toEqual({ name: 'テスト大会', gameType: 'SHOGI', totalRounds: 4 });
+    expect(requestBody).toEqual({
+      name: 'テスト大会',
+      gameType: 'SHOGI',
+      competitionType: 'INDIVIDUAL',
+      teamSize: null,
+      totalRounds: 4,
+    });
   });
 
   it('エラーレスポンスは code と message を持つ ApiError になる', async () => {

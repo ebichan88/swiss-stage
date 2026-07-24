@@ -74,9 +74,9 @@ public class InMemoryRepositoryConfig {
             }
 
             private Tournament withVersion(Tournament t, long version) {
-                return new Tournament(t.id(), t.name(), t.gameType(), t.totalRounds(),
-                        t.currentRound(), t.status(), t.visibility(), t.shareToken(),
-                        t.resultInputEnabled(), t.ownerSub(), version, t.createdAt(),
+                return new Tournament(t.id(), t.name(), t.gameType(), t.competitionType(),
+                        t.teamSize(), t.totalRounds(), t.currentRound(), t.status(), t.visibility(),
+                        t.shareToken(), t.resultInputEnabled(), t.ownerSub(), version, t.createdAt(),
                         t.updatedAt());
             }
         };
