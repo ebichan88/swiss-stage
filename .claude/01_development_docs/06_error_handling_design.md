@@ -17,7 +17,7 @@
 | 未認証 | 401 | `UNAUTHORIZED` | ログインしてください | INFO |
 | 権限なし | 403 | `FORBIDDEN` | この操作を行う権限がありません | WARN |
 | 無効な共有トークン | 403 | `INVALID_SHARE_TOKEN` | このURLは無効になっています。運営者に確認してください | INFO |
-| リソース未存在 | 404 | `TOURNAMENT_NOT_FOUND` / `PARTICIPANT_NOT_FOUND` / `ROUND_NOT_FOUND` / `MATCH_NOT_FOUND` / `GROUP_NOT_FOUND` / `NOT_FOUND`(汎用) | 大会が見つかりません | INFO |
+| リソース未存在 | 404 | `TOURNAMENT_NOT_FOUND` / `PARTICIPANT_NOT_FOUND` / `ROUND_NOT_FOUND` / `MATCH_NOT_FOUND` / `GROUP_NOT_FOUND` / `TEAM_NOT_FOUND` / `TEAM_MEMBER_NOT_FOUND` / `TEAM_MATCH_NOT_FOUND` / `NOT_FOUND`(汎用) | 大会が見つかりません | INFO |
 | 状態遷移違反 | 409 | `INVALID_STATE` | 大会開始前にはこの操作はできません | INFO |
 | 更新競合 | 409 | `CONFLICT` | ほかの端末で更新されました。画面を更新して再度お試しください | INFO |
 | ラウンド二重生成 | 409 | `ROUND_ALREADY_EXISTS` | このラウンドは既に生成されています | INFO |

@@ -391,6 +391,186 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tournaments/{id}/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        /** チーム一覧(エントリー順) */
+        get: operations["listTeams"];
+        put?: never;
+        /** チーム作成(大会開始後は409) */
+        post: operations["createTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tournaments/{id}/teams/csv-import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** チーム+メンバー一覧のCSVインポート(UTF-8/Shift_JIS自動判定) */
+        post: operations["importTeams"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tournaments/{id}/teams/{tid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+                /** @description チームID(ULID) */
+                tid: components["parameters"]["TeamId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** チーム削除(大会開始前のみ。開始後は409) */
+        delete: operations["deleteTeam"];
+        options?: never;
+        head?: never;
+        /** チーム更新(棄権・グループ割当変更を含む。nullの項目は変更しない) */
+        patch: operations["updateTeam"];
+        trace?: never;
+    };
+    "/api/v1/tournaments/{id}/teams/{tid}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+                /** @description チームID(ULID) */
+                tid: components["parameters"]["TeamId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** チームメンバー追加(役割・棋力込み。大会開始後は409) */
+        post: operations["addTeamMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tournaments/{id}/teams/{tid}/members/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+                /** @description チームID(ULID) */
+                tid: components["parameters"]["TeamId"];
+                /** @description チームメンバーID(ULID) */
+                memberId: components["parameters"]["TeamMemberId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** チームメンバー削除(大会開始前のみ。開始後は409) */
+        delete: operations["deleteTeamMember"];
+        options?: never;
+        head?: never;
+        /** チームメンバー更新(nullの項目は変更しない) */
+        patch: operations["updateTeamMember"];
+        trace?: never;
+    };
+    "/api/v1/tournaments/{id}/team-rounds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        /** 団体戦ラウンド一覧(対局含む) */
+        get: operations["listTeamRounds"];
+        put?: never;
+        /** 団体戦の次ラウンド組み合わせ生成(現在ラウンド未確定・全ラウンド消化済みは409) */
+        post: operations["generateTeamRound"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tournaments/{id}/team-rounds/{n}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 団体戦ラウンド確定(申告・入力が一切ない対局が残っていると409。片方のみ申告・ 申告不一致の対局はブロックしない) */
+        post: operations["confirmTeamRound"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tournaments/{id}/team-matches/{mid}/result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 団体戦対局のボード結果一括入力(べき等。version不一致・確定済みラウンドは409) */
+        put: operations["inputTeamMatchResult"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tournaments/{id}/team-standings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 団体戦順位表(保存せず都度計算。グループごとに1要素) */
+        get: operations["getTeamStandings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/shared/{token}": {
         parameters: {
             query?: never;
@@ -646,6 +826,16 @@ export interface components {
             group: components["schemas"]["Group"];
             standings: components["schemas"]["TeamStanding"][];
         };
+        TeamRound: {
+            roundNumber: number;
+            status: components["schemas"]["RoundStatus"];
+            matches: components["schemas"]["TeamMatch"][];
+        };
+        GeneratedTeamRound: {
+            round: components["schemas"]["TeamRound"];
+            /** @description 空でなければUIに警告を表示する(REMATCH / BYE_REPEAT) */
+            relaxations: string[];
+        };
         SharedTournamentSummary: {
             name: string;
             gameType: components["schemas"]["GameType"];
@@ -722,6 +912,42 @@ export interface components {
         ReportMatchResultRequest: {
             reportedBy: components["schemas"]["MatchSide"];
             result: components["schemas"]["MatchResult"];
+            /** Format: int64 */
+            version: number;
+        };
+        CreateTeamRequest: {
+            name: string;
+            /** @description 省略時は先頭グループ(定義順)に割当 */
+            groupId?: string | null;
+        };
+        /** @description nullの項目は変更しない。groupId は割当先グループの変更(PREPARING中のみ) */
+        UpdateTeamRequest: {
+            name?: string;
+            groupId?: components["schemas"]["Ulid"];
+            status?: components["schemas"]["ParticipantStatus"];
+        };
+        /** @description boardPosition省略(null)は補欠として追加する。1..teamSizeの範囲外・重複指定は400、 補欠人数の上限超過は400 */
+        AddTeamMemberRequest: {
+            name: string;
+            rank?: components["schemas"]["Rank"];
+            boardPosition?: number | null;
+        };
+        /** @description nullの項目は変更しない。補欠に戻す場合は clearBoardPosition=true (boardPositionとの同時指定は400) */
+        UpdateTeamMemberRequest: {
+            name?: string;
+            rank?: components["schemas"]["Rank"];
+            clearRank?: boolean;
+            boardPosition?: number;
+            clearBoardPosition?: boolean;
+        };
+        TeamCsvImportResult: {
+            importedTeamCount: number;
+            /** @description 全行正常時のみ取り込む(エラー時は400 + details) */
+            teams: components["schemas"]["Team"][];
+        };
+        /** @description 運営者による直接確定用(ボード配列をまとめて置き換える)。boardResultsの長さは teamSizeと一致させ、各要素はNONE(未入力のまま)またはPLAYER1_WIN/PLAYER2_WIN/ DRAW/BOTH_LOSE(BYEの指定は400)。一度この経路で確定したボードは、その後の 参加者の自己申告(ReportTeamMatchResultRequest)では上書きされない */
+        InputTeamMatchResultRequest: {
+            boardResults: components["schemas"]["MatchResult"][];
             /** Format: int64 */
             version: number;
         };
@@ -924,6 +1150,118 @@ export interface components {
                 };
             };
         };
+        /** @description チーム */
+        Team: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @enum {boolean} */
+                    success: true;
+                    data: components["schemas"]["Team"];
+                    meta: components["schemas"]["Meta"];
+                };
+            };
+        };
+        /** @description チーム一覧 */
+        TeamList: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @enum {boolean} */
+                    success: true;
+                    data: components["schemas"]["Team"][];
+                    meta: components["schemas"]["Meta"];
+                };
+            };
+        };
+        /** @description チームCSVインポート結果 */
+        TeamCsvImportResult: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @enum {boolean} */
+                    success: true;
+                    data: components["schemas"]["TeamCsvImportResult"];
+                    meta: components["schemas"]["Meta"];
+                };
+            };
+        };
+        /** @description 団体戦ラウンド */
+        TeamRound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @enum {boolean} */
+                    success: true;
+                    data: components["schemas"]["TeamRound"];
+                    meta: components["schemas"]["Meta"];
+                };
+            };
+        };
+        /** @description 団体戦ラウンド一覧 */
+        TeamRoundList: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @enum {boolean} */
+                    success: true;
+                    data: components["schemas"]["TeamRound"][];
+                    meta: components["schemas"]["Meta"];
+                };
+            };
+        };
+        /** @description 団体戦の組み合わせ生成結果 */
+        GeneratedTeamRound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @enum {boolean} */
+                    success: true;
+                    data: components["schemas"]["GeneratedTeamRound"];
+                    meta: components["schemas"]["Meta"];
+                };
+            };
+        };
+        /** @description 団体戦対局 */
+        TeamMatch: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @enum {boolean} */
+                    success: true;
+                    data: components["schemas"]["TeamMatch"];
+                    meta: components["schemas"]["Meta"];
+                };
+            };
+        };
+        /** @description グループ別チーム順位表 */
+        GroupTeamStandingsList: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @enum {boolean} */
+                    success: true;
+                    data: components["schemas"]["GroupTeamStandings"][];
+                    meta: components["schemas"]["Meta"];
+                };
+            };
+        };
         /** @description 共有ページ用の大会集約 */
         SharedTournament: {
             headers: {
@@ -1002,6 +1340,12 @@ export interface components {
         GroupId: components["schemas"]["Ulid"];
         /** @description 対局ID(ULID) */
         MatchId: components["schemas"]["Ulid"];
+        /** @description チームID(ULID) */
+        TeamId: components["schemas"]["Ulid"];
+        /** @description チームメンバーID(ULID) */
+        TeamMemberId: components["schemas"]["Ulid"];
+        /** @description 団体戦対局ID(ULID) */
+        TeamMatchId: components["schemas"]["Ulid"];
         /** @description 共有トークン(URL-safe文字列) */
         ShareToken: string;
     };
@@ -1577,6 +1921,297 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["GroupStandingsList"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listTeams: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["TeamList"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTeamRequest"];
+            };
+        };
+        responses: {
+            201: components["responses"]["Team"];
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    importTeams: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description ヘッダー行必須(チーム名,氏名,段級位,ポジション[,グループ])。 連続する同一チーム名の行を1チームとして扱う。上限500行・1MB
+                     */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            201: components["responses"]["TeamCsvImportResult"];
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+                /** @description チームID(ULID) */
+                tid: components["parameters"]["TeamId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 削除済み */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+                /** @description チームID(ULID) */
+                tid: components["parameters"]["TeamId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTeamRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["Team"];
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    addTeamMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+                /** @description チームID(ULID) */
+                tid: components["parameters"]["TeamId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddTeamMemberRequest"];
+            };
+        };
+        responses: {
+            201: components["responses"]["Team"];
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteTeamMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+                /** @description チームID(ULID) */
+                tid: components["parameters"]["TeamId"];
+                /** @description チームメンバーID(ULID) */
+                memberId: components["parameters"]["TeamMemberId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Team"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateTeamMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+                /** @description チームID(ULID) */
+                tid: components["parameters"]["TeamId"];
+                /** @description チームメンバーID(ULID) */
+                memberId: components["parameters"]["TeamMemberId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTeamMemberRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["Team"];
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listTeamRounds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["TeamRoundList"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    generateTeamRound: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: components["responses"]["GeneratedTeamRound"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    confirmTeamRound: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+                /** @description ラウンド番号(1始まり) */
+                n: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["TeamRound"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    inputTeamMatchResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+                /** @description 団体戦対局ID(ULID) */
+                mid: components["parameters"]["TeamMatchId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InputTeamMatchResultRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["TeamMatch"];
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getTeamStandings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["GroupTeamStandingsList"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };

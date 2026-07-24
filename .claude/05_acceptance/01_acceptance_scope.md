@@ -95,23 +95,23 @@
 
 | ID | P | 受け入れ基準 | Status | 検証 |
 |----|---|------------|--------|------|
-| TEAM-AC-001 | P1 | 大会作成時にcompetitionType(INDIVIDUAL/TEAM)とteamSize(3/5、TEAM時のみ必須)を指定でき、作成後は変更できない | todo | TeamApiTest |
-| TEAM-AC-002 | P0 | teamSizeが3/5以外、またはINDIVIDUALでteamSize指定・TEAMでteamSize未指定は400 VALIDATION_ERRORになる | todo | TeamApiTest |
-| TEAM-AC-003 | P1 | チームを作成するとエントリー順(entryOrder)が自動採番される | todo | TeamApiTest |
-| TEAM-AC-004 | P1 | チームにメンバーを追加でき、boardPosition(1..teamSize)または補欠(null)を指定できる | todo | TeamApiTest |
-| TEAM-AC-005 | P0 | 同一チーム内でboardPositionが重複、またはteamSizeの範囲外の指定は400になる | todo | TeamApiTest |
-| TEAM-AC-006 | P1 | 補欠人数の上限(3チーム制=2名・5チーム制=3名)を超える追加は400になる | todo | TeamApiTest |
-| TEAM-AC-007 | P0 | 必須boardPosition(1..teamSize)が1名も欠けずに揃っていないチームがあると大会を開始できない(409 INVALID_STATE) | todo | TeamApiTest |
-| TEAM-AC-008 | P1 | チーム+メンバー一覧のCSVインポート(UTF-8/Shift_JIS自動判定)ができ、行エラーは1件も取り込まずエラーを返す | todo | TeamApiTest |
-| TEAM-AC-009 | P0 | 大会開始後のチーム追加・削除・メンバー構成変更は409になる(棄権(WITHDRAWN)は開始後も可) | todo | TeamApiTest |
-| TEAM-AC-010 | P1 | 団体戦のグループ分けはチーム単位で個人戦と同じ仕組み(作成・改名・削除・手動割当)が使える | todo | TeamApiTest |
-| TEAM-AC-011 | P1 | 団体戦では「段級位による自動振り分け」は非公開/エラーになる(チームに棋力がないため) | todo | TeamApiTest |
-| TEAM-AC-012 | P0 | 団体戦の初回ラウンドはエントリー順のみでペアリングされ、棋力シード・同一所属回避は適用されない | todo | TeamRoundApiTest |
-| TEAM-AC-013 | P0 | 団体戦のラウンド生成でも再戦禁止・BYE重複禁止が個人戦と同様に効く | todo | TeamRoundApiTest |
-| TEAM-AC-014 | P0 | 運営者が対局の全ボード結果をまとめて直接確定でき、team1Points/team2Pointsの合計から結果表示(勝敗/引き分け)が導出される | todo | TeamRoundApiTest |
-| TEAM-AC-015 | P0 | 未着手(全ボード・両者申告ともにNONE)の対局が残るラウンドは確定できない。1ボードでも入力・申告があれば警告のみで確定可能 | todo | TeamRoundApiTest |
-| TEAM-AC-016 | P0 | 順位表は個人戦と同じ基準(勝点→SOS→SOSOS→直接対決→エントリー順)でチーム単位に計算される | todo | TeamRoundApiTest |
-| TEAM-AC-017 | P0 | 戦績一覧・組み合わせ・順位表のレスポンスに個人名(メンバー氏名)を含めない(チーム名のみ) | todo | TeamRoundApiTest |
+| TEAM-AC-001 | P1 | 大会作成時にcompetitionType(INDIVIDUAL/TEAM)とteamSize(3/5、TEAM時のみ必須)を指定でき、作成後は変更できない | done | TeamApiTest |
+| TEAM-AC-002 | P0 | teamSizeが3/5以外、またはINDIVIDUALでteamSize指定・TEAMでteamSize未指定は400 VALIDATION_ERRORになる | done | TeamApiTest |
+| TEAM-AC-003 | P1 | チームを作成するとエントリー順(entryOrder)が自動採番される | done | TeamApiTest |
+| TEAM-AC-004 | P1 | チームにメンバーを追加でき、boardPosition(1..teamSize)または補欠(null)を指定できる | done | TeamApiTest |
+| TEAM-AC-005 | P0 | 同一チーム内でboardPositionが重複、またはteamSizeの範囲外の指定は400になる | done | TeamApiTest |
+| TEAM-AC-006 | P1 | 補欠人数の上限(3チーム制=2名・5チーム制=3名)を超える追加は400になる | done | TeamApiTest |
+| TEAM-AC-007 | P0 | 必須boardPosition(1..teamSize)が1名も欠けずに揃っていないチームがあると大会を開始できない(409 INVALID_STATE) | done | TeamApiTest |
+| TEAM-AC-008 | P1 | チーム+メンバー一覧のCSVインポート(UTF-8/Shift_JIS自動判定)ができ、行エラーは1件も取り込まずエラーを返す | done | TeamApiTest |
+| TEAM-AC-009 | P0 | 大会開始後のチーム追加・削除・メンバー構成変更は409になる(棄権(WITHDRAWN)は開始後も可) | done | TeamApiTest |
+| TEAM-AC-010 | P1 | 団体戦のグループ分けはチーム単位で個人戦と同じ仕組み(作成・改名・削除・手動割当)が使える | done | TeamApiTest |
+| TEAM-AC-011 | P1 | 団体戦では「段級位による自動振り分け」は非公開/エラーになる(チームに棋力がないため) | done | TeamApiTest |
+| TEAM-AC-012 | P0 | 団体戦の初回ラウンドはエントリー順のみでペアリングされ、棋力シード・同一所属回避は適用されない | done | TeamRoundApiTest |
+| TEAM-AC-013 | P0 | 団体戦のラウンド生成でも再戦禁止・BYE重複禁止が個人戦と同様に効く | done | TeamRoundApiTest |
+| TEAM-AC-014 | P0 | 運営者が対局の全ボード結果をまとめて直接確定でき、team1Points/team2Pointsの合計から結果表示(勝敗/引き分け)が導出される | done | TeamRoundApiTest |
+| TEAM-AC-015 | P0 | 未着手(全ボード・両者申告ともにNONE)の対局が残るラウンドは確定できない。1ボードでも入力・申告があれば警告のみで確定可能 | done | TeamRoundApiTest |
+| TEAM-AC-016 | P0 | 順位表は個人戦と同じ基準(勝点→SOS→SOSOS→直接対決→エントリー順)でチーム単位に計算される | done | TeamRoundApiTest |
+| TEAM-AC-017 | P0 | 戦績一覧・組み合わせ・順位表のレスポンスに個人名(メンバー氏名)を含めない(チーム名のみ) | done | TeamRoundApiTest |
 | TEAM-AC-018 | P0 | 共有トークン経由の結果自己申告は「どちらのチームか」を選択しボード配列をまとめて送信する。ボードごとに両者の申告が一致した時点でそのボードのみ確定する | todo | TeamSharedApiTest |
 | TEAM-AC-019 | P0 | ボード単位で申告が不一致の場合、確定させず双方の申告内容(誰が何を申告したか)を運営者画面・共有画面の両方で確認できる | todo | TeamSharedApiTest |
 | TEAM-AC-020 | P0 | 運営者が直接確定したボード結果は、その後の参加者の自己申告(一致・不一致問わず)で上書きされない | todo | TeamSharedApiTest |

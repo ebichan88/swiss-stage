@@ -6,6 +6,7 @@ import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
 import com.swiss_stage.domain.model.Rank;
+import com.swiss_stage.domain.model.Team;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -74,5 +75,32 @@ public class GroupAssignmentService {
         return Comparator
                 .comparing(Participant::rank, Rank.strongestFirst())
                 .thenComparingInt(Participant::entryOrder);
+    }
+
+    /**
+     * 大会開始時の検証(団体戦版)。全ACTIVEチームの割当先が定義済みグループで、
+     * 各グループのACTIVEチームが2チーム以上であること。違反時はDomainException。
+     * チームに棋力がないため「段級位による自動振り分け」は団体戦では提供しない。
+     */
+    public void validateTeamsForStart(List<Group> groups, List<Team> teams) {
+        if (groups.isEmpty()) {
+            throw new DomainException("グループが定義されていません");
+        }
+        Set<GroupId> groupIds = groups.stream().map(Group::id).collect(Collectors.toSet());
+        List<Team> active = teams.stream().filter(Team::isActive).toList();
+        long unassigned = active.stream()
+                .filter(t -> !groupIds.contains(t.groupId()))
+                .count();
+        if (unassigned > 0) {
+            throw new DomainException(
+                    "グループ未割当のチームが" + unassigned + "チームあります。全チームを割り当ててから開始してください");
+        }
+        for (Group group : groups) {
+            long count = active.stream().filter(t -> group.id().equals(t.groupId())).count();
+            if (count < 2) {
+                throw new DomainException(
+                        "グループ「" + group.name() + "」のチームが2チーム未満です。2チーム以上にしてから開始してください");
+            }
+        }
     }
 }

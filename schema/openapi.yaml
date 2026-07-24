@@ -476,6 +476,256 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  # ---- 団体戦(competitionType=TEAM) ----
+  /api/v1/tournaments/{id}/teams:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+    get:
+      operationId: listTeams
+      summary: チーム一覧(エントリー順)
+      responses:
+        "200":
+          $ref: "#/components/responses/TeamList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: createTeam
+      summary: チーム作成(大会開始後は409)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTeamRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/Team"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/teams/csv-import:
+    post:
+      operationId: importTeams
+      summary: チーム+メンバー一覧のCSVインポート(UTF-8/Shift_JIS自動判定)
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: >-
+                    ヘッダー行必須(チーム名,氏名,段級位,ポジション[,グループ])。
+                    連続する同一チーム名の行を1チームとして扱う。上限500行・1MB
+      responses:
+        "201":
+          $ref: "#/components/responses/TeamCsvImportResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/teams/{tid}:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+      - $ref: "#/components/parameters/TeamId"
+    patch:
+      operationId: updateTeam
+      summary: チーム更新(棄権・グループ割当変更を含む。nullの項目は変更しない)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTeamRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Team"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: deleteTeam
+      summary: チーム削除(大会開始前のみ。開始後は409)
+      responses:
+        "204":
+          description: 削除済み
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/teams/{tid}/members:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+      - $ref: "#/components/parameters/TeamId"
+    post:
+      operationId: addTeamMember
+      summary: チームメンバー追加(役割・棋力込み。大会開始後は409)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddTeamMemberRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/Team"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/teams/{tid}/members/{memberId}:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+      - $ref: "#/components/parameters/TeamId"
+      - $ref: "#/components/parameters/TeamMemberId"
+    patch:
+      operationId: updateTeamMember
+      summary: チームメンバー更新(nullの項目は変更しない)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTeamMemberRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Team"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: deleteTeamMember
+      summary: チームメンバー削除(大会開始前のみ。開始後は409)
+      responses:
+        "200":
+          $ref: "#/components/responses/Team"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/team-rounds:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+    get:
+      operationId: listTeamRounds
+      summary: 団体戦ラウンド一覧(対局含む)
+      responses:
+        "200":
+          $ref: "#/components/responses/TeamRoundList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: generateTeamRound
+      summary: 団体戦の次ラウンド組み合わせ生成(現在ラウンド未確定・全ラウンド消化済みは409)
+      responses:
+        "201":
+          $ref: "#/components/responses/GeneratedTeamRound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/team-rounds/{n}/confirm:
+    post:
+      operationId: confirmTeamRound
+      summary: >-
+        団体戦ラウンド確定(申告・入力が一切ない対局が残っていると409。片方のみ申告・
+        申告不一致の対局はブロックしない)
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+        - name: n
+          in: path
+          required: true
+          description: ラウンド番号(1始まり)
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          $ref: "#/components/responses/TeamRound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/team-matches/{mid}/result:
+    put:
+      operationId: inputTeamMatchResult
+      summary: 団体戦対局のボード結果一括入力(べき等。version不一致・確定済みラウンドは409)
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+        - $ref: "#/components/parameters/TeamMatchId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InputTeamMatchResultRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/TeamMatch"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/team-standings:
+    get:
+      operationId: getTeamStandings
+      summary: 団体戦順位表(保存せず都度計算。グループごとに1要素)
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+      responses:
+        "200":
+          $ref: "#/components/responses/GroupTeamStandingsList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   # ---- 共有(トークン保持者向け。IPレート制限あり) ----
   /api/v1/shared/{token}:
     get:
@@ -556,6 +806,27 @@ components:
       in: path
       required: true
       description: 対局ID(ULID)
+      schema:
+        $ref: "#/components/schemas/Ulid"
+    TeamId:
+      name: tid
+      in: path
+      required: true
+      description: チームID(ULID)
+      schema:
+        $ref: "#/components/schemas/Ulid"
+    TeamMemberId:
+      name: memberId
+      in: path
+      required: true
+      description: チームメンバーID(ULID)
+      schema:
+        $ref: "#/components/schemas/Ulid"
+    TeamMatchId:
+      name: mid
+      in: path
+      required: true
+      description: 団体戦対局ID(ULID)
       schema:
         $ref: "#/components/schemas/Ulid"
     ShareToken:
@@ -804,6 +1075,142 @@ components:
                 type: array
                 items:
                   $ref: "#/components/schemas/GroupStandings"
+              meta:
+                $ref: "#/components/schemas/Meta"
+
+    # ---- 団体戦(competitionType=TEAM) ----
+    Team:
+      description: チーム
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/Team"
+              meta:
+                $ref: "#/components/schemas/Meta"
+    TeamList:
+      description: チーム一覧
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Team"
+              meta:
+                $ref: "#/components/schemas/Meta"
+    TeamCsvImportResult:
+      description: チームCSVインポート結果
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/TeamCsvImportResult"
+              meta:
+                $ref: "#/components/schemas/Meta"
+    TeamRound:
+      description: 団体戦ラウンド
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/TeamRound"
+              meta:
+                $ref: "#/components/schemas/Meta"
+    TeamRoundList:
+      description: 団体戦ラウンド一覧
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamRound"
+              meta:
+                $ref: "#/components/schemas/Meta"
+    GeneratedTeamRound:
+      description: 団体戦の組み合わせ生成結果
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/GeneratedTeamRound"
+              meta:
+                $ref: "#/components/schemas/Meta"
+    TeamMatch:
+      description: 団体戦対局
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/TeamMatch"
+              meta:
+                $ref: "#/components/schemas/Meta"
+    GroupTeamStandingsList:
+      description: グループ別チーム順位表
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GroupTeamStandings"
               meta:
                 $ref: "#/components/schemas/Meta"
     SharedTournament:
@@ -1376,6 +1783,32 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TeamStanding"
+    TeamRound:
+      type: object
+      additionalProperties: false
+      required: [roundNumber, status, matches]
+      properties:
+        roundNumber:
+          type: integer
+          minimum: 1
+        status:
+          $ref: "#/components/schemas/RoundStatus"
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamMatch"
+    GeneratedTeamRound:
+      type: object
+      additionalProperties: false
+      required: [round, relaxations]
+      properties:
+        round:
+          $ref: "#/components/schemas/TeamRound"
+        relaxations:
+          type: array
+          description: 空でなければUIに警告を表示する(REMATCH / BYE_REPEAT)
+          items:
+            type: string
 
     SharedTournamentSummary:
       type: object
@@ -1569,6 +2002,102 @@ components:
           $ref: "#/components/schemas/MatchSide"
         result:
           $ref: "#/components/schemas/MatchResult"
+        version:
+          type: integer
+          format: int64
+
+    # ---- 団体戦リクエスト(competitionType=TEAM) ----
+    CreateTeamRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        groupId:
+          type: string
+          nullable: true
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+          description: 省略時は先頭グループ(定義順)に割当
+    UpdateTeamRequest:
+      type: object
+      additionalProperties: false
+      description: nullの項目は変更しない。groupId は割当先グループの変更(PREPARING中のみ)
+      properties:
+        name:
+          type: string
+          maxLength: 50
+        groupId:
+          $ref: "#/components/schemas/Ulid"
+        status:
+          $ref: "#/components/schemas/ParticipantStatus"
+    AddTeamMemberRequest:
+      type: object
+      additionalProperties: false
+      description: >
+        boardPosition省略(null)は補欠として追加する。1..teamSizeの範囲外・重複指定は400、
+        補欠人数の上限超過は400
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        rank:
+          $ref: "#/components/schemas/Rank"
+        boardPosition:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 5
+    UpdateTeamMemberRequest:
+      type: object
+      additionalProperties: false
+      description: >
+        nullの項目は変更しない。補欠に戻す場合は clearBoardPosition=true
+        (boardPositionとの同時指定は400)
+      properties:
+        name:
+          type: string
+          maxLength: 50
+        rank:
+          $ref: "#/components/schemas/Rank"
+        clearRank:
+          type: boolean
+        boardPosition:
+          type: integer
+          minimum: 1
+          maximum: 5
+        clearBoardPosition:
+          type: boolean
+    TeamCsvImportResult:
+      type: object
+      additionalProperties: false
+      required: [importedTeamCount, teams]
+      properties:
+        importedTeamCount:
+          type: integer
+        teams:
+          type: array
+          description: 全行正常時のみ取り込む(エラー時は400 + details)
+          items:
+            $ref: "#/components/schemas/Team"
+    InputTeamMatchResultRequest:
+      type: object
+      additionalProperties: false
+      description: >
+        運営者による直接確定用(ボード配列をまとめて置き換える)。boardResultsの長さは
+        teamSizeと一致させ、各要素はNONE(未入力のまま)またはPLAYER1_WIN/PLAYER2_WIN/
+        DRAW/BOTH_LOSE(BYEの指定は400)。一度この経路で確定したボードは、その後の
+        参加者の自己申告(ReportTeamMatchResultRequest)では上書きされない
+      required: [boardResults, version]
+      properties:
+        boardResults:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchResult"
         version:
           type: integer
           format: int64

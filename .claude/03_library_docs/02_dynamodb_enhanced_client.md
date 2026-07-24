@@ -88,6 +88,34 @@ public class TournamentItem {
 - domain層のモデルとアイテムクラスは別物。infrastructure層で相互変換する(`TournamentItemMapper`)
 - 異種エンティティの混在Queryは Enhanced Client が苦手 → **PK全件取得(AP7)は素の `DynamoDbClient.query()` で取得し、`entityType` を見て各Itemクラスへ振り分ける**ヘルパーを作る
 
+### 埋め込みリスト属性(1アイテム内に複数値を持たせる)
+
+チームのメンバー一覧(`Team#members`)・対局のボード結果一覧(`TeamMatch#boardResults`)のように、
+「常に親アイテムと一緒に読み書きする・件数が少ない(最大10件程度)」子要素は、**別アイテム化せず
+`List<NestedBean>` 属性として埋め込む**(GroupのようにSK分割した別アイテムにする必要はない)。
+
+```java
+@DynamoDbBean
+public class TeamMemberItem {          // ネストされる側: PK/SK等のキーは持たない素のBean
+    private String memberId;
+    private String name;
+    // getter/setterのみ。TableSchema.fromBean には登録しない
+}
+
+@DynamoDbBean
+public class TeamItem {
+    @DynamoDbPartitionKey @DynamoDbAttribute("PK")
+    public String getPk() { ... }
+
+    private List<TeamMemberItem> members;  // そのままList<T>で持たせるだけでMap配列として保存される
+    public List<TeamMemberItem> getMembers() { return members; }
+    public void setMembers(List<TeamMemberItem> members) { this.members = members; }
+}
+```
+
+- ネストされる `@DynamoDbBean`(`TeamMemberItem` 等)は `TableSchema.fromBean()` に個別登録しない(親の `List<>` 属性の型として参照されるだけで、Enhanced Clientが自動的にMapのリストとして変換する)
+- DynamoDB Local + Enhanced Client で往復(保存→取得)できることを統合テストで確認済み(`DynamoDbTeamRepositoryTest`)
+
 ---
 
 ## 4. よく使う操作パターン

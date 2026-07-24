@@ -8,15 +8,18 @@ import com.swiss_stage.application.exception.InvalidStateException;
 import com.swiss_stage.application.exception.NotFoundException;
 import com.swiss_stage.application.exception.ValidationException;
 import com.swiss_stage.domain.DomainException;
+import com.swiss_stage.domain.model.CompetitionType;
 import com.swiss_stage.domain.model.Group;
 import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
+import com.swiss_stage.domain.model.Team;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
 import com.swiss_stage.domain.model.TournamentStatus;
 import com.swiss_stage.domain.repository.GroupRepository;
 import com.swiss_stage.domain.repository.ParticipantRepository;
+import com.swiss_stage.domain.repository.TeamRepository;
 import com.swiss_stage.domain.service.GroupAssignmentService;
 import java.util.Comparator;
 import java.util.List;
@@ -34,6 +37,7 @@ public class GroupService {
 
     private final GroupRepository groupRepository;
     private final ParticipantRepository participantRepository;
+    private final TeamRepository teamRepository;
     private final TournamentAccessSupport access;
     private final SharedViewCache sharedViewCache;
     private final GroupAssignmentService assignmentService = new GroupAssignmentService();
@@ -41,10 +45,12 @@ public class GroupService {
     public GroupService(
             GroupRepository groupRepository,
             ParticipantRepository participantRepository,
+            TeamRepository teamRepository,
             TournamentAccessSupport access,
             SharedViewCache sharedViewCache) {
         this.groupRepository = groupRepository;
         this.participantRepository = participantRepository;
+        this.teamRepository = teamRepository;
         this.access = access;
         this.sharedViewCache = sharedViewCache;
     }
@@ -85,7 +91,7 @@ public class GroupService {
 
     /**
      * グループ削除。最後の1グループは削除できない(大会は常に1つ以上のグループを持つ)。
-     * 割当済みの参加者は直前のグループ(先頭グループの削除時は直後のグループ)へ移す
+     * 割当済みの参加者(団体戦はチーム)は直前のグループ(先頭グループの削除時は直後のグループ)へ移す
      */
     public void delete(TournamentId tournamentId, GroupId groupId, String ownerSub) {
         Tournament tournament = access.loadOwned(tournamentId, ownerSub);
@@ -96,19 +102,33 @@ public class GroupService {
             throw new ValidationException("最後のグループは削除できません");
         }
         Group fallback = groups.get(index == 0 ? 1 : index - 1);
-        List<Participant> assigned = participantRepository.findAllByTournamentId(tournamentId)
-                .stream()
-                .filter(p -> groupId.equals(p.groupId()))
-                .map(p -> p.withGroup(fallback.id()))
-                .toList();
-        participantRepository.saveAll(tournamentId, assigned);
+        if (tournament.isTeamCompetition()) {
+            List<Team> assigned = teamRepository.findAllByTournamentId(tournamentId).stream()
+                    .filter(t -> groupId.equals(t.groupId()))
+                    .map(t -> t.withGroup(fallback.id()))
+                    .toList();
+            teamRepository.saveAll(tournamentId, assigned);
+        } else {
+            List<Participant> assigned = participantRepository.findAllByTournamentId(tournamentId)
+                    .stream()
+                    .filter(p -> groupId.equals(p.groupId()))
+                    .map(p -> p.withGroup(fallback.id()))
+                    .toList();
+            participantRepository.saveAll(tournamentId, assigned);
+        }
         groupRepository.delete(tournamentId, groupId);
         sharedViewCache.evict(tournamentId);
     }
 
-    /** 段級位で全ACTIVE参加者を一括振り分けし、更新後の参加者一覧を返す */
+    /**
+     * 段級位で全ACTIVE参加者を一括振り分けし、更新後の参加者一覧を返す。
+     * チームには棋力の概念がないため団体戦では提供しない(05_swiss_pairing_algorithm.md §5.2)
+     */
     public List<ParticipantDto> autoAssign(TournamentId tournamentId, String ownerSub) {
         Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+        if (tournament.isTeamCompetition()) {
+            throw new InvalidStateException("団体戦では段級位による自動振り分けは利用できません");
+        }
         requirePreparing(tournament, "自動振り分けは大会開始前のみ可能です");
         List<Group> groups = groupRepository.findAllByTournamentId(tournamentId);
         if (groups.isEmpty()) {
