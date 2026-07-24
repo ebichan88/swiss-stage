@@ -53,8 +53,10 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Fixerの修正pushはclaude[bot]自身の識別で行われ、それが発火するsynchronize
           # イベントのactorもclaude[bot]になる。デフォルトではbotがトリガーしたワークフロー
-          # 実行を拒否するため、明示的に許可する(このジョブ自体がそのbotのpushで再起動される前提)
-          allowed_bots: "*"
+          # 実行を拒否するため、claude[bot]のみ明示的に許可する(このジョブ自体がそのbotの
+          # pushで再起動される前提)。"*"は他リポジトリ由来のbot(Dependabot等)にも書き込み
+          # 権限付きの自動処理を許してしまうため使わない(claude-code-actionのdocs/security.md)
+          allowed_bots: "claude"
           # TODO: PR#37以降レビューコメントが投稿されなくなった原因調査用。切り分け後に削除する
           show_full_output: true
           prompt: |
@@ -193,7 +195,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          allowed_bots: "*"
+          allowed_bots: "claude"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
@@ -261,7 +263,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          allowed_bots: "*"
+          allowed_bots: "claude"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}

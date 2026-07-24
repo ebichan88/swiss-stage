@@ -36,8 +36,9 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # ai-review.ymlのFixerがpushするとsynchronizeイベントのactorがclaude[bot]になり、
-          # このワークフローも同じPRに対して再トリガーされる。デフォルトのbot拒否を解除する
-          allowed_bots: "*"
+          # このワークフローも同じPRに対して再トリガーされる。claude[bot]のみ明示的に許可し、
+          # 他リポジトリ由来のbot(Dependabot等)には書き込み権限付きの自動処理を許さない
+          allowed_bots: "claude"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
