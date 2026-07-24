@@ -1,7 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { fetchSharedTournament, inputSharedResult } from '../services/sharedService';
+import {
+  fetchSharedTournament,
+  inputSharedResult,
+  inputSharedTeamMatchResult,
+} from '../services/sharedService';
 import type { ReportMatchResultInput } from '../types/round';
+import type { ReportTeamMatchResultInput } from '../types/team';
 import { queryKeys } from './queryKeys';
 
 /**
@@ -26,6 +31,18 @@ export function useInputSharedResult(token: string) {
       inputSharedResult(token, matchId, input),
     onSettled: () => {
       // 競合(409)時も最新状態を取り直して画面を追従させる
+      void queryClient.invalidateQueries({ queryKey: queryKeys.shared(token) });
+    },
+  });
+}
+
+/** 団体戦・共有トークン経由の結果自己申告(S11相当)。成功時は共有集約を再取得する */
+export function useInputSharedTeamMatchResult(token: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ matchId, input }: { matchId: string; input: ReportTeamMatchResultInput }) =>
+      inputSharedTeamMatchResult(token, matchId, input),
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.shared(token) });
     },
   });
