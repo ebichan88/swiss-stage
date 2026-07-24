@@ -6,7 +6,8 @@ name: AI QA
 # できてしまうため、意図的にループを持たない。
 on:
   pull_request:
-    types: [opened, synchronize, ready_for_review]
+    # unlabeled: needs-humanラベルを外した際に自動処理を再開するため
+    types: [opened, synchronize, ready_for_review, unlabeled]
     # 純ドキュメントPR(挙動が変わらない)はスキップ
     paths-ignore:
       - '**.md'
@@ -22,8 +23,9 @@ permissions:
 
 jobs:
   qa:
-    # needs-humanラベル付きPRはAI自動処理を停止する(ai-review.ymlと同じ規約)
-    if: ${{ !github.event.pull_request.draft && !contains(github.event.pull_request.labels.*.name, 'needs-human') }}
+    # needs-humanラベル付きPRはAI自動処理を停止する(ai-review.ymlと同じ規約)。
+    # unlabeledイベントはneeds-human以外のラベル除去では発火させない
+    if: ${{ !github.event.pull_request.draft && !contains(github.event.pull_request.labels.*.name, 'needs-human') && (github.event.action != 'unlabeled' || github.event.label.name == 'needs-human') }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -33,6 +35,9 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # ai-review.ymlのFixerがpushするとsynchronizeイベントのactorがclaude[bot]になり、
+          # このワークフローも同じPRに対して再トリガーされる。デフォルトのbot拒否を解除する
+          allowed_bots: "*"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
