@@ -6,9 +6,21 @@ import { useTournamentContext } from '../components/layouts/TournamentLayout';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState, LoadingState } from '../components/ui/QueryStates';
 import { useStandings } from '../hooks/useStandings';
+import { TeamStandingsPage } from './TeamStandingsPage';
 
-/** S08 順位表。順位は保存されずバックエンドで都度計算される。グループ大会はグループごとに表示 */
+/**
+ * S08 順位表。順位は保存されずバックエンドで都度計算される。グループ大会はグループごとに表示。
+ * 団体戦(competitionType=TEAM)はTeamStandingsPageに切り替わる
+ */
 export function StandingsPage() {
+  const tournament = useTournamentContext();
+  if (tournament.competitionType === 'TEAM') {
+    return <TeamStandingsPage />;
+  }
+  return <IndividualStandingsPage />;
+}
+
+function IndividualStandingsPage() {
   const tournament = useTournamentContext();
   const { data: groupStandings, isPending, isError, refetch } = useStandings(tournament.id);
 

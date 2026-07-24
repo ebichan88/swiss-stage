@@ -7,9 +7,21 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState, LoadingState } from '../components/ui/QueryStates';
 import { useRounds } from '../hooks/useRounds';
 import { useStandings } from '../hooks/useStandings';
+import { TeamCrossTablePage } from './TeamCrossTablePage';
 
-/** 戦績一覧(参加者×ラウンドの対戦相手・結果)。順位表とは別メニュー。グループ大会はグループごとに表示 */
+/**
+ * 戦績一覧(参加者×ラウンドの対戦相手・結果)。順位表とは別メニュー。グループ大会はグループごとに表示。
+ * 団体戦(competitionType=TEAM)はTeamCrossTablePageに切り替わる
+ */
 export function CrossTablePage() {
+  const tournament = useTournamentContext();
+  if (tournament.competitionType === 'TEAM') {
+    return <TeamCrossTablePage />;
+  }
+  return <IndividualCrossTablePage />;
+}
+
+function IndividualCrossTablePage() {
   const tournament = useTournamentContext();
   const {
     data: groupStandings,

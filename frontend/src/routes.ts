@@ -12,4 +12,5 @@ export const paths = {
   settings: (id: string) => `/tournaments/${id}/settings`,
   shared: (token: string) => `/s/${token}`,
   sharedMatch: (token: string, matchId: string) => `/s/${token}/matches/${matchId}`,
+  sharedTeamMatch: (token: string, matchId: string) => `/s/${token}/team-matches/${matchId}`,
 } as const;

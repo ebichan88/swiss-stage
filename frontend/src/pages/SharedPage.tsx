@@ -35,6 +35,8 @@ import { ApiError } from '../services/apiClient';
 import { paths } from '../routes';
 import type { Match, Round } from '../types/round';
 import type { ParticipantSummary } from '../types/participant';
+import type { SharedTournament } from '../types/shared';
+import { TeamSharedPage } from './TeamSharedPage';
 
 /**
  * 対局カードの状態テキスト。申告待ち・不一致・確定後の食い違いは結果と区別して案内する。
@@ -123,13 +125,14 @@ function SharedMatchCard({ token, match, multiGroup, canInput }: SharedMatchCard
 
 /**
  * S10 共有ページ(参加者向け・スマホ優先)。
- * ヘッダーに大会名と現在ラウンドを常時表示し、組み合わせ/順位表をタブで切り替える
+ * ヘッダーに大会名と現在ラウンドを常時表示し、組み合わせ/順位表をタブで切り替える。
+ * 団体戦(competitionType=TEAM)はTeamSharedPageに切り替わる。
+ * competitionTypeはデータ取得(useSharedTournament)完了後にしか分からないため、
+ * ローディング・エラー状態をこの共通コンポーネントで処理してから分岐する
  */
 export function SharedPage() {
   const { token = '' } = useParams();
   const { data, isPending, isError, error, refetch } = useSharedTournament(token);
-  const [tab, setTab] = useState<'pairings' | 'standings' | 'crosstable'>('pairings');
-  const [selectedRound, setSelectedRound] = useState<number | null>(null);
 
   if (isPending) {
     return <FullPageSpinner />;
@@ -150,7 +153,24 @@ export function SharedPage() {
     return <ErrorState message="大会情報の取得に失敗しました" onRetry={() => void refetch()} />;
   }
 
-  const { tournament, rounds, standings } = data;
+  if (data.tournament.competitionType === 'TEAM') {
+    return <TeamSharedPage token={token} data={data} />;
+  }
+  return <IndividualSharedPage token={token} data={data} />;
+}
+
+interface IndividualSharedPageProps {
+  token: string;
+  data: SharedTournament;
+}
+
+function IndividualSharedPage({ token, data }: IndividualSharedPageProps) {
+  const [tab, setTab] = useState<'pairings' | 'standings' | 'crosstable'>('pairings');
+  const [selectedRound, setSelectedRound] = useState<number | null>(null);
+
+  const { tournament, rounds: individualRounds, standings: individualStandings } = data;
+  const rounds = individualRounds ?? [];
+  const standings = individualStandings ?? [];
   const latestRound: Round | null = rounds.length > 0 ? rounds[rounds.length - 1] : null;
   const currentRound = rounds.find((round) => round.roundNumber === selectedRound) ?? latestRound;
   // グループが1つだけの大会は表示上グループを見せない(見出し・卓番号プレフィックスなし)

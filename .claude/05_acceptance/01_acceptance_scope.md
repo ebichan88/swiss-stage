@@ -112,9 +112,9 @@
 | TEAM-AC-015 | P0 | 未着手(全ボード・両者申告ともにNONE)の対局が残るラウンドは確定できない。1ボードでも入力・申告があれば警告のみで確定可能 | done | TeamRoundApiTest |
 | TEAM-AC-016 | P0 | 順位表は個人戦と同じ基準(勝点→SOS→SOSOS→直接対決→エントリー順)でチーム単位に計算される | done | TeamRoundApiTest |
 | TEAM-AC-017 | P0 | 戦績一覧・組み合わせ・順位表のレスポンスに個人名(メンバー氏名)を含めない(チーム名のみ) | done | TeamRoundApiTest |
-| TEAM-AC-018 | P0 | 共有トークン経由の結果自己申告は「どちらのチームか」を選択しボード配列をまとめて送信する。ボードごとに両者の申告が一致した時点でそのボードのみ確定する | todo | TeamSharedApiTest |
-| TEAM-AC-019 | P0 | ボード単位で申告が不一致の場合、確定させず双方の申告内容(誰が何を申告したか)を運営者画面・共有画面の両方で確認できる | todo | TeamSharedApiTest |
-| TEAM-AC-020 | P0 | 運営者が直接確定したボード結果は、その後の参加者の自己申告(一致・不一致問わず)で上書きされない | todo | TeamSharedApiTest |
+| TEAM-AC-018 | P0 | 共有トークン経由の結果自己申告は「どちらのチームか」を選択しボード配列をまとめて送信する。ボードごとに両者の申告が一致した時点でそのボードのみ確定する | done | TeamSharedApiTest |
+| TEAM-AC-019 | P0 | ボード単位で申告が不一致の場合、確定させず双方の申告内容(誰が何を申告したか)を運営者画面・共有画面の両方で確認できる | done | TeamSharedApiTest(API), TeamMatchResultControl.test.tsx(運営者画面), SharedTeamResultPage.test.tsx(共有画面) |
+| TEAM-AC-020 | P0 | 運営者が直接確定したボード結果は、その後の参加者の自己申告(一致・不一致問わず)で上書きされない | done | TeamSharedApiTest |
 
 ## SHR: 共有(トークン)
 
@@ -158,3 +158,5 @@
 | E2E-AC-004 | P0 | CP3: 奇数人数の大会で全ラウンドを通してBYEが重複しない | done | cp3-bye |
 | E2E-AC-005 | P1 | CP4: 異常系(未入力確定の警告・競合409表示・無効トークンのエラーページ)がUIで扱える | done | cp4-errors |
 | E2E-AC-006 | P0 | CP5: グループ大会をグループ独立で運営できる | done | cp5-groups |
+| E2E-AC-007 | P0 | CP6: 団体戦(3人制)をログインから順位表まで一気通貫で運営でき、メンバー氏名が一切表示されない | done | cp6-team-tournament |
+| E2E-AC-008 | P1 | CP6補: 団体戦の共有ページで両チームの自己申告が一致したボードが運営者画面に反映される | done | cp6-team-tournament |

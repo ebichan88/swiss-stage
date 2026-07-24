@@ -25,6 +25,7 @@ import {
 import { useSnackbar } from '../hooks/useSnackbar';
 import { ApiError } from '../services/apiClient';
 import type { Participant } from '../types/participant';
+import { TeamsPage } from './TeamsPage';
 
 type DialogState =
   | { kind: 'add' }
@@ -35,8 +36,20 @@ type DialogState =
   | { kind: 'groups' }
   | null;
 
-/** S06 参加者管理。PREPARING=追加・編集・削除可 / IN_PROGRESS=棄権処理のみ / FINISHED=閲覧のみ */
+/**
+ * S06 参加者管理。団体戦(competitionType=TEAM)はチーム管理(TeamsPage)に切り替わる。
+ * hooksを条件分岐なしで呼ぶため、個人戦の本体は別コンポーネント(IndividualParticipantsPage)に分ける
+ */
 export function ParticipantsPage() {
+  const tournament = useTournamentContext();
+  if (tournament.competitionType === 'TEAM') {
+    return <TeamsPage />;
+  }
+  return <IndividualParticipantsPage />;
+}
+
+/** PREPARING=追加・編集・削除可 / IN_PROGRESS=棄権処理のみ / FINISHED=閲覧のみ */
+function IndividualParticipantsPage() {
   const tournament = useTournamentContext();
   const { data: participants, isPending, isError, refetch } = useParticipants(tournament.id);
   const { data: groups } = useGroups(tournament.id);

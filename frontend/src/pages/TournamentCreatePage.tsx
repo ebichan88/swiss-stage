@@ -15,12 +15,14 @@ import { ApiError } from '../services/apiClient';
 import { useCreateTournament } from '../hooks/useTournaments';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { paths } from '../routes';
-import { GameType } from '../types/enums';
-import { gameTypeLabels } from '../utils/labels';
+import { CompetitionType, GameType } from '../types/enums';
+import { competitionTypeLabels, gameTypeLabels } from '../utils/labels';
 
 interface TournamentFormValues {
   name: string;
   gameType: GameType;
+  competitionType: CompetitionType;
+  teamSize: '3' | '5';
   totalRounds: string;
 }
 
@@ -29,17 +31,28 @@ export function TournamentCreatePage() {
   const createMutation = useCreateTournament();
   const navigate = useNavigate();
   const { showSuccess, showError } = useSnackbar();
-  const { control, handleSubmit } = useForm<TournamentFormValues>({
-    defaultValues: { name: '', gameType: GameType.GO, totalRounds: '5' },
+  const { control, handleSubmit, watch } = useForm<TournamentFormValues>({
+    defaultValues: {
+      name: '',
+      gameType: GameType.GO,
+      competitionType: CompetitionType.INDIVIDUAL,
+      teamSize: '3',
+      totalRounds: '5',
+    },
   });
+  const competitionType = watch('competitionType');
+  const isTeam = competitionType === CompetitionType.TEAM;
 
   const onSubmit = (values: TournamentFormValues) => {
     createMutation.mutate(
       {
         name: values.name.trim(),
         gameType: values.gameType,
-        competitionType: 'INDIVIDUAL',
-        teamSize: null,
+        competitionType: values.competitionType,
+        teamSize:
+          values.competitionType === CompetitionType.TEAM
+            ? (Number(values.teamSize) as 3 | 5)
+            : null,
         totalRounds: Number(values.totalRounds),
       },
       {
@@ -92,6 +105,45 @@ export function TournamentCreatePage() {
               </TextField>
             )}
           />
+          <Controller
+            name="competitionType"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="大会形式"
+                select
+                required
+                fullWidth
+                helperText="作成後は変更できません"
+              >
+                {Object.values(CompetitionType).map((type) => (
+                  <MenuItem key={type} value={type}>
+                    {competitionTypeLabels[type]}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+          {isTeam && (
+            <Controller
+              name="teamSize"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="チーム制"
+                  select
+                  required
+                  fullWidth
+                  helperText="1チームあたりの必須人数(補欠は別。作成後は変更できません)"
+                >
+                  <MenuItem value="3">3人制(主将・副将・三将 + 補欠2名まで)</MenuItem>
+                  <MenuItem value="5">5人制(主将〜五将 + 補欠3名まで)</MenuItem>
+                </TextField>
+              )}
+            />
+          )}
           <Controller
             name="totalRounds"
             control={control}

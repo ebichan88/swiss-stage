@@ -43,7 +43,10 @@ export function SharedResultPage() {
     return <ErrorState message="対局情報の取得に失敗しました" onRetry={() => void refetch()} />;
   }
 
-  const { tournament, rounds, standings } = data;
+  // このページは個人戦専用(団体戦はSharedTeamResultPage)。rounds/standingsは常に非null
+  const { tournament, rounds: individualRounds, standings: individualStandings } = data;
+  const rounds = individualRounds ?? [];
+  const standings = individualStandings ?? [];
   const round = rounds.find((r) => r.matches.some((m) => m.id === mid)) ?? null;
   const match = round?.matches.find((m) => m.id === mid) ?? null;
   const multiGroup = standings.length > 1;

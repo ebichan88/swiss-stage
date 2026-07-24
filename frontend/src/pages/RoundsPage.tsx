@@ -37,9 +37,21 @@ import { paths } from '../routes';
 import type { MatchResult } from '../types/enums';
 import type { Match } from '../types/round';
 import { relaxationLabel } from '../utils/labels';
+import { TeamRoundsPage } from './TeamRoundsPage';
 
-/** S07 ラウンド管理(組み合わせ生成・結果入力・ラウンド確定) */
+/**
+ * S07 ラウンド管理。団体戦(competitionType=TEAM)はTeamRoundsPageに切り替わる。
+ * hooksを条件分岐なしで呼ぶため、個人戦の本体は別コンポーネント(IndividualRoundsPage)に分ける
+ */
 export function RoundsPage() {
+  const tournament = useTournamentContext();
+  if (tournament.competitionType === 'TEAM') {
+    return <TeamRoundsPage />;
+  }
+  return <IndividualRoundsPage />;
+}
+
+function IndividualRoundsPage() {
   const tournament = useTournamentContext();
   const { data: rounds, isPending, isError, refetch } = useRounds(tournament.id);
   const { data: groups } = useGroups(tournament.id);

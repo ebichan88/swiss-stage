@@ -2,7 +2,9 @@ package com.swiss_stage.presentation.controller;
 
 import com.swiss_stage.application.dto.MatchDto;
 import com.swiss_stage.application.dto.ReportMatchResultRequest;
+import com.swiss_stage.application.dto.ReportTeamMatchResultRequest;
 import com.swiss_stage.application.dto.SharedTournamentDto;
+import com.swiss_stage.application.dto.TeamMatchDto;
 import com.swiss_stage.application.service.SharedService;
 import com.swiss_stage.presentation.api.ApiSuccess;
 import jakarta.validation.Valid;
@@ -43,6 +45,16 @@ public class SharedController {
             @Valid @RequestBody ReportMatchResultRequest request) {
         return ApiSuccess.of(
                 sharedService.inputResult(token, PathIds.matchId(matchId), request),
+                Instant.now(clock));
+    }
+
+    @PutMapping("/{token}/team-matches/{matchId}/result")
+    public ApiSuccess<TeamMatchDto> inputTeamMatchResult(
+            @PathVariable("token") String token,
+            @PathVariable("matchId") String matchId,
+            @Valid @RequestBody ReportTeamMatchResultRequest request) {
+        return ApiSuccess.of(
+                sharedService.inputTeamMatchResult(token, PathIds.teamMatchId(matchId), request),
                 Instant.now(clock));
     }
 }

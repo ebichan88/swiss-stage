@@ -40,6 +40,13 @@ const router = createBrowserRouter([
           import('./pages/SharedResultPage').then((m) => ({ Component: m.SharedResultPage })),
       },
       {
+        path: '/s/:token/team-matches/:mid',
+        lazy: () =>
+          import('./pages/SharedTeamResultPage').then((m) => ({
+            Component: m.SharedTeamResultPage,
+          })),
+      },
+      {
         lazy: () =>
           import('./components/layouts/RequireAuth').then((m) => ({ Component: m.RequireAuth })),
         children: [

@@ -3,6 +3,16 @@ import type { Participant, ParticipantSummary } from '../src/types/participant';
 import type { Match, Round } from '../src/types/round';
 import type { SharedTournament, SharedTournamentSummary } from '../src/types/shared';
 import type { GroupStandings, Standing } from '../src/types/standing';
+import type {
+  BoardResult,
+  GroupTeamStandings,
+  Team,
+  TeamMatch,
+  TeamMember,
+  TeamRound,
+  TeamStanding,
+  TeamSummary,
+} from '../src/types/team';
 import type { Tournament } from '../src/types/tournament';
 
 /** テストデータビルダー(09_test_strategy.md §5)。個人名は架空の名前のみ使用する */
@@ -97,6 +107,8 @@ export function sharedTournamentOf(overrides: Partial<SharedTournament> = {}): S
     tournament: sharedSummaryOf(),
     rounds: [roundOf()],
     standings: [groupStandingsOf()],
+    teamRounds: null,
+    teamStandings: null,
     ...overrides,
   };
 }
@@ -127,6 +139,93 @@ export function standingOf(overrides: Partial<Standing> = {}): Standing {
     sos: 10,
     sosos: 24.5,
     hadBye: false,
+    ...overrides,
+  };
+}
+
+export function teamMemberOf(overrides: Partial<TeamMember> = {}): TeamMember {
+  return {
+    id: '01TESTMEMBER0000000000000',
+    name: '架空 主将',
+    rank: 'DAN_3',
+    boardPosition: 1,
+    ...overrides,
+  };
+}
+
+export function teamOf(overrides: Partial<Team> = {}): Team {
+  return {
+    id: '01TESTTEAM00000000000000A',
+    name: 'Aチーム',
+    entryOrder: 1,
+    status: 'ACTIVE',
+    groupId: '01TESTGROUP000000000000000',
+    members: [],
+    ...overrides,
+  };
+}
+
+export function teamSummaryOf(overrides: Partial<TeamSummary> = {}): TeamSummary {
+  return {
+    id: '01TESTTEAM00000000000000A',
+    name: 'Aチーム',
+    entryOrder: 1,
+    ...overrides,
+  };
+}
+
+export function boardResultOf(overrides: Partial<BoardResult> = {}): BoardResult {
+  return {
+    boardPosition: 1,
+    result: 'NONE',
+    team1ReportedResult: 'NONE',
+    team2ReportedResult: 'NONE',
+    ...overrides,
+  };
+}
+
+export function teamMatchOf(overrides: Partial<TeamMatch> = {}): TeamMatch {
+  return {
+    id: '01TESTTEAMMATCH000000000A',
+    roundNumber: 1,
+    tableNumber: 1,
+    group: groupOf(),
+    team1: teamSummaryOf({ id: 't1', name: 'Aチーム' }),
+    team2: teamSummaryOf({ id: 't2', name: 'Bチーム' }),
+    boardResults: [boardResultOf({ boardPosition: 1 })],
+    version: 0,
+    ...overrides,
+  };
+}
+
+export function teamRoundOf(overrides: Partial<TeamRound> = {}): TeamRound {
+  return {
+    roundNumber: 1,
+    status: 'PLAYING',
+    matches: [teamMatchOf()],
+    ...overrides,
+  };
+}
+
+export function teamStandingOf(overrides: Partial<TeamStanding> = {}): TeamStanding {
+  return {
+    rank: 1,
+    team: teamSummaryOf(),
+    wins: 3,
+    losses: 1,
+    sos: 10,
+    sosos: 24.5,
+    hadBye: false,
+    ...overrides,
+  };
+}
+
+export function groupTeamStandingsOf(
+  overrides: Partial<GroupTeamStandings> = {},
+): GroupTeamStandings {
+  return {
+    group: groupOf(),
+    standings: [teamStandingOf()],
     ...overrides,
   };
 }

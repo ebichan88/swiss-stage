@@ -12,6 +12,13 @@ export const GameType = {
   SHOGI: 'SHOGI',
 } as const satisfies { [K in GameType]: K };
 
+/** 個人戦(INDIVIDUAL)か団体戦(TEAM)か。大会作成後は変更不可 */
+export type CompetitionType = Schemas['CompetitionType'];
+export const CompetitionType = {
+  INDIVIDUAL: 'INDIVIDUAL',
+  TEAM: 'TEAM',
+} as const satisfies { [K in CompetitionType]: K };
+
 export type TournamentStatus = Schemas['TournamentStatus'];
 export const TournamentStatus = {
   PREPARING: 'PREPARING',

@@ -605,6 +605,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/shared/{token}/team-matches/{mid}/result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 団体戦の結果自己申告(大会設定 resultInputEnabled が有効な場合のみ)。 reportedBy側(team1/team2)のボード配列として記録し、ボードごとに両者の申告が 一致した時点でそのボードの結果が自動確定する */
+        put: operations["inputSharedTeamMatchResult"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -848,11 +865,13 @@ export interface components {
             /** @description true なら参加者(トークン保持者)が結果入力できる */
             resultInputEnabled: boolean;
         };
-        /** @description shareToken・ownerSub は含めない(13_security_design.md §6) */
+        /** @description shareToken・ownerSub は含めない(13_security_design.md §6)。 competitionType=INDIVIDUALではrounds/standingsが非null・teamRounds/teamStandingsはnull、 TEAMではその逆になる(tournament.competitionTypeで判別する) */
         SharedTournament: {
             tournament: components["schemas"]["SharedTournamentSummary"];
-            rounds: components["schemas"]["Round"][];
-            standings: components["schemas"]["GroupStandings"][];
+            rounds: components["schemas"]["Round"][] | null;
+            standings: components["schemas"]["GroupStandings"][] | null;
+            teamRounds: components["schemas"]["TeamRound"][] | null;
+            teamStandings: components["schemas"]["GroupTeamStandings"][] | null;
         };
         CsvImportResult: {
             importedCount: number;
@@ -947,6 +966,13 @@ export interface components {
         };
         /** @description 運営者による直接確定用(ボード配列をまとめて置き換える)。boardResultsの長さは teamSizeと一致させ、各要素はNONE(未入力のまま)またはPLAYER1_WIN/PLAYER2_WIN/ DRAW/BOTH_LOSE(BYEの指定は400)。一度この経路で確定したボードは、その後の 参加者の自己申告(ReportTeamMatchResultRequest)では上書きされない */
         InputTeamMatchResultRequest: {
+            boardResults: components["schemas"]["MatchResult"][];
+            /** Format: int64 */
+            version: number;
+        };
+        /** @description トークン経由の自己申告用(ボード配列をまとめて送信するが、確定はボード単位で 独立に行う)。reportedBy は「自分がteam1/team2のどちらか」を表す(MatchSideを TEAM1/TEAM2として読み替える)。boardResultsの各要素はNONE(未申告のまま)または PLAYER1_WIN/PLAYER2_WIN/DRAW/BOTH_LOSE(BYEの指定は400)。ボードごとに両者の 申告(boardResults[i])が一致した時点でそのボードの結果が自動確定する */
+        ReportTeamMatchResultRequest: {
+            reportedBy: components["schemas"]["MatchSide"];
             boardResults: components["schemas"]["MatchResult"][];
             /** Format: int64 */
             version: number;
@@ -2252,6 +2278,32 @@ export interface operations {
         };
         responses: {
             200: components["responses"]["Match"];
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    inputSharedTeamMatchResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 共有トークン(URL-safe文字列) */
+                token: components["parameters"]["ShareToken"];
+                /** @description 団体戦対局ID(ULID) */
+                mid: components["parameters"]["TeamMatchId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportTeamMatchResultRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["TeamMatch"];
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
