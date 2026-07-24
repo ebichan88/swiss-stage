@@ -87,7 +87,13 @@ export function TeamMemberFormDialog({
               name="rank"
               control={control}
               render={({ field }) => (
-                <TextField {...field} label="棋力(段級位)" select fullWidth>
+                <TextField
+                  {...field}
+                  label="棋力(段級位)"
+                  select
+                  fullWidth
+                  slotProps={{ select: { displayEmpty: true } }}
+                >
                   <MenuItem value="">未入力</MenuItem>
                   {RANKS_STRONGEST_FIRST.map((rank) => (
                     <MenuItem key={rank} value={rank}>
@@ -106,6 +112,7 @@ export function TeamMemberFormDialog({
                   label="役割"
                   select
                   fullWidth
+                  slotProps={{ select: { displayEmpty: true } }}
                   helperText="主将〜は必須ポジション(重複不可)。補欠は人数に上限があります"
                 >
                   {positions.map((position) => (
