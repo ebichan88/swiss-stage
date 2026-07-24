@@ -2,7 +2,8 @@ name: AI Review
 
 on:
   pull_request:
-    types: [opened, synchronize, ready_for_review]
+    # unlabeled: needs-humanラベルを外した際に自動レビューを再開するため
+    types: [opened, synchronize, ready_for_review, unlabeled]
 
 # 同一PRで連続pushされたら古い実行をキャンセルして最新だけ実行する。
 # Fixerのpushがsynchronizeイベントを発火する環境では、実行中のランは
@@ -24,8 +25,9 @@ env:
 
 jobs:
   review:
-    # needs-humanラベル付きPRは自動ループを停止する(人間がラベルを外すと再開)
-    if: ${{ !github.event.pull_request.draft && !contains(github.event.pull_request.labels.*.name, 'needs-human') }}
+    # needs-humanラベル付きPRは自動ループを停止する(人間がラベルを外すと再開)。
+    # unlabeledイベントはneeds-human以外のラベル除去では発火させない(無関係なラベル操作で毎回レビューが走るのを防ぐ)
+    if: ${{ !github.event.pull_request.draft && !contains(github.event.pull_request.labels.*.name, 'needs-human') && (github.event.action != 'unlabeled' || github.event.label.name == 'needs-human') }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     services:
