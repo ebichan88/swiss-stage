@@ -6,21 +6,18 @@ import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
 import com.swiss_stage.domain.model.Rank;
 import com.swiss_stage.domain.model.Standing;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * スイス方式マッチング。
+ * スイス方式マッチング(個人戦)。バックトラック探索の本体は{@link PairingEngine}に共通化し、
+ * このクラスは Participant/Match をエンジンの汎用形に変換するアダプタに徹する
+ * (団体戦は {@code TeamSwissPairingService} が同じ PairingEngine を使う)。
  *
  * <p>制約(仕様: .claude/01_development_docs/05_swiss_pairing_algorithm.md §2):
  * <ul>
@@ -30,10 +27,8 @@ import java.util.stream.Collectors;
  */
 public final class SwissPairingService {
 
-    /** バックトラック探索の展開ノード数上限(超えたら制約を緩和して再探索) */
-    private static final int SEARCH_NODE_LIMIT = 200_000;
-
     private final StandingCalculator standingCalculator = new StandingCalculator();
+    private final PairingEngine engine = new PairingEngine();
 
     /**
      * @param participants 全参加者(WITHDRAWNは自動的に除外される)
@@ -58,23 +53,12 @@ public final class SwissPairingService {
     // --- 初回ラウンド: 棋力の近い者同士を組む(棋力の強い順にソートして隣接ペアリング) ---
 
     private PairingResult pairFirstRound(List<Participant> active, PairingOptions options) {
-        List<Participant> ordered = new ArrayList<>(active);
-        ordered.sort(Comparator
+        Comparator<Participant> order = Comparator
                 .comparing(Participant::rank, Rank.strongestFirst())
-                .thenComparingInt(Participant::entryOrder));
-        if (options.randomFirstRound()) {
-            Collections.shuffle(ordered, new Random(options.randomSeed()));
-        }
-
-        ParticipantId bye = null;
-        if (ordered.size() % 2 != 0) {
-            bye = ordered.removeLast().id();
-        }
-        List<PairingResult.Pair> pairs = new ArrayList<>();
-        for (int i = 0; i + 1 < ordered.size(); i += 2) {
-            pairs.add(new PairingResult.Pair(ordered.get(i).id(), ordered.get(i + 1).id()));
-        }
-        return new PairingResult(pairs, bye, Set.of());
+                .thenComparingInt(Participant::entryOrder);
+        PairingEngine.PairingOutcome<ParticipantId> outcome = engine.pairFirstRound(
+                active, Participant::id, order, options.randomFirstRound(), options.randomSeed());
+        return toPairingResult(outcome);
     }
 
     // --- 第2ラウンド以降: スコアグループ + バックトラック ---
@@ -88,174 +72,36 @@ public final class SwissPairingService {
         Map<ParticipantId, Standing> standings =
                 standingCalculator.calculate(allParticipants, previousMatches).stream()
                         .collect(Collectors.toMap(Standing::participantId, Function.identity()));
-        Set<PairKey> playedPairs = collectPlayedPairs(previousMatches);
+        Set<PairingEngine.PairKey<ParticipantId>> playedPairs = collectPlayedPairs(previousMatches);
 
-        Set<PairingRelaxation> relaxations = EnumSet.noneOf(PairingRelaxation.class);
-        ParticipantId bye = null;
-        List<Participant> toPair = new ArrayList<>(active);
-        if (active.size() % 2 != 0) {
-            bye = selectBye(active, standings, relaxations);
-            ParticipantId byeId = bye;
-            toPair.removeIf(p -> p.id().equals(byeId));
-        }
-
-        // 勝点降順 → SOS降順 → エントリー順。この順で先頭から相手を探す
-        toPair.sort(Comparator
-                .comparingInt((Participant p) -> standings.get(p.id()).points()).reversed()
-                .thenComparing(Comparator.comparingInt(
-                        (Participant p) -> standings.get(p.id()).sos()).reversed())
-                .thenComparing(Comparator.comparingInt(Participant::entryOrder)));
-
-        // 制約レベルを段階的に緩和して探索する
-        boolean avoidOrg = options.avoidSameOrganization();
-        List<PairingResult.Pair> pairs = search(toPair, standings, playedPairs, true, avoidOrg);
-        if (pairs == null && avoidOrg) {
-            pairs = search(toPair, standings, playedPairs, true, false);
-            if (pairs != null) {
-                relaxations.add(PairingRelaxation.SAME_ORGANIZATION);
-            }
-        }
-        if (pairs == null) {
-            pairs = search(toPair, standings, playedPairs, false, false);
-            if (pairs != null) {
-                relaxations.add(PairingRelaxation.REMATCH);
-            }
-        }
-        if (pairs == null) {
-            throw new DomainException("組み合わせを生成できませんでした");
-        }
-        return new PairingResult(pairs, bye, Collections.unmodifiableSet(relaxations));
+        PairingEngine.PairingOutcome<ParticipantId> outcome = engine.pairLaterRound(
+                active,
+                Participant::id,
+                ParticipantId::value,
+                p -> standings.get(p.id()).points(),
+                p -> standings.get(p.id()).sos(),
+                p -> standings.get(p.id()).hadBye(),
+                Participant::entryOrder,
+                playedPairs,
+                Participant::hasSameOrganization,
+                options.avoidSameOrganization());
+        return toPairingResult(outcome);
     }
 
-    /**
-     * BYE付与: BYE未経験 かつ 最下位スコアグループ かつ SOS最小。
-     * 全員BYE経験済みの場合のみBYE重複を許し、緩和として記録する。
-     */
-    private ParticipantId selectBye(
-            List<Participant> active,
-            Map<ParticipantId, Standing> standings,
-            Set<PairingRelaxation> relaxations) {
-        Comparator<Participant> lowestFirst = Comparator
-                .comparingInt((Participant p) -> standings.get(p.id()).points())
-                .thenComparingInt(p -> standings.get(p.id()).sos())
-                .thenComparing(Comparator.comparingInt(Participant::entryOrder).reversed());
-        Optional<Participant> candidate = active.stream()
-                .filter(p -> !standings.get(p.id()).hadBye())
-                .min(lowestFirst);
-        if (candidate.isPresent()) {
-            return candidate.get().id();
-        }
-        relaxations.add(PairingRelaxation.BYE_REPEAT);
-        return active.stream().min(lowestFirst).orElseThrow().id();
-    }
-
-    private Set<PairKey> collectPlayedPairs(List<Match> matches) {
-        Set<PairKey> keys = new HashSet<>();
+    private Set<PairingEngine.PairKey<ParticipantId>> collectPlayedPairs(List<Match> matches) {
+        Set<PairingEngine.PairKey<ParticipantId>> keys = new HashSet<>();
         for (Match m : matches) {
             if (!m.isBye()) {
-                keys.add(PairKey.of(m.player1Id(), m.player2Id()));
+                keys.add(PairingEngine.PairKey.of(m.player1Id(), m.player2Id(), ParticipantId::value));
             }
         }
         return keys;
     }
 
-    /** バックトラック探索。解がなければnull */
-    private List<PairingResult.Pair> search(
-            List<Participant> ordered,
-            Map<ParticipantId, Standing> standings,
-            Set<PairKey> playedPairs,
-            boolean forbidRematch,
-            boolean avoidSameOrg) {
-        var context = new SearchContext(standings, playedPairs, forbidRematch, avoidSameOrg);
-        List<PairingResult.Pair> result = new ArrayList<>();
-        if (backtrack(ordered, new HashSet<>(), result, context)) {
-            return result;
-        }
-        return null;
-    }
-
-    private boolean backtrack(
-            List<Participant> ordered,
-            Set<ParticipantId> paired,
-            List<PairingResult.Pair> result,
-            SearchContext ctx) {
-        if (ctx.nodeCount++ > SEARCH_NODE_LIMIT) {
-            return false;
-        }
-        Participant first = null;
-        for (Participant p : ordered) {
-            if (!paired.contains(p.id())) {
-                first = p;
-                break;
-            }
-        }
-        if (first == null) {
-            return true; // 全員ペア済み
-        }
-
-        for (Participant candidate : candidatesFor(first, ordered, paired, ctx)) {
-            paired.add(first.id());
-            paired.add(candidate.id());
-            result.add(new PairingResult.Pair(first.id(), candidate.id()));
-            if (backtrack(ordered, paired, result, ctx)) {
-                return true;
-            }
-            result.removeLast();
-            paired.remove(first.id());
-            paired.remove(candidate.id());
-        }
-        return false;
-    }
-
-    /**
-     * 候補を優先度順に返す: 勝点差が小さい順(フロート最小化)→ 別所属優先 → 元の並び順。
-     */
-    private List<Participant> candidatesFor(
-            Participant first, List<Participant> ordered, Set<ParticipantId> paired, SearchContext ctx) {
-        int firstPoints = ctx.standings.get(first.id()).points();
-        List<Participant> candidates = new ArrayList<>();
-        for (Participant p : ordered) {
-            if (paired.contains(p.id()) || p.id().equals(first.id())) {
-                continue;
-            }
-            if (ctx.forbidRematch && ctx.playedPairs.contains(PairKey.of(first.id(), p.id()))) {
-                continue;
-            }
-            if (ctx.avoidSameOrg && first.hasSameOrganization(p)) {
-                continue;
-            }
-            candidates.add(p);
-        }
-        candidates.sort(Comparator.comparingInt(
-                p -> Math.abs(ctx.standings.get(p.id()).points() - firstPoints)));
-        return candidates;
-    }
-
-    private static final class SearchContext {
-        final Map<ParticipantId, Standing> standings;
-        final Set<PairKey> playedPairs;
-        final boolean forbidRematch;
-        final boolean avoidSameOrg;
-        int nodeCount = 0;
-
-        SearchContext(
-                Map<ParticipantId, Standing> standings,
-                Set<PairKey> playedPairs,
-                boolean forbidRematch,
-                boolean avoidSameOrg) {
-            this.standings = standings;
-            this.playedPairs = playedPairs;
-            this.forbidRematch = forbidRematch;
-            this.avoidSameOrg = avoidSameOrg;
-        }
-    }
-
-    /** 順序に依存しない対戦ペアのキー */
-    private record PairKey(String low, String high) {
-        static PairKey of(ParticipantId a, ParticipantId b) {
-            return a.value().compareTo(b.value()) <= 0
-                    ? new PairKey(a.value(), b.value())
-                    : new PairKey(b.value(), a.value());
-        }
+    private static PairingResult toPairingResult(PairingEngine.PairingOutcome<ParticipantId> outcome) {
+        List<PairingResult.Pair> pairs = outcome.pairs().stream()
+                .map(p -> new PairingResult.Pair(p.firstId(), p.secondId()))
+                .toList();
+        return new PairingResult(pairs, outcome.byeId(), outcome.relaxations());
     }
 }
