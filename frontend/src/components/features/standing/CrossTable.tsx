@@ -76,7 +76,7 @@ export function CrossTable({ rounds, standings }: CrossTableProps) {
             <TableCell rowSpan={2} align="right">
               <TableHeaderTooltip
                 label="SOSOS"
-                tooltip="Sum of Opponents' SOS：対戦相手のＳＯＳを合計したもの"
+                tooltip="Sum of Opponents' SOS：対戦相手の SOS を合計したもの"
               />
             </TableCell>
             <TableCell rowSpan={2}>順位</TableCell>
