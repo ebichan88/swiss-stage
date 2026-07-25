@@ -48,6 +48,7 @@ describe('TeamSharedPage', () => {
               standings: null,
               teamRounds: [
                 teamRoundOf({
+                  status: 'CONFIRMED',
                   matches: [
                     teamMatchOf({
                       team1: teamSummaryOf({ id: 't1', name: 'Aチーム' }),
@@ -75,6 +76,41 @@ describe('TeamSharedPage', () => {
 
     await userEvent.click(screen.getByRole('tab', { name: '順位表' }));
     expect(await screen.findByRole('list', { name: '順位' })).toBeInTheDocument();
+  });
+
+  it('SHR-AC-017: ラウンド1が確定するまで順位表タブは表示されない(未確定時は全員同率rank=1になるため)', async () => {
+    server.use(
+      http.get(`/api/v1/shared/${TOKEN}`, () =>
+        HttpResponse.json(
+          apiSuccess(
+            sharedTournamentOf({
+              tournament: teamTournament,
+              rounds: null,
+              standings: null,
+              teamRounds: [teamRoundOf({ status: 'PLAYING' })],
+              teamStandings: [
+                groupTeamStandingsOf({
+                  standings: [
+                    teamStandingOf({ rank: 1, wins: 0, team: teamSummaryOf({ id: 't1' }) }),
+                    teamStandingOf({ rank: 1, wins: 0, team: teamSummaryOf({ id: 't2' }) }),
+                  ],
+                }),
+              ],
+            }),
+          ),
+        ),
+      ),
+    );
+
+    renderSharedPage();
+
+    await screen.findByRole('heading', { name: '第1回テスト囲碁大会' });
+    await userEvent.click(screen.getByRole('tab', { name: '順位表' }));
+
+    expect(
+      await screen.findByText('順位はまだありません。ラウンドを確定すると表示されます。'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: '順位' })).not.toBeInTheDocument();
   });
 
   it('戦績一覧タブに切り替えるとチーム名とボード内訳を含む一覧表が表示される', async () => {
@@ -142,7 +178,7 @@ describe('TeamSharedPage', () => {
               tournament: teamTournament,
               rounds: null,
               standings: null,
-              teamRounds: [],
+              teamRounds: [teamRoundOf({ status: 'CONFIRMED' })],
               teamStandings: [
                 groupTeamStandingsOf({
                   group: groupOf({ id: 'g1', name: 'A' }),

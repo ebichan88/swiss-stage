@@ -90,6 +90,7 @@
 | RND-AC-011 | P1 | 不正な結果値(BYE等)の入力は400になる | done | RoundApiTest |
 | RND-AC-012 | P1 | 片方のみ申告・申告不一致で結果が未確定の対局が残っているとラウンド確定はブロックされる。運営者が結果を確定すれば確定できる | done | RoundApiTest |
 | RND-AC-013 | P2 | 管理画面の順位と戦績一覧は別メニュー(別画面)で表示される | done | RankingBoard.test, CrossTable.test(Vitest) |
+| RND-AC-014 | P1 | 管理画面の順位表はラウンド1が確定するまで表示されない(未確定時は全員同率rank=1になり表示が崩れるため) | done | cp1-tournament-flow(E2E) |
 
 ## TEAM: 団体戦
 
@@ -136,6 +137,7 @@
 | SHR-AC-014 | P0 | 自己申告一致で自動確定した結果も、その後の自己申告の変更(一致・不一致問わず)で上書き・巻き戻りしない | done | SharedApiTest |
 | SHR-AC-015 | P1 | 申告不一致・確定後の食い違いは、状態語だけでなく誰が何を申告したかが運営者画面・共有画面の両方に具体的に表示される | done | MatchResultControl.test, SharedResultPage.test, SharedPage.test(Vitest) |
 | SHR-AC-016 | P2 | 共有ページの順位表はトップ3をカード、4位以降をリストで表示し、初期表示時にフェードインする | done | RankingBoard.test(Vitest) |
+| SHR-AC-017 | P1 | 共有ページの順位表はラウンド1が確定するまで表示されない(未確定時は全員同率rank=1になり表示が崩れるため) | done | SharedPage.test, TeamSharedPage.test(Vitest) |
 
 ## SPA: SPA配信
 

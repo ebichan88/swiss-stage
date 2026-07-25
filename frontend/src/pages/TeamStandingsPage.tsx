@@ -5,14 +5,31 @@ import { TeamRankingBoard } from '../components/features/team/TeamRankingBoard';
 import { useTournamentContext } from '../components/layouts/TournamentLayout';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState, LoadingState } from '../components/ui/QueryStates';
+import { useTeamRounds } from '../hooks/useTeamRounds';
 import { useTeamStandings } from '../hooks/useTeamStandings';
 
 /** S08 順位表(団体戦)。順位は保存されずバックエンドで都度計算される。個人名は含めない */
 export function TeamStandingsPage() {
   const tournament = useTournamentContext();
-  const { data: groupStandings, isPending, isError, refetch } = useTeamStandings(tournament.id);
+  const {
+    data: groupStandings,
+    isPending: standingsPending,
+    isError: standingsError,
+    refetch: refetchStandings,
+  } = useTeamStandings(tournament.id);
+  const {
+    data: rounds,
+    isPending: roundsPending,
+    isError: roundsError,
+    refetch: refetchRounds,
+  } = useTeamRounds(tournament.id);
 
-  const isEmpty = groupStandings?.every((g) => g.standings.length === 0) ?? false;
+  const isPending = standingsPending || roundsPending;
+  const isError = standingsError || roundsError;
+  // ラウンド1確定前は全員rank=1で返るため、確定済みラウンドが1つもない間は順位表を出さない
+  const round1Confirmed = rounds?.some((r) => r.status === 'CONFIRMED') ?? false;
+  const isEmpty =
+    !round1Confirmed || (groupStandings?.every((g) => g.standings.length === 0) ?? false);
 
   return (
     <Box>
@@ -26,15 +43,23 @@ export function TeamStandingsPage() {
       </Typography>
       {isPending && <LoadingState />}
       {isError && (
-        <ErrorState message="順位表の取得に失敗しました" onRetry={() => void refetch()} />
+        <ErrorState
+          message="順位表の取得に失敗しました"
+          onRetry={() => {
+            void refetchStandings();
+            void refetchRounds();
+          }}
+        />
       )}
-      {groupStandings && isEmpty && (
+      {!isPending && !isError && groupStandings && isEmpty && (
         <EmptyState
           icon={<LeaderboardIcon fontSize="inherit" />}
           message="順位はまだありません。ラウンドを確定すると表示されます"
         />
       )}
-      {groupStandings &&
+      {!isPending &&
+        !isError &&
+        groupStandings &&
         !isEmpty &&
         groupStandings.map(({ group, standings }) => (
           <Box key={group.id} sx={{ mb: 4 }}>

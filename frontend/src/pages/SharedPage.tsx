@@ -175,6 +175,8 @@ function IndividualSharedPage({ token, data }: IndividualSharedPageProps) {
   const currentRound = rounds.find((round) => round.roundNumber === selectedRound) ?? latestRound;
   // グループが1つだけの大会は表示上グループを見せない(見出し・卓番号プレフィックスなし)
   const multiGroup = standings.length > 1;
+  // ラウンド1確定前は全員rank=1で返るため、確定済みラウンドが1つもない間は順位表を出さない
+  const round1Confirmed = rounds.some((round) => round.status === 'CONFIRMED');
   const canInput =
     tournament.resultInputEnabled &&
     tournament.status === 'IN_PROGRESS' &&
@@ -268,10 +270,10 @@ function IndividualSharedPage({ token, data }: IndividualSharedPageProps) {
         ))}
 
       {tab === 'standings' &&
-        (standings.every((g) => g.standings.length === 0) ? (
+        (!round1Confirmed || standings.every((g) => g.standings.length === 0) ? (
           <EmptyState
             icon={<HourglassEmptyIcon fontSize="inherit" />}
-            message="順位はまだありません。"
+            message="順位はまだありません。ラウンドを確定すると表示されます。"
           />
         ) : (
           standings.map(({ group, standings: groupStandings }) => (
