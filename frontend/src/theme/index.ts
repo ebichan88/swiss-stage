@@ -49,5 +49,12 @@ export const theme = createTheme({
         root: { textTransform: 'none' },
       },
     },
+    MuiCssBaseline: {
+      // 縦スクロールバーの有無でページ幅が変わり、中央寄せされたコンテナ
+      // (TournamentLayoutのタイトル等)の左位置がページごとにズレるのを防ぐ
+      styleOverrides: {
+        html: { scrollbarGutter: 'stable' },
+      },
+    },
   },
 });
