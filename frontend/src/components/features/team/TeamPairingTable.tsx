@@ -2,6 +2,7 @@ import {
   Box,
   Card,
   CardContent,
+  Chip,
   Stack,
   Table,
   TableBody,
@@ -16,7 +17,11 @@ import {
 
 import type { MatchResult } from '../../../types/enums';
 import type { TeamMatch, TeamSummary } from '../../../types/team';
-import { TeamMatchResultControl } from './TeamMatchResultControl';
+import {
+  TeamBoardResultField,
+  TeamBoardStatusCell,
+  TeamMatchResultControl,
+} from './TeamMatchResultControl';
 import { teamResultMark, teamTableLabel } from './teamMatchDisplay';
 
 export interface TeamPairingTableProps {
@@ -93,29 +98,68 @@ export function TeamPairingTable({
             <TableCell>卓</TableCell>
             <TableCell>チーム1</TableCell>
             <TableCell>チーム2</TableCell>
-            <TableCell>結果(主将〜)</TableCell>
+            <TableCell>結果</TableCell>
+            <TableCell>申告ステータス</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {matches.map((match, index) => (
-            <TableRow
-              key={match.id}
-              sx={{ bgcolor: index % 2 === 0 ? 'background.paper' : 'background.default' }}
-            >
-              <TableCell>{teamTableLabel(match, multiGroup)}</TableCell>
-              <TableCell>{teamText(match.team1, teamResultMark(match, 'team1'))}</TableCell>
-              <TableCell>{teamText(match.team2, teamResultMark(match, 'team2'))}</TableCell>
-              <TableCell>
-                <TeamMatchResultControl
-                  match={match}
-                  editable={editable}
-                  multiGroup={multiGroup}
-                  saving={savingMatchId === match.id}
-                  onInput={(boardResults) => onInputResult(match, boardResults)}
-                />
-              </TableCell>
-            </TableRow>
-          ))}
+          {matches.map((match, index) => {
+            const rowBg = index % 2 === 0 ? 'background.paper' : 'background.default';
+            const boards = match.boardResults;
+
+            if (match.team2 === null || boards.length === 0) {
+              return (
+                <TableRow key={match.id} sx={{ bgcolor: rowBg }}>
+                  <TableCell>{teamTableLabel(match, multiGroup)}</TableCell>
+                  <TableCell>{teamText(match.team1, teamResultMark(match, 'team1'))}</TableCell>
+                  <TableCell>{teamText(match.team2, teamResultMark(match, 'team2'))}</TableCell>
+                  <TableCell>
+                    <Chip label="不戦勝" size="small" variant="outlined" />
+                  </TableCell>
+                  <TableCell />
+                </TableRow>
+              );
+            }
+
+            const handleBoardChange = (boardIndex: number, value: MatchResult) => {
+              onInputResult(
+                match,
+                match.boardResults.map((b, i) => (i === boardIndex ? value : b.result)),
+              );
+            };
+
+            return boards.map((board, boardIndex) => (
+              <TableRow key={`${match.id}-${board.boardPosition}`} sx={{ bgcolor: rowBg }}>
+                {boardIndex === 0 && (
+                  <>
+                    <TableCell rowSpan={boards.length}>
+                      {teamTableLabel(match, multiGroup)}
+                    </TableCell>
+                    <TableCell rowSpan={boards.length}>
+                      {teamText(match.team1, teamResultMark(match, 'team1'))}
+                    </TableCell>
+                    <TableCell rowSpan={boards.length}>
+                      {teamText(match.team2, teamResultMark(match, 'team2'))}
+                    </TableCell>
+                  </>
+                )}
+                <TableCell>
+                  <TeamBoardResultField
+                    match={match}
+                    board={board}
+                    boardIndex={boardIndex}
+                    editable={editable}
+                    multiGroup={multiGroup}
+                    saving={savingMatchId === match.id}
+                    onChange={handleBoardChange}
+                  />
+                </TableCell>
+                <TableCell>
+                  <TeamBoardStatusCell match={match} board={board} />
+                </TableCell>
+              </TableRow>
+            ));
+          })}
         </TableBody>
       </Table>
     </TableContainer>

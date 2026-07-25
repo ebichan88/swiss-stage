@@ -29,7 +29,7 @@ export function ReportStatusChip({ match }: { match: Match }) {
  * 両者が具体的に何を申告したかの明示表示(誰が勝ち/負けを申告したか一目で分かるようにする)。
  * 申告が1件もない対局・確定済みで食い違いがない対局では何も出さない
  */
-function ReportedResultsDetail({ match }: { match: Match }) {
+export function ReportedResultsDetail({ match }: { match: Match }) {
   const status = matchReportStatus(match);
   const shouldShow = status === 'WAITING' || status === 'CONFLICTING' || hasReportMismatch(match);
   if (!shouldShow) {
@@ -78,7 +78,7 @@ export function MatchResultControl({
           <Typography variant="body2">{matchResultText(match)}</Typography>
           {!hideStatusChip && <ReportStatusChip match={match} />}
         </Box>
-        <ReportedResultsDetail match={match} />
+        {!hideStatusChip && <ReportedResultsDetail match={match} />}
       </Box>
     );
   }
@@ -110,7 +110,7 @@ export function MatchResultControl({
         </TextField>
         {!hideStatusChip && <ReportStatusChip match={match} />}
       </Box>
-      <ReportedResultsDetail match={match} />
+      {!hideStatusChip && <ReportedResultsDetail match={match} />}
     </Box>
   );
 }

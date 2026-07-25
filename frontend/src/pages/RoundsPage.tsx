@@ -161,15 +161,10 @@ function IndividualRoundsPage() {
     );
   }
 
-  // ラウンド確定をブロックするのは「運営者・参加者のいずれも一切触れていない」対局のみ。
-  // 片方のみ申告・申告不一致(needsAttentionCount)はブロックせず警告のみ(運営者の裁量)
-  const untouchedCount =
-    selectedRound?.matches.filter(
-      (m) =>
-        m.result === 'NONE' &&
-        m.player1ReportedResult === 'NONE' &&
-        m.player2ReportedResult === 'NONE',
-    ).length ?? 0;
+  // ラウンド確定をブロックするのは「結果が未確定(result=NONE)」の対局。片方のみ申告・申告不一致でも
+  // 運営者がresultを確定していなければブロックする(確定後は編集不可になり、未確定のまま順位計算から
+  // 除外され続けてしまうため)
+  const undecidedCount = selectedRound?.matches.filter((m) => m.result === 'NONE').length ?? 0;
   const needsAttentionCount =
     selectedRound?.matches.filter((m) => {
       const status = matchReportStatus(m);
@@ -217,9 +212,9 @@ function IndividualRoundsPage() {
               第{selectedRound.roundNumber}ラウンド
             </Typography>
             <RoundStatusBadge status={selectedRound.status} />
-            {isEditable && untouchedCount > 0 && (
+            {isEditable && undecidedCount > 0 && (
               <Typography variant="body2" color="text.secondary">
-                未入力 {untouchedCount}件
+                未確定 {undecidedCount}件
               </Typography>
             )}
             {isEditable && (
@@ -227,7 +222,7 @@ function IndividualRoundsPage() {
                 variant="contained"
                 sx={{ ml: 'auto' }}
                 onClick={() => setConfirmingRound(selectedRound.roundNumber)}
-                disabled={untouchedCount > 0}
+                disabled={undecidedCount > 0}
               >
                 第{selectedRound.roundNumber}ラウンドを確定する
               </Button>
@@ -247,7 +242,7 @@ function IndividualRoundsPage() {
               </Alert>
             )}
 
-          {isEditable && untouchedCount > 0 && (
+          {isEditable && undecidedCount > 0 && (
             <Alert severity="info" sx={{ mb: 2 }}>
               全対局の結果を入力するとラウンドを確定できます。確定すると次のラウンドを生成できます。
             </Alert>
@@ -256,8 +251,7 @@ function IndividualRoundsPage() {
           {isEditable && needsAttentionCount > 0 && (
             <Alert severity="warning" sx={{ mb: 2 }}>
               参加者の申告待ち・申告不一致の対局が{needsAttentionCount}
-              件あります。内容を確認してから
-              結果を入力・確定してください(確定のブロックはしません)。
+              件あります。内容を確認し、結果を入力してください(結果が確定するまでラウンドは確定できません)。
             </Alert>
           )}
 

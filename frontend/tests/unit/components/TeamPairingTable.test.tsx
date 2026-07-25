@@ -39,11 +39,56 @@ describe('TeamPairingTable', () => {
     );
 
     const rows = screen.getAllByRole('row');
+    // header(0) + m1のボード3件(1-3行) + m2(4行目)
     expect(rows[1]).toHaveTextContent('○ Aチーム');
     expect(rows[1]).toHaveTextContent('● Bチーム');
-    expect(rows[2]).toHaveTextContent('Cチーム');
-    expect(within(rows[2]).getByText('(不戦勝)')).toBeInTheDocument();
+    expect(rows[4]).toHaveTextContent('Cチーム');
+    expect(within(rows[4]).getByText('(不戦勝)')).toBeInTheDocument();
     expect(screen.queryByText('山田太郎')).not.toBeInTheDocument();
+  });
+
+  it('TEAM-AC-019: ボード単位の申告不一致は「結果」列と別の「申告ステータス」列に、そのボードの行として表示される', () => {
+    const teamA = teamSummaryOf({ id: 't1', name: 'Aチーム' });
+    const teamB = teamSummaryOf({ id: 't2', name: 'Bチーム' });
+    renderWithProviders(
+      <TeamPairingTable
+        matches={[
+          teamMatchOf({
+            id: 'm1',
+            tableNumber: 1,
+            team1: teamA,
+            team2: teamB,
+            boardResults: [
+              boardResultOf({ boardPosition: 1 }),
+              boardResultOf({
+                boardPosition: 2,
+                team1ReportedResult: 'PLAYER1_WIN',
+                team2ReportedResult: 'PLAYER2_WIN',
+              }),
+            ],
+          }),
+        ]}
+        editable={false}
+        multiGroup={false}
+        savingMatchId={null}
+        onInputResult={() => {}}
+      />,
+    );
+
+    const headerCells = screen.getAllByRole('columnheader');
+    expect(headerCells.map((cell) => cell.textContent)).toEqual([
+      '卓',
+      'チーム1',
+      'チーム2',
+      '結果',
+      '申告ステータス',
+    ]);
+
+    const rows = screen.getAllByRole('row');
+    // 主将(不一致なし)の行には申告不一致バッジが出ない
+    expect(within(rows[1]).queryByText('申告不一致')).not.toBeInTheDocument();
+    // 副将(不一致)の行にのみ申告不一致バッジが出る
+    expect(within(rows[2]).getByText('申告不一致')).toBeInTheDocument();
   });
 
   it('グループ大会の卓番号は「A-1」形式で表示する', () => {

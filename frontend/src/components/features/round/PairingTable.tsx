@@ -17,7 +17,7 @@ import {
 import type { MatchResult } from '../../../types/enums';
 import type { Match } from '../../../types/round';
 import type { ParticipantSummary } from '../../../types/participant';
-import { MatchResultControl, ReportStatusChip } from './MatchResultControl';
+import { MatchResultControl, ReportedResultsDetail, ReportStatusChip } from './MatchResultControl';
 import { resultMark, tableLabel } from './matchDisplay';
 
 export interface PairingTableProps {
@@ -120,6 +120,7 @@ export function PairingTable({
               </TableCell>
               <TableCell>
                 <ReportStatusChip match={match} />
+                <ReportedResultsDetail match={match} />
               </TableCell>
             </TableRow>
           ))}

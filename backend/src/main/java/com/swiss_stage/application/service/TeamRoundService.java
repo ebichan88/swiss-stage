@@ -193,16 +193,20 @@ public class TeamRoundService {
         }
     }
 
+    /**
+     * ラウンド確定。全ボードが決着していない(isFullyDecided()=false)対局が1件でも残っていると確定できない。
+     * 1ボードでも未確定のまま確定すると、その対局は全ボード分が順位計算から除外され続けてしまうため
+     */
     public TeamRoundDto confirm(TournamentId tournamentId, int roundNumber, String ownerSub) {
         Tournament tournament = access.loadOwned(tournamentId, ownerSub);
         requireTeamCompetition(tournament);
         Round round = roundRepository.findByRoundNumber(tournamentId, roundNumber)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ROUND_NOT_FOUND));
         List<TeamMatch> matches = teamMatchRepository.findByRound(tournamentId, roundNumber);
-        long untouched = matches.stream().filter(TeamMatch::isUntouched).count();
-        if (untouched > 0) {
+        long undecided = matches.stream().filter(m -> !m.isFullyDecided()).count();
+        if (undecided > 0) {
             throw new InvalidStateException(
-                    "結果未入力の対局が" + untouched + "件あります。全て入力してから確定してください");
+                    "結果が未確定の対局が" + undecided + "件あります。全て入力してから確定してください");
         }
         Round confirmed;
         try {

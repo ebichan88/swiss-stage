@@ -202,6 +202,7 @@ class ModelTest {
         void BYEの結果変更禁止() {
             Match byeMatch = Match.byeOf(1, 1, p1, groupId);
             assertThat(byeMatch.isBye()).isTrue();
+            assertThat(byeMatch.isFullyDecided()).isTrue();
             assertThat(byeMatch.pointsFor(p1)).isEqualTo(2);
             assertThatThrownBy(() -> byeMatch.withResult(MatchResult.PLAYER1_WIN))
                     .isInstanceOf(DomainException.class);
@@ -231,21 +232,26 @@ class ModelTest {
         void 自己申告の一致で自動確定() {
             Match match = Match.pairOf(1, 1, p1, p2, groupId);
             assertThat(match.isUntouched()).isTrue();
+            assertThat(match.isFullyDecided()).isFalse();
 
             Match waiting = match.withReportedResult(MatchSide.PLAYER1, MatchResult.PLAYER1_WIN);
             assertThat(waiting.result()).isEqualTo(MatchResult.NONE);
             assertThat(waiting.player1ReportedResult()).isEqualTo(MatchResult.PLAYER1_WIN);
             assertThat(waiting.player2ReportedResult()).isEqualTo(MatchResult.NONE);
             assertThat(waiting.isUntouched()).isFalse();
+            // 片方のみ申告(resultはNONEのまま)はラウンド確定のブロック対象(isFullyDecided=false)
+            assertThat(waiting.isFullyDecided()).isFalse();
 
             Match conflicting =
                     waiting.withReportedResult(MatchSide.PLAYER2, MatchResult.PLAYER2_WIN);
             assertThat(conflicting.result()).isEqualTo(MatchResult.NONE);
             assertThat(conflicting.resultInputBy()).isNull();
+            assertThat(conflicting.isFullyDecided()).isFalse();
 
             Match matched = conflicting.withReportedResult(MatchSide.PLAYER2, MatchResult.PLAYER1_WIN);
             assertThat(matched.result()).isEqualTo(MatchResult.PLAYER1_WIN);
             assertThat(matched.resultInputBy()).isEqualTo(ResultInputBy.SHARE_TOKEN);
+            assertThat(matched.isFullyDecided()).isTrue();
         }
 
         @Test

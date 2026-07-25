@@ -156,7 +156,8 @@ class SharedApiTest extends ApiContractTestSupport {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("CONFLICT"));
 
-        // 残りを運営者が入力して確定 → 未確定(NONE)の対局が残っていても確定でき、確定後のトークン申告は409
+        // 残りの対局は運営者が入力。自己申告が片方のみのmatchIdも運営者が直接確定して全対局を確定状態にする
+        // (結果が未確定の対局が残っているとラウンドは確定できないため)
         for (JsonNode m : dataOf(round).path("round").path("matches")) {
             if (!m.path("id").asText().equals(matchId)) {
                 performApi(put(base() + "/matches/" + m.path("id").asText() + "/result")
@@ -167,9 +168,15 @@ class SharedApiTest extends ApiContractTestSupport {
                         .andExpect(status().isOk());
             }
         }
+        performApi(put(base() + "/matches/" + matchId + "/result")
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"result\":\"PLAYER1_WIN\",\"version\":" + (version + 1) + "}"))
+                .andExpect(status().isOk());
+
         performApi(post(base() + "/rounds/1/confirm").cookie(ownerCookie()))
                 .andExpect(status().isOk());
-        performApi(reportSharedResult(token, matchId, "PLAYER2", "PLAYER2_WIN", version + 1))
+        performApi(reportSharedResult(token, matchId, "PLAYER2", "PLAYER2_WIN", version + 2))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
     }

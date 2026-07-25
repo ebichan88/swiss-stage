@@ -205,19 +205,19 @@ public class RoundService {
     }
 
     /**
-     * ラウンド確定。運営者・参加者のいずれも一切触れていない対局が残っていると確定できない。
-     * 片方のみ申告・申告不一致の対局(Match#isUntouched()がfalse)はブロックしない
-     * (05_swiss_pairing_algorithm.mdの対象外・運営者の裁量で確定できる運用ルール)
+     * ラウンド確定。結果が確定していない(result=NONE)対局が1件でも残っていると確定できない。
+     * 片方のみ申告・申告不一致でも運営者がresultを確定していなければブロックする
+     * (確定後は編集不可になり、result=NONEのまま順位計算から除外され続けてしまうため)
      */
     public RoundDto confirm(TournamentId tournamentId, int roundNumber, String ownerSub) {
         access.loadOwned(tournamentId, ownerSub);
         Round round = roundRepository.findByRoundNumber(tournamentId, roundNumber)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ROUND_NOT_FOUND));
         List<Match> matches = matchRepository.findByRound(tournamentId, roundNumber);
-        long untouched = matches.stream().filter(Match::isUntouched).count();
-        if (untouched > 0) {
+        long undecided = matches.stream().filter(m -> !m.isFullyDecided()).count();
+        if (undecided > 0) {
             throw new InvalidStateException(
-                    "結果未入力の対局が" + untouched + "件あります。全て入力してから確定してください");
+                    "結果が未確定の対局が" + undecided + "件あります。全て入力してから確定してください");
         }
         Round confirmed;
         try {

@@ -20,9 +20,9 @@ import { Link } from 'react-router-dom';
 import { TeamCrossTable } from '../components/features/team/TeamCrossTable';
 import { TeamRankingBoard } from '../components/features/team/TeamRankingBoard';
 import {
+  boardReportStatus,
   teamAggregatePoints,
   teamMatchHasReportMismatch,
-  teamMatchNeedsAttention,
   teamMatchSections,
   teamResultMark,
   teamTableLabel,
@@ -33,6 +33,21 @@ import { paths } from '../routes';
 import type { SharedTournament } from '../types/shared';
 import type { TeamMatch, TeamRound, TeamSummary } from '../types/team';
 
+/** 対局全体が確定済み(全ボードが入力済み)かどうか。個人戦の match.result === 'NONE' に相当する判定 */
+function isFullyDecided(match: TeamMatch): boolean {
+  return match.boardResults.every((b) => b.result !== 'NONE');
+}
+
+/** いずれかのボードが申告不一致(両者申告済みで内容が食い違う)か */
+function hasConflictingBoard(match: TeamMatch): boolean {
+  return match.boardResults.some((b) => boardReportStatus(b) === 'CONFLICTING');
+}
+
+/** いずれかのボードが片方のみ申告済みか */
+function hasWaitingBoard(match: TeamMatch): boolean {
+  return match.boardResults.some((b) => boardReportStatus(b) === 'WAITING');
+}
+
 /**
  * 団体戦対局カードの状態テキスト。個人戦のmatchStatusTextと同じ考え方で、
  * ボード単位の申告待ち・不一致は結果と区別して案内する
@@ -41,18 +56,22 @@ function teamMatchStatusText(match: TeamMatch, canReview: boolean): string {
   if (match.team2 === null) {
     return '不戦勝';
   }
-  const needsAttention = teamMatchNeedsAttention(match);
-  const { team1, team2 } = teamAggregatePoints(match);
-  const isFullyDecided = match.boardResults.every((b) => b.result !== 'NONE');
-  if (!isFullyDecided) {
-    if (needsAttention) {
+  if (!isFullyDecided(match)) {
+    if (hasConflictingBoard(match)) {
       return canReview
-        ? '申告待ち・申告不一致のボードがあります(結果入力から内容を確認できます)'
-        : '申告待ち・申告不一致のボードがあります';
+        ? '申告が一致しないボードがあります(結果入力から内容を確認できます)'
+        : '申告が一致しないボードがあります';
     }
-    return '対局中';
+    if (hasWaitingBoard(match)) {
+      return '申告待ち(片方のみ申告済みのボードがあります)';
+    }
+    // 個人戦の「未入力」に相当。一部ボードだけ入力済みで残りが未入力の場合は「対局中」で区別する
+    const anyBoardDecided = match.boardResults.some((b) => b.result !== 'NONE');
+    return anyBoardDecided ? '対局中' : '未入力';
   }
-  const breakdown = `${team1}-${team2}`;
+  const { team1, team2 } = teamAggregatePoints(match);
+  // teamAggregatePoints は2倍値(勝ち=2点)で返すため、盤数の内訳表示は2で割る(teamCrossTableData.tsと同じ変換)
+  const breakdown = `${team1 / 2}-${team2 / 2}`;
   if (teamMatchHasReportMismatch(match)) {
     return canReview
       ? `${breakdown}(申告が一致しないボードがあります・結果入力から内容を確認できます)`
@@ -96,7 +115,7 @@ function SharedTeamMatchCard({ token, match, multiGroup, canInput }: SharedTeamM
           <Typography
             variant="body2"
             color={
-              teamMatchNeedsAttention(match) || teamMatchHasReportMismatch(match)
+              hasConflictingBoard(match) || teamMatchHasReportMismatch(match)
                 ? 'warning.main'
                 : 'text.secondary'
             }
@@ -106,7 +125,7 @@ function SharedTeamMatchCard({ token, match, multiGroup, canInput }: SharedTeamM
         </Box>
         {canReview && (
           <Button
-            variant="outlined"
+            variant={!isFullyDecided(match) ? 'contained' : 'outlined'}
             size="small"
             startIcon={<EditIcon />}
             component={Link}

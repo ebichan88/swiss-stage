@@ -31,7 +31,7 @@ test('E2E-AC-005: CP4-1: 結果未入力の対局があるとラウンドを確�
       '全対局の結果を入力するとラウンドを確定できます。確定すると次のラウンドを生成できます。',
     ),
   ).toBeVisible();
-  await expect(page.getByText(/未入力 8件/)).toBeVisible();
+  await expect(page.getByText(/未確定 8件/)).toBeVisible();
   await expect(page.getByRole('button', { name: '第1ラウンドを確定する' })).toBeDisabled();
 });
 
@@ -72,7 +72,7 @@ test('E2E-AC-005: CP4-2: 2つのブラウザで同じ対局に別の結果を入
   await page.getByRole('combobox', { name: '卓1の結果' }).click();
   await page.getByRole('option', { name: /^○/ }).first().click();
   await expect(page.getByRole('option', { name: /^○/ }).first()).toBeHidden();
-  await expect(page.getByText(/未入力 7件/)).toBeVisible();
+  await expect(page.getByText(/未確定 7件/)).toBeVisible();
 
   // ブラウザB(古い画面): 同じ卓1に別の結果 → 409のエラー表示、後勝ちしない
   await stalePage.getByRole('combobox', { name: '卓1の結果' }).click();
