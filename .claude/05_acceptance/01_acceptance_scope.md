@@ -116,6 +116,7 @@
 | TEAM-AC-018 | P0 | 共有トークン経由の結果自己申告は「どちらのチームか」を選択しボード配列をまとめて送信する。ボードごとに両者の申告が一致した時点でそのボードのみ確定する | done | TeamSharedApiTest |
 | TEAM-AC-019 | P0 | ボード単位で申告が不一致の場合、確定させず双方の申告内容(誰が何を申告したか)を運営者画面・共有画面の両方で確認できる | done | TeamSharedApiTest(API), TeamMatchResultControl.test.tsx(運営者画面), SharedTeamResultPage.test.tsx(共有画面) |
 | TEAM-AC-020 | P0 | 運営者が直接確定したボード結果は、その後の参加者の自己申告(一致・不一致問わず)で上書きされない | done | TeamSharedApiTest |
+| TEAM-AC-021 | P2 | ボード単位の自己申告が一致して自動確定した場合、運営者画面・共有画面の申告ステータス欄に「申告済み」と表示する(運営者が申告なしで直接確定した場合は表示しない) | done | TeamMatchResultControl.test.tsx |
 
 ## SHR: 共有(トークン)
 

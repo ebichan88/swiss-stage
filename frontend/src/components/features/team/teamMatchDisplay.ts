@@ -128,6 +128,12 @@ export function teamMatchHasReportMismatch(match: TeamMatch): boolean {
   return match.boardResults.some(boardHasReportMismatch);
 }
 
+/** ボードが自己申告一致によって自動確定したか(運営者の直接確定・未申告とは区別する) */
+export function boardDecidedByMatchingReport(board: BoardResult): boolean {
+  const { team1ReportedResult: t1, team2ReportedResult: t2 } = board;
+  return t1 !== 'NONE' && t1 === t2 && board.result === t1;
+}
+
 /** 任意のMatchResult値のラベル化(team1/team2はチーム名で表示する) */
 export function boardOutcomeLabel(match: TeamMatch, value: MatchResult): string {
   switch (value) {
