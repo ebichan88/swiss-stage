@@ -82,12 +82,32 @@ describe('TeamMatchResultControl', () => {
       />,
     );
 
-    // 主将戦(確定済み・食い違いなし)は申告詳細を出さない
+    // 主将戦(自己申告一致で自動確定)は「申告済み」Chipのみで申告詳細は出さない
     expect(screen.getByText('主将')).toBeInTheDocument();
     expect(screen.getByText('Aチームの勝ち')).toBeInTheDocument();
+    expect(screen.getByText('申告済み')).toBeInTheDocument();
     // 副将戦(不一致)のみ警告を出す
     expect(screen.getByText('副将')).toBeInTheDocument();
     expect(screen.getByText('申告不一致')).toBeInTheDocument();
+  });
+
+  it('TEAM-AC-021: 運営者が申告なしで直接確定したボードは「申告済み」Chipを表示しない', () => {
+    renderWithProviders(
+      <TeamMatchResultControl
+        match={teamMatchOf({
+          team1,
+          team2,
+          boardResults: [boardResultOf({ boardPosition: 1, result: 'PLAYER1_WIN' })],
+        })}
+        editable={false}
+        multiGroup={false}
+        saving={false}
+        onInput={() => {}}
+      />,
+    );
+
+    expect(screen.getByText('Aチームの勝ち')).toBeInTheDocument();
+    expect(screen.queryByText('申告済み')).not.toBeInTheDocument();
   });
 
   it('不戦勝(team2がnull)は「不戦勝」表示のみで入力コントロールを出さない', () => {

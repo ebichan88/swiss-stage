@@ -4,6 +4,7 @@ import type { MatchResult } from '../../../types/enums';
 import type { BoardResult, TeamMatch } from '../../../types/team';
 import { boardPositionLabel } from '../../../utils/labels';
 import {
+  boardDecidedByMatchingReport,
   boardHasReportMismatch,
   boardReportedResultLabel,
   boardReportStatus,
@@ -11,7 +12,10 @@ import {
   teamTableLabel,
 } from './teamMatchDisplay';
 
-/** 自己申告状態のChip(一致待ち・不一致・確定後の食い違いのみ表示。確定済み・未申告は何も出さない) */
+/**
+ * 自己申告状態のChip。申告待ち・不一致・確定後の食い違いに加え、
+ * 自己申告一致で自動確定した場合は「申告済み」を表示する(運営者が申告なしで直接確定した場合・未申告は何も出さない)
+ */
 export function BoardReportStatusChip({ board }: { board: BoardResult }) {
   const status = boardReportStatus(board);
   if (status === 'WAITING') {
@@ -22,6 +26,9 @@ export function BoardReportStatusChip({ board }: { board: BoardResult }) {
   }
   if (boardHasReportMismatch(board)) {
     return <Chip label="確定結果と申告が異なる" size="small" color="warning" />;
+  }
+  if (boardDecidedByMatchingReport(board)) {
+    return <Chip label="申告済み" size="small" color="success" />;
   }
   return null;
 }
