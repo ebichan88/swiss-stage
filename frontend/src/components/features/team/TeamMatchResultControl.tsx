@@ -12,7 +12,7 @@ import {
 } from './teamMatchDisplay';
 
 /** 自己申告状態のChip(一致待ち・不一致・確定後の食い違いのみ表示。確定済み・未申告は何も出さない) */
-function BoardReportStatusChip({ board }: { board: BoardResult }) {
+export function BoardReportStatusChip({ board }: { board: BoardResult }) {
   const status = boardReportStatus(board);
   if (status === 'WAITING') {
     return <Chip label="申告待ち" size="small" variant="outlined" />;
@@ -27,7 +27,13 @@ function BoardReportStatusChip({ board }: { board: BoardResult }) {
 }
 
 /** 両者が具体的に何を申告したかの明示表示(誰が勝ち/負けを申告したか一目で分かるようにする) */
-function BoardReportedResultsDetail({ match, board }: { match: TeamMatch; board: BoardResult }) {
+export function BoardReportedResultsDetail({
+  match,
+  board,
+}: {
+  match: TeamMatch;
+  board: BoardResult;
+}) {
   const status = boardReportStatus(board);
   const shouldShow =
     status === 'WAITING' || status === 'CONFLICTING' || boardHasReportMismatch(board);
@@ -131,5 +137,78 @@ export function TeamMatchResultControl({
         </Box>
       ))}
     </Stack>
+  );
+}
+
+export interface TeamBoardResultFieldProps {
+  match: TeamMatch;
+  board: BoardResult;
+  boardIndex: number;
+  editable: boolean;
+  multiGroup: boolean;
+  saving: boolean;
+  onChange: (boardIndex: number, value: MatchResult) => void;
+}
+
+/** 1ボード分の結果入力(卓ごとのテーブル行に埋め込む用。申告Chip・申告詳細は含まない) */
+export function TeamBoardResultField({
+  match,
+  board,
+  boardIndex,
+  editable,
+  multiGroup,
+  saving,
+  onChange,
+}: TeamBoardResultFieldProps) {
+  if (!editable) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Typography variant="body2" sx={{ minWidth: 56 }}>
+          {boardPositionLabel(board.boardPosition)}
+        </Typography>
+        <Typography variant="body2">{boardResultText(match, board)}</Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Typography variant="body2" sx={{ minWidth: 56 }}>
+        {boardPositionLabel(board.boardPosition)}
+      </Typography>
+      <TextField
+        select
+        size="small"
+        value={board.result}
+        onChange={(e) => onChange(boardIndex, e.target.value as MatchResult)}
+        disabled={saving}
+        slotProps={{
+          select: {
+            SelectDisplayProps: {
+              'aria-label': `卓${teamTableLabel(match, multiGroup)} ${boardPositionLabel(board.boardPosition)}の結果`,
+            },
+          },
+        }}
+        sx={{ minWidth: 180 }}
+      >
+        <MenuItem value="NONE" disabled>
+          未入力
+        </MenuItem>
+        <MenuItem value="PLAYER1_WIN">○ {match.team1.name}の勝ち</MenuItem>
+        <MenuItem value="PLAYER2_WIN">○ {match.team2?.name ?? ''}の勝ち</MenuItem>
+        <MenuItem value="DRAW">△ 引き分け</MenuItem>
+        <MenuItem value="BOTH_LOSE">● 両者負け</MenuItem>
+      </TextField>
+    </Box>
+  );
+}
+
+/** 1ボード分の申告ステータス(Chip + 申告詳細)。テーブルの「申告ステータス」列に埋め込む用 */
+export function TeamBoardStatusCell({ match, board }: { match: TeamMatch; board: BoardResult }) {
+  return (
+    <Box>
+      <BoardReportStatusChip board={board} />
+      <BoardReportedResultsDetail match={match} board={board} />
+    </Box>
   );
 }

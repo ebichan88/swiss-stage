@@ -79,7 +79,7 @@
 |----|---|------------|--------|------|
 | RND-AC-001 | P0 | ラウンド生成で全ACTIVE参加者が1回ずつ対局に割り当てられる(status=PLAYING) | done | RoundApiTest |
 | RND-AC-002 | P0 | 現在ラウンドが未確定のうちは次ラウンドを生成できない(409) | done | RoundApiTest |
-| RND-AC-003 | P0 | 申告・入力が一切ない対局が1件でも残るラウンドは確定できない(409) | done | RoundApiTest |
+| RND-AC-003 | P0 | 結果が未確定(result=NONE)の対局が1件でも残るラウンドは確定できない(409) | done | RoundApiTest |
 | RND-AC-004 | P1 | 全対局入力後の確定でラウンドがCONFIRMEDになり、次ラウンドを生成できる | done | RoundApiTest |
 | RND-AC-005 | P0 | 次ラウンドで再戦(同一ペアの再対局)が発生しない | done | RoundApiTest |
 | RND-AC-006 | P1 | ラウンド一覧が対局付きで取得できる | done | RoundApiTest |
@@ -88,7 +88,7 @@
 | RND-AC-009 | P0 | 古いversionでの結果入力は409 CONFLICTになる(後勝ちしない) | done | RoundApiTest |
 | RND-AC-010 | P0 | 確定済みラウンドの結果は変更できない(409) | done | RoundApiTest |
 | RND-AC-011 | P1 | 不正な結果値(BYE等)の入力は400になる | done | RoundApiTest |
-| RND-AC-012 | P1 | 片方のみ申告・申告不一致の対局が残っていてもラウンド確定はブロックしない(警告のみ・運営者の裁量) | done | RoundApiTest |
+| RND-AC-012 | P1 | 片方のみ申告・申告不一致で結果が未確定の対局が残っているとラウンド確定はブロックされる。運営者が結果を確定すれば確定できる | done | RoundApiTest |
 | RND-AC-013 | P2 | 管理画面の順位と戦績一覧は別メニュー(別画面)で表示される | done | RankingBoard.test, CrossTable.test(Vitest) |
 
 ## TEAM: 団体戦
@@ -109,7 +109,7 @@
 | TEAM-AC-012 | P0 | 団体戦の初回ラウンドはエントリー順のみでペアリングされ、棋力シード・同一所属回避は適用されない | done | TeamRoundApiTest |
 | TEAM-AC-013 | P0 | 団体戦のラウンド生成でも再戦禁止・BYE重複禁止が個人戦と同様に効く | done | TeamRoundApiTest |
 | TEAM-AC-014 | P0 | 運営者が対局の全ボード結果をまとめて直接確定でき、team1Points/team2Pointsの合計から結果表示(勝敗/引き分け)が導出される | done | TeamRoundApiTest |
-| TEAM-AC-015 | P0 | 未着手(全ボード・両者申告ともにNONE)の対局が残るラウンドは確定できない。1ボードでも入力・申告があれば警告のみで確定可能 | done | TeamRoundApiTest |
+| TEAM-AC-015 | P0 | 1ボードでも結果が未確定(result=NONE)の対局が残るラウンドは確定できない。運営者が全ボードの結果を確定すれば確定できる | done | TeamRoundApiTest |
 | TEAM-AC-016 | P0 | 順位表は個人戦と同じ基準(勝点→SOS→SOSOS→直接対決→エントリー順)でチーム単位に計算される | done | TeamRoundApiTest |
 | TEAM-AC-017 | P0 | 戦績一覧・組み合わせ・順位表のレスポンスに個人名(メンバー氏名)を含めない(チーム名のみ) | done | TeamRoundApiTest |
 | TEAM-AC-018 | P0 | 共有トークン経由の結果自己申告は「どちらのチームか」を選択しボード配列をまとめて送信する。ボードごとに両者の申告が一致した時点でそのボードのみ確定する | done | TeamSharedApiTest |

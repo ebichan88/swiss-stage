@@ -15,6 +15,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 
 import { TeamPairingTable } from '../components/features/team/TeamPairingTable';
 import {
+  isTeamMatchFullyDecided,
   teamMatchHasReportMismatch,
   teamMatchNeedsAttention,
   teamMatchSections,
@@ -149,17 +150,11 @@ export function TeamRoundsPage() {
     );
   }
 
-  // ラウンド確定をブロックするのは「運営者・参加者のいずれも一切触れていない」対局のみ。
-  // 片方のみ申告・申告不一致(needsAttentionCount)はブロックせず警告のみ(運営者の裁量)
-  const untouchedCount =
-    selectedRound?.matches.filter(
-      (m) =>
-        m.team2 !== null &&
-        m.boardResults.every((b) => b.result === 'NONE') &&
-        m.boardResults.every(
-          (b) => b.team1ReportedResult === 'NONE' && b.team2ReportedResult === 'NONE',
-        ),
-    ).length ?? 0;
+  // ラウンド確定をブロックするのは「全ボードが決着済みでない」対局。1ボードでも未確定(NONE)なら
+  // 運営者がそのボードのresultを確定していなければブロックする(確定後は編集不可になり、未確定のまま
+  // 順位計算からその対局全体が除外され続けてしまうため)
+  const undecidedCount =
+    selectedRound?.matches.filter((m) => !isTeamMatchFullyDecided(m)).length ?? 0;
   const needsAttentionCount =
     selectedRound?.matches.filter((m) => teamMatchNeedsAttention(m)).length ?? 0;
   const mismatchCount =
@@ -204,9 +199,9 @@ export function TeamRoundsPage() {
               第{selectedRound.roundNumber}ラウンド
             </Typography>
             <RoundStatusBadge status={selectedRound.status} />
-            {isEditable && untouchedCount > 0 && (
+            {isEditable && undecidedCount > 0 && (
               <Typography variant="body2" color="text.secondary">
-                未入力 {untouchedCount}件
+                未確定 {undecidedCount}件
               </Typography>
             )}
             {isEditable && (
@@ -214,7 +209,7 @@ export function TeamRoundsPage() {
                 variant="contained"
                 sx={{ ml: 'auto' }}
                 onClick={() => setConfirmingRound(selectedRound.roundNumber)}
-                disabled={untouchedCount > 0}
+                disabled={undecidedCount > 0}
               >
                 第{selectedRound.roundNumber}ラウンドを確定する
               </Button>
@@ -234,16 +229,16 @@ export function TeamRoundsPage() {
               </Alert>
             )}
 
-          {isEditable && untouchedCount > 0 && (
+          {isEditable && undecidedCount > 0 && (
             <Alert severity="info" sx={{ mb: 2 }}>
-              全対局の結果を入力するとラウンドを確定できます。確定すると次のラウンドを生成できます。
+              全対局・全ボードの結果を入力するとラウンドを確定できます。確定すると次のラウンドを生成できます。
             </Alert>
           )}
 
           {isEditable && needsAttentionCount > 0 && (
             <Alert severity="warning" sx={{ mb: 2 }}>
               参加者の申告待ち・申告不一致のボードが{needsAttentionCount}
-              件の対局にあります。内容を確認してから結果を入力・確定してください(確定のブロックはしません)。
+              件の対局にあります。内容を確認し、結果を入力してください(結果が確定するまでラウンドは確定できません)。
             </Alert>
           )}
 

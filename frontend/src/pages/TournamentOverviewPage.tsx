@@ -8,22 +8,75 @@ import { useTournamentContext } from '../components/layouts/TournamentLayout';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useParticipants } from '../hooks/useParticipants';
 import { useSnackbar } from '../hooks/useSnackbar';
+import { useTeams } from '../hooks/useTeams';
 import { useFinishTournament, useStartTournament } from '../hooks/useTournaments';
 import { ApiError } from '../services/apiClient';
 import { paths } from '../routes';
+import type { Tournament } from '../types/tournament';
 import { formatDateTime } from '../utils/format';
 import { gameTypeLabels } from '../utils/labels';
 
-/** S05 大会管理(概要) */
+/**
+ * S05 大会管理(概要)。団体戦(competitionType=TEAM)はチーム数、個人戦は参加者数で開始条件を判定する。
+ * hooksを条件分岐なしで呼ぶため、本体は競技形式ごとに別コンポーネントに分ける
+ */
 export function TournamentOverviewPage() {
   const tournament = useTournamentContext();
+  if (tournament.competitionType === 'TEAM') {
+    return <TeamTournamentOverview tournament={tournament} />;
+  }
+  return <IndividualTournamentOverview tournament={tournament} />;
+}
+
+function TeamTournamentOverview({ tournament }: { tournament: Tournament }) {
+  const { data: teams } = useTeams(tournament.id);
+  const activeCount = teams?.filter((t) => t.status === 'ACTIVE').length ?? null;
+  return (
+    <TournamentOverviewView
+      tournament={tournament}
+      activeCount={activeCount}
+      entryLabel="チーム"
+      entryUnit="チーム"
+      startRequirementMessage="大会の開始には2チーム以上が必要です。"
+      registerActionLabel="チームを登録する"
+    />
+  );
+}
+
+function IndividualTournamentOverview({ tournament }: { tournament: Tournament }) {
   const { data: participants } = useParticipants(tournament.id);
+  const activeCount = participants?.filter((p) => p.status === 'ACTIVE').length ?? null;
+  return (
+    <TournamentOverviewView
+      tournament={tournament}
+      activeCount={activeCount}
+      entryLabel="参加者"
+      entryUnit="名"
+      startRequirementMessage="大会の開始には参加者が2名以上必要です。"
+      registerActionLabel="参加者を登録する"
+    />
+  );
+}
+
+function TournamentOverviewView({
+  tournament,
+  activeCount,
+  entryLabel,
+  entryUnit,
+  startRequirementMessage,
+  registerActionLabel,
+}: {
+  tournament: Tournament;
+  activeCount: number | null;
+  entryLabel: string;
+  entryUnit: string;
+  startRequirementMessage: string;
+  registerActionLabel: string;
+}) {
   const startMutation = useStartTournament(tournament.id);
   const finishMutation = useFinishTournament(tournament.id);
   const { showSuccess, showError } = useSnackbar();
   const [confirming, setConfirming] = useState<'start' | 'finish' | null>(null);
-
-  const activeCount = participants?.filter((p) => p.status === 'ACTIVE').length ?? null;
 
   const handleStart = () => {
     startMutation.mutate(undefined, {
@@ -60,7 +113,7 @@ export function TournamentOverviewPage() {
           ? `未開始(全${tournament.totalRounds}ラウンド)`
           : `第${tournament.currentRound} / 全${tournament.totalRounds}ラウンド`,
     },
-    { label: '参加者', value: activeCount === null ? '-' : `${activeCount}名` },
+    { label: entryLabel, value: activeCount === null ? '-' : `${activeCount}${entryUnit}` },
     { label: '作成日時', value: formatDateTime(tournament.createdAt) },
   ];
 
@@ -87,14 +140,14 @@ export function TournamentOverviewPage() {
         <Box>
           {activeCount !== null && activeCount < 2 && (
             <Alert severity="info" sx={{ mb: 2 }}>
-              大会の開始には参加者が2名以上必要です。
+              {startRequirementMessage}
               <Button
                 component={Link}
                 to={paths.participants(tournament.id)}
                 size="small"
                 sx={{ ml: 1 }}
               >
-                参加者を登録する
+                {registerActionLabel}
               </Button>
             </Alert>
           )}

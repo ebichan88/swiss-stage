@@ -163,8 +163,9 @@ class RoundApiTest extends ApiContractTestSupport {
     }
 
     @Test
-    @DisplayName("RND-AC-012: 片方のみ申告・申告不一致の対局が残っていてもラウンド確定はブロックしない")
-    void 申告未確定でもラウンド確定できる() throws Exception {
+    @DisplayName("RND-AC-012: 片方のみ申告・申告不一致で結果が未確定のままではラウンド確定できない。"
+            + "運営者が結果を確定すれば確定できる")
+    void 申告未確定のままではラウンド確定できない() throws Exception {
         String token = regenerateToken();
         setVisibility("TOKEN");
         setResultInputEnabled(true);
@@ -175,25 +176,46 @@ class RoundApiTest extends ApiContractTestSupport {
         JsonNode matches = dataOf(r1).path("round").path("matches");
         JsonNode waitingMatch = matches.get(0);
         JsonNode conflictingMatch = matches.get(1);
+        long waitingVersion = waitingMatch.path("version").asLong();
+        long conflictingVersion = conflictingMatch.path("version").asLong();
 
         // 片方のみ申告(待ち状態)。resultはNONEのまま
         reportSharedResult(token, waitingMatch.path("id").asText(), "PLAYER1",
-                "PLAYER1_WIN", waitingMatch.path("version").asLong())
+                "PLAYER1_WIN", waitingVersion)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.result").value("NONE"))
                 .andExpect(jsonPath("$.data.player1ReportedResult").value("PLAYER1_WIN"))
                 .andExpect(jsonPath("$.data.player2ReportedResult").value("NONE"));
+        waitingVersion += 1;
 
         // 両者が異なる結果を申告(不一致)。resultはNONEのまま
         reportSharedResult(token, conflictingMatch.path("id").asText(), "PLAYER1",
-                "PLAYER1_WIN", conflictingMatch.path("version").asLong())
+                "PLAYER1_WIN", conflictingVersion)
                 .andExpect(status().isOk());
+        conflictingVersion += 1;
         reportSharedResult(token, conflictingMatch.path("id").asText(), "PLAYER2",
-                "PLAYER2_WIN", conflictingMatch.path("version").asLong() + 1)
+                "PLAYER2_WIN", conflictingVersion)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.result").value("NONE"));
+        conflictingVersion += 1;
 
-        // どちらの対局も未確定だが、ラウンド確定はブロックされない(運営者の裁量)
+        // どちらの対局も結果未確定のため、ラウンド確定はブロックされる
+        performApi(post(base() + "/rounds/1/confirm").cookie(ownerCookie()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
+
+        // 運営者が申告内容を確認して結果を直接確定すれば、ラウンドを確定できるようになる
+        performApi(put(base() + "/matches/" + waitingMatch.path("id").asText() + "/result")
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"result\":\"PLAYER1_WIN\",\"version\":" + waitingVersion + "}"))
+                .andExpect(status().isOk());
+        performApi(put(base() + "/matches/" + conflictingMatch.path("id").asText() + "/result")
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"result\":\"PLAYER1_WIN\",\"version\":" + conflictingVersion + "}"))
+                .andExpect(status().isOk());
+
         performApi(post(base() + "/rounds/1/confirm").cookie(ownerCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("CONFIRMED"));

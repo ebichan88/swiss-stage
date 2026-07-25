@@ -171,6 +171,102 @@ describe('TeamSharedPage', () => {
     expect(screen.getAllByRole('list', { name: '順位' })).toHaveLength(2);
   });
 
+  it('片方のみ申告済みのボードがある場合、個人戦と同じ文言・塗りつぶしボタンで案内する', async () => {
+    server.use(
+      http.get(`/api/v1/shared/${TOKEN}`, () =>
+        HttpResponse.json(
+          apiSuccess(
+            sharedTournamentOf({
+              tournament: sharedSummaryOf({ ...teamTournament, resultInputEnabled: true }),
+              rounds: null,
+              standings: null,
+              teamRounds: [
+                teamRoundOf({
+                  matches: [
+                    teamMatchOf({
+                      id: 'tm1',
+                      boardResults: [
+                        boardResultOf({ boardPosition: 1, team1ReportedResult: 'PLAYER1_WIN' }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+              teamStandings: [],
+            }),
+          ),
+        ),
+      ),
+    );
+
+    renderSharedPage();
+
+    expect(
+      await screen.findByText('申告待ち(片方のみ申告済みのボードがあります)'),
+    ).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: '結果入力' });
+    expect(link).toHaveClass('MuiButton-contained');
+  });
+
+  it('全ボード決着済みの対局はチームの勝敗内訳を盤数(実数)で表示する(2倍値のまま表示しない)', async () => {
+    server.use(
+      http.get(`/api/v1/shared/${TOKEN}`, () =>
+        HttpResponse.json(
+          apiSuccess(
+            sharedTournamentOf({
+              tournament: teamTournament,
+              rounds: null,
+              standings: null,
+              teamRounds: [
+                teamRoundOf({
+                  matches: [
+                    teamMatchOf({
+                      team1: teamSummaryOf({ id: 't1', name: 'Aチーム' }),
+                      team2: teamSummaryOf({ id: 't2', name: 'Bチーム' }),
+                      boardResults: [
+                        boardResultOf({ boardPosition: 1, result: 'PLAYER1_WIN' }),
+                        boardResultOf({ boardPosition: 2, result: 'PLAYER1_WIN' }),
+                        boardResultOf({ boardPosition: 3, result: 'PLAYER1_WIN' }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+              teamStandings: [],
+            }),
+          ),
+        ),
+      ),
+    );
+
+    renderSharedPage();
+
+    expect(await screen.findByText('3-0')).toBeInTheDocument();
+    expect(screen.queryByText('6-0')).not.toBeInTheDocument();
+  });
+
+  it('入力・申告が一切ないボードのみの対局は個人戦と同じ「未入力」と表示する', async () => {
+    server.use(
+      http.get(`/api/v1/shared/${TOKEN}`, () =>
+        HttpResponse.json(
+          apiSuccess(
+            sharedTournamentOf({
+              tournament: sharedSummaryOf({ ...teamTournament, resultInputEnabled: true }),
+              rounds: null,
+              standings: null,
+              teamRounds: [teamRoundOf({ matches: [teamMatchOf({ id: 'tm1' })] })],
+              teamStandings: [],
+            }),
+          ),
+        ),
+      ),
+    );
+
+    renderSharedPage();
+
+    expect(await screen.findByText('未入力')).toBeInTheDocument();
+  });
+
   it('結果入力が許可されていればチーム対局の結果入力ページへのリンクを表示する', async () => {
     server.use(
       http.get(`/api/v1/shared/${TOKEN}`, () =>

@@ -140,10 +140,15 @@ public record Match(
                 newP1, newP2, version, groupId);
     }
 
-    /** ラウンド確定のブロック判定に使う。運営者・参加者のいずれも一切触れていない対局のみtrue */
+    /** 運営者・参加者のいずれも一切触れていない対局のみtrue */
     public boolean isUntouched() {
         return !result.isDecided()
                 && player1ReportedResult == MatchResult.NONE
                 && player2ReportedResult == MatchResult.NONE;
+    }
+
+    /** 結果が確定済み(BYEも含む)か。ラウンド確定のブロック判定・順位計算の対象判定に使う */
+    public boolean isFullyDecided() {
+        return result.isDecided();
     }
 }

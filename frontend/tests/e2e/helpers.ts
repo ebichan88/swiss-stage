@@ -88,7 +88,7 @@ export async function inputAllResults(page: Page): Promise<void> {
     await page.getByRole('option', { name: /^○/ }).first().click();
     await expect(page.getByRole('option', { name: /^○/ }).first()).toBeHidden();
   }
-  await expect(page.getByText(/未入力 \d+件/)).toBeHidden();
+  await expect(page.getByText(/未確定 \d+件/)).toBeHidden();
 }
 
 /** 表示中のラウンドを確定する */
@@ -171,7 +171,7 @@ export async function inputAllTeamResults(page: Page): Promise<void> {
     await page.getByRole('option', { name: /^○/ }).first().click();
     await expect(page.getByRole('option', { name: /^○/ }).first()).toBeHidden();
   }
-  await expect(page.getByText(/未入力 \d+件/)).toBeHidden();
+  await expect(page.getByText(/未確定 \d+件/)).toBeHidden();
 }
 
 /** 団体戦のラウンド一覧をAPIから取得(ペア検証・ボード内訳検証用) */

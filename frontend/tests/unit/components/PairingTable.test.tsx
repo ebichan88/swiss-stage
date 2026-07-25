@@ -71,6 +71,33 @@ describe('PairingTable', () => {
     expect(onInputResult).toHaveBeenCalledWith(match, 'PLAYER2_WIN');
   });
 
+  it('SHR-AC-015: 申告不一致のバッジと申告詳細は「結果」列ではなく「申告ステータス」列にまとめて表示される', () => {
+    renderWithProviders(
+      <PairingTable
+        matches={[
+          matchOf({
+            id: 'm1',
+            player1ReportedResult: 'PLAYER1_WIN',
+            player2ReportedResult: 'PLAYER2_WIN',
+          }),
+        ]}
+        editable
+        multiGroup={false}
+        savingMatchId={null}
+        onInputResult={() => {}}
+      />,
+    );
+
+    const rows = screen.getAllByRole('row');
+    const cells = within(rows[1]).getAllByRole('cell');
+    const resultCell = cells[3];
+    const statusCell = cells[4];
+
+    expect(within(statusCell).getByText('申告不一致')).toBeInTheDocument();
+    expect(within(statusCell).getAllByText(/の申告:/)).toHaveLength(2);
+    expect(within(resultCell).queryByText(/の申告:/)).not.toBeInTheDocument();
+  });
+
   it('確定済み(editable=false)は入力コントロールを出さない', () => {
     renderWithProviders(
       <PairingTable
