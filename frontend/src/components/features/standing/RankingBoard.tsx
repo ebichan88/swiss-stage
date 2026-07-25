@@ -51,7 +51,6 @@ function TopRankCard({ standing, delayMs }: TopRankCardProps) {
         data-testid="standing-row"
         variant="outlined"
         sx={{
-          flex: '1 1 200px',
           bgcolor: `rank.${paletteKey}.background`,
           borderColor: `rank.${paletteKey}.main`,
         }}
@@ -149,7 +148,14 @@ export function RankingBoard({ standings }: RankingBoardProps) {
   return (
     <Box role="list" aria-label="順位">
       {topRanks.length > 0 && (
-        <Stack direction="row" spacing={2} sx={{ mb: 2, flexWrap: 'wrap' }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            gap: 2,
+            mb: 2,
+          }}
+        >
           {topRanks.map((standing, index) => (
             <TopRankCard
               key={standing.participant.id}
@@ -157,7 +163,7 @@ export function RankingBoard({ standings }: RankingBoardProps) {
               delayMs={index * FADE_STAGGER_MS}
             />
           ))}
-        </Stack>
+        </Box>
       )}
       <Stack spacing={1}>
         {restRanks.map((standing, index) => (

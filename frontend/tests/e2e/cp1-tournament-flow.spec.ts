@@ -25,6 +25,15 @@ test('E2E-AC-001: CP1: ログインから順位表まで大会運営を一気通
   // 第1ラウンド: 16名 → 8卓
   await generateRound(page, tournamentId, 1);
   await expect(page.getByRole('combobox', { name: /卓\d+の結果/ })).toHaveCount(8);
+
+  // RND-AC-014: ラウンド1確定前は順位表を表示しない(全員同率rank=1になるため)
+  await page.goto(`/tournaments/${tournamentId}/standings`);
+  await expect(
+    page.getByText('順位はまだありません。ラウンドを確定すると表示されます'),
+  ).toBeVisible();
+  await page.goto(`/tournaments/${tournamentId}/rounds`);
+  await expect(page.getByRole('combobox', { name: /卓\d+の結果/ })).toHaveCount(8);
+
   await inputAllResults(page);
   await confirmRound(page, 1);
 

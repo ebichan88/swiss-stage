@@ -39,6 +39,7 @@ describe('SharedPage', () => {
               tournament: sharedSummaryOf({ name: '共有テスト大会', currentRound: 1 }),
               rounds: [
                 roundOf({
+                  status: 'CONFIRMED',
                   matches: [
                     matchOf({
                       player1: summaryOf({ id: 'p1', name: '架空 太郎' }),
@@ -63,6 +64,38 @@ describe('SharedPage', () => {
 
     await userEvent.click(screen.getByRole('tab', { name: '順位表' }));
     expect(await screen.findByRole('list', { name: '順位' })).toBeInTheDocument();
+  });
+
+  it('SHR-AC-017: ラウンド1が確定するまで順位表タブは表示されない(未確定時は全員同率rank=1になるため)', async () => {
+    server.use(
+      http.get(`/api/v1/shared/${TOKEN}`, () =>
+        HttpResponse.json(
+          apiSuccess(
+            sharedTournamentOf({
+              rounds: [roundOf({ status: 'PLAYING' })],
+              standings: [
+                groupStandingsOf({
+                  standings: [
+                    standingOf({ rank: 1, wins: 0, participant: summaryOf({ id: 'p1' }) }),
+                    standingOf({ rank: 1, wins: 0, participant: summaryOf({ id: 'p2' }) }),
+                  ],
+                }),
+              ],
+            }),
+          ),
+        ),
+      ),
+    );
+
+    renderSharedPage();
+
+    await screen.findByRole('heading', { name: '第1回テスト囲碁大会' });
+    await userEvent.click(screen.getByRole('tab', { name: '順位表' }));
+
+    expect(
+      await screen.findByText('順位はまだありません。ラウンドを確定すると表示されます。'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: '順位' })).not.toBeInTheDocument();
   });
 
   it('戦績一覧タブに切り替えるとラウンドごとの対戦相手・結果を含む一覧表が表示される', async () => {
@@ -120,6 +153,7 @@ describe('SharedPage', () => {
         HttpResponse.json(
           apiSuccess(
             sharedTournamentOf({
+              rounds: [roundOf({ status: 'CONFIRMED' })],
               standings: [
                 groupStandingsOf({
                   group: groupOf({ id: 'g1', name: 'A' }),
