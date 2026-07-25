@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 
 import { buildTeamCrossTableRows } from './teamCrossTableData';
+import { TableHeaderTooltip } from '../../ui/TableHeaderTooltip';
 import { formatPoints } from '../../../utils/format';
 import type { TeamRound, TeamStanding } from '../../../types/team';
 
@@ -58,10 +59,16 @@ export function TeamCrossTable({ rounds, standings }: TeamCrossTableProps) {
               勝点
             </TableCell>
             <TableCell rowSpan={2} align="right">
-              SOS
+              <TableHeaderTooltip
+                label="SOS"
+                tooltip="Sum of Opponents' Scores：対戦相手の勝ち数を合計したもの"
+              />
             </TableCell>
             <TableCell rowSpan={2} align="right">
-              SOSOS
+              <TableHeaderTooltip
+                label="SOSOS"
+                tooltip="Sum of Opponents' SOS：対戦相手のＳＯＳを合計したもの"
+              />
             </TableCell>
             <TableCell rowSpan={2}>順位</TableCell>
           </TableRow>
