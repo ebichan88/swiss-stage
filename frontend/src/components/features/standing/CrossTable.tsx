@@ -70,7 +70,7 @@ export function CrossTable({ rounds, standings }: CrossTableProps) {
             <TableCell rowSpan={2} align="right">
               <TableHeaderTooltip
                 label="SOS"
-                tooltip="Sum of Opponents' Scores：対戦相手の勝ち数を合計したもの"
+                tooltip="Sum of Opponents' Scores：対戦相手の勝点を合計したもの"
               />
             </TableCell>
             <TableCell rowSpan={2} align="right">
