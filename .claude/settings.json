@@ -3,7 +3,6 @@
         "allow": [
             "Bash(git status *)",
             "Bash(git diff *)",
-            "Bash(git push *)",
             "Bash(./gradlew *)",
             "Bash(cd backend && ./gradlew *)",
             "Bash(git checkout *)",
@@ -29,6 +28,7 @@
             "Skill(pr:*)"
         ],
         "ask": [
+            "Bash(git push *)",
             "Bash(gh pr merge *)"
         ],
         "deny": [
