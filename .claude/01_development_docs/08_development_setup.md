@@ -9,6 +9,7 @@
 | Gradle | 8.x (Wrapperを使用) | `./gradlew -v` |
 | Docker | 24.x以上 | `docker -v` |
 | AWS CLI | 2.x | `aws --version` |
+| cloc(任意) | - | `cloc --version` |
 
 ---
 
@@ -117,6 +118,8 @@ npm run type-check    # tsc --noEmit
 npm run test          # Vitest単体テスト
 npm run test:e2e      # Playwright(バックエンド起動が前提)
 npm run check         # lint + format + type-check + test(コミット前に必ず実行)
+npm run cloc          # プロジェクト全体のコード行数(cloc、要インストール)
+npm run cloc:by-file  # ファイル別のコード行数
 ```
 
 ### バックエンド(backend/)
