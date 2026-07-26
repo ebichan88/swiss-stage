@@ -22,10 +22,10 @@
 | 更新競合 | 409 | `CONFLICT` | ほかの端末で更新されました。画面を更新して再度お試しください | INFO |
 | ラウンド二重生成 | 409 | `ROUND_ALREADY_EXISTS` | このラウンドは既に生成されています | INFO |
 | マッチング不能 | 422 | `PAIRING_FAILED` | 組み合わせを生成できませんでした | WARN |
-
-補足: 制約の**緩和はエラーではない**。組み合わせ生成は成功レスポンスの `relaxations`(`GeneratedRound`)で緩和内容を返し、UIが警告を表示する(`05_swiss_pairing_algorithm.md` §2.2)。
 | レート制限 | 429 | `RATE_LIMITED` | しばらく時間をおいて再度お試しください | WARN |
 | システムエラー | 500 | `INTERNAL_ERROR` | 予期しないエラーが発生しました | ERROR |
+
+補足: 制約の**緩和はエラーではない**。組み合わせ生成は成功レスポンスの `relaxations`(`GeneratedRound`)で緩和内容を返し、UIが警告を表示する(`05_swiss_pairing_algorithm.md` §2.2)。
 
 新しいエラーコードを追加する場合は必ずこの表に追記すること。
 

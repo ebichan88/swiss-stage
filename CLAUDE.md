@@ -21,9 +21,6 @@
 | インフラ | AWS(EC2 t3.micro + ALB + Route53 + CloudWatch)、予算 ~$17/月 |
 | 認証 | Google OAuth2 + JWT Cookie(運営者)/ 共有トークン(参加者) |
 
-⚠️ `spring-data-dynamodb`(boostchicken)は Spring Boot 3 非対応のため**使用しない**。
-詳細: `.claude/03_library_docs/02_dynamodb_enhanced_client.md`
-
 ## アーキテクチャ
 
 モノレポ構成: `frontend/`(SPA) + `backend/`(REST API)。バックエンドはDDDレイヤードアーキテクチャ厳守:

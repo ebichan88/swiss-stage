@@ -335,9 +335,6 @@ frontend/
 | ビルドツール | Gradle | 8.x | 依存管理・ビルド |
 | DynamoDBクライアント | DynamoDB Enhanced Client (AWS SDK for Java v2) | 2.25+ | DynamoDBアクセス(型安全マッピング) |
 
-> ⚠️ `spring-data-dynamodb`(io.github.boostchicken)は Spring Boot 3.x 非対応(jakarta未対応・メンテナンス停止)のため**使用しない**。
-> 実装パターンは `.claude/03_library_docs/02_dynamodb_enhanced_client.md` を参照。
-
 ### Spring Boot主要依存
 
 ```gradle
@@ -346,7 +343,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     
     // DynamoDB (AWS SDK for Java v2 Enhanced Client)
-    // 注: spring-data-dynamodb(boostchicken)は Spring Boot 3 非対応のため使用しない
     implementation platform('software.amazon.awssdk:bom:2.25.+')
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
     
