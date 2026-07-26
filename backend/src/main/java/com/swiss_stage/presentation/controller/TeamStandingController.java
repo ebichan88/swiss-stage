@@ -16,19 +16,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/tournaments/{tournamentId}/team-standings")
 public class TeamStandingController {
 
-    private final TeamStandingService teamStandingService;
-    private final Clock clock;
+  private final TeamStandingService teamStandingService;
+  private final Clock clock;
 
-    public TeamStandingController(TeamStandingService teamStandingService, Clock clock) {
-        this.teamStandingService = teamStandingService;
-        this.clock = clock;
-    }
+  public TeamStandingController(TeamStandingService teamStandingService, Clock clock) {
+    this.teamStandingService = teamStandingService;
+    this.clock = clock;
+  }
 
-    @GetMapping
-    public ApiSuccess<List<GroupTeamStandingsDto>> standings(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
-        return ApiSuccess.of(
-                teamStandingService.standings(PathIds.tournamentId(tournamentId), user.sub()),
-                Instant.now(clock));
-    }
+  @GetMapping
+  public ApiSuccess<List<GroupTeamStandingsDto>> standings(
+      CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
+    return ApiSuccess.of(
+        teamStandingService.standings(PathIds.tournamentId(tournamentId), user.sub()),
+        Instant.now(clock));
+  }
 }

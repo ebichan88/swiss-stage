@@ -1,0 +1,7 @@
+# このファイルにリストしたコミットは `git blame` の対象から除外される。
+# 利用するには以下を実行(初回のみ):
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# VSCodeのGitLensを使う場合は自動的に読み込まれる。
+
+# chore: Spotless(google-java-format)を導入し全ファイルをGoogle Java Styleに統一
+5e727cc5bc2b7bf6aa61e7518b6fecca46fe96ea

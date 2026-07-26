@@ -15,48 +15,43 @@ import java.util.stream.IntStream;
  */
 public final class TeamRosterValidationService {
 
-    /** teamSize=3→補欠最大2名、teamSize=5→補欠最大3名 */
-    public static int maxReserves(int teamSize) {
-        return teamSize == 3 ? 2 : 3;
-    }
+  /** teamSize=3→補欠最大2名、teamSize=5→補欠最大3名 */
+  public static int maxReserves(int teamSize) {
+    return teamSize == 3 ? 2 : 3;
+  }
 
-    /** 補欠人数の上限を超えていないか(メンバー追加時に呼ぶ) */
-    public void validateReserveCount(Team team, int teamSize) {
-        if (team.reserveCount() > maxReserves(teamSize)) {
-            throw new DomainException(
-                    "補欠は" + maxReserves(teamSize) + "名までです");
-        }
+  /** 補欠人数の上限を超えていないか(メンバー追加時に呼ぶ) */
+  public void validateReserveCount(Team team, int teamSize) {
+    if (team.reserveCount() > maxReserves(teamSize)) {
+      throw new DomainException("補欠は" + maxReserves(teamSize) + "名までです");
     }
+  }
 
-    /**
-     * 大会開始時の検証。全ACTIVEチームの必須ボード位置(1..teamSize)が過不足なく
-     * 1名ずつ埋まっていること。違反時はDomainException。
-     */
-    public void validateForStart(List<Team> teams, int teamSize) {
-        Set<Integer> requiredPositions = IntStream.rangeClosed(1, teamSize)
-                .boxed()
-                .collect(Collectors.toSet());
-        for (Team team : teams) {
-            if (!team.isActive()) {
-                continue;
-            }
-            Set<Integer> filled = team.members().stream()
-                    .map(TeamMember::boardPosition)
-                    .filter(p -> p != null)
-                    .collect(Collectors.toSet());
-            if (!filled.equals(requiredPositions)) {
-                throw new DomainException(
-                        "チーム「" + team.name() + "」の必須ポジション(主将〜"
-                                + positionLabel(teamSize) + ")が揃っていません");
-            }
-        }
+  /** 大会開始時の検証。全ACTIVEチームの必須ボード位置(1..teamSize)が過不足なく 1名ずつ埋まっていること。違反時はDomainException。 */
+  public void validateForStart(List<Team> teams, int teamSize) {
+    Set<Integer> requiredPositions =
+        IntStream.rangeClosed(1, teamSize).boxed().collect(Collectors.toSet());
+    for (Team team : teams) {
+      if (!team.isActive()) {
+        continue;
+      }
+      Set<Integer> filled =
+          team.members().stream()
+              .map(TeamMember::boardPosition)
+              .filter(p -> p != null)
+              .collect(Collectors.toSet());
+      if (!filled.equals(requiredPositions)) {
+        throw new DomainException(
+            "チーム「" + team.name() + "」の必須ポジション(主将〜" + positionLabel(teamSize) + ")が揃っていません");
+      }
     }
+  }
 
-    private static String positionLabel(int teamSize) {
-        return switch (teamSize) {
-            case 3 -> "三将";
-            case 5 -> "五将";
-            default -> teamSize + "将";
-        };
-    }
+  private static String positionLabel(int teamSize) {
+    return switch (teamSize) {
+      case 3 -> "三将";
+      case 5 -> "五将";
+      default -> teamSize + "将";
+    };
+  }
 }

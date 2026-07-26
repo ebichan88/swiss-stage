@@ -8,13 +8,13 @@ import java.util.Optional;
 
 public interface MatchRepository {
 
-    Optional<Match> findById(TournamentId tournamentId, MatchId id);
+  Optional<Match> findById(TournamentId tournamentId, MatchId id);
 
-    List<Match> findAllByTournamentId(TournamentId tournamentId);
+  List<Match> findAllByTournamentId(TournamentId tournamentId);
 
-    List<Match> findByRound(TournamentId tournamentId, int roundNumber);
+  List<Match> findByRound(TournamentId tournamentId, int roundNumber);
 
-    void save(TournamentId tournamentId, Match match);
+  void save(TournamentId tournamentId, Match match);
 
-    void saveAll(TournamentId tournamentId, List<Match> matches);
+  void saveAll(TournamentId tournamentId, List<Match> matches);
 }

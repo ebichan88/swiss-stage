@@ -12,9 +12,8 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 /**
  * Spring Security設定(13_security_design.md §2, §5)。
  *
- * <p>Spring SecurityはGoogle OAuth2フロー(認可リダイレクト・コールバック)と
- * セキュリティヘッダーのためだけに使う。APIの認証・認可は既存の
- * JWT Cookie({@link com.swiss_stage.presentation.filter.AuthCookieFilter})+
+ * <p>Spring SecurityはGoogle OAuth2フロー(認可リダイレクト・コールバック)と セキュリティヘッダーのためだけに使う。APIの認証・認可は既存の JWT
+ * Cookie({@link com.swiss_stage.presentation.filter.AuthCookieFilter})+
  * application層の所有者検証で行うため、全リクエストをpermitAllにする。
  *
  * <p>CSRF: 認証CookieはSameSite=Lax + 更新系はJSON APIのため無効化(設計書 §5)。
@@ -22,29 +21,37 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 @Configuration
 public class SecurityConfig {
 
-    /** 認可エンドポイント。実URLは {baseUri}/{registrationId} = /api/v1/auth/login/google */
-    public static final String AUTHORIZATION_BASE_URI = "/api/v1/auth/login";
-    public static final String CALLBACK_URI = "/api/v1/auth/callback";
+  /** 認可エンドポイント。実URLは {baseUri}/{registrationId} = /api/v1/auth/login/google */
+  public static final String AUTHORIZATION_BASE_URI = "/api/v1/auth/login";
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http,
-            OAuth2LoginSuccessHandler successHandler,
-            OAuth2LoginFailureHandler failureHandler) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .logout(AbstractHttpConfigurer::disable)
-                .requestCache(cache -> cache.disable())
-                .headers(headers -> headers.referrerPolicy(referrer -> referrer.policy(
-                        ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-                .oauth2Login(oauth2 -> oauth2
-                        // SPAのログイン画面。デフォルトのログインページ生成を無効化する
-                        .loginPage("/login")
-                        .authorizationEndpoint(endpoint -> endpoint.baseUri(AUTHORIZATION_BASE_URI))
-                        .redirectionEndpoint(endpoint -> endpoint.baseUri(CALLBACK_URI))
-                        .successHandler(successHandler)
-                        .failureHandler(failureHandler));
-        return http.build();
-    }
+  public static final String CALLBACK_URI = "/api/v1/auth/callback";
+
+  @Bean
+  public SecurityFilterChain securityFilterChain(
+      HttpSecurity http,
+      OAuth2LoginSuccessHandler successHandler,
+      OAuth2LoginFailureHandler failureHandler)
+      throws Exception {
+    http.csrf(AbstractHttpConfigurer::disable)
+        .logout(AbstractHttpConfigurer::disable)
+        .requestCache(cache -> cache.disable())
+        .headers(
+            headers ->
+                headers.referrerPolicy(
+                    referrer ->
+                        referrer.policy(
+                            ReferrerPolicyHeaderWriter.ReferrerPolicy
+                                .STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
+        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+        .oauth2Login(
+            oauth2 ->
+                oauth2
+                    // SPAのログイン画面。デフォルトのログインページ生成を無効化する
+                    .loginPage("/login")
+                    .authorizationEndpoint(endpoint -> endpoint.baseUri(AUTHORIZATION_BASE_URI))
+                    .redirectionEndpoint(endpoint -> endpoint.baseUri(CALLBACK_URI))
+                    .successHandler(successHandler)
+                    .failureHandler(failureHandler));
+    return http.build();
+  }
 }

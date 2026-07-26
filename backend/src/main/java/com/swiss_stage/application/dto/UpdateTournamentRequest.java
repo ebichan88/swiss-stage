@@ -6,13 +6,9 @@ import jakarta.validation.constraints.Size;
 
 /** 大会更新(PATCH)。nullの項目は変更しない。versionは楽観ロック用に必須 */
 public record UpdateTournamentRequest(
-        @Size(max = 100, message = "大会名は100文字以内で入力してください")
-        String name,
+    @Size(max = 100, message = "大会名は100文字以内で入力してください") String name,
+    Visibility visibility,
 
-        Visibility visibility,
-
-        /** 共有トークン経由の結果入力を許可するか。null = 変更しない */
-        Boolean resultInputEnabled,
-
-        @NotNull(message = "versionは必須です")
-        Long version) {}
+    /** 共有トークン経由の結果入力を許可するか。null = 変更しない */
+    Boolean resultInputEnabled,
+    @NotNull(message = "versionは必須です") Long version) {}

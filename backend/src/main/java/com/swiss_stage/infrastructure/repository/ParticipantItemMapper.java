@@ -9,31 +9,31 @@ import com.swiss_stage.domain.model.TournamentId;
 
 final class ParticipantItemMapper {
 
-    private ParticipantItemMapper() {}
+  private ParticipantItemMapper() {}
 
-    static ParticipantItem toItem(TournamentId tournamentId, Participant p) {
-        var item = new ParticipantItem();
-        item.setPk(DynamoDbKeys.pk(tournamentId));
-        item.setSk(DynamoDbKeys.participantSk(p.id()));
-        item.setEntityType(ParticipantItem.ENTITY_TYPE);
-        item.setParticipantId(p.id().value());
-        item.setName(p.name());
-        item.setOrganization(p.organization());
-        item.setRank(p.rank() == null ? null : p.rank().name());
-        item.setEntryOrder(p.entryOrder());
-        item.setStatus(p.status().name());
-        item.setGroupId(p.groupId().value());
-        return item;
-    }
+  static ParticipantItem toItem(TournamentId tournamentId, Participant p) {
+    var item = new ParticipantItem();
+    item.setPk(DynamoDbKeys.pk(tournamentId));
+    item.setSk(DynamoDbKeys.participantSk(p.id()));
+    item.setEntityType(ParticipantItem.ENTITY_TYPE);
+    item.setParticipantId(p.id().value());
+    item.setName(p.name());
+    item.setOrganization(p.organization());
+    item.setRank(p.rank() == null ? null : p.rank().name());
+    item.setEntryOrder(p.entryOrder());
+    item.setStatus(p.status().name());
+    item.setGroupId(p.groupId().value());
+    return item;
+  }
 
-    static Participant toDomain(ParticipantItem item) {
-        return new Participant(
-                new ParticipantId(item.getParticipantId()),
-                item.getName(),
-                item.getOrganization(),
-                item.getRank() == null ? null : Rank.valueOf(item.getRank()),
-                item.getEntryOrder(),
-                ParticipantStatus.valueOf(item.getStatus()),
-                new GroupId(item.getGroupId()));
-    }
+  static Participant toDomain(ParticipantItem item) {
+    return new Participant(
+        new ParticipantId(item.getParticipantId()),
+        item.getName(),
+        item.getOrganization(),
+        item.getRank() == null ? null : Rank.valueOf(item.getRank()),
+        item.getEntryOrder(),
+        ParticipantStatus.valueOf(item.getStatus()),
+        new GroupId(item.getGroupId()));
+  }
 }

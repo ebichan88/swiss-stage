@@ -14,60 +14,60 @@ import java.time.Instant;
  */
 final class DynamoDbKeys {
 
-    static final String METADATA_SK = "METADATA";
-    static final String ROUND_PREFIX = "ROUND#";
-    static final String PARTICIPANT_PREFIX = "PARTICIPANT#";
-    static final String GROUP_PREFIX = "GROUP#";
-    static final String TEAM_PREFIX = "TEAM#";
+  static final String METADATA_SK = "METADATA";
+  static final String ROUND_PREFIX = "ROUND#";
+  static final String PARTICIPANT_PREFIX = "PARTICIPANT#";
+  static final String GROUP_PREFIX = "GROUP#";
+  static final String TEAM_PREFIX = "TEAM#";
 
-    private DynamoDbKeys() {}
+  private DynamoDbKeys() {}
 
-    static String pk(TournamentId id) {
-        return "TOURNAMENT#" + id.value();
-    }
+  static String pk(TournamentId id) {
+    return "TOURNAMENT#" + id.value();
+  }
 
-    static String participantSk(ParticipantId id) {
-        return PARTICIPANT_PREFIX + id.value();
-    }
+  static String participantSk(ParticipantId id) {
+    return PARTICIPANT_PREFIX + id.value();
+  }
 
-    static String groupSk(GroupId id) {
-        return GROUP_PREFIX + id.value();
-    }
+  static String groupSk(GroupId id) {
+    return GROUP_PREFIX + id.value();
+  }
 
-    /** ラウンド番号はゼロ埋め2桁(SKソートのため) */
-    static String roundSk(int roundNumber) {
-        return String.format("ROUND#%02d", roundNumber);
-    }
+  /** ラウンド番号はゼロ埋め2桁(SKソートのため) */
+  static String roundSk(int roundNumber) {
+    return String.format("ROUND#%02d", roundNumber);
+  }
 
-    static String matchSk(int roundNumber, MatchId id) {
-        return roundSk(roundNumber) + "#MATCH#" + id.value();
-    }
+  static String matchSk(int roundNumber, MatchId id) {
+    return roundSk(roundNumber) + "#MATCH#" + id.value();
+  }
 
-    static String matchSkPrefix(int roundNumber) {
-        return roundSk(roundNumber) + "#MATCH#";
-    }
+  static String matchSkPrefix(int roundNumber) {
+    return roundSk(roundNumber) + "#MATCH#";
+  }
 
-    static String teamSk(TeamId id) {
-        return TEAM_PREFIX + id.value();
-    }
+  static String teamSk(TeamId id) {
+    return TEAM_PREFIX + id.value();
+  }
 
-    static String teamMatchSk(int roundNumber, TeamMatchId id) {
-        return roundSk(roundNumber) + "#TEAM_MATCH#" + id.value();
-    }
+  static String teamMatchSk(int roundNumber, TeamMatchId id) {
+    return roundSk(roundNumber) + "#TEAM_MATCH#" + id.value();
+  }
 
-    static String teamMatchSkPrefix(int roundNumber) {
-        return roundSk(roundNumber) + "#TEAM_MATCH#";
-    }
+  static String teamMatchSkPrefix(int roundNumber) {
+    return roundSk(roundNumber) + "#TEAM_MATCH#";
+  }
 
-    static String gsi1Pk(String ownerSub) {
-        return "USER#" + ownerSub;
-    }
+  static String gsi1Pk(String ownerSub) {
+    return "USER#" + ownerSub;
+  }
 
-    static String gsi1Sk(Instant createdAt) {
-        return "TOURNAMENT#" + createdAt.toString();
-    }
+  static String gsi1Sk(Instant createdAt) {
+    return "TOURNAMENT#" + createdAt.toString();
+  }
 
-    static String gsi2Pk(String shareToken) {
-        return "SHARE#" + shareToken;
-    }
+  static String gsi2Pk(String shareToken) {
+    return "SHARE#" + shareToken;
+  }
 }

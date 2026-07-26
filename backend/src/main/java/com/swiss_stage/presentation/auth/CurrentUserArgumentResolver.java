@@ -13,22 +13,22 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 @Component
 public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolver {
 
-    @Override
-    public boolean supportsParameter(MethodParameter parameter) {
-        return CurrentUser.class.equals(parameter.getParameterType());
-    }
+  @Override
+  public boolean supportsParameter(MethodParameter parameter) {
+    return CurrentUser.class.equals(parameter.getParameterType());
+  }
 
-    @Override
-    public Object resolveArgument(
-            MethodParameter parameter,
-            ModelAndViewContainer mavContainer,
-            NativeWebRequest webRequest,
-            WebDataBinderFactory binderFactory) {
-        HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
-        Object user = request == null ? null : request.getAttribute(CurrentUser.REQUEST_ATTRIBUTE);
-        if (user == null) {
-            throw new UnauthorizedException();
-        }
-        return user;
+  @Override
+  public Object resolveArgument(
+      MethodParameter parameter,
+      ModelAndViewContainer mavContainer,
+      NativeWebRequest webRequest,
+      WebDataBinderFactory binderFactory) {
+    HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
+    Object user = request == null ? null : request.getAttribute(CurrentUser.REQUEST_ATTRIBUTE);
+    if (user == null) {
+      throw new UnauthorizedException();
     }
+    return user;
+  }
 }

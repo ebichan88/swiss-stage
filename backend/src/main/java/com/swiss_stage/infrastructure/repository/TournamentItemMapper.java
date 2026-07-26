@@ -10,54 +10,54 @@ import java.time.Instant;
 
 final class TournamentItemMapper {
 
-    private TournamentItemMapper() {}
+  private TournamentItemMapper() {}
 
-    static TournamentItem toItem(Tournament t) {
-        var item = new TournamentItem();
-        item.setPk(DynamoDbKeys.pk(t.id()));
-        item.setSk(DynamoDbKeys.METADATA_SK);
-        item.setEntityType(TournamentItem.ENTITY_TYPE);
-        item.setName(t.name());
-        item.setGameType(t.gameType().name());
-        item.setCompetitionType(t.competitionType().name());
-        item.setTeamSize(t.teamSize());
-        item.setTotalRounds(t.totalRounds());
-        item.setCurrentRound(t.currentRound());
-        item.setStatus(t.status().name());
-        item.setVisibility(t.visibility().name());
-        item.setShareToken(t.shareToken());
-        item.setResultInputEnabled(t.resultInputEnabled());
-        item.setOwnerSub(t.ownerSub());
-        item.setGsi1Pk(DynamoDbKeys.gsi1Pk(t.ownerSub()));
-        item.setGsi1Sk(DynamoDbKeys.gsi1Sk(t.createdAt()));
-        item.setGsi2Pk(t.shareToken() == null ? null : DynamoDbKeys.gsi2Pk(t.shareToken()));
-        item.setCreatedAt(t.createdAt().toString());
-        item.setUpdatedAt(t.updatedAt().toString());
-        // version 0 = 未保存。nullにすると Enhanced Client が新規条件(attribute_not_exists)で書き込む
-        item.setVersion(t.version() == 0 ? null : t.version());
-        return item;
-    }
+  static TournamentItem toItem(Tournament t) {
+    var item = new TournamentItem();
+    item.setPk(DynamoDbKeys.pk(t.id()));
+    item.setSk(DynamoDbKeys.METADATA_SK);
+    item.setEntityType(TournamentItem.ENTITY_TYPE);
+    item.setName(t.name());
+    item.setGameType(t.gameType().name());
+    item.setCompetitionType(t.competitionType().name());
+    item.setTeamSize(t.teamSize());
+    item.setTotalRounds(t.totalRounds());
+    item.setCurrentRound(t.currentRound());
+    item.setStatus(t.status().name());
+    item.setVisibility(t.visibility().name());
+    item.setShareToken(t.shareToken());
+    item.setResultInputEnabled(t.resultInputEnabled());
+    item.setOwnerSub(t.ownerSub());
+    item.setGsi1Pk(DynamoDbKeys.gsi1Pk(t.ownerSub()));
+    item.setGsi1Sk(DynamoDbKeys.gsi1Sk(t.createdAt()));
+    item.setGsi2Pk(t.shareToken() == null ? null : DynamoDbKeys.gsi2Pk(t.shareToken()));
+    item.setCreatedAt(t.createdAt().toString());
+    item.setUpdatedAt(t.updatedAt().toString());
+    // version 0 = 未保存。nullにすると Enhanced Client が新規条件(attribute_not_exists)で書き込む
+    item.setVersion(t.version() == 0 ? null : t.version());
+    return item;
+  }
 
-    static Tournament toDomain(TournamentItem item) {
-        return new Tournament(
-                new TournamentId(item.getPk().substring("TOURNAMENT#".length())),
-                item.getName(),
-                GameType.valueOf(item.getGameType()),
-                // 団体戦導入以前の既存アイテムには属性がない(null)ため個人戦扱い
-                item.getCompetitionType() == null
-                        ? CompetitionType.INDIVIDUAL
-                        : CompetitionType.valueOf(item.getCompetitionType()),
-                item.getTeamSize(),
-                item.getTotalRounds(),
-                item.getCurrentRound(),
-                TournamentStatus.valueOf(item.getStatus()),
-                Visibility.valueOf(item.getVisibility()),
-                item.getShareToken(),
-                // Phase 5 以前の既存アイテムには属性がない(null)ため false 扱い
-                Boolean.TRUE.equals(item.getResultInputEnabled()),
-                item.getOwnerSub(),
-                item.getVersion() == null ? 0L : item.getVersion(),
-                Instant.parse(item.getCreatedAt()),
-                Instant.parse(item.getUpdatedAt()));
-    }
+  static Tournament toDomain(TournamentItem item) {
+    return new Tournament(
+        new TournamentId(item.getPk().substring("TOURNAMENT#".length())),
+        item.getName(),
+        GameType.valueOf(item.getGameType()),
+        // 団体戦導入以前の既存アイテムには属性がない(null)ため個人戦扱い
+        item.getCompetitionType() == null
+            ? CompetitionType.INDIVIDUAL
+            : CompetitionType.valueOf(item.getCompetitionType()),
+        item.getTeamSize(),
+        item.getTotalRounds(),
+        item.getCurrentRound(),
+        TournamentStatus.valueOf(item.getStatus()),
+        Visibility.valueOf(item.getVisibility()),
+        item.getShareToken(),
+        // Phase 5 以前の既存アイテムには属性がない(null)ため false 扱い
+        Boolean.TRUE.equals(item.getResultInputEnabled()),
+        item.getOwnerSub(),
+        item.getVersion() == null ? 0L : item.getVersion(),
+        Instant.parse(item.getCreatedAt()),
+        Instant.parse(item.getUpdatedAt()));
+  }
 }

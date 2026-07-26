@@ -7,16 +7,16 @@ import java.util.Optional;
 
 public interface RoundRepository {
 
-    Optional<Round> findByRoundNumber(TournamentId tournamentId, int roundNumber);
+  Optional<Round> findByRoundNumber(TournamentId tournamentId, int roundNumber);
 
-    List<Round> findAllByTournamentId(TournamentId tournamentId);
+  List<Round> findAllByTournamentId(TournamentId tournamentId);
 
-    /**
-     * ラウンドの新規作成。実装は条件付き書き込みで二重生成を防ぎ、
-     * 既に存在する場合は {@link com.swiss_stage.domain.DuplicateRoundException} を送出する。
-     */
-    void create(TournamentId tournamentId, Round round);
+  /**
+   * ラウンドの新規作成。実装は条件付き書き込みで二重生成を防ぎ、 既に存在する場合は {@link com.swiss_stage.domain.DuplicateRoundException}
+   * を送出する。
+   */
+  void create(TournamentId tournamentId, Round round);
 
-    /** 既存ラウンドの状態更新 */
-    void save(TournamentId tournamentId, Round round);
+  /** 既存ラウンドの状態更新 */
+  void save(TournamentId tournamentId, Round round);
 }

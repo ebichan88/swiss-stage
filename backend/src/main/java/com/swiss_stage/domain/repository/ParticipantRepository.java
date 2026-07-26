@@ -8,13 +8,13 @@ import java.util.Optional;
 
 public interface ParticipantRepository {
 
-    Optional<Participant> findById(TournamentId tournamentId, ParticipantId id);
+  Optional<Participant> findById(TournamentId tournamentId, ParticipantId id);
 
-    List<Participant> findAllByTournamentId(TournamentId tournamentId);
+  List<Participant> findAllByTournamentId(TournamentId tournamentId);
 
-    void save(TournamentId tournamentId, Participant participant);
+  void save(TournamentId tournamentId, Participant participant);
 
-    void saveAll(TournamentId tournamentId, List<Participant> participants);
+  void saveAll(TournamentId tournamentId, List<Participant> participants);
 
-    void delete(TournamentId tournamentId, ParticipantId id);
+  void delete(TournamentId tournamentId, ParticipantId id);
 }

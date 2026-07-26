@@ -5,13 +5,13 @@ import com.swiss_stage.domain.DomainException;
 
 public record TeamMemberId(String value) {
 
-    public TeamMemberId {
-        if (value == null || value.isBlank()) {
-            throw new DomainException("TeamMemberIdが空です");
-        }
+  public TeamMemberId {
+    if (value == null || value.isBlank()) {
+      throw new DomainException("TeamMemberIdが空です");
     }
+  }
 
-    public static TeamMemberId generate() {
-        return new TeamMemberId(UlidCreator.getUlid().toString());
-    }
+  public static TeamMemberId generate() {
+    return new TeamMemberId(UlidCreator.getUlid().toString());
+  }
 }
