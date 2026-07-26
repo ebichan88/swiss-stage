@@ -51,6 +51,9 @@
 | PTC-AC-007 | P0 | 棄権(status=WITHDRAWN)は大会開始後でもできる | done | ParticipantApiTest |
 | PTC-AC-008 | P2 | clearRank=trueで棋力を未入力に戻せる(rankとの同時指定は400) | done | ParticipantApiTest |
 | PTC-AC-009 | P1 | 部分更新で未指定の項目(グループ割当等)は失われない | done | ParticipantApiTest |
+| PTC-AC-010 | P1 | 参加者一覧CSVダウンロードはCSVインポートと同じ列構成(氏名,所属,段級位,グループ)をUTF-8 BOM付きで返す | done | ParticipantApiTest |
+| PTC-AC-011 | P2 | 参加者が0件のときのCSVダウンロードはヘッダー行のみになりテンプレートとして使える | done | ParticipantApiTest |
+| PTC-AC-012 | P1 | CSVダウンロードは大会の状態(PREPARING/IN_PROGRESS/FINISHED)を問わず利用できる | done | ParticipantApiTest |
 
 ## GRP: グループ
 
@@ -117,6 +120,9 @@
 | TEAM-AC-019 | P0 | ボード単位で申告が不一致の場合、確定させず双方の申告内容(誰が何を申告したか)を運営者画面・共有画面の両方で確認できる | done | TeamSharedApiTest(API), TeamMatchResultControl.test.tsx(運営者画面), SharedTeamResultPage.test.tsx(共有画面) |
 | TEAM-AC-020 | P0 | 運営者が直接確定したボード結果は、その後の参加者の自己申告(一致・不一致問わず)で上書きされない | done | TeamSharedApiTest |
 | TEAM-AC-021 | P2 | ボード単位の自己申告が一致して自動確定した場合、運営者画面・共有画面の申告ステータス欄に「申告済み」と表示する(運営者が申告なしで直接確定した場合は表示しない) | done | TeamMatchResultControl.test.tsx |
+| TEAM-AC-022 | P1 | チーム一覧CSVダウンロードはCSVインポートと同じ列構成(チーム名,氏名,段級位,ポジション,グループ)をメンバー1人につき1行、UTF-8 BOM付きで返す | done | TeamApiTest |
+| TEAM-AC-023 | P2 | チームが0件のときのCSVダウンロードはヘッダー行のみになりテンプレートとして使える | done | TeamApiTest |
+| TEAM-AC-024 | P1 | CSVダウンロードは大会の状態を問わず利用でき、メンバーが1人もいないチームは行として出力されない | done | TeamApiTest |
 
 ## SHR: 共有(トークン)
 

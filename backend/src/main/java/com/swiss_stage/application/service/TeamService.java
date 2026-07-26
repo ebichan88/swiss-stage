@@ -41,6 +41,7 @@ public class TeamService {
     private final GroupRepository groupRepository;
     private final TournamentAccessSupport access;
     private final TeamCsvParser csvParser;
+    private final TeamCsvWriter csvWriter;
     private final SharedViewCache sharedViewCache;
     private final TeamRosterValidationService rosterValidation = new TeamRosterValidationService();
 
@@ -49,11 +50,13 @@ public class TeamService {
             GroupRepository groupRepository,
             TournamentAccessSupport access,
             TeamCsvParser csvParser,
+            TeamCsvWriter csvWriter,
             SharedViewCache sharedViewCache) {
         this.teamRepository = teamRepository;
         this.groupRepository = groupRepository;
         this.access = access;
         this.csvParser = csvParser;
+        this.csvWriter = csvWriter;
         this.sharedViewCache = sharedViewCache;
     }
 
@@ -107,6 +110,18 @@ public class TeamService {
         teamRepository.saveAll(tournamentId, teams);
         sharedViewCache.evict(tournamentId);
         return new TeamCsvImportResultDto(teams.size(), teams.stream().map(TeamDto::from).toList());
+    }
+
+    /** CSVダウンロード。インポートと対称の列構成で全チーム(棄権含む)をエントリー順・メンバー1人1行で返す。状態制約なし */
+    public CsvExport exportCsv(TournamentId tournamentId, String ownerSub) {
+        Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+        requireTeamCompetition(tournament);
+        List<Team> teams = teamRepository.findAllByTournamentId(tournamentId).stream()
+                .sorted(Comparator.comparingInt(Team::entryOrder))
+                .toList();
+        Map<GroupId, String> groupNames = groupRepository.findAllByTournamentId(tournamentId).stream()
+                .collect(Collectors.toMap(Group::id, Group::name));
+        return new CsvExport(tournament.name(), csvWriter.write(teams, groupNames));
     }
 
     public TeamDto update(

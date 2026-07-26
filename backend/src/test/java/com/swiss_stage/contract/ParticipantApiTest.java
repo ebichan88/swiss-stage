@@ -1,5 +1,6 @@
 package com.swiss_stage.contract;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -180,11 +181,109 @@ class ParticipantApiTest extends ApiContractTestSupport {
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
     }
 
+    @Test
+    @DisplayName("PTC-AC-010: 参加者一覧CSVダウンロードはCSVインポートと同じ列構成をUTF-8 BOM付きで返す")
+    void CSVダウンロード() throws Exception {
+        performApi(post(participantsPath())
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"蛯名 隆\",\"organization\":\"〇〇株式会社\",\"rank\":\"KYU_3\"}"))
+                .andExpect(status().isCreated());
+        performApi(post(participantsPath())
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"山田 花子\",\"rank\":\"DAN_1\"}"))
+                .andExpect(status().isCreated());
+
+        MvcResult result = performApi(get(participantsPath() + "/export").cookie(ownerCookie()))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertThat(result.getResponse().getHeader("Content-Type")).contains("text/csv");
+        assertThat(result.getResponse().getHeader("Content-Disposition")).contains("attachment");
+        assertThat(csvBodyWithoutBom(result)).isEqualTo(
+                "氏名,所属,段級位,グループ\r\n"
+                        + "蛯名 隆,〇〇株式会社,3級,A\r\n"
+                        + "山田 花子,,初段,A\r\n");
+    }
+
+    @Test
+    @DisplayName("PTC-AC-011: 参加者が0件のときのCSVダウンロードはヘッダー行のみになる")
+    void CSVダウンロード0件() throws Exception {
+        MvcResult result = performApi(get(participantsPath() + "/export").cookie(ownerCookie()))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(csvBodyWithoutBom(result)).isEqualTo("氏名,所属,段級位,グループ\r\n");
+    }
+
+    @Test
+    @DisplayName("PTC-AC-012: CSVダウンロードは大会開始後(IN_PROGRESS)でも利用できる")
+    void CSVダウンロードは状態を問わない() throws Exception {
+        performApi(post(participantsPath())
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"参加 一郎\"}"))
+                .andExpect(status().isCreated());
+        performApi(post(participantsPath())
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"参加 二郎\"}"))
+                .andExpect(status().isCreated());
+
+        performApi(post("/api/v1/tournaments/" + tournamentId + "/start").cookie(ownerCookie()))
+                .andExpect(status().isOk());
+        performApi(get(participantsPath() + "/export").cookie(ownerCookie()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("CSVダウンロード結果はそのまま別の大会にインポートでき往復できる")
+    void CSVダウンロードと再インポートの往復() throws Exception {
+        String csv = "氏名,所属,段級位\n蛯名 隆,〇〇株式会社,3級\n山田 花子,,初段\n";
+        performApi(multipart(participantsPath() + "/import")
+                        .file(csvFile(csv.getBytes(StandardCharsets.UTF_8)))
+                        .cookie(ownerCookie()))
+                .andExpect(status().isCreated());
+
+        MvcResult exported = performApi(get(participantsPath() + "/export").cookie(ownerCookie()))
+                .andExpect(status().isOk())
+                .andReturn();
+        byte[] exportedCsv = exported.getResponse().getContentAsByteArray();
+
+        MvcResult newTournament = performApi(post("/api/v1/tournaments")
+                        .cookie(ownerCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"流用先大会\",\"gameType\":\"GO\","
+                                + "\"competitionType\":\"INDIVIDUAL\",\"totalRounds\":3}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String newTournamentId = dataOf(newTournament).path("id").asText();
+
+        performApi(multipart("/api/v1/tournaments/" + newTournamentId + "/participants/import")
+                        .file(csvFile(exportedCsv))
+                        .cookie(ownerCookie()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.importedCount").value(2))
+                .andExpect(jsonPath("$.data.participants[0].name").value("蛯名 隆"))
+                .andExpect(jsonPath("$.data.participants[0].organization").value("〇〇株式会社"))
+                .andExpect(jsonPath("$.data.participants[0].rank").value("KYU_3"))
+                .andExpect(jsonPath("$.data.participants[1].name").value("山田 花子"))
+                .andExpect(jsonPath("$.data.participants[1].rank").value("DAN_1"));
+    }
+
     private String participantsPath() {
         return "/api/v1/tournaments/" + tournamentId + "/participants";
     }
 
     private static MockMultipartFile csvFile(byte[] bytes) {
         return new MockMultipartFile("file", "participants.csv", "text/csv", bytes);
+    }
+
+    private static String csvBodyWithoutBom(MvcResult result) throws Exception {
+        byte[] body = result.getResponse().getContentAsByteArray();
+        assertThat(body[0] & 0xFF).isEqualTo(0xEF);
+        assertThat(body[1] & 0xFF).isEqualTo(0xBB);
+        assertThat(body[2] & 0xFF).isEqualTo(0xBF);
+        return new String(body, 3, body.length - 3, StandardCharsets.UTF_8);
     }
 }

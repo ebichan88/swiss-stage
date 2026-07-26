@@ -235,6 +235,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tournaments/{id}/participants/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 参加者一覧CSVダウンロード(CSVインポートと同じ列構成。氏名,所属,段級位,グループ。エントリー順。 0件時はヘッダー行のみでテンプレートとして使える。大会の状態を問わず利用可) */
+        get: operations["exportParticipants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tournaments/{id}/participants/{pid}": {
         parameters: {
             query?: never;
@@ -423,6 +440,23 @@ export interface paths {
         put?: never;
         /** チーム+メンバー一覧のCSVインポート(UTF-8/Shift_JIS自動判定) */
         post: operations["importTeams"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tournaments/{id}/teams/csv-export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** チーム+メンバー一覧CSVダウンロード(CSVインポートと同じ列構成。チーム名,氏名,段級位,ポジション,グループ。 メンバー1人につき1行、エントリー順。0件時はヘッダー行のみでテンプレートとして使える。 メンバーが1人もいないチームは行として出力されない。大会の状態を問わず利用可) */
+        get: operations["exportTeams"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1078,6 +1112,15 @@ export interface components {
                 };
             };
         };
+        /** @description 参加者一覧CSV(UTF-8 BOM付き。氏名,所属,段級位,グループ) */
+        ParticipantCsvExport: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "text/csv": string;
+            };
+        };
         /** @description グループ */
         Group: {
             headers: {
@@ -1216,6 +1259,15 @@ export interface components {
                     data: components["schemas"]["TeamCsvImportResult"];
                     meta: components["schemas"]["Meta"];
                 };
+            };
+        };
+        /** @description チーム+メンバー一覧CSV(UTF-8 BOM付き。チーム名,氏名,段級位,ポジション,グループ。メンバー1人につき1行) */
+        TeamCsvExport: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "text/csv": string;
             };
         };
         /** @description 団体戦ラウンド */
@@ -1692,6 +1744,23 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    exportParticipants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["ParticipantCsvExport"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     deleteParticipant: {
         parameters: {
             query?: never;
@@ -2018,6 +2087,23 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    exportTeams: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["TeamCsvExport"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     deleteTeam: {

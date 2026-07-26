@@ -261,6 +261,21 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/participants/export:
+    get:
+      operationId: exportParticipants
+      summary: >-
+        参加者一覧CSVダウンロード(CSVインポートと同じ列構成。氏名,所属,段級位,グループ。エントリー順。
+        0件時はヘッダー行のみでテンプレートとして使える。大会の状態を問わず利用可)
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+      responses:
+        "200":
+          $ref: "#/components/responses/ParticipantCsvExport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/tournaments/{id}/participants/{pid}:
     parameters:
       - $ref: "#/components/parameters/TournamentId"
@@ -542,6 +557,22 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+  /api/v1/tournaments/{id}/teams/csv-export:
+    get:
+      operationId: exportTeams
+      summary: >-
+        チーム+メンバー一覧CSVダウンロード(CSVインポートと同じ列構成。チーム名,氏名,段級位,ポジション,グループ。
+        メンバー1人につき1行、エントリー順。0件時はヘッダー行のみでテンプレートとして使える。
+        メンバーが1人もいないチームは行として出力されない。大会の状態を問わず利用可)
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+      responses:
+        "200":
+          $ref: "#/components/responses/TeamCsvExport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/tournaments/{id}/teams/{tid}:
     parameters:
       - $ref: "#/components/parameters/TournamentId"
@@ -989,6 +1020,13 @@ components:
                 $ref: "#/components/schemas/CsvImportResult"
               meta:
                 $ref: "#/components/schemas/Meta"
+    ParticipantCsvExport:
+      description: 参加者一覧CSV(UTF-8 BOM付き。氏名,所属,段級位,グループ)
+      content:
+        text/csv:
+          schema:
+            type: string
+            format: binary
     Group:
       description: グループ
       content:
@@ -1159,6 +1197,13 @@ components:
                 $ref: "#/components/schemas/TeamCsvImportResult"
               meta:
                 $ref: "#/components/schemas/Meta"
+    TeamCsvExport:
+      description: チーム+メンバー一覧CSV(UTF-8 BOM付き。チーム名,氏名,段級位,ポジション,グループ。メンバー1人につき1行)
+      content:
+        text/csv:
+          schema:
+            type: string
+            format: binary
     TeamRound:
       description: 団体戦ラウンド
       content:

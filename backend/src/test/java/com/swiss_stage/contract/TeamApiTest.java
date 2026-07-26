@@ -1,5 +1,6 @@
 package com.swiss_stage.contract;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -216,6 +217,63 @@ class TeamApiTest extends ApiContractTestSupport {
                 .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
     }
 
+    @Test
+    @DisplayName("TEAM-AC-022: チーム一覧CSVダウンロードはCSVインポートと同じ列構成をメンバー1人1行、"
+            + "UTF-8 BOM付きで返す")
+    void CSVダウンロード() throws Exception {
+        String teamId = createTeam("Aチーム");
+        addMember(teamId, "主将 一郎", 1);
+        addMember(teamId, "副将 二郎", 2);
+
+        MvcResult result = performApi(get(teamsPath() + "/csv-export").cookie(ownerCookie()))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertThat(result.getResponse().getHeader("Content-Type")).contains("text/csv");
+        assertThat(result.getResponse().getHeader("Content-Disposition")).contains("attachment");
+        assertThat(csvBodyWithoutBom(result)).isEqualTo(
+                "チーム名,氏名,段級位,ポジション,グループ\r\n"
+                        + "Aチーム,主将 一郎,,主将,A\r\n"
+                        + "Aチーム,副将 二郎,,副将,A\r\n");
+    }
+
+    @Test
+    @DisplayName("TEAM-AC-023: チームが0件のときのCSVダウンロードはヘッダー行のみになる")
+    void CSVダウンロード0件() throws Exception {
+        MvcResult result = performApi(get(teamsPath() + "/csv-export").cookie(ownerCookie()))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(csvBodyWithoutBom(result)).isEqualTo("チーム名,氏名,段級位,ポジション,グループ\r\n");
+    }
+
+    @Test
+    @DisplayName("TEAM-AC-024: CSVダウンロードは大会開始後(IN_PROGRESS)でも利用できる")
+    void CSVダウンロードは状態を問わない() throws Exception {
+        String teamA = createTeam("Aチーム");
+        String teamB = createTeam("Bチーム");
+        fillRequiredPositions(teamA, 3);
+        fillRequiredPositions(teamB, 3);
+        performApi(post(base() + "/start").cookie(ownerCookie())).andExpect(status().isOk());
+
+        performApi(get(teamsPath() + "/csv-export").cookie(ownerCookie()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("TEAM-AC-024: メンバーが1人もいないチームはCSVダウンロードの行として出力されない")
+    void CSVダウンロードはメンバー0人のチームを出力しない() throws Exception {
+        String teamA = createTeam("Aチーム");
+        createTeam("空のチーム");
+        addMember(teamA, "主将 一郎", 1);
+
+        MvcResult result = performApi(get(teamsPath() + "/csv-export").cookie(ownerCookie()))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(csvBodyWithoutBom(result)).isEqualTo(
+                "チーム名,氏名,段級位,ポジション,グループ\r\n"
+                        + "Aチーム,主将 一郎,,主将,A\r\n");
+    }
+
     private void fillRequiredPositions(String teamId, int teamSize) throws Exception {
         for (int position = 1; position <= teamSize; position++) {
             addMember(teamId, "メンバー" + position, position);
@@ -258,5 +316,13 @@ class TeamApiTest extends ApiContractTestSupport {
 
     private static MockMultipartFile csvFile(byte[] bytes) {
         return new MockMultipartFile("file", "teams.csv", "text/csv", bytes);
+    }
+
+    private static String csvBodyWithoutBom(MvcResult result) throws Exception {
+        byte[] body = result.getResponse().getContentAsByteArray();
+        assertThat(body[0] & 0xFF).isEqualTo(0xEF);
+        assertThat(body[1] & 0xFF).isEqualTo(0xBB);
+        assertThat(body[2] & 0xFF).isEqualTo(0xBF);
+        return new String(body, 3, body.length - 3, StandardCharsets.UTF_8);
     }
 }

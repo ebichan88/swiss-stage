@@ -32,6 +32,7 @@ public class ParticipantService {
     private final GroupRepository groupRepository;
     private final TournamentAccessSupport access;
     private final ParticipantCsvParser csvParser;
+    private final ParticipantCsvWriter csvWriter;
     private final SharedViewCache sharedViewCache;
 
     public ParticipantService(
@@ -39,11 +40,13 @@ public class ParticipantService {
             GroupRepository groupRepository,
             TournamentAccessSupport access,
             ParticipantCsvParser csvParser,
+            ParticipantCsvWriter csvWriter,
             SharedViewCache sharedViewCache) {
         this.participantRepository = participantRepository;
         this.groupRepository = groupRepository;
         this.access = access;
         this.csvParser = csvParser;
+        this.csvWriter = csvWriter;
         this.sharedViewCache = sharedViewCache;
     }
 
@@ -95,6 +98,17 @@ public class ParticipantService {
         return new CsvImportResultDto(
                 participants.size(),
                 participants.stream().map(ParticipantDto::from).toList());
+    }
+
+    /** CSVダウンロード。インポートと対称の列構成で全参加者(棄権含む)をエントリー順に返す。状態制約なし */
+    public CsvExport exportCsv(TournamentId tournamentId, String ownerSub) {
+        Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+        List<Participant> participants = participantRepository.findAllByTournamentId(tournamentId).stream()
+                .sorted(Comparator.comparingInt(Participant::entryOrder))
+                .toList();
+        Map<GroupId, String> groupNames = groupRepository.findAllByTournamentId(tournamentId).stream()
+                .collect(Collectors.toMap(Group::id, Group::name));
+        return new CsvExport(tournament.name(), csvWriter.write(participants, groupNames));
     }
 
     public ParticipantDto update(

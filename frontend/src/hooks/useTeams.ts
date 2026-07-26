@@ -5,6 +5,7 @@ import {
   createTeam,
   deleteTeam,
   deleteTeamMember,
+  exportTeamsCsv,
   fetchTeams,
   importTeamsCsv,
   updateTeam,
@@ -42,6 +43,12 @@ export function useImportTeamsCsv(tournamentId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.teams(tournamentId) });
     },
+  });
+}
+
+export function useExportTeamsCsv(tournamentId: string) {
+  return useMutation({
+    mutationFn: () => exportTeamsCsv(tournamentId),
   });
 }
 

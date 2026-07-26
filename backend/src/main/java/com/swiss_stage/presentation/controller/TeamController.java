@@ -7,6 +7,7 @@ import com.swiss_stage.application.dto.TeamDto;
 import com.swiss_stage.application.dto.UpdateTeamMemberRequest;
 import com.swiss_stage.application.dto.UpdateTeamRequest;
 import com.swiss_stage.application.exception.ValidationException;
+import com.swiss_stage.application.service.CsvExport;
 import com.swiss_stage.application.service.TeamService;
 import com.swiss_stage.presentation.api.ApiSuccess;
 import com.swiss_stage.presentation.auth.CurrentUser;
@@ -71,6 +72,13 @@ public class TeamController {
             throw new UncheckedIOException(e);
         }
         return success(teamService.importCsv(PathIds.tournamentId(tournamentId), user.sub(), bytes));
+    }
+
+    @GetMapping("/csv-export")
+    public ResponseEntity<byte[]> export(
+            CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
+        CsvExport export = teamService.exportCsv(PathIds.tournamentId(tournamentId), user.sub());
+        return CsvDownload.response(export.tournamentName(), "teams", export.content());
     }
 
     @PatchMapping("/{teamId}")

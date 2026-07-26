@@ -18,15 +18,14 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function doFetch(path: string, init?: RequestInit): Promise<Response> {
   const headers = new Headers(init?.headers);
   // FormData はブラウザが boundary 付き Content-Type を付与するため手動指定しない
   if (!(init?.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
-  let response: Response;
   try {
-    response = await fetch(`${BASE_PATH}${path}`, {
+    return await fetch(`${BASE_PATH}${path}`, {
       credentials: 'same-origin',
       ...init,
       headers,
@@ -37,6 +36,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       message: '通信に失敗しました。電波状況を確認して再度お試しください',
     });
   }
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await doFetch(path, init);
 
   if (response.status === 204) {
     return undefined as T;
@@ -58,6 +61,40 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body.data;
 }
 
+/** ファイルダウンロード用。成功時はJSONパースせずBlobをそのまま返す(失敗時のみJSONをApiErrorとしてパースする) */
+async function requestBlob(path: string): Promise<{ blob: Blob; filename: string }> {
+  const response = await doFetch(path);
+  if (!response.ok) {
+    let body: ApiResponse<never>;
+    try {
+      body = (await response.json()) as ApiResponse<never>;
+    } catch {
+      throw new ApiError({ code: 'INTERNAL_ERROR', message: '予期しないエラーが発生しました' });
+    }
+    if (!body.success) {
+      throw new ApiError(body.error);
+    }
+    throw new ApiError({ code: 'INTERNAL_ERROR', message: '予期しないエラーが発生しました' });
+  }
+  const blob = await response.blob();
+  return {
+    blob,
+    filename: filenameFromContentDisposition(response.headers.get('Content-Disposition')),
+  };
+}
+
+function filenameFromContentDisposition(header: string | null): string {
+  if (!header) {
+    return 'download.csv';
+  }
+  const star = /filename\*=UTF-8''([^;]+)/i.exec(header);
+  if (star) {
+    return decodeURIComponent(star[1]);
+  }
+  const plain = /filename="?([^";]+)"?/i.exec(header);
+  return plain ? plain[1] : 'download.csv';
+}
+
 export const apiClient = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, data?: unknown) =>
@@ -67,6 +104,7 @@ export const apiClient = {
     }),
   postMultipart: <T>(path: string, formData: FormData) =>
     request<T>(path, { method: 'POST', body: formData }),
+  getBlob: (path: string) => requestBlob(path),
   put: <T>(path: string, data: unknown) =>
     request<T>(path, { method: 'PUT', body: JSON.stringify(data) }),
   patch: <T>(path: string, data: unknown) =>

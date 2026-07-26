@@ -29,6 +29,12 @@ export async function importParticipantsCsv(
   );
 }
 
+export async function exportParticipantsCsv(
+  tournamentId: string,
+): Promise<{ blob: Blob; filename: string }> {
+  return apiClient.getBlob(`/tournaments/${tournamentId}/participants/export`);
+}
+
 export async function updateParticipant(
   tournamentId: string,
   participantId: string,
