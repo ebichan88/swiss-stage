@@ -3,11 +3,32 @@
         "allow": [
             "Bash(git status *)",
             "Bash(git diff *)",
+            "Bash(git push *)",
             "Bash(./gradlew *)",
-            "Bash(cd backend && ./gradlew *)"
+            "Bash(cd backend && ./gradlew *)",
+            "Bash(git checkout *)",
+            "Bash(git add *)",
+            "Bash(git merge *)",
+            "Bash(git fetch *)",
+            "Bash(git ls-tree *)",
+            "Bash(docker compose *)",
+            "Bash(./scripts/create-table.sh)",
+            "Bash(gh pr *)",
+            "Bash(gh run *)",
+            "Bash(gh api *)",
+            "Bash(gh repo *)",
+            "Bash(npm run *)",
+            "Bash(npm i *)",
+            "Bash(npm view *)",
+            "Bash(npx playwright *)",
+            "Bash(npx oxlint *)",
+            "Bash(npx prettier *)",
+            "Bash(npx tsc *)",
+            "Bash(npx vitest *)",
+            "Skill(pr)",
+            "Skill(pr:*)"
         ],
         "ask": [
-            "Bash(git push *)",
             "Bash(gh pr merge *)"
         ],
         "deny": [
