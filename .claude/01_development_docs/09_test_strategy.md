@@ -20,6 +20,8 @@
 | frontend | Vitest + Testing Library | 主要コンポーネント・hooks | 表示ロジックと状態管理 |
 | E2E | Playwright | クリティカルパスのみ | `12_e2e_test_design.md` 参照 |
 
+domain層の90%はCI(`./gradlew check`)で機械的に強制する(`jacocoTestCoverageVerification`)。それ以外の層は目標値のみで、CIでは強制せずPRコメントで可視化する(`11_cicd_design.md` §2)。
+
 ---
 
 ## 3. バックエンドテスト構成
