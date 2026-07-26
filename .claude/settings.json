@@ -4,11 +4,36 @@
             "Bash(git status *)",
             "Bash(git diff *)",
             "Bash(./gradlew *)",
-            "Bash(cd backend && ./gradlew *)"
+            "Bash(cd backend && ./gradlew *)",
+            "Bash(git add *)",
+            "Bash(git commit -m *)",
+            "Bash(git merge *)",
+            "Bash(git fetch *)",
+            "Bash(git ls-tree *)",
+            "Bash(docker compose *)",
+            "Bash(./scripts/create-table.sh)",
+            "Bash(gh pr comment *)",
+            "Bash(gh pr view *)",
+            "Bash(gh pr diff *)",
+            "Bash(gh pr create *)",
+            "Bash(gh run *)",
+            "Bash(gh api repos/*/issues/*/comments*)",
+            "Bash(npm run *)",
+            "Bash(npm i *)",
+            "Bash(npm view *)",
+            "Bash(npx playwright *)",
+            "Bash(npx oxlint *)",
+            "Bash(npx prettier *)",
+            "Bash(npx tsc *)",
+            "Bash(npx vitest *)",
+            "Skill(pr)",
+            "Skill(pr:*)"
         ],
         "ask": [
             "Bash(git push *)",
-            "Bash(gh pr merge *)"
+            "Bash(gh pr merge *)",
+            "Bash(gh api --method *)",
+            "Bash(gh api -X *)"
         ],
         "deny": [
             "Read(./.env)",
