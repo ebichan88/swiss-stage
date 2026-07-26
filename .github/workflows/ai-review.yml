@@ -193,6 +193,9 @@ jobs:
       - name: AI Fixer
         if: steps.gate.outputs.run_fixer == 'true'
         uses: anthropics/claude-code-action@v1
+        # main の.claude/settings.jsonはgit pushがask設定だが、CIは無人実行のためaskは
+        # 常に拒否扱いになりFixerのpushが黙って失敗する。allowedToolsで許可範囲は
+        # 絞っているため、このステップに限りpermission-modeでask確認自体を無効化する
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: "claude"
@@ -221,6 +224,7 @@ jobs:
             `gh pr edit ${{ github.event.pull_request.number }} --add-label needs-human` も実行してください。
           claude_args: |
             --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh pr edit:*),Bash(gh api:*),Bash(cd:*),Bash(npm:*),Bash(npx:*),Bash(./gradlew:*),Bash(ls:*),Bash(cat:*)"
+            --permission-mode bypassPermissions
 
       - name: 修正pushの有無を確認
         id: post_fix
