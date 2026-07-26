@@ -125,10 +125,11 @@ npm run cloc:by-file  # ファイル別のコード行数
 ### バックエンド(backend/)
 
 ```bash
-./gradlew bootRun     # 起動
-./gradlew test        # 単体+統合テスト(DynamoDB Local自動利用)
-./gradlew check       # test + 静的解析(コミット前に必ず実行)
-./gradlew build       # ビルド(jar生成)
+./gradlew bootRun        # 起動
+./gradlew test           # 単体+統合テスト(DynamoDB Local自動利用)
+./gradlew check          # test + 静的解析(Spotless: フォーマット・未使用import検査含む。コミット前に必ず実行)
+./gradlew spotlessApply  # フォーマット・import整理を自動修正(Google Java Style。VSCode保存時にも自動適用される。§7参照)
+./gradlew build          # ビルド(jar生成)
 ```
 
 ---
@@ -158,5 +159,20 @@ volumes:
 
 - ブランチ: `main`(常にデプロイ可能) / `feature/xxx` / `fix/xxx`
 - コミット前に `npm run check`(frontend)・`./gradlew check`(backend)を通す
+  - backendでSpotlessの指摘が出た場合は `./gradlew spotlessApply` で自動修正できる
 - コミットメッセージ: `feat:` `fix:` `docs:` `test:` `refactor:` `chore:` プレフィックス(Conventional Commits)
 - `.claude/` 配下の設計ドキュメントは実装と乖離したら**同じPRで更新する**
+- 初回セットアップ時に以下を実行すると、Spotless全体整形コミットが `git blame` の結果に出なくなる(`.git-blame-ignore-revs` 参照):
+
+```bash
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+
+---
+
+## 7. Javaのコードフォーマット・import整理(Spotless)
+
+backend/build.gradle に [Spotless](https://github.com/diffplug/spotless) プラグインを導入しており、`googleJavaFormat`(Google Java Style、2スペースインデント)によるフォーマットと、未使用import削除・import順序の検査を `./gradlew check` で強制している(frontendの `npm run lint` / `format:check` に相当)。
+
+- 手動で直したい場合: `./gradlew spotlessApply`
+- VSCodeでは `.vscode/settings.json` により保存時に自動整形される(`.vscode/eclipse-java-google-style.xml` を使用。SpotlessのgoogleJavaFormatとほぼ同じ出力になる)。VSCode以外のエディタを使う場合や、保存し忘れた場合はCIの `spotlessCheck` が最終的な保険になる
