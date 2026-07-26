@@ -19,6 +19,10 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+  pull-requests: write # カバレッジレポートのPRコメント投稿用
+
 jobs:
   frontend:
     runs-on: ubuntu-latest
@@ -30,7 +34,10 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run type-check
-      - run: npm run test -- --ci
+      - run: npm run test:coverage
+      - uses: davelosert/vitest-coverage-report-action@v2
+        if: always() && github.event_name == 'pull_request'
+        with: { working-directory: frontend }
       - run: npm run build
 
   backend:
@@ -47,6 +54,15 @@ jobs:
       - run: ./scripts/create-table.sh
         env: { DYNAMODB_ENDPOINT: "http://localhost:8000" }
       - run: ./gradlew check build
+      - uses: madrapps/jacoco-report@v1.8.0
+        if: always() && github.event_name == 'pull_request'
+        with:
+          paths: ${{ github.workspace }}/backend/build/reports/jacoco/test/jacocoTestReport.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: Backend Code Coverage
+          update-comment: true
+          min-coverage-overall: 0
+          min-coverage-changed-lines: 0
 ```
 
 ### ルール
@@ -54,6 +70,11 @@ jobs:
 - どちらかのジョブが失敗したPRはマージ禁止(ブランチ保護設定)
 - E2E(Playwright)はPRごとには実行しない(遅いため)。`.github/workflows/e2e.yml`(workflow_dispatch)をリリース前に手動実行
 - 依存更新は Dependabot(週次、`gradle` / `npm` / `github-actions`)
+
+### カバレッジ可視化(PRコメント)
+
+- `madrapps/jacoco-report`(backend)・`davelosert/vitest-coverage-report-action`(frontend)がPRごとに「全体カバレッジ」と「PRで変更した行のカバレッジ」をsticky commentで投稿する(外部SaaSは使わずGitHub Actions内で完結)
+- `min-coverage-*` は `0` にしており、CIを落とす閾値としては使わない。domain層90%の強制は既存の `jacocoTestCoverageVerification`(`backend/build.gradle`)が担う。役割は「強制はdomain層のみ・それ以外は可視化のみ」で分離している(`09_test_strategy.md` §2)
 
 ---
 

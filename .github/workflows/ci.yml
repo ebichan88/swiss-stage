@@ -6,6 +6,10 @@ on:
   # AI Fixerの修正コミットがイベントを発火しない場合に ai-review.yml から起動する
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: write # カバレッジレポートのPRコメント投稿用
+
 jobs:
   frontend:
     runs-on: ubuntu-latest
@@ -29,7 +33,12 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm run type-check
-      - run: npm run test
+      - run: npm run test:coverage
+      - name: Add coverage report to PR
+        if: always() && github.event_name == 'pull_request'
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          working-directory: frontend
       - run: npm run build
 
   backend:
@@ -54,3 +63,13 @@ jobs:
         env:
           DYNAMODB_ENDPOINT: http://localhost:8000
       - run: ./gradlew check build
+      - name: Add coverage report to PR
+        if: always() && github.event_name == 'pull_request'
+        uses: madrapps/jacoco-report@v1.8.0
+        with:
+          paths: ${{ github.workspace }}/backend/build/reports/jacoco/test/jacocoTestReport.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: Backend Code Coverage
+          update-comment: true
+          min-coverage-overall: 0
+          min-coverage-changed-lines: 0
