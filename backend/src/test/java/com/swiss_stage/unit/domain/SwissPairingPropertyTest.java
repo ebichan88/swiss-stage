@@ -19,76 +19,81 @@ import net.jqwik.api.Property;
 import net.jqwik.api.constraints.IntRange;
 
 /**
- * スイス方式マッチングのプロパティテスト。
- * 16〜300名・5回戦をシミュレートし、絶対制約(再戦なし・BYE重複なし・全員毎ラウンド1回登場)を
+ * スイス方式マッチングのプロパティテスト。 16〜300名・5回戦をシミュレートし、絶対制約(再戦なし・BYE重複なし・全員毎ラウンド1回登場)を
  * 機械的に検証する(05_swiss_pairing_algorithm.md §4-7)。
  */
 class SwissPairingPropertyTest {
 
-    private static final int ROUNDS = 5;
+  private static final int ROUNDS = 5;
 
-    private final SwissPairingService service = new SwissPairingService();
+  private final SwissPairingService service = new SwissPairingService();
 
-    @Property(tries = 30)
-    void 全ラウンドを通して絶対制約が守られる(
-            @ForAll @IntRange(min = 16, max = 300) int participantCount,
-            @ForAll long resultSeed) {
-        List<Participant> participants = TestData.participants(participantCount);
-        Random random = new Random(resultSeed);
-        List<Match> allMatches = new ArrayList<>();
-        Set<Set<String>> playedPairs = new HashSet<>();
-        Set<ParticipantId> byeReceivers = new HashSet<>();
+  @Property(tries = 30)
+  void 全ラウンドを通して絶対制約が守られる(
+      @ForAll @IntRange(min = 16, max = 300) int participantCount, @ForAll long resultSeed) {
+    List<Participant> participants = TestData.participants(participantCount);
+    Random random = new Random(resultSeed);
+    List<Match> allMatches = new ArrayList<>();
+    Set<Set<String>> playedPairs = new HashSet<>();
+    Set<ParticipantId> byeReceivers = new HashSet<>();
 
-        for (int round = 1; round <= ROUNDS; round++) {
-            PairingResult result = service.pair(participants, allMatches, round, PairingOptions.defaults());
+    for (int round = 1; round <= ROUNDS; round++) {
+      PairingResult result =
+          service.pair(participants, allMatches, round, PairingOptions.defaults());
 
-            // 全員がちょうど1回登場する
-            Set<ParticipantId> appeared = new HashSet<>();
-            result.pairs().forEach(pair -> {
+      // 全員がちょうど1回登場する
+      Set<ParticipantId> appeared = new HashSet<>();
+      result
+          .pairs()
+          .forEach(
+              pair -> {
                 assertThat(appeared.add(pair.player1Id())).isTrue();
                 assertThat(appeared.add(pair.player2Id())).isTrue();
-            });
-            if (result.hasBye()) {
-                assertThat(appeared.add(result.byeParticipantId())).isTrue();
-            }
-            assertThat(appeared).hasSize(participantCount);
+              });
+      if (result.hasBye()) {
+        assertThat(appeared.add(result.byeParticipantId())).isTrue();
+      }
+      assertThat(appeared).hasSize(participantCount);
 
-            // 再戦禁止(緩和が報告されていない限り)
-            if (!result.relaxations().contains(
-                    com.swiss_stage.domain.service.PairingRelaxation.REMATCH)) {
-                for (PairingResult.Pair pair : result.pairs()) {
-                    Set<String> key = Set.of(pair.player1Id().value(), pair.player2Id().value());
-                    assertThat(playedPairs).doesNotContain(key);
-                }
-            }
-            result.pairs().forEach(pair ->
-                    playedPairs.add(Set.of(pair.player1Id().value(), pair.player2Id().value())));
-
-            // BYE重複禁止(緩和が報告されていない限り)
-            if (result.hasBye()) {
-                if (!result.relaxations().contains(
-                        com.swiss_stage.domain.service.PairingRelaxation.BYE_REPEAT)) {
-                    assertThat(byeReceivers).doesNotContain(result.byeParticipantId());
-                }
-                byeReceivers.add(result.byeParticipantId());
-            }
-
-            // 16名以上・5回戦では絶対制約の緩和は発生しないはず
-            assertThat(result.relaxations()).isEmpty();
-
-            // ランダムな結果を入力して次ラウンドへ
-            int table = 1;
-            for (PairingResult.Pair pair : result.pairs()) {
-                MatchResult matchResult = random.nextBoolean()
-                        ? MatchResult.PLAYER1_WIN
-                        : MatchResult.PLAYER2_WIN;
-                allMatches.add(Match.pairOf(
-                        round, table++, pair.player1Id(), pair.player2Id(), TestData.GROUP_ID)
-                        .withResult(matchResult));
-            }
-            if (result.hasBye()) {
-                allMatches.add(Match.byeOf(round, table, result.byeParticipantId(), TestData.GROUP_ID));
-            }
+      // 再戦禁止(緩和が報告されていない限り)
+      if (!result
+          .relaxations()
+          .contains(com.swiss_stage.domain.service.PairingRelaxation.REMATCH)) {
+        for (PairingResult.Pair pair : result.pairs()) {
+          Set<String> key = Set.of(pair.player1Id().value(), pair.player2Id().value());
+          assertThat(playedPairs).doesNotContain(key);
         }
+      }
+      result
+          .pairs()
+          .forEach(
+              pair -> playedPairs.add(Set.of(pair.player1Id().value(), pair.player2Id().value())));
+
+      // BYE重複禁止(緩和が報告されていない限り)
+      if (result.hasBye()) {
+        if (!result
+            .relaxations()
+            .contains(com.swiss_stage.domain.service.PairingRelaxation.BYE_REPEAT)) {
+          assertThat(byeReceivers).doesNotContain(result.byeParticipantId());
+        }
+        byeReceivers.add(result.byeParticipantId());
+      }
+
+      // 16名以上・5回戦では絶対制約の緩和は発生しないはず
+      assertThat(result.relaxations()).isEmpty();
+
+      // ランダムな結果を入力して次ラウンドへ
+      int table = 1;
+      for (PairingResult.Pair pair : result.pairs()) {
+        MatchResult matchResult =
+            random.nextBoolean() ? MatchResult.PLAYER1_WIN : MatchResult.PLAYER2_WIN;
+        allMatches.add(
+            Match.pairOf(round, table++, pair.player1Id(), pair.player2Id(), TestData.GROUP_ID)
+                .withResult(matchResult));
+      }
+      if (result.hasBye()) {
+        allMatches.add(Match.byeOf(round, table, result.byeParticipantId(), TestData.GROUP_ID));
+      }
     }
+  }
 }

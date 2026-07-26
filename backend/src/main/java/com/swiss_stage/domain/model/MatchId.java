@@ -5,13 +5,13 @@ import com.swiss_stage.domain.DomainException;
 
 public record MatchId(String value) {
 
-    public MatchId {
-        if (value == null || value.isBlank()) {
-            throw new DomainException("MatchIdが空です");
-        }
+  public MatchId {
+    if (value == null || value.isBlank()) {
+      throw new DomainException("MatchIdが空です");
     }
+  }
 
-    public static MatchId generate() {
-        return new MatchId(UlidCreator.getUlid().toString());
-    }
+  public static MatchId generate() {
+    return new MatchId(UlidCreator.getUlid().toString());
+  }
 }

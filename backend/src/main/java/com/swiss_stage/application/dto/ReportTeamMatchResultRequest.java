@@ -11,11 +11,6 @@ import java.util.List;
  * 確定はボード単位で独立に行う(1ボードの不一致が他ボードの確定を妨げない)。versionは楽観ロック用
  */
 public record ReportTeamMatchResultRequest(
-        @NotNull(message = "reportedByは必須です")
-        MatchSide reportedBy,
-
-        @NotEmpty(message = "boardResultsは必須です")
-        List<MatchResult> boardResults,
-
-        @NotNull(message = "versionは必須です")
-        Long version) {}
+    @NotNull(message = "reportedByは必須です") MatchSide reportedBy,
+    @NotEmpty(message = "boardResultsは必須です") List<MatchResult> boardResults,
+    @NotNull(message = "versionは必須です") Long version) {}

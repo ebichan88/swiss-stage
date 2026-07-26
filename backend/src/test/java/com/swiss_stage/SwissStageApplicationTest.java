@@ -15,18 +15,16 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class SwissStageApplicationTest {
 
-    @LocalServerPort
-    int port;
+  @LocalServerPort int port;
 
-    @Autowired
-    TestRestTemplate restTemplate;
+  @Autowired TestRestTemplate restTemplate;
 
-    @Test
-    void ヘルスチェックが200を返す() {
-        ResponseEntity<String> response =
-                restTemplate.getForEntity("http://localhost:" + port + "/api/v1/health", String.class);
+  @Test
+  void ヘルスチェックが200を返す() {
+    ResponseEntity<String> response =
+        restTemplate.getForEntity("http://localhost:" + port + "/api/v1/health", String.class);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).contains("UP");
-    }
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(response.getBody()).contains("UP");
+  }
 }

@@ -18,43 +18,42 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 共有トークン経由のアクセス(S10/S11。認証不要・SharedRateLimitFilterでIPレート制限)。
- * トークンの検証・公開範囲・結果入力許可のチェックは SharedService が行う。
+ * 共有トークン経由のアクセス(S10/S11。認証不要・SharedRateLimitFilterでIPレート制限)。 トークンの検証・公開範囲・結果入力許可のチェックは
+ * SharedService が行う。
  */
 @RestController
 @RequestMapping("/api/v1/shared")
 public class SharedController {
 
-    private final SharedService sharedService;
-    private final Clock clock;
+  private final SharedService sharedService;
+  private final Clock clock;
 
-    public SharedController(SharedService sharedService, Clock clock) {
-        this.sharedService = sharedService;
-        this.clock = clock;
-    }
+  public SharedController(SharedService sharedService, Clock clock) {
+    this.sharedService = sharedService;
+    this.clock = clock;
+  }
 
-    @GetMapping("/{token}")
-    public ApiSuccess<SharedTournamentDto> get(@PathVariable("token") String token) {
-        return ApiSuccess.of(sharedService.getShared(token), Instant.now(clock));
-    }
+  @GetMapping("/{token}")
+  public ApiSuccess<SharedTournamentDto> get(@PathVariable("token") String token) {
+    return ApiSuccess.of(sharedService.getShared(token), Instant.now(clock));
+  }
 
-    @PutMapping("/{token}/matches/{matchId}/result")
-    public ApiSuccess<MatchDto> inputResult(
-            @PathVariable("token") String token,
-            @PathVariable("matchId") String matchId,
-            @Valid @RequestBody ReportMatchResultRequest request) {
-        return ApiSuccess.of(
-                sharedService.inputResult(token, PathIds.matchId(matchId), request),
-                Instant.now(clock));
-    }
+  @PutMapping("/{token}/matches/{matchId}/result")
+  public ApiSuccess<MatchDto> inputResult(
+      @PathVariable("token") String token,
+      @PathVariable("matchId") String matchId,
+      @Valid @RequestBody ReportMatchResultRequest request) {
+    return ApiSuccess.of(
+        sharedService.inputResult(token, PathIds.matchId(matchId), request), Instant.now(clock));
+  }
 
-    @PutMapping("/{token}/team-matches/{matchId}/result")
-    public ApiSuccess<TeamMatchDto> inputTeamMatchResult(
-            @PathVariable("token") String token,
-            @PathVariable("matchId") String matchId,
-            @Valid @RequestBody ReportTeamMatchResultRequest request) {
-        return ApiSuccess.of(
-                sharedService.inputTeamMatchResult(token, PathIds.teamMatchId(matchId), request),
-                Instant.now(clock));
-    }
+  @PutMapping("/{token}/team-matches/{matchId}/result")
+  public ApiSuccess<TeamMatchDto> inputTeamMatchResult(
+      @PathVariable("token") String token,
+      @PathVariable("matchId") String matchId,
+      @Valid @RequestBody ReportTeamMatchResultRequest request) {
+    return ApiSuccess.of(
+        sharedService.inputTeamMatchResult(token, PathIds.teamMatchId(matchId), request),
+        Instant.now(clock));
+  }
 }

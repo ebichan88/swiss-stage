@@ -18,46 +18,49 @@ import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 @Repository
 public class DynamoDbGroupRepository implements GroupRepository {
 
-    private final DynamoDbTable<GroupItem> table;
+  private final DynamoDbTable<GroupItem> table;
 
-    public DynamoDbGroupRepository(
-            DynamoDbEnhancedClient enhancedClient,
-            @Value("${app.dynamodb.table-name}") String tableName) {
-        this.table = enhancedClient.table(tableName, TableSchema.fromBean(GroupItem.class));
-    }
+  public DynamoDbGroupRepository(
+      DynamoDbEnhancedClient enhancedClient,
+      @Value("${app.dynamodb.table-name}") String tableName) {
+    this.table = enhancedClient.table(tableName, TableSchema.fromBean(GroupItem.class));
+  }
 
-    @Override
-    public Optional<Group> findById(TournamentId tournamentId, GroupId id) {
-        GroupItem item = table.getItem(key(tournamentId, id));
-        return Optional.ofNullable(item).map(GroupItemMapper::toDomain);
-    }
+  @Override
+  public Optional<Group> findById(TournamentId tournamentId, GroupId id) {
+    GroupItem item = table.getItem(key(tournamentId, id));
+    return Optional.ofNullable(item).map(GroupItemMapper::toDomain);
+  }
 
-    @Override
-    public List<Group> findAllByTournamentId(TournamentId tournamentId) {
-        var conditional = QueryConditional.sortBeginsWith(Key.builder()
+  @Override
+  public List<Group> findAllByTournamentId(TournamentId tournamentId) {
+    var conditional =
+        QueryConditional.sortBeginsWith(
+            Key.builder()
                 .partitionValue(DynamoDbKeys.pk(tournamentId))
                 .sortValue(DynamoDbKeys.GROUP_PREFIX)
                 .build());
-        List<Group> result = new ArrayList<>();
-        table.query(conditional).forEach(page ->
-                page.items().forEach(item -> result.add(GroupItemMapper.toDomain(item))));
-        return result;
-    }
+    List<Group> result = new ArrayList<>();
+    table
+        .query(conditional)
+        .forEach(page -> page.items().forEach(item -> result.add(GroupItemMapper.toDomain(item))));
+    return result;
+  }
 
-    @Override
-    public void save(TournamentId tournamentId, Group group) {
-        table.putItem(GroupItemMapper.toItem(tournamentId, group));
-    }
+  @Override
+  public void save(TournamentId tournamentId, Group group) {
+    table.putItem(GroupItemMapper.toItem(tournamentId, group));
+  }
 
-    @Override
-    public void delete(TournamentId tournamentId, GroupId id) {
-        table.deleteItem(key(tournamentId, id));
-    }
+  @Override
+  public void delete(TournamentId tournamentId, GroupId id) {
+    table.deleteItem(key(tournamentId, id));
+  }
 
-    private Key key(TournamentId tournamentId, GroupId id) {
-        return Key.builder()
-                .partitionValue(DynamoDbKeys.pk(tournamentId))
-                .sortValue(DynamoDbKeys.groupSk(id))
-                .build();
-    }
+  private Key key(TournamentId tournamentId, GroupId id) {
+    return Key.builder()
+        .partitionValue(DynamoDbKeys.pk(tournamentId))
+        .sortValue(DynamoDbKeys.groupSk(id))
+        .build();
+  }
 }

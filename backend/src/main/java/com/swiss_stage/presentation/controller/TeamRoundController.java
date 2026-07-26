@@ -25,46 +25,49 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/tournaments/{tournamentId}")
 public class TeamRoundController {
 
-    private final TeamRoundService teamRoundService;
-    private final Clock clock;
+  private final TeamRoundService teamRoundService;
+  private final Clock clock;
 
-    public TeamRoundController(TeamRoundService teamRoundService, Clock clock) {
-        this.teamRoundService = teamRoundService;
-        this.clock = clock;
-    }
+  public TeamRoundController(TeamRoundService teamRoundService, Clock clock) {
+    this.teamRoundService = teamRoundService;
+    this.clock = clock;
+  }
 
-    @GetMapping("/team-rounds")
-    public ApiSuccess<List<TeamRoundDto>> list(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
-        return success(teamRoundService.list(PathIds.tournamentId(tournamentId), user.sub()));
-    }
+  @GetMapping("/team-rounds")
+  public ApiSuccess<List<TeamRoundDto>> list(
+      CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
+    return success(teamRoundService.list(PathIds.tournamentId(tournamentId), user.sub()));
+  }
 
-    @PostMapping("/team-rounds")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiSuccess<GeneratedTeamRoundDto> generate(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
-        return success(teamRoundService.generateNextRound(
-                PathIds.tournamentId(tournamentId), user.sub()));
-    }
+  @PostMapping("/team-rounds")
+  @ResponseStatus(HttpStatus.CREATED)
+  public ApiSuccess<GeneratedTeamRoundDto> generate(
+      CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
+    return success(
+        teamRoundService.generateNextRound(PathIds.tournamentId(tournamentId), user.sub()));
+  }
 
-    @PostMapping("/team-rounds/{roundNumber}/confirm")
-    public ApiSuccess<TeamRoundDto> confirm(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
-            @PathVariable("roundNumber") int roundNumber) {
-        return success(teamRoundService.confirm(
-                PathIds.tournamentId(tournamentId), roundNumber, user.sub()));
-    }
+  @PostMapping("/team-rounds/{roundNumber}/confirm")
+  public ApiSuccess<TeamRoundDto> confirm(
+      CurrentUser user,
+      @PathVariable("tournamentId") String tournamentId,
+      @PathVariable("roundNumber") int roundNumber) {
+    return success(
+        teamRoundService.confirm(PathIds.tournamentId(tournamentId), roundNumber, user.sub()));
+  }
 
-    @PutMapping("/team-matches/{matchId}/result")
-    public ApiSuccess<TeamMatchDto> inputResult(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
-            @PathVariable("matchId") String matchId,
-            @Valid @RequestBody InputTeamMatchResultRequest request) {
-        return success(teamRoundService.inputResult(
-                PathIds.tournamentId(tournamentId), PathIds.teamMatchId(matchId), user.sub(), request));
-    }
+  @PutMapping("/team-matches/{matchId}/result")
+  public ApiSuccess<TeamMatchDto> inputResult(
+      CurrentUser user,
+      @PathVariable("tournamentId") String tournamentId,
+      @PathVariable("matchId") String matchId,
+      @Valid @RequestBody InputTeamMatchResultRequest request) {
+    return success(
+        teamRoundService.inputResult(
+            PathIds.tournamentId(tournamentId), PathIds.teamMatchId(matchId), user.sub(), request));
+  }
 
-    private <T> ApiSuccess<T> success(T data) {
-        return ApiSuccess.of(data, Instant.now(clock));
-    }
+  private <T> ApiSuccess<T> success(T data) {
+    return ApiSuccess.of(data, Instant.now(clock));
+  }
 }

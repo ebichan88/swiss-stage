@@ -23,55 +23,50 @@ import org.springframework.stereotype.Service;
 @Service
 public class StandingService {
 
-    private final ParticipantRepository participantRepository;
-    private final MatchRepository matchRepository;
-    private final GroupRepository groupRepository;
-    private final TournamentAccessSupport access;
-    private final StandingCalculator standingCalculator = new StandingCalculator();
+  private final ParticipantRepository participantRepository;
+  private final MatchRepository matchRepository;
+  private final GroupRepository groupRepository;
+  private final TournamentAccessSupport access;
+  private final StandingCalculator standingCalculator = new StandingCalculator();
 
-    public StandingService(
-            ParticipantRepository participantRepository,
-            MatchRepository matchRepository,
-            GroupRepository groupRepository,
-            TournamentAccessSupport access) {
-        this.participantRepository = participantRepository;
-        this.matchRepository = matchRepository;
-        this.groupRepository = groupRepository;
-        this.access = access;
-    }
+  public StandingService(
+      ParticipantRepository participantRepository,
+      MatchRepository matchRepository,
+      GroupRepository groupRepository,
+      TournamentAccessSupport access) {
+    this.participantRepository = participantRepository;
+    this.matchRepository = matchRepository;
+    this.groupRepository = groupRepository;
+    this.access = access;
+  }
 
-    public List<GroupStandingsDto> standings(TournamentId tournamentId, String ownerSub) {
-        access.loadOwned(tournamentId, ownerSub);
-        return assembleStandings(tournamentId);
-    }
+  public List<GroupStandingsDto> standings(TournamentId tournamentId, String ownerSub) {
+    access.loadOwned(tournamentId, ownerSub);
+    return assembleStandings(tournamentId);
+  }
 
-    /**
-     * 順位表の組み立て(認可済みの呼び出し元専用。共有ページからも使う)。
-     * グループごとに独立計算する(全大会が1つ以上のグループを持つ。05 §2.4/§3.3)。
-     */
-    List<GroupStandingsDto> assembleStandings(TournamentId tournamentId) {
-        List<Participant> participants = participantRepository.findAllByTournamentId(tournamentId);
-        List<Match> matches = matchRepository.findAllByTournamentId(tournamentId);
-        List<Group> groups = groupRepository.findAllByTournamentId(tournamentId);
-        List<GroupStandingsDto> result = new ArrayList<>();
-        for (Group group : groups) {
-            List<Participant> groupParticipants = participants.stream()
-                    .filter(p -> group.id().equals(p.groupId()))
-                    .toList();
-            List<Match> groupMatches = matches.stream()
-                    .filter(m -> group.id().equals(m.groupId()))
-                    .toList();
-            result.add(new GroupStandingsDto(
-                    GroupDto.from(group), calculate(groupParticipants, groupMatches)));
-        }
-        return result;
+  /** 順位表の組み立て(認可済みの呼び出し元専用。共有ページからも使う)。 グループごとに独立計算する(全大会が1つ以上のグループを持つ。05 §2.4/§3.3)。 */
+  List<GroupStandingsDto> assembleStandings(TournamentId tournamentId) {
+    List<Participant> participants = participantRepository.findAllByTournamentId(tournamentId);
+    List<Match> matches = matchRepository.findAllByTournamentId(tournamentId);
+    List<Group> groups = groupRepository.findAllByTournamentId(tournamentId);
+    List<GroupStandingsDto> result = new ArrayList<>();
+    for (Group group : groups) {
+      List<Participant> groupParticipants =
+          participants.stream().filter(p -> group.id().equals(p.groupId())).toList();
+      List<Match> groupMatches =
+          matches.stream().filter(m -> group.id().equals(m.groupId())).toList();
+      result.add(
+          new GroupStandingsDto(GroupDto.from(group), calculate(groupParticipants, groupMatches)));
     }
+    return result;
+  }
 
-    private List<StandingDto> calculate(List<Participant> participants, List<Match> matches) {
-        Map<ParticipantId, Participant> byId = participants.stream()
-                .collect(Collectors.toMap(Participant::id, Function.identity()));
-        return standingCalculator.calculate(participants, matches).stream()
-                .map(s -> StandingDto.from(s, byId.get(s.participantId())))
-                .toList();
-    }
+  private List<StandingDto> calculate(List<Participant> participants, List<Match> matches) {
+    Map<ParticipantId, Participant> byId =
+        participants.stream().collect(Collectors.toMap(Participant::id, Function.identity()));
+    return standingCalculator.calculate(participants, matches).stream()
+        .map(s -> StandingDto.from(s, byId.get(s.participantId())))
+        .toList();
+  }
 }

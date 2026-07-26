@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class SwissStageApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(SwissStageApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(SwissStageApplication.class, args);
+  }
 }

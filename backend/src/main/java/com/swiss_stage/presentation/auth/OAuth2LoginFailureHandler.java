@@ -14,20 +14,20 @@ import org.springframework.stereotype.Component;
 @Component
 public class OAuth2LoginFailureHandler implements AuthenticationFailureHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(OAuth2LoginFailureHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(OAuth2LoginFailureHandler.class);
 
-    private final String frontendBaseUrl;
+  private final String frontendBaseUrl;
 
-    public OAuth2LoginFailureHandler(
-            @Value("${app.auth.frontend-base-url:}") String frontendBaseUrl) {
-        this.frontendBaseUrl = frontendBaseUrl;
-    }
+  public OAuth2LoginFailureHandler(
+      @Value("${app.auth.frontend-base-url:}") String frontendBaseUrl) {
+    this.frontendBaseUrl = frontendBaseUrl;
+  }
 
-    @Override
-    public void onAuthenticationFailure(
-            HttpServletRequest request, HttpServletResponse response,
-            AuthenticationException exception) throws IOException {
-        log.warn("oauth2LoginFailed type={}", exception.getClass().getSimpleName());
-        response.sendRedirect(frontendBaseUrl + "/login?error=oauth");
-    }
+  @Override
+  public void onAuthenticationFailure(
+      HttpServletRequest request, HttpServletResponse response, AuthenticationException exception)
+      throws IOException {
+    log.warn("oauth2LoginFailed type={}", exception.getClass().getSimpleName());
+    response.sendRedirect(frontendBaseUrl + "/login?error=oauth");
+  }
 }

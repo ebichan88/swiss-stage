@@ -33,74 +33,80 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/v1/tournaments/{tournamentId}/participants")
 public class ParticipantController {
 
-    private final ParticipantService participantService;
-    private final Clock clock;
+  private final ParticipantService participantService;
+  private final Clock clock;
 
-    public ParticipantController(ParticipantService participantService, Clock clock) {
-        this.participantService = participantService;
-        this.clock = clock;
-    }
+  public ParticipantController(ParticipantService participantService, Clock clock) {
+    this.participantService = participantService;
+    this.clock = clock;
+  }
 
-    @GetMapping
-    public ApiSuccess<List<ParticipantDto>> list(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
-        return success(participantService.list(PathIds.tournamentId(tournamentId), user.sub()));
-    }
+  @GetMapping
+  public ApiSuccess<List<ParticipantDto>> list(
+      CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
+    return success(participantService.list(PathIds.tournamentId(tournamentId), user.sub()));
+  }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiSuccess<ParticipantDto> add(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
-            @Valid @RequestBody CreateParticipantRequest request) {
-        return success(participantService.add(
-                PathIds.tournamentId(tournamentId), user.sub(), request));
-    }
+  @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
+  public ApiSuccess<ParticipantDto> add(
+      CurrentUser user,
+      @PathVariable("tournamentId") String tournamentId,
+      @Valid @RequestBody CreateParticipantRequest request) {
+    return success(participantService.add(PathIds.tournamentId(tournamentId), user.sub(), request));
+  }
 
-    @PostMapping("/import")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiSuccess<CsvImportResultDto> importCsv(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
-            @RequestPart("file") MultipartFile file) {
-        if (file.isEmpty()) {
-            throw new ValidationException("CSVファイルを選択してください");
-        }
-        byte[] bytes;
-        try {
-            bytes = file.getBytes();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        return success(participantService.importCsv(
-                PathIds.tournamentId(tournamentId), user.sub(), bytes));
+  @PostMapping("/import")
+  @ResponseStatus(HttpStatus.CREATED)
+  public ApiSuccess<CsvImportResultDto> importCsv(
+      CurrentUser user,
+      @PathVariable("tournamentId") String tournamentId,
+      @RequestPart("file") MultipartFile file) {
+    if (file.isEmpty()) {
+      throw new ValidationException("CSVファイルを選択してください");
     }
+    byte[] bytes;
+    try {
+      bytes = file.getBytes();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return success(
+        participantService.importCsv(PathIds.tournamentId(tournamentId), user.sub(), bytes));
+  }
 
-    @GetMapping("/export")
-    public ResponseEntity<byte[]> export(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
-        CsvExport export = participantService.exportCsv(PathIds.tournamentId(tournamentId), user.sub());
-        return CsvDownload.response(export.tournamentName(), "participants", export.content());
-    }
+  @GetMapping("/export")
+  public ResponseEntity<byte[]> export(
+      CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
+    CsvExport export = participantService.exportCsv(PathIds.tournamentId(tournamentId), user.sub());
+    return CsvDownload.response(export.tournamentName(), "participants", export.content());
+  }
 
-    @PatchMapping("/{participantId}")
-    public ApiSuccess<ParticipantDto> update(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
-            @PathVariable("participantId") String participantId,
-            @Valid @RequestBody UpdateParticipantRequest request) {
-        return success(participantService.update(
-                PathIds.tournamentId(tournamentId), PathIds.participantId(participantId),
-                user.sub(), request));
-    }
+  @PatchMapping("/{participantId}")
+  public ApiSuccess<ParticipantDto> update(
+      CurrentUser user,
+      @PathVariable("tournamentId") String tournamentId,
+      @PathVariable("participantId") String participantId,
+      @Valid @RequestBody UpdateParticipantRequest request) {
+    return success(
+        participantService.update(
+            PathIds.tournamentId(tournamentId),
+            PathIds.participantId(participantId),
+            user.sub(),
+            request));
+  }
 
-    @DeleteMapping("/{participantId}")
-    public ResponseEntity<Void> delete(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
-            @PathVariable("participantId") String participantId) {
-        participantService.delete(
-                PathIds.tournamentId(tournamentId), PathIds.participantId(participantId), user.sub());
-        return ResponseEntity.noContent().build();
-    }
+  @DeleteMapping("/{participantId}")
+  public ResponseEntity<Void> delete(
+      CurrentUser user,
+      @PathVariable("tournamentId") String tournamentId,
+      @PathVariable("participantId") String participantId) {
+    participantService.delete(
+        PathIds.tournamentId(tournamentId), PathIds.participantId(participantId), user.sub());
+    return ResponseEntity.noContent().build();
+  }
 
-    private <T> ApiSuccess<T> success(T data) {
-        return ApiSuccess.of(data, Instant.now(clock));
-    }
+  private <T> ApiSuccess<T> success(T data) {
+    return ApiSuccess.of(data, Instant.now(clock));
+  }
 }

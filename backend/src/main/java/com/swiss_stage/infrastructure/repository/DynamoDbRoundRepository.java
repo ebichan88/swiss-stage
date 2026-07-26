@@ -21,57 +21,66 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 @Repository
 public class DynamoDbRoundRepository implements RoundRepository {
 
-    private final DynamoDbTable<RoundItem> table;
+  private final DynamoDbTable<RoundItem> table;
 
-    public DynamoDbRoundRepository(
-            DynamoDbEnhancedClient enhancedClient,
-            @Value("${app.dynamodb.table-name}") String tableName) {
-        this.table = enhancedClient.table(tableName, TableSchema.fromBean(RoundItem.class));
-    }
+  public DynamoDbRoundRepository(
+      DynamoDbEnhancedClient enhancedClient,
+      @Value("${app.dynamodb.table-name}") String tableName) {
+    this.table = enhancedClient.table(tableName, TableSchema.fromBean(RoundItem.class));
+  }
 
-    @Override
-    public Optional<Round> findByRoundNumber(TournamentId tournamentId, int roundNumber) {
-        RoundItem item = table.getItem(Key.builder()
+  @Override
+  public Optional<Round> findByRoundNumber(TournamentId tournamentId, int roundNumber) {
+    RoundItem item =
+        table.getItem(
+            Key.builder()
                 .partitionValue(DynamoDbKeys.pk(tournamentId))
                 .sortValue(DynamoDbKeys.roundSk(roundNumber))
                 .build());
-        return Optional.ofNullable(item).map(RoundItemMapper::toDomain);
-    }
+    return Optional.ofNullable(item).map(RoundItemMapper::toDomain);
+  }
 
-    @Override
-    public List<Round> findAllByTournamentId(TournamentId tournamentId) {
-        var conditional = QueryConditional.sortBeginsWith(Key.builder()
+  @Override
+  public List<Round> findAllByTournamentId(TournamentId tournamentId) {
+    var conditional =
+        QueryConditional.sortBeginsWith(
+            Key.builder()
                 .partitionValue(DynamoDbKeys.pk(tournamentId))
                 .sortValue(DynamoDbKeys.ROUND_PREFIX)
                 .build());
-        List<Round> result = new ArrayList<>();
-        // SKプレフィックスROUND#はMatchアイテムも一致するためentityTypeで絞る
-        table.query(conditional).forEach(page -> page.items().forEach(item -> {
-            if (RoundItem.ENTITY_TYPE.equals(item.getEntityType())) {
-                result.add(RoundItemMapper.toDomain(item));
-            }
-        }));
-        return result;
-    }
+    List<Round> result = new ArrayList<>();
+    // SKプレフィックスROUND#はMatchアイテムも一致するためentityTypeで絞る
+    table
+        .query(conditional)
+        .forEach(
+            page ->
+                page.items()
+                    .forEach(
+                        item -> {
+                          if (RoundItem.ENTITY_TYPE.equals(item.getEntityType())) {
+                            result.add(RoundItemMapper.toDomain(item));
+                          }
+                        }));
+    return result;
+  }
 
-    @Override
-    public void create(TournamentId tournamentId, Round round) {
-        var request = PutItemEnhancedRequest.builder(RoundItem.class)
-                .item(RoundItemMapper.toItem(tournamentId, round))
-                .conditionExpression(Expression.builder()
-                        .expression("attribute_not_exists(PK)")
-                        .build())
-                .build();
-        try {
-            table.putItem(request);
-        } catch (ConditionalCheckFailedException e) {
-            throw new DuplicateRoundException(
-                    "ラウンド" + round.roundNumber() + "は既に生成されています");
-        }
+  @Override
+  public void create(TournamentId tournamentId, Round round) {
+    var request =
+        PutItemEnhancedRequest.builder(RoundItem.class)
+            .item(RoundItemMapper.toItem(tournamentId, round))
+            .conditionExpression(
+                Expression.builder().expression("attribute_not_exists(PK)").build())
+            .build();
+    try {
+      table.putItem(request);
+    } catch (ConditionalCheckFailedException e) {
+      throw new DuplicateRoundException("ラウンド" + round.roundNumber() + "は既に生成されています");
     }
+  }
 
-    @Override
-    public void save(TournamentId tournamentId, Round round) {
-        table.putItem(RoundItemMapper.toItem(tournamentId, round));
-    }
+  @Override
+  public void save(TournamentId tournamentId, Round round) {
+    table.putItem(RoundItemMapper.toItem(tournamentId, round));
+  }
 }

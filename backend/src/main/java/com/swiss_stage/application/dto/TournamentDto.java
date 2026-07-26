@@ -8,26 +8,36 @@ import com.swiss_stage.domain.model.Visibility;
 
 /** 大会DTO(schema/openapi.yaml の Tournament)。shareToken は運営者にのみ返す */
 public record TournamentDto(
-        String id,
-        String name,
-        GameType gameType,
-        CompetitionType competitionType,
-        Integer teamSize,
-        int totalRounds,
-        int currentRound,
-        TournamentStatus status,
-        Visibility visibility,
-        String shareToken,
-        boolean resultInputEnabled,
-        long version,
-        String createdAt,
-        String updatedAt) {
+    String id,
+    String name,
+    GameType gameType,
+    CompetitionType competitionType,
+    Integer teamSize,
+    int totalRounds,
+    int currentRound,
+    TournamentStatus status,
+    Visibility visibility,
+    String shareToken,
+    boolean resultInputEnabled,
+    long version,
+    String createdAt,
+    String updatedAt) {
 
-    public static TournamentDto from(Tournament t) {
-        return new TournamentDto(
-                t.id().value(), t.name(), t.gameType(), t.competitionType(), t.teamSize(),
-                t.totalRounds(), t.currentRound(), t.status(), t.visibility(), t.shareToken(),
-                t.resultInputEnabled(), t.version(), t.createdAt().toString(),
-                t.updatedAt().toString());
-    }
+  public static TournamentDto from(Tournament t) {
+    return new TournamentDto(
+        t.id().value(),
+        t.name(),
+        t.gameType(),
+        t.competitionType(),
+        t.teamSize(),
+        t.totalRounds(),
+        t.currentRound(),
+        t.status(),
+        t.visibility(),
+        t.shareToken(),
+        t.resultInputEnabled(),
+        t.version(),
+        t.createdAt().toString(),
+        t.updatedAt().toString());
+  }
 }

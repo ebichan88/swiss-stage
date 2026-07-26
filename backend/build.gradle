@@ -3,6 +3,7 @@ plugins {
     id 'jacoco'
     id 'org.springframework.boot' version '3.4.1'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.diffplug.spotless' version '8.8.0'
 }
 
 group = 'com.swiss_stage'
@@ -102,4 +103,14 @@ jacocoTestCoverageVerification {
 
 tasks.named('check') {
     dependsOn jacocoTestCoverageVerification
+}
+
+// コードフォーマット(Google Java Style)・未使用import・import順の自動検査(checkに自動的に含まれる)
+spotless {
+    java {
+        googleJavaFormat('1.27.0')
+        // static importを第1グループ、それ以外をASCII辞書順の1グループとする
+        importOrder('\\#', '')
+        removeUnusedImports()
+    }
 }

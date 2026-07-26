@@ -35,99 +35,115 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/v1/tournaments/{tournamentId}/teams")
 public class TeamController {
 
-    private final TeamService teamService;
-    private final Clock clock;
+  private final TeamService teamService;
+  private final Clock clock;
 
-    public TeamController(TeamService teamService, Clock clock) {
-        this.teamService = teamService;
-        this.clock = clock;
-    }
+  public TeamController(TeamService teamService, Clock clock) {
+    this.teamService = teamService;
+    this.clock = clock;
+  }
 
-    @GetMapping
-    public ApiSuccess<List<TeamDto>> list(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
-        return success(teamService.list(PathIds.tournamentId(tournamentId), user.sub()));
-    }
+  @GetMapping
+  public ApiSuccess<List<TeamDto>> list(
+      CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
+    return success(teamService.list(PathIds.tournamentId(tournamentId), user.sub()));
+  }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiSuccess<TeamDto> create(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
-            @Valid @RequestBody CreateTeamRequest request) {
-        return success(teamService.create(PathIds.tournamentId(tournamentId), user.sub(), request));
-    }
+  @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
+  public ApiSuccess<TeamDto> create(
+      CurrentUser user,
+      @PathVariable("tournamentId") String tournamentId,
+      @Valid @RequestBody CreateTeamRequest request) {
+    return success(teamService.create(PathIds.tournamentId(tournamentId), user.sub(), request));
+  }
 
-    @PostMapping("/csv-import")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiSuccess<TeamCsvImportResultDto> importCsv(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
-            @RequestPart("file") MultipartFile file) {
-        if (file.isEmpty()) {
-            throw new ValidationException("CSVファイルを選択してください");
-        }
-        byte[] bytes;
-        try {
-            bytes = file.getBytes();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        return success(teamService.importCsv(PathIds.tournamentId(tournamentId), user.sub(), bytes));
+  @PostMapping("/csv-import")
+  @ResponseStatus(HttpStatus.CREATED)
+  public ApiSuccess<TeamCsvImportResultDto> importCsv(
+      CurrentUser user,
+      @PathVariable("tournamentId") String tournamentId,
+      @RequestPart("file") MultipartFile file) {
+    if (file.isEmpty()) {
+      throw new ValidationException("CSVファイルを選択してください");
     }
+    byte[] bytes;
+    try {
+      bytes = file.getBytes();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return success(teamService.importCsv(PathIds.tournamentId(tournamentId), user.sub(), bytes));
+  }
 
-    @GetMapping("/csv-export")
-    public ResponseEntity<byte[]> export(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
-        CsvExport export = teamService.exportCsv(PathIds.tournamentId(tournamentId), user.sub());
-        return CsvDownload.response(export.tournamentName(), "teams", export.content());
-    }
+  @GetMapping("/csv-export")
+  public ResponseEntity<byte[]> export(
+      CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
+    CsvExport export = teamService.exportCsv(PathIds.tournamentId(tournamentId), user.sub());
+    return CsvDownload.response(export.tournamentName(), "teams", export.content());
+  }
 
-    @PatchMapping("/{teamId}")
-    public ApiSuccess<TeamDto> update(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
-            @PathVariable("teamId") String teamId,
-            @Valid @RequestBody UpdateTeamRequest request) {
-        return success(teamService.update(
-                PathIds.tournamentId(tournamentId), PathIds.teamId(teamId), user.sub(), request));
-    }
+  @PatchMapping("/{teamId}")
+  public ApiSuccess<TeamDto> update(
+      CurrentUser user,
+      @PathVariable("tournamentId") String tournamentId,
+      @PathVariable("teamId") String teamId,
+      @Valid @RequestBody UpdateTeamRequest request) {
+    return success(
+        teamService.update(
+            PathIds.tournamentId(tournamentId), PathIds.teamId(teamId), user.sub(), request));
+  }
 
-    @DeleteMapping("/{teamId}")
-    public ResponseEntity<Void> delete(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
-            @PathVariable("teamId") String teamId) {
-        teamService.delete(PathIds.tournamentId(tournamentId), PathIds.teamId(teamId), user.sub());
-        return ResponseEntity.noContent().build();
-    }
+  @DeleteMapping("/{teamId}")
+  public ResponseEntity<Void> delete(
+      CurrentUser user,
+      @PathVariable("tournamentId") String tournamentId,
+      @PathVariable("teamId") String teamId) {
+    teamService.delete(PathIds.tournamentId(tournamentId), PathIds.teamId(teamId), user.sub());
+    return ResponseEntity.noContent().build();
+  }
 
-    @PostMapping("/{teamId}/members")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiSuccess<TeamDto> addMember(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
-            @PathVariable("teamId") String teamId,
-            @Valid @RequestBody AddTeamMemberRequest request) {
-        return success(teamService.addMember(
-                PathIds.tournamentId(tournamentId), PathIds.teamId(teamId), user.sub(), request));
-    }
+  @PostMapping("/{teamId}/members")
+  @ResponseStatus(HttpStatus.CREATED)
+  public ApiSuccess<TeamDto> addMember(
+      CurrentUser user,
+      @PathVariable("tournamentId") String tournamentId,
+      @PathVariable("teamId") String teamId,
+      @Valid @RequestBody AddTeamMemberRequest request) {
+    return success(
+        teamService.addMember(
+            PathIds.tournamentId(tournamentId), PathIds.teamId(teamId), user.sub(), request));
+  }
 
-    @PatchMapping("/{teamId}/members/{memberId}")
-    public ApiSuccess<TeamDto> updateMember(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
-            @PathVariable("teamId") String teamId, @PathVariable("memberId") String memberId,
-            @Valid @RequestBody UpdateTeamMemberRequest request) {
-        return success(teamService.updateMember(
-                PathIds.tournamentId(tournamentId), PathIds.teamId(teamId),
-                PathIds.teamMemberId(memberId), user.sub(), request));
-    }
+  @PatchMapping("/{teamId}/members/{memberId}")
+  public ApiSuccess<TeamDto> updateMember(
+      CurrentUser user,
+      @PathVariable("tournamentId") String tournamentId,
+      @PathVariable("teamId") String teamId,
+      @PathVariable("memberId") String memberId,
+      @Valid @RequestBody UpdateTeamMemberRequest request) {
+    return success(
+        teamService.updateMember(
+            PathIds.tournamentId(tournamentId),
+            PathIds.teamId(teamId),
+            PathIds.teamMemberId(memberId),
+            user.sub(),
+            request));
+  }
 
-    @DeleteMapping("/{teamId}/members/{memberId}")
-    public ApiSuccess<TeamDto> deleteMember(
-            CurrentUser user, @PathVariable("tournamentId") String tournamentId,
-            @PathVariable("teamId") String teamId, @PathVariable("memberId") String memberId) {
-        return success(teamService.deleteMember(
-                PathIds.tournamentId(tournamentId), PathIds.teamId(teamId),
-                PathIds.teamMemberId(memberId), user.sub()));
-    }
+  @DeleteMapping("/{teamId}/members/{memberId}")
+  public ApiSuccess<TeamDto> deleteMember(
+      CurrentUser user,
+      @PathVariable("tournamentId") String tournamentId,
+      @PathVariable("teamId") String teamId,
+      @PathVariable("memberId") String memberId) {
+    return success(
+        teamService.deleteMember(
+            PathIds.tournamentId(tournamentId), PathIds.teamId(teamId),
+            PathIds.teamMemberId(memberId), user.sub()));
+  }
 
-    private <T> ApiSuccess<T> success(T data) {
-        return ApiSuccess.of(data, Instant.now(clock));
-    }
+  private <T> ApiSuccess<T> success(T data) {
+    return ApiSuccess.of(data, Instant.now(clock));
+  }
 }
