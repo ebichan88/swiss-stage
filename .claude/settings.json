@@ -5,6 +5,7 @@
             "Bash(git diff *)",
             "Bash(./gradlew *)",
             "Bash(cd backend && ./gradlew *)",
+            "Bash(cd frontend && npm run *)",
             "Bash(git add *)",
             "Bash(git commit -m *)",
             "Bash(git merge *)",
