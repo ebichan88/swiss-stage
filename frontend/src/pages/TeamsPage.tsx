@@ -1,4 +1,5 @@
 import CategoryIcon from '@mui/icons-material/Category';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import GroupsIcon from '@mui/icons-material/Groups';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
@@ -19,6 +20,7 @@ import { useGroups } from '../hooks/useGroups';
 import {
   useCreateTeam,
   useDeleteTeam,
+  useExportTeamsCsv,
   useImportTeamsCsv,
   useTeams,
   useUpdateTeam,
@@ -26,6 +28,7 @@ import {
 import { useSnackbar } from '../hooks/useSnackbar';
 import { ApiError } from '../services/apiClient';
 import type { Team } from '../types/team';
+import { downloadBlob } from '../utils/downloadBlob';
 
 type DialogState =
   | { kind: 'add' }
@@ -46,6 +49,7 @@ export function TeamsPage() {
   const updateMutation = useUpdateTeam(tournament.id);
   const deleteMutation = useDeleteTeam(tournament.id);
   const importMutation = useImportTeamsCsv(tournament.id);
+  const exportMutation = useExportTeamsCsv(tournament.id);
   const { showSuccess, showError } = useSnackbar();
   const [dialog, setDialog] = useState<DialogState>(null);
 
@@ -155,34 +159,50 @@ export function TeamsPage() {
           チーム
           {teams && ` (${teams.length}チーム)`}
         </Typography>
-        {canEdit && (
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Button
-              variant="outlined"
-              startIcon={<CategoryIcon />}
-              onClick={() => setDialog({ kind: 'groups' })}
-            >
-              グループ管理
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<UploadFileIcon />}
-              onClick={() => {
-                importMutation.reset();
-                setDialog({ kind: 'import' });
-              }}
-            >
-              CSVインポート
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<GroupAddIcon />}
-              onClick={() => setDialog({ kind: 'add' })}
-            >
-              チームを追加
-            </Button>
-          </Box>
-        )}
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Button
+            variant="outlined"
+            startIcon={<FileDownloadIcon />}
+            disabled={exportMutation.isPending}
+            onClick={() =>
+              exportMutation.mutate(undefined, {
+                onSuccess: ({ blob, filename }) => downloadBlob(blob, filename),
+                onError: (error) =>
+                  showError(errorMessage(error, 'CSVのダウンロードに失敗しました')),
+              })
+            }
+          >
+            CSVダウンロード
+          </Button>
+          {canEdit && (
+            <>
+              <Button
+                variant="outlined"
+                startIcon={<CategoryIcon />}
+                onClick={() => setDialog({ kind: 'groups' })}
+              >
+                グループ管理
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<UploadFileIcon />}
+                onClick={() => {
+                  importMutation.reset();
+                  setDialog({ kind: 'import' });
+                }}
+              >
+                CSVインポート
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<GroupAddIcon />}
+                onClick={() => setDialog({ kind: 'add' })}
+              >
+                チームを追加
+              </Button>
+            </>
+          )}
+        </Box>
       </Box>
 
       {isPending && <LoadingState />}

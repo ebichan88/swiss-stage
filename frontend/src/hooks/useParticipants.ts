@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   addParticipant,
   deleteParticipant,
+  exportParticipantsCsv,
   fetchParticipants,
   importParticipantsCsv,
   updateParticipant,
@@ -34,6 +35,12 @@ export function useImportParticipantsCsv(tournamentId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.participants(tournamentId) });
     },
+  });
+}
+
+export function useExportParticipantsCsv(tournamentId: string) {
+  return useMutation({
+    mutationFn: () => exportParticipantsCsv(tournamentId),
   });
 }
 

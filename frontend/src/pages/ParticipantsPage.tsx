@@ -1,4 +1,5 @@
 import CategoryIcon from '@mui/icons-material/Category';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import GroupsIcon from '@mui/icons-material/Groups';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
@@ -18,6 +19,7 @@ import { useGroups } from '../hooks/useGroups';
 import {
   useAddParticipant,
   useDeleteParticipant,
+  useExportParticipantsCsv,
   useImportParticipantsCsv,
   useParticipants,
   useUpdateParticipant,
@@ -25,6 +27,7 @@ import {
 import { useSnackbar } from '../hooks/useSnackbar';
 import { ApiError } from '../services/apiClient';
 import type { Participant } from '../types/participant';
+import { downloadBlob } from '../utils/downloadBlob';
 import { TeamsPage } from './TeamsPage';
 
 type DialogState =
@@ -57,6 +60,7 @@ function IndividualParticipantsPage() {
   const updateMutation = useUpdateParticipant(tournament.id);
   const deleteMutation = useDeleteParticipant(tournament.id);
   const importMutation = useImportParticipantsCsv(tournament.id);
+  const exportMutation = useExportParticipantsCsv(tournament.id);
   const { showSuccess, showError } = useSnackbar();
   const [dialog, setDialog] = useState<DialogState>(null);
 
@@ -167,34 +171,50 @@ function IndividualParticipantsPage() {
           参加者
           {participants && ` (${participants.length}名)`}
         </Typography>
-        {canEdit && (
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Button
-              variant="outlined"
-              startIcon={<CategoryIcon />}
-              onClick={() => setDialog({ kind: 'groups' })}
-            >
-              グループ管理
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<UploadFileIcon />}
-              onClick={() => {
-                importMutation.reset();
-                setDialog({ kind: 'import' });
-              }}
-            >
-              CSVインポート
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<PersonAddIcon />}
-              onClick={() => setDialog({ kind: 'add' })}
-            >
-              参加者を追加
-            </Button>
-          </Box>
-        )}
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Button
+            variant="outlined"
+            startIcon={<FileDownloadIcon />}
+            disabled={exportMutation.isPending}
+            onClick={() =>
+              exportMutation.mutate(undefined, {
+                onSuccess: ({ blob, filename }) => downloadBlob(blob, filename),
+                onError: (error) =>
+                  showError(errorMessage(error, 'CSVのダウンロードに失敗しました')),
+              })
+            }
+          >
+            CSVダウンロード
+          </Button>
+          {canEdit && (
+            <>
+              <Button
+                variant="outlined"
+                startIcon={<CategoryIcon />}
+                onClick={() => setDialog({ kind: 'groups' })}
+              >
+                グループ管理
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<UploadFileIcon />}
+                onClick={() => {
+                  importMutation.reset();
+                  setDialog({ kind: 'import' });
+                }}
+              >
+                CSVインポート
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<PersonAddIcon />}
+                onClick={() => setDialog({ kind: 'add' })}
+              >
+                参加者を追加
+              </Button>
+            </>
+          )}
+        </Box>
       </Box>
 
       {isPending && <LoadingState />}

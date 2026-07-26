@@ -5,6 +5,7 @@ import com.swiss_stage.application.dto.CsvImportResultDto;
 import com.swiss_stage.application.dto.ParticipantDto;
 import com.swiss_stage.application.dto.UpdateParticipantRequest;
 import com.swiss_stage.application.exception.ValidationException;
+import com.swiss_stage.application.service.CsvExport;
 import com.swiss_stage.application.service.ParticipantService;
 import com.swiss_stage.presentation.api.ApiSuccess;
 import com.swiss_stage.presentation.auth.CurrentUser;
@@ -71,6 +72,13 @@ public class ParticipantController {
         }
         return success(participantService.importCsv(
                 PathIds.tournamentId(tournamentId), user.sub(), bytes));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(
+            CurrentUser user, @PathVariable("tournamentId") String tournamentId) {
+        CsvExport export = participantService.exportCsv(PathIds.tournamentId(tournamentId), user.sub());
+        return CsvDownload.response(export.tournamentName(), "participants", export.content());
     }
 
     @PatchMapping("/{participantId}")

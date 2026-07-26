@@ -70,6 +70,7 @@
    大会作成時の `competitionType`/`teamSize` により、以後どちらのエンドポイント群を使うかが決まる(混在しない)。
    運営者の直接確定(`InputTeamMatchResultRequest`)・トークン経由の自己申告(`ReportTeamMatchResultRequest`)は、対局1件分の全ボード結果を配列でまとめて送る点を除き、個人戦の設計ルール(§4-3)をそのまま踏襲する。
    詳細は `05_swiss_pairing_algorithm.md` §5、`02_database_design.md` の Team/TeamMatch を参照。
+9. **CSVダウンロード**: `/participants/export`・`/teams/csv-export` はCSVインポートと同じ列構成(グループ列を含む)でエントリー順に返す。参加者/チームが0件のときはヘッダー行のみを返し、テンプレートとして使える。大会の状態(PREPARING/IN_PROGRESS/FINISHED)を問わず利用できる(過去大会からの参加者流用が主目的のため。CSVインポートがPREPARING限定なのとは異なる制約)。文字コードはUTF-8 BOM付き(`Content-Type: text/csv;charset=UTF-8`、`Content-Disposition: attachment`、ファイル名は大会名を含みRFC5987でエンコード)。棄権(WITHDRAWN)扱いの参加者/チームも含めて全件出力する。チームCSVはメンバー1人につき1行(グループ列は各行に同じ値を出す。メンバーが1人もいないチームは行として表現できないため出力されない)。エスケープ・クォート処理はCSVインポート同様に非対応(氏名・所属にカンマを含むデータを再インポートすると列数不一致でエラーになりうる。既存のインポート実装と同じ既知の制約であり、直す場合はパーサーを含む別タスクとする)。
 
 ---
 
