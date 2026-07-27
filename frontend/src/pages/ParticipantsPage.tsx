@@ -185,6 +185,14 @@ function IndividualParticipantsPage() {
           </Button>
           <Button
             variant="outlined"
+            startIcon={<PrintIcon />}
+            component={Link}
+            to={paths.printMatchCards(tournament.id)}
+          >
+            対局カードを印刷
+          </Button>
+          <Button
+            variant="outlined"
             startIcon={<FileDownloadIcon />}
             disabled={exportMutation.isPending}
             onClick={() =>

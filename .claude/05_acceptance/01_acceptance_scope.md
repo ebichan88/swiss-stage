@@ -171,12 +171,12 @@
 | PRT-AC-004 | P2 | 印刷ボタンは押下時に印刷ダイアログを1回だけ開く | done | printPage.test, E2E(cp7-print) |
 | PRT-AC-005 | P1 | 戦績一覧表(印刷)は相手No.・結果記号・勝点・SOS・SOSOS・順位を画面版と同一の値で出力する | done | PrintCrossTable.test, PrintTeamCrossTable.test |
 | PRT-AC-006 | P1 | 戦績一覧表(印刷)はグループごとに改ページし、単一グループ大会ではグループ見出しを出さない | in_progress | 実装済み(PrintCrossTablePage)。改ページ・見出し省略の実機確認は未実施 |
-| PRT-AC-007 | P0 | 団体戦の戦績一覧表(印刷)・対局カードにメンバー氏名を含めない | in_progress | PrintTeamCrossTable.test(戦績一覧表分)。対局カード分はPR4で追加 |
-| PRT-AC-008 | P1 | 対局カードは ACTIVE な全参加者/全チーム分を、グループ順→entryOrder順で出力する | todo | |
-| PRT-AC-009 | P1 | 対局カードは totalRounds 分の記入行を持ち、卓番号・対戦相手・結果の欄は空欄で出力される | todo | |
-| PRT-AC-010 | P2 | 個人戦の対局カードはA4 1枚あたり16面(totalRounds≥7 は12面)、団体戦は8面で面付けし、グループが切り替わる位置で改ページする | todo | |
-| PRT-AC-011 | P1 | 団体戦の対局カードはチーム名とボード役割(主将・副将…)欄のみで構成される | todo | |
-| PRT-AC-012 | P2 | 棄権(WITHDRAWN)の参加者・チームには対局カードを出力しない | todo | |
+| PRT-AC-007 | P0 | 団体戦の戦績一覧表(印刷)・対局カードにメンバー氏名を含めない | done | PrintTeamCrossTable.test, TeamMatchCardSheet.test, matchCardData.test |
+| PRT-AC-008 | P1 | 対局カードは ACTIVE な全参加者/全チーム分を、グループ順→entryOrder順で出力する | done | matchCardData.test |
+| PRT-AC-009 | P1 | 対局カードは totalRounds 分の記入行を持ち、卓番号・対戦相手・結果の欄は空欄で出力される | done | MatchCardSheet.test |
+| PRT-AC-010 | P2 | 個人戦の対局カードはA4 1枚あたり16面(totalRounds≥7 は12面)、団体戦は8面で面付けし、グループが切り替わる位置で改ページする | in_progress | 面付け選択・改ページ境界のロジックはmatchCardData.testで検証済み。実紙面での書きやすさ確認は未実施 |
+| PRT-AC-011 | P1 | 団体戦の対局カードはチーム名とボード役割(主将・副将…)欄のみで構成される | done | TeamMatchCardSheet.test |
+| PRT-AC-012 | P2 | 棄権(WITHDRAWN)の参加者・チームには対局カードを出力しない | done | matchCardData.test |
 | PRT-AC-013 | P2 | 全帳票のヘッダーに大会名と開催日を印字し、開催日が未設定なら空欄にする | done | PrintReportHeader.test |
 
 ## E2E: 一気通貫(クリティカルパス)

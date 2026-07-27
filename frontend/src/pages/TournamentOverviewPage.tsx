@@ -163,6 +163,14 @@ function TournamentOverviewView({
             >
               戦績一覧表を印刷
             </Button>
+            <Button
+              variant="outlined"
+              startIcon={<PrintIcon />}
+              component={Link}
+              to={paths.printMatchCards(tournament.id)}
+            >
+              対局カードを印刷
+            </Button>
           </Box>
         </CardContent>
       </Card>

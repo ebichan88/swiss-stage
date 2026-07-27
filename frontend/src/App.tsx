@@ -140,6 +140,13 @@ const router = createBrowserRouter([
                     Component: m.PrintCrossTablePage,
                   })),
               },
+              {
+                path: 'match-cards',
+                lazy: () =>
+                  import('./pages/PrintMatchCardsPage').then((m) => ({
+                    Component: m.PrintMatchCardsPage,
+                  })),
+              },
             ],
           },
         ],
