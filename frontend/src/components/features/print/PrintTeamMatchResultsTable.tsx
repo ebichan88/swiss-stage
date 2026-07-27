@@ -33,26 +33,20 @@ export function PrintTeamMatchResultsTable({
             <TableCell rowSpan={2}>No.</TableCell>
             <TableCell rowSpan={2}>チーム名</TableCell>
             {rounds.map((round) => (
-              <TableCell key={round} align="center" colSpan={2}>
+              <TableCell key={round} colSpan={2}>
                 {round}回戦
               </TableCell>
             ))}
-            <TableCell rowSpan={2} align="right">
-              勝点
-            </TableCell>
-            <TableCell rowSpan={2} align="right">
-              SOS
-            </TableCell>
-            <TableCell rowSpan={2} align="right">
-              SOSOS
-            </TableCell>
+            <TableCell rowSpan={2}>勝点</TableCell>
+            <TableCell rowSpan={2}>SOS</TableCell>
+            <TableCell rowSpan={2}>SOSOS</TableCell>
             <TableCell rowSpan={2}>順位</TableCell>
           </TableRow>
           <TableRow>
             {rounds.map((round) => (
               <Fragment key={round}>
-                <TableCell align="center">相手</TableCell>
-                <TableCell align="center">結果</TableCell>
+                <TableCell>相手</TableCell>
+                <TableCell>結果</TableCell>
               </Fragment>
             ))}
           </TableRow>
@@ -67,13 +61,13 @@ export function PrintTeamMatchResultsTable({
               <TableCell>{row.name}</TableCell>
               {rounds.map((round) => (
                 <Fragment key={round}>
-                  <TableCell align="center" />
-                  <TableCell align="center" />
+                  <TableCell />
+                  <TableCell />
                 </Fragment>
               ))}
-              <TableCell align="right" />
-              <TableCell align="right" />
-              <TableCell align="right" />
+              <TableCell />
+              <TableCell />
+              <TableCell />
               <TableCell />
             </TableRow>
           ))}

@@ -79,4 +79,19 @@ describe('PrintMatchResultsTable', () => {
       .join('\n');
     expect(css).toMatch(/border:1px solid/);
   });
+
+  it('列ごとのalign指定を持たず、全セルを中央揃えに統一する(CSSで一括適用)', () => {
+    renderWithProviders(
+      <PrintMatchResultsTable participants={[participantOf()]} totalRounds={1} />,
+    );
+    // MUIのalign propは MuiTableCell-alignLeft/Right 等のクラスを付与する。
+    // 個別指定を残していないことをクラス名の不在で確認する
+    document.querySelectorAll('td, th').forEach((cell) => {
+      expect(cell.className).not.toMatch(/MuiTableCell-align(Left|Right)/);
+    });
+    const css = Array.from(document.querySelectorAll('style'))
+      .map((el) => el.textContent ?? '')
+      .join('\n');
+    expect(css).toMatch(/text-align:center/);
+  });
 });

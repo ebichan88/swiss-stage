@@ -56,4 +56,15 @@ describe('PrintTeamMatchResultsTable', () => {
       .join('\n');
     expect(css).toMatch(/border:1px solid/);
   });
+
+  it('列ごとのalign指定を持たず、全セルを中央揃えに統一する(CSSで一括適用)', () => {
+    renderWithProviders(<PrintTeamMatchResultsTable teams={[teamOf()]} totalRounds={1} />);
+    document.querySelectorAll('td, th').forEach((cell) => {
+      expect(cell.className).not.toMatch(/MuiTableCell-align(Left|Right)/);
+    });
+    const css = Array.from(document.querySelectorAll('style'))
+      .map((el) => el.textContent ?? '')
+      .join('\n');
+    expect(css).toMatch(/text-align:center/);
+  });
 });

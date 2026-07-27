@@ -8,9 +8,14 @@ export const breakAfterPageSx = { '@media print': { breakAfter: 'page' } } as co
 export const avoidBreakSx = { breakInside: 'avoid' } as const;
 
 /**
- * 手書き記入用の表に格子状の罫線を引く。MUI Tableの既定(下線のみ・divider色)では
- * 記入欄の境界が薄すぎて見えないため、全辺に濃色の罫線を引く
+ * 手書き記入用の表に格子状の罫線を引き、全列を中央揃えに統一する。MUI Tableの既定
+ * (下線のみ・divider色)では記入欄の境界が薄すぎて見えないため全辺に濃色の罫線を引く。
+ * 列ごとにalignがNo./名前は左・ラウンド列は中央・勝点等は右とバラバラだと読みにくいため統一する
  */
 export const writableGridSx = {
-  '& td, & th': { border: '1px solid', borderColor: 'text.primary' },
+  '& td, & th': {
+    border: '1px solid',
+    borderColor: 'text.primary',
+    textAlign: 'center',
+  },
 } as const;
