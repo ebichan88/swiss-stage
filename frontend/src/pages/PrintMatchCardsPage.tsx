@@ -65,7 +65,7 @@ function PrintIndividualMatchCardsPage() {
   const pages = chunkIntoPages(cards, layout.columns * layout.rows);
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 3, '@media print': { p: 0 } }}>
       <PrintGlobalStyles orientation="portrait" />
       <PrintReportHeader
         tournamentName={tournament.name}
@@ -117,7 +117,7 @@ function PrintTeamMatchCardsPage() {
   const pages = chunkIntoPages(cards, layout.columns * layout.rows);
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 3, '@media print': { p: 0 } }}>
       <PrintGlobalStyles orientation="portrait" />
       <PrintReportHeader
         tournamentName={tournament.name}

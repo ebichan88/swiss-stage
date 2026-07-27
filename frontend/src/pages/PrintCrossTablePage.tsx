@@ -55,7 +55,7 @@ function PrintIndividualCrossTablePage() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 3, '@media print': { p: 0 } }}>
       <PrintGlobalStyles orientation="landscape" />
       {groupStandings.map(({ group, standings }, index) => (
         <Box key={group.id} sx={index < groupStandings.length - 1 ? breakAfterPageSx : undefined}>
@@ -109,7 +109,7 @@ function PrintTeamCrossTablePage() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 3, '@media print': { p: 0 } }}>
       <PrintGlobalStyles orientation="landscape" />
       {groupStandings.map(({ group, standings }, index) => (
         <Box key={group.id} sx={index < groupStandings.length - 1 ? breakAfterPageSx : undefined}>

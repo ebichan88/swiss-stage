@@ -95,7 +95,7 @@
 
 | トークン | 値 | 用途 |
 |---------|----|------|
-| pageMargin | 10mm | `@page` の余白 |
+| pageMargin | 10mm | ページの余白。`@page` ではなく `body` の padding として適用する(下記注記参照) |
 | cardGap | 4mm | 対局カード間の切り取り余白 |
 | bodyFontSize | 10pt | 名簿・戦績一覧表の本文 |
 | tableFontSize | 9pt | 名簿・戦績一覧表のセル |

@@ -110,3 +110,12 @@
 - 改ページは `breakAfter: 'page'`(グループ境界・対局カードのページ境界)、行の分断防止は `breakInside: 'avoid'`
 - 表のヘッダー行は `thead { display: 'table-header-group' }` で各ページに繰り返す
 - 罫線・ヘッダー地色を確実に印刷するため `print-color-adjust: exact` を設定する(Chrome/Edgeの既定は背景非印刷)
+
+### 5-5. ブラウザのヘッダー・フッター(日付・タイトル・URL・ページ番号)の抑制
+
+Chrome/Edgeは印刷時に `@page` の余白部分へ日付・タイトル・URL・ページ番号を自動描画する。これはブラウザの印刷レンダリング層が
+付加するものでDOM/CSS/JSからは無効化できず、印刷ダイアログの「ヘッダーとフッター」チェックボックス(ユーザー操作)でしか消せない。
+
+**回避策**: `@page { margin: 0 }` にすると描画の余地が無くなり出なくなる。実際の余白は `@media print` 内の `body`
+の `padding: theme.print.pageMargin` として自前で確保する(`PrintGlobalStyles.tsx`)。各印刷ページの外側 `Box` が
+持つ画面用の余白(`p: 3`)は印刷時に二重に効かないよう `'@media print': { p: 0 }` で打ち消す。
