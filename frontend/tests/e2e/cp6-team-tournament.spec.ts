@@ -16,7 +16,7 @@ import {
  * CP6: 団体戦の一気通貫(12_e2e_test_design.md)。
  * ログイン → 団体戦作成(3人制) → チーム+メンバーCSVインポート(4チーム)
  * → 開始 → 第1R生成 → 全ボード結果を一括入力 → 確定 → 第2R生成(チームの再戦なし)
- * → 順位表・戦績一覧・ラウンド管理に個人名(メンバー氏名)が出ないこと
+ * → 順位表・対戦結果・ラウンド管理に個人名(メンバー氏名)が出ないこと
  */
 test('E2E-AC-007: CP6: 団体戦をログインから順位表まで一気通貫で運営できる', async ({ page }) => {
   await loginAsOrganizer(page);
@@ -56,8 +56,8 @@ test('E2E-AC-007: CP6: 団体戦をログインから順位表まで一気通貫
   await expect(page.getByText('山田太郎')).not.toBeVisible();
   await expect(page.getByText('Aチーム')).toBeVisible();
 
-  // 戦績一覧: 個人名は出さずチーム名のみ表示する
-  await page.getByRole('link', { name: '戦績一覧' }).click();
+  // 対戦結果: 個人名は出さずチーム名のみ表示する
+  await page.getByRole('link', { name: '対戦結果' }).click();
   await expect(page.getByText('山田太郎')).not.toBeVisible();
   await expect(page.getByText('Aチーム')).toBeVisible();
 });

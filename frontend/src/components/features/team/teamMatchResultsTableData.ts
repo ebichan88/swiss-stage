@@ -1,7 +1,7 @@
 import { teamAggregatePoints, teamResultMark } from './teamMatchDisplay';
 import type { TeamMatch, TeamRound, TeamStanding, TeamSummary } from '../../../types/team';
 
-export interface TeamCrossTableCell {
+export interface TeamMatchResultsTableCell {
   /** 対戦相手。null かつ isBye=false は対局なし(離脱・後入り等)、isBye=true は不戦勝 */
   opponent: TeamSummary | null;
   isBye: boolean;
@@ -11,16 +11,16 @@ export interface TeamCrossTableCell {
   breakdown: string | null;
 }
 
-export interface TeamCrossTableRow {
+export interface TeamMatchResultsTableRow {
   standing: TeamStanding;
-  cells: TeamCrossTableCell[];
+  cells: TeamMatchResultsTableCell[];
 }
 
 function findMatch(matches: TeamMatch[], teamId: string): TeamMatch | undefined {
   return matches.find((m) => m.team1.id === teamId || m.team2?.id === teamId);
 }
 
-function cellFor(match: TeamMatch | undefined, teamId: string): TeamCrossTableCell {
+function cellFor(match: TeamMatch | undefined, teamId: string): TeamMatchResultsTableCell {
   if (!match) {
     return { opponent: null, isBye: false, mark: null, breakdown: null };
   }
@@ -40,11 +40,11 @@ function cellFor(match: TeamMatch | undefined, teamId: string): TeamCrossTableCe
   return { opponent, isBye: false, mark, breakdown };
 }
 
-/** チーム×ラウンドの対戦成績一覧(戦績一覧表)を組み立てる。1グループ分の rounds/standings を渡す */
-export function buildTeamCrossTableRows(
+/** チーム×ラウンドの対戦成績一覧(対戦結果表)を組み立てる。1グループ分の rounds/standings を渡す */
+export function buildTeamMatchResultsTableRows(
   rounds: TeamRound[],
   groupStandings: TeamStanding[],
-): TeamCrossTableRow[] {
+): TeamMatchResultsTableRow[] {
   const sorted = [...groupStandings].sort((a, b) => a.team.entryOrder - b.team.entryOrder);
   return sorted.map((standing) => ({
     standing,

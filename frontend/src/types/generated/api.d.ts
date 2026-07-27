@@ -837,7 +837,7 @@ export interface components {
             groupId: components["schemas"]["Ulid"];
             members: components["schemas"]["TeamMember"][];
         };
-        /** @description 組み合わせ・戦績一覧・順位表で使う表示用の要約。メンバーの個人名は含めない */
+        /** @description 組み合わせ・対戦結果・順位表で使う表示用の要約。メンバーの個人名は含めない */
         TeamSummary: {
             id: components["schemas"]["Ulid"];
             name: string;

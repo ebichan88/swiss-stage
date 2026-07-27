@@ -1,13 +1,13 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { PrintTeamCrossTable } from '../../../../src/components/features/print/PrintTeamCrossTable';
+import { PrintTeamMatchResultsTable } from '../../../../src/components/features/print/PrintTeamMatchResultsTable';
 import { teamOf } from '../../../fixtures';
 import { renderWithProviders } from '../../../testUtils';
 
-describe('PrintTeamCrossTable', () => {
+describe('PrintTeamMatchResultsTable', () => {
   it('生成済みラウンド数によらず totalRounds 分すべてのラウンド列を出す', () => {
-    renderWithProviders(<PrintTeamCrossTable teams={[teamOf()]} totalRounds={5} />);
+    renderWithProviders(<PrintTeamMatchResultsTable teams={[teamOf()]} totalRounds={5} />);
     for (let round = 1; round <= 5; round++) {
       expect(screen.getByRole('columnheader', { name: `${round}回戦` })).toBeInTheDocument();
     }
@@ -15,7 +15,10 @@ describe('PrintTeamCrossTable', () => {
 
   it('No.・チーム名は入力済みで表示し、対戦相手・結果・勝点・SOS・SOSOS・順位は空欄で出力する(段級位列は無い)', () => {
     renderWithProviders(
-      <PrintTeamCrossTable teams={[teamOf({ entryOrder: 1, name: 'Aチーム' })]} totalRounds={2} />,
+      <PrintTeamMatchResultsTable
+        teams={[teamOf({ entryOrder: 1, name: 'Aチーム' })]}
+        totalRounds={2}
+      />,
     );
 
     const rows = screen.getAllByRole('row');
@@ -32,13 +35,13 @@ describe('PrintTeamCrossTable', () => {
   });
 
   it('個人名を一切含めない(チーム名のみ)', () => {
-    renderWithProviders(<PrintTeamCrossTable teams={[teamOf()]} totalRounds={1} />);
+    renderWithProviders(<PrintTeamMatchResultsTable teams={[teamOf()]} totalRounds={1} />);
     expect(screen.queryByText('架空 主将')).not.toBeInTheDocument();
   });
 
   it('棄権(WITHDRAWN)は出力しない', () => {
     renderWithProviders(
-      <PrintTeamCrossTable
+      <PrintTeamMatchResultsTable
         teams={[teamOf({ id: 't1' }), teamOf({ id: 't2', status: 'WITHDRAWN' })]}
         totalRounds={3}
       />,

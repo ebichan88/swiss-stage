@@ -97,10 +97,10 @@
 |---------|----|------|
 | pageMargin | 10mm | ページの余白。`@page` ではなく `body` の padding として適用する(下記注記参照) |
 | cardGap | 4mm | 対局カード間の切り取り余白 |
-| bodyFontSize | 10pt | 名簿・戦績一覧表の本文 |
-| tableFontSize | 9pt | 名簿・戦績一覧表のセル |
+| bodyFontSize | 10pt | 名簿・対戦結果表の本文 |
+| tableFontSize | 9pt | 名簿・対戦結果表のセル |
 | cardFontSize | 7pt | 対局カードの本文(A8相当は文字が小さくなるため別トークン) |
 | headerBg | #EEEEEE(薄グレー) | 表ヘッダーの地色。緑ベタ塗りはインクを食うためモノクロ運用 |
-| writableRowHeight | 14mm | 手書き記入欄を持つ表(戦績一覧表)のデータ行の高さ。相手・結果を手書きできる余白を確保する |
+| writableRowHeight | 14mm | 手書き記入欄を持つ表(対戦結果表)のデータ行の高さ。相手・結果を手書きできる余白を確保する |
 
 実装は `theme/index.ts`(変更時はこのファイルと同期すること)。

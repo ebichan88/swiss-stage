@@ -1,21 +1,24 @@
 import { Fragment } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 
-import { buildPrintTeamCrossTableRows } from './printCrossTableData';
+import { buildPrintTeamMatchResultsTableRows } from './printMatchResultsTableData';
 import type { Team } from '../../../types/team';
 
-export interface PrintTeamCrossTableProps {
+export interface PrintTeamMatchResultsTableProps {
   teams: Team[];
   totalRounds: number;
 }
 
 /**
- * 団体戦の戦績一覧表(印刷)。大会開始前に印刷し、対戦相手・結果・勝点・SOS・SOSOS・順位は
+ * 団体戦の対戦結果表(印刷)。大会開始前に印刷し、対戦相手・結果・勝点・SOS・SOSOS・順位は
  * 手書きで記入する運用のため常に空欄で出力する。ラウンド列は totalRounds 分を最初からすべて出す。
  * 個人名は含めない(チーム名のみ)
  */
-export function PrintTeamCrossTable({ teams, totalRounds }: PrintTeamCrossTableProps) {
-  const rows = buildPrintTeamCrossTableRows(teams);
+export function PrintTeamMatchResultsTable({
+  teams,
+  totalRounds,
+}: PrintTeamMatchResultsTableProps) {
+  const rows = buildPrintTeamMatchResultsTableRows(teams);
   const rounds = Array.from({ length: totalRounds }, (_, i) => i + 1);
 
   return (

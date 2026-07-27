@@ -21,7 +21,7 @@ export type UpdateTeamMemberInput = components['schemas']['UpdateTeamMemberReque
 /** チームCSVインポート結果(全行正常時のみ取り込む) */
 export type TeamCsvImportResult = components['schemas']['TeamCsvImportResult'];
 
-/** 組み合わせ・戦績一覧・順位表で使う表示用の要約。メンバーの個人名は含めない */
+/** 組み合わせ・対戦結果・順位表で使う表示用の要約。メンバーの個人名は含めない */
 export type TeamSummary = components['schemas']['TeamSummary'];
 
 /**

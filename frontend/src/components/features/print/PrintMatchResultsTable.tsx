@@ -1,21 +1,21 @@
 import { Fragment } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 
-import { buildPrintCrossTableRows } from './printCrossTableData';
+import { buildPrintMatchResultsTableRows } from './printMatchResultsTableData';
 import type { Participant } from '../../../types/participant';
 
-export interface PrintCrossTableProps {
+export interface PrintMatchResultsTableProps {
   participants: Participant[];
   totalRounds: number;
 }
 
 /**
- * 戦績一覧表(印刷)。大会開始前に印刷し、ラウンドの進行に合わせて対戦相手・結果・勝点・SOS・SOSOS・
+ * 対戦結果表(印刷)。大会開始前に印刷し、ラウンドの進行に合わせて対戦相手・結果・勝点・SOS・SOSOS・
  * 順位を手書きで記入する運用のため、これらの列は常に空欄で出力する。ラウンド列は生成済みラウンド数に
  * よらず totalRounds 分を最初からすべて出す
  */
-export function PrintCrossTable({ participants, totalRounds }: PrintCrossTableProps) {
-  const rows = buildPrintCrossTableRows(participants);
+export function PrintMatchResultsTable({ participants, totalRounds }: PrintMatchResultsTableProps) {
+  const rows = buildPrintMatchResultsTableRows(participants);
   const rounds = Array.from({ length: totalRounds }, (_, i) => i + 1);
 
   return (

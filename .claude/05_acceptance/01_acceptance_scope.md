@@ -95,7 +95,7 @@
 | RND-AC-010 | P0 | 確定済みラウンドの結果は変更できない(409) | done | RoundApiTest |
 | RND-AC-011 | P1 | 不正な結果値(BYE等)の入力は400になる | done | RoundApiTest |
 | RND-AC-012 | P1 | 片方のみ申告・申告不一致で結果が未確定の対局が残っているとラウンド確定はブロックされる。運営者が結果を確定すれば確定できる | done | RoundApiTest |
-| RND-AC-013 | P2 | 管理画面の順位と戦績一覧は別メニュー(別画面)で表示される | done | RankingBoard.test, CrossTable.test(Vitest) |
+| RND-AC-013 | P2 | 管理画面の順位と対戦結果は別メニュー(別画面)で表示される | done | RankingBoard.test, MatchResultsTable.test(Vitest) |
 | RND-AC-014 | P1 | 管理画面の順位表はラウンド1が確定するまで表示されない(未確定時は全員同率rank=1になり表示が崩れるため) | done | cp1-tournament-flow(E2E) |
 
 ## TEAM: 団体戦
@@ -118,7 +118,7 @@
 | TEAM-AC-014 | P0 | 運営者が対局の全ボード結果をまとめて直接確定でき、team1Points/team2Pointsの合計から結果表示(勝敗/引き分け)が導出される | done | TeamRoundApiTest |
 | TEAM-AC-015 | P0 | 1ボードでも結果が未確定(result=NONE)の対局が残るラウンドは確定できない。運営者が全ボードの結果を確定すれば確定できる | done | TeamRoundApiTest |
 | TEAM-AC-016 | P0 | 順位表は個人戦と同じ基準(勝点→SOS→SOSOS→直接対決→エントリー順)でチーム単位に計算される | done | TeamRoundApiTest |
-| TEAM-AC-017 | P0 | 戦績一覧・組み合わせ・順位表のレスポンスに個人名(メンバー氏名)を含めない(チーム名のみ) | done | TeamRoundApiTest |
+| TEAM-AC-017 | P0 | 対戦結果・組み合わせ・順位表のレスポンスに個人名(メンバー氏名)を含めない(チーム名のみ) | done | TeamRoundApiTest |
 | TEAM-AC-018 | P0 | 共有トークン経由の結果自己申告は「どちらのチームか」を選択しボード配列をまとめて送信する。ボードごとに両者の申告が一致した時点でそのボードのみ確定する | done | TeamSharedApiTest |
 | TEAM-AC-019 | P0 | ボード単位で申告が不一致の場合、確定させず双方の申告内容(誰が何を申告したか)を運営者画面・共有画面の両方で確認できる | done | TeamSharedApiTest(API), TeamMatchResultControl.test.tsx(運営者画面), SharedTeamResultPage.test.tsx(共有画面) |
 | TEAM-AC-020 | P0 | 運営者が直接確定したボード結果は、その後の参加者の自己申告(一致・不一致問わず)で上書きされない | done | TeamSharedApiTest |
@@ -140,7 +140,7 @@
 | SHR-AC-007 | P0 | トークン経由の結果入力もversion競合409・確定後409の制約に従う | done | SharedApiTest |
 | SHR-AC-008 | P1 | キャッシュ済みの共有ページも結果入力・確定・参加者改名後は即時反映される(evict) | done | SharedApiTest |
 | SHR-AC-009 | P2 | 共有APIはIPベースのレート制限超過で429を統一フォーマットで返す | done | SharedRateLimitApiTest |
-| SHR-AC-010 | P2 | 共有ページの参加者要約(ParticipantSummary)にrank・entryOrderを含む(戦績一覧表での参照用) | done | SharedApiTest |
+| SHR-AC-010 | P2 | 共有ページの参加者要約(ParticipantSummary)にrank・entryOrderを含む(対戦結果表での参照用) | done | SharedApiTest |
 | SHR-AC-011 | P0 | トークン経由の結果入力は「自分がplayer1/player2のどちらか」の申告として記録され、片方の申告のみでは対局結果は確定しない | done | SharedApiTest |
 | SHR-AC-012 | P0 | 両者の申告が一致すると対局結果が自動確定し、一致しない場合は結果を確定せず双方の申告内容が参照できる | done | SharedApiTest |
 | SHR-AC-013 | P0 | 運営者が直接確定した結果は、その後の参加者の自己申告(一致・不一致問わず)で上書きされない | done | SharedApiTest |
@@ -160,7 +160,7 @@
 
 ## PRT: 帳票印刷
 
-スマホを持たない参加者向けに、参加者データから紙帳票(対局カード・戦績一覧表・参加者名簿)を印刷する機能。
+スマホを持たない参加者向けに、参加者データから紙帳票(対局カード・対戦結果表・参加者名簿)を印刷する機能。
 ブラウザ印刷(Chrome/Edge限定)。対応方針・面付け・線引きの詳細は `04_screen_transition_design.md` §5、`02_component_design.md` を参照。
 
 | ID | P | 受け入れ基準 | Status | 検証 |
@@ -169,9 +169,9 @@
 | PRT-AC-002 | P1 | 参加者名簿は No./氏名/所属/段級位 を entryOrder 昇順で全件出力し、複数グループ大会のみグループ見出し・グループ列を表示する | done | PrintRoster.test |
 | PRT-AC-003 | P1 | 団体戦の参加者名簿(運営専用)はチーム名とメンバー氏名・段級位・役割を1メンバー1行で出力し、運営専用である旨を明記する | done | PrintTeamRoster.test |
 | PRT-AC-004 | P2 | 印刷ボタンは押下時に印刷ダイアログを1回だけ開く | done | printPage.test, E2E(cp7-print) |
-| PRT-AC-005 | P1 | 戦績一覧表(印刷)は大会開始前に印刷する手書き記入用シートであり、No.・名前(個人戦は段級位も)は入力済みで、対戦相手・結果・勝点・SOS・SOSOS・順位は生成済みラウンド数によらずtotalRounds分すべて空欄で出力する | done | PrintCrossTable.test, PrintTeamCrossTable.test |
-| PRT-AC-006 | P1 | 戦績一覧表(印刷)はグループごとに改ページし、単一グループ大会ではグループ見出しを出さない | in_progress | 実装済み(PrintCrossTablePage)。改ページ・見出し省略の実機確認は未実施 |
-| PRT-AC-007 | P0 | 団体戦の戦績一覧表(印刷)・対局カードにメンバー氏名を含めない | done | PrintTeamCrossTable.test, TeamMatchCardSheet.test, matchCardData.test |
+| PRT-AC-005 | P1 | 対戦結果表(印刷)は大会開始前に印刷する手書き記入用シートであり、No.・名前(個人戦は段級位も)は入力済みで、対戦相手・結果・勝点・SOS・SOSOS・順位は生成済みラウンド数によらずtotalRounds分すべて空欄で出力する | done | PrintMatchResultsTable.test, PrintTeamMatchResultsTable.test |
+| PRT-AC-006 | P1 | 対戦結果表(印刷)はグループごとに改ページし、単一グループ大会ではグループ見出しを出さない | in_progress | 実装済み(PrintMatchResultsPage)。改ページ・見出し省略の実機確認は未実施 |
+| PRT-AC-007 | P0 | 団体戦の対戦結果表(印刷)・対局カードにメンバー氏名を含めない | done | PrintTeamMatchResultsTable.test, TeamMatchCardSheet.test, matchCardData.test |
 | PRT-AC-008 | P1 | 対局カードは ACTIVE な全参加者/全チーム分を、グループ順→entryOrder順で出力する | done | matchCardData.test |
 | PRT-AC-009 | P1 | 対局カードは totalRounds 分の記入行を持ち、卓番号・対戦相手・結果の欄は空欄で出力される | done | MatchCardSheet.test |
 | PRT-AC-010 | P2 | 個人戦の対局カードはA4 1枚あたり16面(totalRounds≥7 は12面)、団体戦は8面で面付けし、グループが切り替わる位置で改ページする | in_progress | 面付け選択・改ページ境界のロジックはmatchCardData.testで検証済み。実紙面での書きやすさ確認は未実施 |

@@ -1758,7 +1758,7 @@ components:
     TeamSummary:
       type: object
       additionalProperties: false
-      description: 組み合わせ・戦績一覧・順位表で使う表示用の要約。メンバーの個人名は含めない
+      description: 組み合わせ・対戦結果・順位表で使う表示用の要約。メンバーの個人名は含めない
       required: [id, name, entryOrder]
       properties:
         id:

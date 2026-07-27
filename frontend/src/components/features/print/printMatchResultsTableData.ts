@@ -2,19 +2,21 @@ import { rankLabel } from '../../../utils/labels';
 import type { Participant } from '../../../types/participant';
 import type { Team } from '../../../types/team';
 
-export interface PrintCrossTableRow {
+export interface PrintMatchResultsTableRow {
   entryOrder: number;
   name: string;
   rankText: string;
 }
 
-export interface PrintTeamCrossTableRow {
+export interface PrintTeamMatchResultsTableRow {
   entryOrder: number;
   name: string;
 }
 
 /** ACTIVEのみ・entryOrder順に並べる(グループ分割はページ側が担う。02_component_design.md §3) */
-export function buildPrintCrossTableRows(participants: Participant[]): PrintCrossTableRow[] {
+export function buildPrintMatchResultsTableRows(
+  participants: Participant[],
+): PrintMatchResultsTableRow[] {
   return participants
     .filter((p) => p.status === 'ACTIVE')
     .sort((a, b) => a.entryOrder - b.entryOrder)
@@ -26,7 +28,9 @@ export function buildPrintCrossTableRows(participants: Participant[]): PrintCros
 }
 
 /** ACTIVEのみ・entryOrder順に並べる(グループ分割はページ側が担う) */
-export function buildPrintTeamCrossTableRows(teams: Team[]): PrintTeamCrossTableRow[] {
+export function buildPrintTeamMatchResultsTableRows(
+  teams: Team[],
+): PrintTeamMatchResultsTableRow[] {
   return teams
     .filter((t) => t.status === 'ACTIVE')
     .sort((a, b) => a.entryOrder - b.entryOrder)

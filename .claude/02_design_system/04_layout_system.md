@@ -85,7 +85,7 @@
 ### 5-2. ルート構成
 
 `@page`はドキュメント単位でしか向き(portrait/landscape)を切り替えられないため、**帳票ごとに専用ルート**
-(`/tournaments/:id/print/{roster,cross-table,match-cards}`)を持つ専用レイアウト(`PrintLayout`)を使う。
+(`/tournaments/:id/print/{roster,match-results,match-cards}`)を持つ専用レイアウト(`PrintLayout`)を使う。
 `AppLayout`/`TournamentLayout`の外に置き、AppBar・サイドバー・下部タブを一切継承しない。
 
 ```
@@ -102,7 +102,7 @@
 | 帳票 | 向き | 面付け |
 |---|---|---|
 | 参加者名簿 | 縦(portrait) | 1ページに表を流し込む(ページ数は参加者数に応じて可変) |
-| 戦績一覧表 | 横(landscape) | グループごとに改ページ。単一グループ大会はグループ見出しを省略 |
+| 対戦結果表 | 横(landscape) | グループごとに改ページ。単一グループ大会はグループ見出しを省略 |
 | 対局カード | 縦(portrait) | 個人戦は4列×4行(16面、A8相当)。totalRounds≥7は4列×3行(12面)に落とす。団体戦は2列×4行(8面、A7相当。ボード列が入るため個人戦より広い面が必要) |
 
 ### 5-4. 改ページ・繰り返しヘッダー

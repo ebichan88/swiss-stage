@@ -3,41 +3,29 @@ import TableChartIcon from '@mui/icons-material/TableChart';
 import { Box, Button, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
 
-import { CrossTable } from '../components/features/standing/CrossTable';
+import { TeamMatchResultsTable } from '../components/features/team/TeamMatchResultsTable';
 import { useTournamentContext } from '../components/layouts/TournamentLayout';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState, LoadingState } from '../components/ui/QueryStates';
-import { useRounds } from '../hooks/useRounds';
-import { useStandings } from '../hooks/useStandings';
+import { useTeamRounds } from '../hooks/useTeamRounds';
+import { useTeamStandings } from '../hooks/useTeamStandings';
 import { paths } from '../routes';
-import { TeamCrossTablePage } from './TeamCrossTablePage';
 
-/**
- * 戦績一覧(参加者×ラウンドの対戦相手・結果)。順位表とは別メニュー。グループ大会はグループごとに表示。
- * 団体戦(competitionType=TEAM)はTeamCrossTablePageに切り替わる
- */
-export function CrossTablePage() {
-  const tournament = useTournamentContext();
-  if (tournament.competitionType === 'TEAM') {
-    return <TeamCrossTablePage />;
-  }
-  return <IndividualCrossTablePage />;
-}
-
-function IndividualCrossTablePage() {
+/** 団体戦の対戦結果(チーム×ラウンドの対戦相手・結果)。順位表とは別メニュー。個人名は含めない */
+export function TeamMatchResultsPage() {
   const tournament = useTournamentContext();
   const {
     data: groupStandings,
     isPending: standingsPending,
     isError: standingsError,
     refetch: refetchStandings,
-  } = useStandings(tournament.id);
+  } = useTeamStandings(tournament.id);
   const {
     data: rounds,
     isPending: roundsPending,
     isError: roundsError,
     refetch: refetchRounds,
-  } = useRounds(tournament.id);
+  } = useTeamRounds(tournament.id);
 
   const isPending = standingsPending || roundsPending;
   const isError = standingsError || roundsError;
@@ -56,13 +44,13 @@ function IndividualCrossTablePage() {
         }}
       >
         <Typography variant="h3" component="h2">
-          戦績一覧
+          対戦結果
         </Typography>
         <Button
           variant="outlined"
           startIcon={<PrintIcon />}
           component={Link}
-          to={paths.printCrossTable(tournament.id)}
+          to={paths.printMatchResults(tournament.id)}
         >
           印刷
         </Button>
@@ -70,7 +58,7 @@ function IndividualCrossTablePage() {
       {isPending && <LoadingState />}
       {isError && (
         <ErrorState
-          message="戦績一覧の取得に失敗しました"
+          message="対戦結果の取得に失敗しました"
           onRetry={() => {
             void refetchStandings();
             void refetchRounds();
@@ -93,7 +81,7 @@ function IndividualCrossTablePage() {
                 {group.name}
               </Typography>
             )}
-            <CrossTable
+            <TeamMatchResultsTable
               rounds={rounds.map((round) => ({
                 ...round,
                 matches: round.matches.filter((m) => m.group.id === group.id),

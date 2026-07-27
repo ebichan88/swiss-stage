@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildCrossTableRows } from '../../../src/components/features/standing/crossTableData';
+import { buildMatchResultsTableRows } from '../../../src/components/features/standing/matchResultsTableData';
 import { groupOf, matchOf, roundOf, standingOf, summaryOf } from '../../fixtures';
 
-describe('buildCrossTableRows', () => {
+describe('buildMatchResultsTableRows', () => {
   it('行はentryOrder昇順に並び、対局は自分の視点で相手とマークを解決する', () => {
     const taro = summaryOf({ id: 'p1', name: '架空 太郎', entryOrder: 2 });
     const hanako = summaryOf({ id: 'p2', name: '仮名 花子', entryOrder: 1 });
@@ -15,7 +15,7 @@ describe('buildCrossTableRows', () => {
     ];
     const standings = [standingOf({ participant: taro }), standingOf({ participant: hanako })];
 
-    const rows = buildCrossTableRows(rounds, standings);
+    const rows = buildMatchResultsTableRows(rounds, standings);
 
     expect(rows.map((r) => r.standing.participant.id)).toEqual(['p2', 'p1']);
     // 花子(player2)視点: 相手は太郎、負け
@@ -34,7 +34,7 @@ describe('buildCrossTableRows', () => {
     ];
     const standings = [standingOf({ participant: taro })];
 
-    const rows = buildCrossTableRows(rounds, standings);
+    const rows = buildMatchResultsTableRows(rounds, standings);
 
     expect(rows[0].cells[0]).toEqual({ opponent: null, isBye: true, mark: null });
   });
@@ -50,7 +50,7 @@ describe('buildCrossTableRows', () => {
     ];
     const standings = [standingOf({ participant: taro }), standingOf({ participant: jiro })];
 
-    const rows = buildCrossTableRows(rounds, standings);
+    const rows = buildMatchResultsTableRows(rounds, standings);
 
     const jiroRow = rows.find((r) => r.standing.participant.id === 'p3');
     expect(jiroRow?.cells[0]).toEqual({ opponent: null, isBye: false, mark: null });
@@ -82,7 +82,7 @@ describe('buildCrossTableRows', () => {
       standingOf({ participant: bPlayer2 }),
     ];
 
-    const rows = buildCrossTableRows(rounds, standings);
+    const rows = buildMatchResultsTableRows(rounds, standings);
 
     expect(rows).toHaveLength(2);
     expect(rows[0].cells[0]).toEqual({ opponent: bPlayer2, isBye: false, mark: '●' });

@@ -30,10 +30,10 @@ describe('PrintReportHeader', () => {
       <PrintReportHeader
         tournamentName="大会"
         eventDate={null}
-        reportTitle="戦績一覧表"
+        reportTitle="対戦結果表"
         groupName="A"
       />,
     );
-    expect(screen.getByText('戦績一覧表(A)')).toBeInTheDocument();
+    expect(screen.getByText('対戦結果表(A)')).toBeInTheDocument();
   });
 });

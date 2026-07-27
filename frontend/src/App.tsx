@@ -102,10 +102,10 @@ const router = createBrowserRouter([
                       })),
                   },
                   {
-                    path: 'cross-table',
+                    path: 'match-results',
                     lazy: () =>
-                      import('./pages/CrossTablePage').then((m) => ({
-                        Component: m.CrossTablePage,
+                      import('./pages/MatchResultsPage').then((m) => ({
+                        Component: m.MatchResultsPage,
                       })),
                   },
                   {
@@ -134,10 +134,10 @@ const router = createBrowserRouter([
                   })),
               },
               {
-                path: 'cross-table',
+                path: 'match-results',
                 lazy: () =>
-                  import('./pages/PrintCrossTablePage').then((m) => ({
-                    Component: m.PrintCrossTablePage,
+                  import('./pages/PrintMatchResultsPage').then((m) => ({
+                    Component: m.PrintMatchResultsPage,
                   })),
               },
               {

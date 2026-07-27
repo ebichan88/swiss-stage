@@ -25,7 +25,7 @@ QAエージェント(`.claude/agents/qa.md`)の判断基準はこのファイル
 | TEAM | 団体戦(チーム・メンバー・団体戦ラウンド/対局/順位・共有トークン経由の自己申告) | TeamApiTest, TeamRoundApiTest, TeamSharedApiTest |
 | SHR | 共有(トークン) | SharedApiTest, SharedRateLimitApiTest |
 | SPA | SPA配信 | SpaFallbackApiTest |
-| PRT | 帳票印刷(対局カード・戦績一覧表・参加者名簿) | Vitest単体テスト(`frontend/tests/unit/components/print/`, `tests/unit/pages/`) |
+| PRT | 帳票印刷(対局カード・対戦結果表・参加者名簿) | Vitest単体テスト(`frontend/tests/unit/components/print/`, `tests/unit/pages/`) |
 | E2E | 一気通貫(クリティカルパス) | Playwright(`frontend/tests/e2e/`) |
 
 API契約に変化がなく**UI表示のみ**を追加・変更するケース(例: 既存のレスポンスフィールドからフロントエンドが導出する表示・警告)は、

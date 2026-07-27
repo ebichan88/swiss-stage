@@ -1,13 +1,15 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { PrintCrossTable } from '../../../../src/components/features/print/PrintCrossTable';
+import { PrintMatchResultsTable } from '../../../../src/components/features/print/PrintMatchResultsTable';
 import { participantOf } from '../../../fixtures';
 import { renderWithProviders } from '../../../testUtils';
 
-describe('PrintCrossTable', () => {
+describe('PrintMatchResultsTable', () => {
   it('生成済みラウンド数によらず totalRounds 分すべてのラウンド列を出す', () => {
-    renderWithProviders(<PrintCrossTable participants={[participantOf()]} totalRounds={5} />);
+    renderWithProviders(
+      <PrintMatchResultsTable participants={[participantOf()]} totalRounds={5} />,
+    );
     for (let round = 1; round <= 5; round++) {
       expect(screen.getByRole('columnheader', { name: `${round}回戦` })).toBeInTheDocument();
     }
@@ -15,7 +17,7 @@ describe('PrintCrossTable', () => {
 
   it('No.・名前・段級位は入力済みで表示し、対戦相手・結果・勝点・SOS・SOSOS・順位は空欄で出力する', () => {
     renderWithProviders(
-      <PrintCrossTable
+      <PrintMatchResultsTable
         participants={[
           participantOf({
             entryOrder: 1,
@@ -46,7 +48,7 @@ describe('PrintCrossTable', () => {
 
   it('棄権(WITHDRAWN)は出力しない', () => {
     renderWithProviders(
-      <PrintCrossTable
+      <PrintMatchResultsTable
         participants={[
           participantOf({ id: 'p1' }),
           participantOf({ id: 'p2', status: 'WITHDRAWN' }),
@@ -58,7 +60,9 @@ describe('PrintCrossTable', () => {
   });
 
   it('データ行の高さは手書き用に writableRowHeight を確保する', () => {
-    renderWithProviders(<PrintCrossTable participants={[participantOf()]} totalRounds={1} />);
+    renderWithProviders(
+      <PrintMatchResultsTable participants={[participantOf()]} totalRounds={1} />,
+    );
     // jsdomはレイアウトを行わないため、注入されたCSS自体にheightが含まれることで確認する
     const css = Array.from(document.querySelectorAll('style'))
       .map((el) => el.textContent ?? '')

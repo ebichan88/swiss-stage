@@ -144,7 +144,7 @@ function TournamentOverviewView({
             帳票印刷
           </Typography>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            名簿・対局カード・戦績一覧表を紙で印刷できます。
+            名簿・対局カード・対戦結果表を紙で印刷できます。
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
             <Button
@@ -159,9 +159,9 @@ function TournamentOverviewView({
               variant="outlined"
               startIcon={<PrintIcon />}
               component={Link}
-              to={paths.printCrossTable(tournament.id)}
+              to={paths.printMatchResults(tournament.id)}
             >
-              戦績一覧表を印刷
+              対戦結果表を印刷
             </Button>
             <Button
               variant="outlined"

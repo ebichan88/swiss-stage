@@ -10,12 +10,12 @@ import {
   Typography,
 } from '@mui/material';
 
-import { buildTeamCrossTableRows } from './teamCrossTableData';
+import { buildTeamMatchResultsTableRows } from './teamMatchResultsTableData';
 import { TableHeaderTooltip } from '../../ui/TableHeaderTooltip';
 import { formatPoints } from '../../../utils/format';
 import type { TeamRound, TeamStanding } from '../../../types/team';
 
-export interface TeamCrossTableProps {
+export interface TeamMatchResultsTableProps {
   rounds: TeamRound[];
   standings: TeamStanding[];
 }
@@ -32,12 +32,12 @@ function markColor(mark: string | null): string | undefined {
 }
 
 /**
- * チームの戦績一覧表(チーム×ラウンドの対戦相手・結果を1画面に集約)。個人名は含めない。
+ * チームの対戦結果表(チーム×ラウンドの対戦相手・結果を1画面に集約)。個人名は含めない。
  * 相手列は氏名の代わりにNo.(entryOrder)を表示し、Tooltipでチーム名を補足する。
  * 結果列はマーク(○/●/△)に加えボード内訳(例: 2-1)を併記する
  */
-export function TeamCrossTable({ rounds, standings }: TeamCrossTableProps) {
-  const rows = buildTeamCrossTableRows(rounds, standings);
+export function TeamMatchResultsTable({ rounds, standings }: TeamMatchResultsTableProps) {
+  const rows = buildTeamMatchResultsTableRows(rounds, standings);
   return (
     <TableContainer sx={{ overflowX: 'auto' }}>
       <Table size="small">

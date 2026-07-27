@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildTeamCrossTableRows } from '../../../src/components/features/team/teamCrossTableData';
+import { buildTeamMatchResultsTableRows } from '../../../src/components/features/team/teamMatchResultsTableData';
 import {
   boardResultOf,
   groupOf,
@@ -10,7 +10,7 @@ import {
   teamSummaryOf,
 } from '../../fixtures';
 
-describe('buildTeamCrossTableRows', () => {
+describe('buildTeamMatchResultsTableRows', () => {
   it('行はentryOrder昇順に並び、対局は自分の視点で相手とマーク・ボード内訳を解決する', () => {
     const teamA = teamSummaryOf({ id: 't1', name: 'Aチーム', entryOrder: 2 });
     const teamB = teamSummaryOf({ id: 't2', name: 'Bチーム', entryOrder: 1 });
@@ -32,7 +32,7 @@ describe('buildTeamCrossTableRows', () => {
     ];
     const standings = [teamStandingOf({ team: teamA }), teamStandingOf({ team: teamB })];
 
-    const rows = buildTeamCrossTableRows(rounds, standings);
+    const rows = buildTeamMatchResultsTableRows(rounds, standings);
 
     expect(rows.map((r) => r.standing.team.id)).toEqual(['t2', 't1']);
     // Bチーム(team2)視点: 相手はAチーム、2-1で負け
@@ -61,7 +61,7 @@ describe('buildTeamCrossTableRows', () => {
     ];
     const standings = [teamStandingOf({ team: teamA })];
 
-    const rows = buildTeamCrossTableRows(rounds, standings);
+    const rows = buildTeamMatchResultsTableRows(rounds, standings);
 
     expect(rows[0].cells[0]).toEqual({ opponent: null, isBye: true, mark: null, breakdown: null });
   });
@@ -87,7 +87,7 @@ describe('buildTeamCrossTableRows', () => {
     ];
     const standings = [teamStandingOf({ team: teamA })];
 
-    const rows = buildTeamCrossTableRows(rounds, standings);
+    const rows = buildTeamMatchResultsTableRows(rounds, standings);
 
     expect(rows[0].cells[0]).toEqual({
       opponent: teamB,
@@ -118,7 +118,7 @@ describe('buildTeamCrossTableRows', () => {
     ];
     const standings = [teamStandingOf({ team: bTeam1 }), teamStandingOf({ team: bTeam2 })];
 
-    const rows = buildTeamCrossTableRows(rounds, standings);
+    const rows = buildTeamMatchResultsTableRows(rounds, standings);
 
     expect(rows).toHaveLength(2);
     expect(rows[0].cells[0].mark).toEqual('●');

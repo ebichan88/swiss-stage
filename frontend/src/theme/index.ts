@@ -11,15 +11,15 @@ interface PrintTokens {
   pageMargin: string;
   /** 対局カード間の切り取り余白 */
   cardGap: string;
-  /** 名簿・戦績一覧表の本文サイズ */
+  /** 名簿・対戦結果表の本文サイズ */
   bodyFontSize: string;
-  /** 名簿・戦績一覧表のセルサイズ */
+  /** 名簿・対戦結果表のセルサイズ */
   tableFontSize: string;
   /** 対局カードの本文サイズ(A8相当は文字が小さくなるため別トークン) */
   cardFontSize: string;
   /** 表ヘッダーの地色。緑ベタ塗りはインクを食うためモノクロ運用にする */
   headerBg: string;
-  /** 手書き記入欄を持つ表(戦績一覧表)のデータ行の高さ */
+  /** 手書き記入欄を持つ表(対戦結果表)のデータ行の高さ */
   writableRowHeight: string;
 }
 
