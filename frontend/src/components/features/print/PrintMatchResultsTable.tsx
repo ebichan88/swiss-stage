@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 
 import { buildPrintMatchResultsTableRows } from './printMatchResultsTableData';
+import { writableGridSx } from './printSx';
 import type { Participant } from '../../../types/participant';
 
 export interface PrintMatchResultsTableProps {
@@ -20,7 +21,10 @@ export function PrintMatchResultsTable({ participants, totalRounds }: PrintMatch
 
   return (
     <>
-      <Table size="small" sx={(theme) => ({ fontSize: theme.print.tableFontSize })}>
+      <Table
+        size="small"
+        sx={[(theme) => ({ fontSize: theme.print.tableFontSize }), writableGridSx]}
+      >
         <TableHead sx={(theme) => ({ bgcolor: theme.print.headerBg })}>
           <TableRow>
             <TableCell rowSpan={2}>No.</TableCell>

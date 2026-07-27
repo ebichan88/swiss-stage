@@ -69,4 +69,14 @@ describe('PrintMatchResultsTable', () => {
       .join('\n');
     expect(css).toMatch(/height:\s*14mm/);
   });
+
+  it('手書き記入用に濃色の格子罫線を引く(既定の薄いdividerでは見えないため)', () => {
+    renderWithProviders(
+      <PrintMatchResultsTable participants={[participantOf()]} totalRounds={1} />,
+    );
+    const css = Array.from(document.querySelectorAll('style'))
+      .map((el) => el.textContent ?? '')
+      .join('\n');
+    expect(css).toMatch(/border:1px solid/);
+  });
 });

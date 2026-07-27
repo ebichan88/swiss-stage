@@ -48,4 +48,12 @@ describe('PrintTeamMatchResultsTable', () => {
     );
     expect(screen.getAllByRole('row')).toHaveLength(3); // ヘッダー2行 + データ1行
   });
+
+  it('手書き記入用に濃色の格子罫線を引く(既定の薄いdividerでは見えないため)', () => {
+    renderWithProviders(<PrintTeamMatchResultsTable teams={[teamOf()]} totalRounds={1} />);
+    const css = Array.from(document.querySelectorAll('style'))
+      .map((el) => el.textContent ?? '')
+      .join('\n');
+    expect(css).toMatch(/border:1px solid/);
+  });
 });
