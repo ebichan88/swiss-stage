@@ -19,6 +19,8 @@ interface PrintTokens {
   cardFontSize: string;
   /** 表ヘッダーの地色。緑ベタ塗りはインクを食うためモノクロ運用にする */
   headerBg: string;
+  /** 手書き記入欄を持つ表(戦績一覧表)のデータ行の高さ */
+  writableRowHeight: string;
 }
 
 declare module '@mui/material/styles' {
@@ -64,6 +66,7 @@ export const theme = createTheme({
     tableFontSize: '9pt',
     cardFontSize: '7pt',
     headerBg: '#EEEEEE',
+    writableRowHeight: '14mm',
   },
   typography: {
     fontFamily: '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif',

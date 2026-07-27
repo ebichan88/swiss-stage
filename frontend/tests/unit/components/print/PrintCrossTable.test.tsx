@@ -56,4 +56,13 @@ describe('PrintCrossTable', () => {
     );
     expect(screen.getAllByRole('row')).toHaveLength(3); // ヘッダー2行 + データ1行
   });
+
+  it('データ行の高さは手書き用に writableRowHeight を確保する', () => {
+    renderWithProviders(<PrintCrossTable participants={[participantOf()]} totalRounds={1} />);
+    // jsdomはレイアウトを行わないため、注入されたCSS自体にheightが含まれることで確認する
+    const css = Array.from(document.querySelectorAll('style'))
+      .map((el) => el.textContent ?? '')
+      .join('\n');
+    expect(css).toMatch(/height:\s*14mm/);
+  });
 });

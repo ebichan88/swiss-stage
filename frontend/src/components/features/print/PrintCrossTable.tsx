@@ -53,7 +53,10 @@ export function PrintCrossTable({ participants, totalRounds }: PrintCrossTablePr
         </TableHead>
         <TableBody>
           {rows.map((row) => (
-            <TableRow key={row.entryOrder}>
+            <TableRow
+              key={row.entryOrder}
+              sx={(theme) => ({ height: theme.print.writableRowHeight })}
+            >
               <TableCell>{row.entryOrder}</TableCell>
               <TableCell>{row.name}</TableCell>
               <TableCell>{row.rankText}</TableCell>
