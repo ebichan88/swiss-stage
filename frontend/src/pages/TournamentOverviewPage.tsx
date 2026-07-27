@@ -1,4 +1,5 @@
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PrintIcon from '@mui/icons-material/Print';
 import StopIcon from '@mui/icons-material/Stop';
 import { Alert, Box, Button, Card, CardContent, Grid, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
@@ -134,6 +135,27 @@ function TournamentOverviewView({
               </Grid>
             ))}
           </Grid>
+        </CardContent>
+      </Card>
+
+      <Card variant="outlined">
+        <CardContent>
+          <Typography variant="h3" component="h2" gutterBottom>
+            帳票印刷
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            スマホを持たない参加者向けに、名簿・対局カード・戦績一覧表を紙で印刷できます。
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
+            <Button
+              variant="outlined"
+              startIcon={<PrintIcon />}
+              component={Link}
+              to={paths.printRoster(tournament.id)}
+            >
+              名簿を印刷
+            </Button>
+          </Box>
         </CardContent>
       </Card>
 

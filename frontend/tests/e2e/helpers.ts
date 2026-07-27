@@ -184,6 +184,19 @@ export async function fetchTeamRounds(page: Page, tournamentId: string): Promise
   return body.data;
 }
 
+/**
+ * window.print() を無害化する。jsdomと違いPlaywrightの実ブラウザは呼ぶとネイティブ印刷ダイアログで
+ * テストがハングするため、印刷ページへ遷移する前に必ず呼ぶこと
+ */
+export async function stubWindowPrint(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    (window as unknown as { __printCalled?: boolean }).__printCalled = false;
+    window.print = () => {
+      (window as unknown as { __printCalled?: boolean }).__printCalled = true;
+    };
+  });
+}
+
 /** 設定(S09)で公開範囲=共有URL・結果入力許可を有効化し、共有URLを発行してトークンを返す */
 export async function publishShareUrl(
   page: Page,

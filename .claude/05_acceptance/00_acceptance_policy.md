@@ -25,11 +25,15 @@ QAエージェント(`.claude/agents/qa.md`)の判断基準はこのファイル
 | TEAM | 団体戦(チーム・メンバー・団体戦ラウンド/対局/順位・共有トークン経由の自己申告) | TeamApiTest, TeamRoundApiTest, TeamSharedApiTest |
 | SHR | 共有(トークン) | SharedApiTest, SharedRateLimitApiTest |
 | SPA | SPA配信 | SpaFallbackApiTest |
+| PRT | 帳票印刷(対局カード・戦績一覧表・参加者名簿) | Vitest単体テスト(`frontend/tests/unit/components/print/`, `tests/unit/pages/`) |
 | E2E | 一気通貫(クリティカルパス) | Playwright(`frontend/tests/e2e/`) |
 
 API契約に変化がなく**UI表示のみ**を追加・変更するケース(例: 既存のレスポンスフィールドからフロントエンドが導出する表示・警告)は、
 該当コンポーネントのPrefixのまま、検証テストをフロントエンドのVitest単体テスト(`frontend/tests/unit/`)にしてよい
 (クリティカルパスでない限りE2Eを新設しない。E2Eは`12_e2e_test_design.md`のとおりクリティカルパスのみに限定する)。
+
+**PRTの例外**: コンポーネントの単位は原則contractテストクラス(=APIリソース境界)だが、帳票印刷は既存APIのみで完結し
+専用のcontractテストクラスを持たない。そのためPRTはVitest単体テストのみを検証先とする(上記のUI表示のみの規定と同じ扱い)。
 
 ## 3. ID体系
 

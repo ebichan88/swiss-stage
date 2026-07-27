@@ -117,6 +117,24 @@ const router = createBrowserRouter([
               },
             ],
           },
+          {
+            // 印刷はAppLayoutの外(兄弟)に置く。@pageはルート単位でしか切り替えられないため、
+            // 運営者画面のAppBar・サイドバー・下部タブを一切継承させない設計にする
+            path: '/tournaments/:id/print',
+            lazy: () =>
+              import('./components/layouts/PrintLayout').then((m) => ({
+                Component: m.PrintLayout,
+              })),
+            children: [
+              {
+                path: 'roster',
+                lazy: () =>
+                  import('./pages/PrintRosterPage').then((m) => ({
+                    Component: m.PrintRosterPage,
+                  })),
+              },
+            ],
+          },
         ],
       },
       {

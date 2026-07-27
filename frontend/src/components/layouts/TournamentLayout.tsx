@@ -18,25 +18,16 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import {
-  Link,
-  Outlet,
-  useLocation,
-  useNavigate,
-  useOutletContext,
-  useParams,
-} from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useTournament } from '../../hooks/useTournaments';
 import { paths } from '../../routes';
-import type { Tournament } from '../../types/tournament';
 import { ErrorState, FullPageSpinner } from '../ui/QueryStates';
 import { StatusBadge } from '../ui/StatusBadge';
 
-/** 配下ページから大会情報を参照するためのOutletコンテキスト */
-export function useTournamentContext(): Tournament {
-  return useOutletContext<Tournament>();
-}
+// PrintLayout(親が異なるOutlet)からも参照するため tournamentContext.ts に定義本体を置く。
+// 既存の import 元(各ページ)を変えずに済むようここで re-export する
+export { useTournamentContext } from './tournamentContext';
 
 const SIDEBAR_WIDTH = 200;
 

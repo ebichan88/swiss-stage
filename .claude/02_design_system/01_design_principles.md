@@ -85,3 +85,21 @@
 | 影 | elevation 0〜2 のみ使用(フラット寄り)。ダイアログのみ8 |
 | 罫線 | 1px solid divider |
 | ダークモード | MVPでは対応しない(テーマ分岐を書かない) |
+
+---
+
+## 5. 印刷トークン(`theme.print`)
+
+帳票印刷(S13)専用。A4の物理寸法(mm)と印刷本文サイズ(pt)は8pxグリッドで表現できないため、
+`palette.rank` と同じ module augmentation で `theme.print` に独立トークンとして持つ(`04_layout_system.md` §5参照)。
+
+| トークン | 値 | 用途 |
+|---------|----|------|
+| pageMargin | 10mm | `@page` の余白 |
+| cardGap | 4mm | 対局カード間の切り取り余白 |
+| bodyFontSize | 10pt | 名簿・戦績一覧表の本文 |
+| tableFontSize | 9pt | 名簿・戦績一覧表のセル |
+| cardFontSize | 7pt | 対局カードの本文(A8相当は文字が小さくなるため別トークン) |
+| headerBg | #EEEEEE(薄グレー) | 表ヘッダーの地色。緑ベタ塗りはインクを食うためモノクロ運用 |
+
+実装は `theme/index.ts`(変更時はこのファイルと同期すること)。

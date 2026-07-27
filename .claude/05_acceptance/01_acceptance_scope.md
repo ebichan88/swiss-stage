@@ -158,6 +158,27 @@
 | SPA-AC-003 | P2 | ハッシュ付きアセットは1年+immutableでキャッシュされる | done | SpaFallbackApiTest |
 | SPA-AC-004 | P1 | 未知のAPIパスはindex.htmlにフォールバックせず404になる | done | SpaFallbackApiTest |
 
+## PRT: 帳票印刷
+
+スマホを持たない参加者向けに、参加者データから紙帳票(対局カード・戦績一覧表・参加者名簿)を印刷する機能。
+ブラウザ印刷(Chrome/Edge限定)。対応方針・面付け・線引きの詳細は `04_screen_transition_design.md` §5、`02_component_design.md` を参照。
+
+| ID | P | 受け入れ基準 | Status | 検証 |
+|----|---|------------|--------|------|
+| PRT-AC-001 | P2 | 印刷画面は運営者画面のAppBar・サイドバー・下部タブを含まない専用レイアウトで表示される | done | E2E(cp7-print) |
+| PRT-AC-002 | P1 | 参加者名簿は No./氏名/所属/段級位 を entryOrder 昇順で全件出力し、複数グループ大会のみグループ見出し・グループ列を表示する | done | PrintRoster.test |
+| PRT-AC-003 | P1 | 団体戦の参加者名簿(運営専用)はチーム名とメンバー氏名・段級位・役割を1メンバー1行で出力し、運営専用である旨を明記する | done | PrintTeamRoster.test |
+| PRT-AC-004 | P2 | 印刷ボタンは押下時に印刷ダイアログを1回だけ開く | done | printPage.test, E2E(cp7-print) |
+| PRT-AC-005 | P1 | 戦績一覧表(印刷)は相手No.・結果記号・勝点・SOS・SOSOS・順位を画面版と同一の値で出力する | todo | |
+| PRT-AC-006 | P1 | 戦績一覧表(印刷)はグループごとに改ページし、単一グループ大会ではグループ見出しを出さない | todo | |
+| PRT-AC-007 | P0 | 団体戦の戦績一覧表(印刷)・対局カードにメンバー氏名を含めない | todo | |
+| PRT-AC-008 | P1 | 対局カードは ACTIVE な全参加者/全チーム分を、グループ順→entryOrder順で出力する | todo | |
+| PRT-AC-009 | P1 | 対局カードは totalRounds 分の記入行を持ち、卓番号・対戦相手・結果の欄は空欄で出力される | todo | |
+| PRT-AC-010 | P2 | 個人戦の対局カードはA4 1枚あたり16面(totalRounds≥7 は12面)、団体戦は8面で面付けし、グループが切り替わる位置で改ページする | todo | |
+| PRT-AC-011 | P1 | 団体戦の対局カードはチーム名とボード役割(主将・副将…)欄のみで構成される | todo | |
+| PRT-AC-012 | P2 | 棄権(WITHDRAWN)の参加者・チームには対局カードを出力しない | todo | |
+| PRT-AC-013 | P2 | 全帳票のヘッダーに大会名と開催日を印字し、開催日が未設定なら空欄にする | done | PrintReportHeader.test |
+
 ## E2E: 一気通貫(クリティカルパス)
 
 定義の詳細は `12_e2e_test_design.md`。
@@ -172,3 +193,4 @@
 | E2E-AC-006 | P0 | CP5: グループ大会をグループ独立で運営できる | done | cp5-groups |
 | E2E-AC-007 | P0 | CP6: 団体戦(3人制)をログインから順位表まで一気通貫で運営でき、メンバー氏名が一切表示されない | done | cp6-team-tournament |
 | E2E-AC-008 | P1 | CP6補: 団体戦の共有ページで両チームの自己申告が一致したボードが運営者画面に反映される | done | cp6-team-tournament |
+| E2E-AC-009 | P1 | CP7: 印刷画面は印刷メディアで画面用ツールバー・ナビゲーションが非表示になり、帳票本体のみが出力される | done | cp7-print |

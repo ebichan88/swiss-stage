@@ -5,12 +5,34 @@ interface RankPaletteColor {
   background: string;
 }
 
+/** 帳票印刷(A4)専用のトークン。mm/pt は8pxグリッドで表現できないため独立トークンとして持つ */
+interface PrintTokens {
+  /** @page の余白 */
+  pageMargin: string;
+  /** 対局カード間の切り取り余白 */
+  cardGap: string;
+  /** 名簿・戦績一覧表の本文サイズ */
+  bodyFontSize: string;
+  /** 名簿・戦績一覧表のセルサイズ */
+  tableFontSize: string;
+  /** 対局カードの本文サイズ(A8相当は文字が小さくなるため別トークン) */
+  cardFontSize: string;
+  /** 表ヘッダーの地色。緑ベタ塗りはインクを食うためモノクロ運用にする */
+  headerBg: string;
+}
+
 declare module '@mui/material/styles' {
   interface Palette {
     rank: { gold: RankPaletteColor; silver: RankPaletteColor; bronze: RankPaletteColor };
   }
   interface PaletteOptions {
     rank?: { gold: RankPaletteColor; silver: RankPaletteColor; bronze: RankPaletteColor };
+  }
+  interface Theme {
+    print: PrintTokens;
+  }
+  interface ThemeOptions {
+    print?: PrintTokens;
   }
 }
 
@@ -34,6 +56,14 @@ export const theme = createTheme({
       silver: { main: '#9AA0A6', background: '#E4E5E7' },
       bronze: { main: '#C97A3D', background: '#EFD3BC' },
     },
+  },
+  print: {
+    pageMargin: '10mm',
+    cardGap: '4mm',
+    bodyFontSize: '10pt',
+    tableFontSize: '9pt',
+    cardFontSize: '7pt',
+    headerBg: '#EEEEEE',
   },
   typography: {
     fontFamily: '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif',

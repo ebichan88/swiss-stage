@@ -2,9 +2,11 @@ import CategoryIcon from '@mui/icons-material/Category';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import GroupsIcon from '@mui/icons-material/Groups';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
+import PrintIcon from '@mui/icons-material/Print';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { Box, Button, Typography } from '@mui/material';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { GroupManagerDialog } from '../components/features/participant/GroupManagerDialog';
 import type { TeamFormValues } from '../components/features/team/TeamFormDialog';
@@ -27,6 +29,7 @@ import {
 } from '../hooks/useTeams';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { ApiError } from '../services/apiClient';
+import { paths } from '../routes';
 import type { Team } from '../types/team';
 import { downloadBlob } from '../utils/downloadBlob';
 
@@ -160,6 +163,14 @@ export function TeamsPage() {
           {teams && ` (${teams.length}チーム)`}
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Button
+            variant="outlined"
+            startIcon={<PrintIcon />}
+            component={Link}
+            to={paths.printRoster(tournament.id)}
+          >
+            名簿を印刷
+          </Button>
           <Button
             variant="outlined"
             startIcon={<FileDownloadIcon />}
