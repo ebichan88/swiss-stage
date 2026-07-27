@@ -155,6 +155,14 @@ function TournamentOverviewView({
             >
               名簿を印刷
             </Button>
+            <Button
+              variant="outlined"
+              startIcon={<PrintIcon />}
+              component={Link}
+              to={paths.printCrossTable(tournament.id)}
+            >
+              戦績一覧表を印刷
+            </Button>
           </Box>
         </CardContent>
       </Card>

@@ -169,9 +169,9 @@
 | PRT-AC-002 | P1 | 参加者名簿は No./氏名/所属/段級位 を entryOrder 昇順で全件出力し、複数グループ大会のみグループ見出し・グループ列を表示する | done | PrintRoster.test |
 | PRT-AC-003 | P1 | 団体戦の参加者名簿(運営専用)はチーム名とメンバー氏名・段級位・役割を1メンバー1行で出力し、運営専用である旨を明記する | done | PrintTeamRoster.test |
 | PRT-AC-004 | P2 | 印刷ボタンは押下時に印刷ダイアログを1回だけ開く | done | printPage.test, E2E(cp7-print) |
-| PRT-AC-005 | P1 | 戦績一覧表(印刷)は相手No.・結果記号・勝点・SOS・SOSOS・順位を画面版と同一の値で出力する | todo | |
-| PRT-AC-006 | P1 | 戦績一覧表(印刷)はグループごとに改ページし、単一グループ大会ではグループ見出しを出さない | todo | |
-| PRT-AC-007 | P0 | 団体戦の戦績一覧表(印刷)・対局カードにメンバー氏名を含めない | todo | |
+| PRT-AC-005 | P1 | 戦績一覧表(印刷)は相手No.・結果記号・勝点・SOS・SOSOS・順位を画面版と同一の値で出力する | done | PrintCrossTable.test, PrintTeamCrossTable.test |
+| PRT-AC-006 | P1 | 戦績一覧表(印刷)はグループごとに改ページし、単一グループ大会ではグループ見出しを出さない | in_progress | 実装済み(PrintCrossTablePage)。改ページ・見出し省略の実機確認は未実施 |
+| PRT-AC-007 | P0 | 団体戦の戦績一覧表(印刷)・対局カードにメンバー氏名を含めない | in_progress | PrintTeamCrossTable.test(戦績一覧表分)。対局カード分はPR4で追加 |
 | PRT-AC-008 | P1 | 対局カードは ACTIVE な全参加者/全チーム分を、グループ順→entryOrder順で出力する | todo | |
 | PRT-AC-009 | P1 | 対局カードは totalRounds 分の記入行を持ち、卓番号・対戦相手・結果の欄は空欄で出力される | todo | |
 | PRT-AC-010 | P2 | 個人戦の対局カードはA4 1枚あたり16面(totalRounds≥7 は12面)、団体戦は8面で面付けし、グループが切り替わる位置で改ページする | todo | |

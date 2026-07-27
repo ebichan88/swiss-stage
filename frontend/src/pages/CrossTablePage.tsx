@@ -1,5 +1,7 @@
+import PrintIcon from '@mui/icons-material/Print';
 import TableChartIcon from '@mui/icons-material/TableChart';
-import { Box, Typography } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
+import { Link } from 'react-router-dom';
 
 import { CrossTable } from '../components/features/standing/CrossTable';
 import { useTournamentContext } from '../components/layouts/TournamentLayout';
@@ -7,6 +9,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState, LoadingState } from '../components/ui/QueryStates';
 import { useRounds } from '../hooks/useRounds';
 import { useStandings } from '../hooks/useStandings';
+import { paths } from '../routes';
 import { TeamCrossTablePage } from './TeamCrossTablePage';
 
 /**
@@ -42,9 +45,28 @@ function IndividualCrossTablePage() {
 
   return (
     <Box>
-      <Typography variant="h3" component="h2" sx={{ mb: 2 }}>
-        戦績一覧
-      </Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 2,
+          gap: 1,
+          flexWrap: 'wrap',
+        }}
+      >
+        <Typography variant="h3" component="h2">
+          戦績一覧
+        </Typography>
+        <Button
+          variant="outlined"
+          startIcon={<PrintIcon />}
+          component={Link}
+          to={paths.printCrossTable(tournament.id)}
+        >
+          印刷
+        </Button>
+      </Box>
       {isPending && <LoadingState />}
       {isError && (
         <ErrorState

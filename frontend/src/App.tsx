@@ -133,6 +133,13 @@ const router = createBrowserRouter([
                     Component: m.PrintRosterPage,
                   })),
               },
+              {
+                path: 'cross-table',
+                lazy: () =>
+                  import('./pages/PrintCrossTablePage').then((m) => ({
+                    Component: m.PrintCrossTablePage,
+                  })),
+              },
             ],
           },
         ],
