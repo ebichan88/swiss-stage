@@ -9,7 +9,6 @@ export interface PrintRosterRow {
   rankText: string;
   /** 単一グループ大会は null(見出し・列を出さない) */
   groupName: string | null;
-  withdrawn: boolean;
 }
 
 /** グループ順(APIが返す順=作成順)→entryOrder順に並べる */
@@ -30,6 +29,5 @@ export function buildRosterRows(participants: Participant[], groups: Group[]): P
       organization: p.organization,
       rankText: rankLabel(p.rank),
       groupName: singleGroup ? null : (groupNameOf.get(p.groupId) ?? ''),
-      withdrawn: p.status === 'WITHDRAWN',
     }));
 }

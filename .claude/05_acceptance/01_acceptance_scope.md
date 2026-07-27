@@ -166,8 +166,8 @@
 | ID | P | 受け入れ基準 | Status | 検証 |
 |----|---|------------|--------|------|
 | PRT-AC-001 | P2 | 印刷画面は運営者画面のAppBar・サイドバー・下部タブを含まない専用レイアウトで表示される | done | E2E(cp7-print) |
-| PRT-AC-002 | P1 | 参加者名簿は No./氏名/所属/段級位 を entryOrder 昇順で全件出力し、複数グループ大会のみグループ見出し・グループ列を表示する | done | PrintRoster.test |
-| PRT-AC-003 | P1 | 団体戦の参加者名簿(運営専用)はチーム名とメンバー氏名・段級位・役割を1メンバー1行で出力し、運営専用である旨を明記する | done | PrintTeamRoster.test |
+| PRT-AC-002 | P1 | 参加者名簿は No./氏名/所属/段級位/出欠/備考 を entryOrder 昇順で全件出力し、複数グループ大会のみグループ見出し・グループ列を表示する(出欠・備考は受付での手書き記入用に空欄) | done | PrintRoster.test |
+| PRT-AC-003 | P1 | 団体戦の参加者名簿(運営専用)はチーム名とメンバー氏名・段級位・役割・出欠・備考を1メンバー1行で出力し、運営専用である旨を明記する | done | PrintTeamRoster.test |
 | PRT-AC-004 | P2 | 印刷ボタンは押下時に印刷ダイアログを1回だけ開く | done | printPage.test, E2E(cp7-print) |
 | PRT-AC-005 | P1 | 対戦結果表(印刷)は大会開始前に印刷する手書き記入用シートであり、No.・名前(個人戦は段級位も)は入力済みで、対戦相手・結果・勝点・SOS・SOSOS・順位は生成済みラウンド数によらずtotalRounds分すべて空欄で出力する | done | PrintMatchResultsTable.test, PrintTeamMatchResultsTable.test |
 | PRT-AC-006 | P1 | 対戦結果表(印刷)はグループごとに改ページし、単一グループ大会ではグループ見出しを出さない | in_progress | 実装済み(PrintMatchResultsPage)。改ページ・見出し省略の実機確認は未実施 |

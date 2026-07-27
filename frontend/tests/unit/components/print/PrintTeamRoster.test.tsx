@@ -38,4 +38,13 @@ describe('PrintTeamRoster', () => {
     );
     expect(screen.queryByRole('columnheader', { name: 'グループ' })).not.toBeInTheDocument();
   });
+
+  it('状態列は無く、出欠・備考列を持つ(受付での手書き記入用)', () => {
+    renderWithProviders(
+      <PrintTeamRoster teams={[teamOf({ members: [teamMemberOf()] })]} groups={[groupOf()]} />,
+    );
+    expect(screen.queryByRole('columnheader', { name: '状態' })).not.toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '出欠' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '備考' })).toBeInTheDocument();
+  });
 });

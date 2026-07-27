@@ -25,10 +25,9 @@ describe('buildRosterRows', () => {
     expect(rows[2].groupName).toBe('B');
   });
 
-  it('棄権(WITHDRAWN)は除外されず withdrawn=true で残る', () => {
+  it('棄権(WITHDRAWN)は除外されず一覧に残る(出欠・備考欄は受付で手書き記入する)', () => {
     const rows = buildRosterRows([participantOf({ status: 'WITHDRAWN' })], [groupOf()]);
     expect(rows).toHaveLength(1);
-    expect(rows[0].withdrawn).toBe(true);
   });
 
   it('段級位は rankLabel() 済み・未入力は「未入力」になる', () => {

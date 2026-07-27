@@ -40,13 +40,13 @@ describe('buildTeamRosterRows', () => {
     ).toBe('A');
   });
 
-  it('棄権(WITHDRAWN)チームの全メンバー行が withdrawn=true になる', () => {
+  it('棄権(WITHDRAWN)チームは除外されず一覧に残る(出欠・備考欄は受付で手書き記入する)', () => {
     const team = teamOf({
       status: 'WITHDRAWN',
       members: [teamMemberOf(), teamMemberOf({ id: 'm2' })],
     });
     const rows = buildTeamRosterRows([team], [groupOf()]);
-    expect(rows.every((r) => r.withdrawn)).toBe(true);
+    expect(rows).toHaveLength(2);
   });
 
   it('チーム順はグループ順→entryOrder順', () => {

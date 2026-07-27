@@ -22,10 +22,10 @@ describe('PrintRoster', () => {
     expect(screen.getByRole('cell', { name: 'A' })).toBeInTheDocument();
   });
 
-  it('棄権者は状態列に「棄権」と表示する', () => {
-    renderWithProviders(
-      <PrintRoster participants={[participantOf({ status: 'WITHDRAWN' })]} groups={[groupOf()]} />,
-    );
-    expect(screen.getByRole('cell', { name: '棄権' })).toBeInTheDocument();
+  it('状態列は無く、出欠・備考列を持つ(受付での手書き記入用)', () => {
+    renderWithProviders(<PrintRoster participants={[participantOf()]} groups={[groupOf()]} />);
+    expect(screen.queryByRole('columnheader', { name: '状態' })).not.toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '出欠' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '備考' })).toBeInTheDocument();
   });
 });

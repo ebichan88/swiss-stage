@@ -9,7 +9,6 @@ export interface PrintTeamRosterRow {
   positionLabel: string;
   /** 単一グループ大会は null(見出し・列を出さない) */
   groupName: string | null;
-  withdrawn: boolean;
 }
 
 /**
@@ -36,7 +35,6 @@ export function buildTeamRosterRows(teams: Team[], groups: Group[]): PrintTeamRo
         rankText: rankLabel(member.rank),
         positionLabel: boardPositionLabel(member.boardPosition),
         groupName: singleGroup ? null : (groupNameOf.get(team.groupId) ?? ''),
-        withdrawn: team.status === 'WITHDRAWN',
       })),
   );
 }

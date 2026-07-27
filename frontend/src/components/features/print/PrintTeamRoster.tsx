@@ -10,8 +10,9 @@ export interface PrintTeamRosterProps {
 }
 
 /**
- * 団体戦の参加者名簿(印刷・運営専用)。チーム名・メンバー氏名・段級位・役割を1メンバー1行で出力する。
- * 対局結果を見せる画面とは異なり運営専用の帳票なので個人名を出してよい(04_screen_transition_design.md §5)
+ * 団体戦の参加者名簿(印刷・運営専用)。チーム名・メンバー氏名・段級位・役割を1メンバー1行で出力し、
+ * 出欠・備考は受付で手書き記入する。対局結果を見せる画面とは異なり運営専用の帳票なので
+ * 個人名を出してよい(04_screen_transition_design.md §5)
  */
 export function PrintTeamRoster({ teams, groups }: PrintTeamRosterProps) {
   const rows = buildTeamRosterRows(teams, groups);
@@ -27,10 +28,11 @@ export function PrintTeamRoster({ teams, groups }: PrintTeamRosterProps) {
           <TableRow>
             <TableCell>チーム名</TableCell>
             <TableCell>氏名</TableCell>
-            <TableCell>段級位</TableCell>
+            <TableCell sx={{ width: '64px' }}>段級位</TableCell>
             <TableCell>役割</TableCell>
             {showGroupColumn && <TableCell>グループ</TableCell>}
-            <TableCell>状態</TableCell>
+            <TableCell sx={{ width: '64px' }}>出欠</TableCell>
+            <TableCell>備考</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -42,7 +44,8 @@ export function PrintTeamRoster({ teams, groups }: PrintTeamRosterProps) {
               <TableCell>{row.rankText}</TableCell>
               <TableCell>{row.positionLabel}</TableCell>
               {showGroupColumn && <TableCell>{row.groupName}</TableCell>}
-              <TableCell>{row.withdrawn ? '棄権' : ''}</TableCell>
+              <TableCell />
+              <TableCell />
             </TableRow>
           ))}
         </TableBody>
