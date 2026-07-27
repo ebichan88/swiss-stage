@@ -144,7 +144,7 @@ function TournamentOverviewView({
             帳票印刷
           </Typography>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            スマホを持たない参加者向けに、名簿・対局カード・戦績一覧表を紙で印刷できます。
+            名簿・対局カード・戦績一覧表を紙で印刷できます。
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
             <Button
