@@ -13,7 +13,7 @@ import { useFinishTournament, useStartTournament } from '../hooks/useTournaments
 import { ApiError } from '../services/apiClient';
 import { paths } from '../routes';
 import type { Tournament } from '../types/tournament';
-import { formatDateTime } from '../utils/format';
+import { formatDateTime, formatEventDate } from '../utils/format';
 import { gameTypeLabels } from '../utils/labels';
 
 /**
@@ -114,6 +114,7 @@ function TournamentOverviewView({
           : `第${tournament.currentRound} / 全${tournament.totalRounds}ラウンド`,
     },
     { label: entryLabel, value: activeCount === null ? '-' : `${activeCount}${entryUnit}` },
+    { label: '開催日', value: formatEventDate(tournament.eventDate) || '未設定' },
     { label: '作成日時', value: formatDateTime(tournament.createdAt) },
   ];
 

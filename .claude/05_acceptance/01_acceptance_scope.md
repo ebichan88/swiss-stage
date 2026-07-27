@@ -37,6 +37,9 @@
 | TRN-AC-009 | P1 | 大会を削除すると204で消え、以後404になる | done | TournamentApiTest |
 | TRN-AC-010 | P0 | 未認証の大会APIアクセスはすべて401になる | done | TournamentApiTest |
 | TRN-AC-011 | P2 | totalRoundsは1〜8の範囲でのみ作成でき、範囲外は400 VALIDATION_ERROR | done | TournamentApiTest |
+| TRN-AC-012 | P2 | 開催日(eventDate)を指定して作成でき、省略時はnullで返る | done | TournamentApiTest |
+| TRN-AC-013 | P2 | 開催日は更新でき、clearEventDate=trueで未設定に戻せる | done | TournamentApiTest |
+| TRN-AC-014 | P2 | 開催日の変更と未設定化の同時指定・日付形式不正はいずれも400 VALIDATION_ERRORになる | done | TournamentApiTest |
 
 ## PTC: 参加者
 

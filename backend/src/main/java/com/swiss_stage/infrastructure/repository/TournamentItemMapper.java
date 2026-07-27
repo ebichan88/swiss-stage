@@ -7,6 +7,7 @@ import com.swiss_stage.domain.model.TournamentId;
 import com.swiss_stage.domain.model.TournamentStatus;
 import com.swiss_stage.domain.model.Visibility;
 import java.time.Instant;
+import java.time.LocalDate;
 
 final class TournamentItemMapper {
 
@@ -21,6 +22,7 @@ final class TournamentItemMapper {
     item.setGameType(t.gameType().name());
     item.setCompetitionType(t.competitionType().name());
     item.setTeamSize(t.teamSize());
+    item.setEventDate(t.eventDate() == null ? null : t.eventDate().toString());
     item.setTotalRounds(t.totalRounds());
     item.setCurrentRound(t.currentRound());
     item.setStatus(t.status().name());
@@ -48,6 +50,8 @@ final class TournamentItemMapper {
             ? CompetitionType.INDIVIDUAL
             : CompetitionType.valueOf(item.getCompetitionType()),
         item.getTeamSize(),
+        // 開催日導入以前の既存アイテムには属性がない(null)ため未設定扱い
+        item.getEventDate() == null ? null : LocalDate.parse(item.getEventDate()),
         item.getTotalRounds(),
         item.getCurrentRound(),
         TournamentStatus.valueOf(item.getStatus()),

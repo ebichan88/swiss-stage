@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatDateTime, formatPoints } from '../../../src/utils/format';
+import { formatDateTime, formatEventDate, formatPoints } from '../../../src/utils/format';
 
 describe('formatPoints', () => {
   it('整数はそのまま表示する', () => {
@@ -20,5 +20,23 @@ describe('formatDateTime', () => {
 
   it('不正な値は空文字(表示を壊さない)', () => {
     expect(formatDateTime('invalid')).toBe('');
+  });
+});
+
+describe('formatEventDate', () => {
+  it('YYYY-MM-DD をゼロ埋めなしの日本語表記にする', () => {
+    expect(formatEventDate('2026-08-15')).toBe('2026/8/15');
+    expect(formatEventDate('2026-01-05')).toBe('2026/1/5');
+  });
+
+  it('タイムゾーンに影響されず日付がずれない(月初・月末)', () => {
+    expect(formatEventDate('2026-01-01')).toBe('2026/1/1');
+    expect(formatEventDate('2026-12-31')).toBe('2026/12/31');
+  });
+
+  it('未設定(null)・不正な値は空文字(表示を壊さない)', () => {
+    expect(formatEventDate(null)).toBe('');
+    expect(formatEventDate('2026/08/15')).toBe('');
+    expect(formatEventDate('invalid')).toBe('');
   });
 });

@@ -46,7 +46,7 @@ class ModelTest {
     private final Instant now = Instant.parse("2026-07-13T00:00:00Z");
     private final Tournament preparing =
         Tournament.create(
-            "テスト大会", GameType.GO, CompetitionType.INDIVIDUAL, null, 5, "owner-sub", now);
+            "テスト大会", GameType.GO, CompetitionType.INDIVIDUAL, null, null, 5, "owner-sub", now);
 
     @Test
     @DisplayName("PREPARING → IN_PROGRESS → FINISHED と遷移できる")
@@ -79,7 +79,8 @@ class ModelTest {
     @DisplayName("最終ラウンドを超えて進められない")
     void 最終ラウンド超過() {
       Tournament t =
-          Tournament.create("大会", GameType.SHOGI, CompetitionType.INDIVIDUAL, null, 1, "owner", now)
+          Tournament.create(
+                  "大会", GameType.SHOGI, CompetitionType.INDIVIDUAL, null, null, 1, "owner", now)
               .start()
               .advanceRound();
       assertThatThrownBy(t::advanceRound).isInstanceOf(DomainException.class);
@@ -120,12 +121,12 @@ class ModelTest {
       assertThatThrownBy(
               () ->
                   Tournament.create(
-                      " ", GameType.GO, CompetitionType.INDIVIDUAL, null, 5, "owner", now))
+                      " ", GameType.GO, CompetitionType.INDIVIDUAL, null, null, 5, "owner", now))
           .isInstanceOf(DomainException.class);
       assertThatThrownBy(
               () ->
                   Tournament.create(
-                      "大会", GameType.GO, CompetitionType.INDIVIDUAL, null, 0, "owner", now))
+                      "大会", GameType.GO, CompetitionType.INDIVIDUAL, null, null, 0, "owner", now))
           .isInstanceOf(DomainException.class);
     }
 
@@ -135,19 +136,21 @@ class ModelTest {
       assertThatThrownBy(
               () ->
                   Tournament.create(
-                      "団体戦", GameType.GO, CompetitionType.TEAM, null, 5, "owner", now))
+                      "団体戦", GameType.GO, CompetitionType.TEAM, null, null, 5, "owner", now))
           .isInstanceOf(DomainException.class);
       assertThatThrownBy(
-              () -> Tournament.create("団体戦", GameType.GO, CompetitionType.TEAM, 4, 5, "owner", now))
+              () ->
+                  Tournament.create(
+                      "団体戦", GameType.GO, CompetitionType.TEAM, 4, null, 5, "owner", now))
           .isInstanceOf(DomainException.class);
 
       Tournament threeTeam =
-          Tournament.create("3チーム制大会", GameType.GO, CompetitionType.TEAM, 3, 5, "owner", now);
+          Tournament.create("3チーム制大会", GameType.GO, CompetitionType.TEAM, 3, null, 5, "owner", now);
       assertThat(threeTeam.teamSize()).isEqualTo(3);
       assertThat(threeTeam.isTeamCompetition()).isTrue();
 
       Tournament fiveTeam =
-          Tournament.create("5チーム制大会", GameType.GO, CompetitionType.TEAM, 5, 5, "owner", now);
+          Tournament.create("5チーム制大会", GameType.GO, CompetitionType.TEAM, 5, null, 5, "owner", now);
       assertThat(fiveTeam.teamSize()).isEqualTo(5);
     }
 
@@ -157,7 +160,7 @@ class ModelTest {
       assertThatThrownBy(
               () ->
                   Tournament.create(
-                      "個人戦", GameType.GO, CompetitionType.INDIVIDUAL, 3, 5, "owner", now))
+                      "個人戦", GameType.GO, CompetitionType.INDIVIDUAL, 3, null, 5, "owner", now))
           .isInstanceOf(DomainException.class);
     }
   }

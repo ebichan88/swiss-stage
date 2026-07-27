@@ -24,6 +24,7 @@ export function tournamentOf(overrides: Partial<Tournament> = {}): Tournament {
     gameType: 'GO',
     competitionType: 'INDIVIDUAL',
     teamSize: null,
+    eventDate: null,
     totalRounds: 5,
     currentRound: 0,
     status: 'PREPARING',

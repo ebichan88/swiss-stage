@@ -95,6 +95,87 @@ class TournamentApiTest extends ApiContractTestSupport {
   }
 
   @Test
+  @DisplayName("TRN-AC-012: 開催日を指定して作成でき、省略時はnullで返る")
+  void 開催日の作成() throws Exception {
+    performApi(
+            post("/api/v1/tournaments")
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"name\":\"開催日あり大会\",\"gameType\":\"GO\",\"competitionType\":\"INDIVIDUAL\",\"eventDate\":\"2026-08-15\",\"totalRounds\":5}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.eventDate").value("2026-08-15"));
+
+    performApi(
+            post("/api/v1/tournaments")
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"name\":\"開催日なし大会\",\"gameType\":\"GO\",\"competitionType\":\"INDIVIDUAL\",\"totalRounds\":5}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.eventDate").value(org.hamcrest.Matchers.nullValue()));
+  }
+
+  @Test
+  @DisplayName("TRN-AC-013: 開催日は更新でき、clearEventDate=trueで未設定に戻せる")
+  void 開催日の更新() throws Exception {
+    JsonNode created = createTournament();
+    String id = created.path("id").asText();
+    long version = created.path("version").asLong();
+
+    MvcResult updated =
+        performApi(
+                patch("/api/v1/tournaments/{id}", id)
+                    .cookie(ownerCookie())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"eventDate\":\"2026-09-01\",\"version\":" + version + "}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.eventDate").value("2026-09-01"))
+            .andReturn();
+
+    performApi(
+            patch("/api/v1/tournaments/{id}", id)
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"clearEventDate\":true,\"version\":"
+                        + dataOf(updated).path("version").asLong()
+                        + "}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.eventDate").value(org.hamcrest.Matchers.nullValue()));
+  }
+
+  @Test
+  @DisplayName("TRN-AC-014: 開催日の変更と未設定化の同時指定・日付形式不正はいずれも400 VALIDATION_ERRORになる")
+  void 開催日のバリデーション() throws Exception {
+    JsonNode created = createTournament();
+    String id = created.path("id").asText();
+    long version = created.path("version").asLong();
+
+    performApi(
+            patch("/api/v1/tournaments/{id}", id)
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"eventDate\":\"2026-09-01\",\"clearEventDate\":true,\"version\":"
+                        + version
+                        + "}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+
+    // 意図的にスキーマ違反のリクエストを送るため素のperform(performApiのjavadoc参照)
+    mockMvc
+        .perform(
+            post("/api/v1/tournaments")
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"name\":\"日付不正大会\",\"gameType\":\"GO\",\"competitionType\":\"INDIVIDUAL\",\"eventDate\":\"2026/08/15\",\"totalRounds\":5}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+  }
+
+  @Test
   @DisplayName("TRN-AC-003,TRN-AC-004,TRN-AC-005: 一覧・詳細が取得でき、他人の大会・不正形式IDは404になる(存在を漏らさない)")
   void 取得と認可() throws Exception {
     String id = createTournament().path("id").asText();

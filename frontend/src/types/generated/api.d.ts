@@ -729,6 +729,11 @@ export interface components {
              * @enum {integer|null}
              */
             teamSize: 3 | 5 | null;
+            /**
+             * Format: date
+             * @description 開催日(YYYY-MM-DD)。null = 未設定。帳票印刷のヘッダーに使う
+             */
+            eventDate: string | null;
             totalRounds: number;
             /** @description 0 = 未開始 */
             currentRound: number;
@@ -925,11 +930,19 @@ export interface components {
             competitionType: components["schemas"]["CompetitionType"];
             /** @enum {integer|null} */
             teamSize?: 3 | 5 | null;
+            /**
+             * Format: date
+             * @description 開催日(YYYY-MM-DD)。省略・null で未設定
+             */
+            eventDate?: string | null;
             totalRounds: number;
         };
-        /** @description nullの項目は変更しない */
+        /** @description nullの項目は変更しない。開催日を未設定に戻す場合は clearEventDate=true (eventDateとの同時指定は400) */
         UpdateTournamentRequest: {
             name?: string;
+            /** Format: date */
+            eventDate?: string;
+            clearEventDate?: boolean;
             visibility?: components["schemas"]["Visibility"];
             resultInputEnabled?: boolean;
             /** Format: int64 */

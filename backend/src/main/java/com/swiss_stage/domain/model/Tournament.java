@@ -2,6 +2,7 @@ package com.swiss_stage.domain.model;
 
 import com.swiss_stage.domain.DomainException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Set;
 
 /**
@@ -10,8 +11,8 @@ import java.util.Set;
  * <p>shareToken は共有URL用トークン(未発行はnull)。 resultInputEnabled
  * は共有トークン経由の結果入力を許可するか(13_security_design.md §3)。 competitionType/teamSize
  * は作成後変更不可(totalRoundsと同様)。teamSizeは competitionType=TEAM
- * の時のみ非null(3または5。05_swiss_pairing_algorithm.md §5.1)。 時刻は Clock
- * をDIした呼び出し側(application層)から渡す(domainでは Instant.now() を呼ばない)。
+ * の時のみ非null(3または5。05_swiss_pairing_algorithm.md §5.1)。 eventDate は開催日(未設定はnull)で、帳票印刷のヘッダーに使う。 時刻は
+ * Clock をDIした呼び出し側(application層)から渡す(domainでは Instant.now() を呼ばない)。
  */
 public record Tournament(
     TournamentId id,
@@ -19,6 +20,7 @@ public record Tournament(
     GameType gameType,
     CompetitionType competitionType,
     Integer teamSize,
+    LocalDate eventDate,
     int totalRounds,
     int currentRound,
     TournamentStatus status,
@@ -62,6 +64,7 @@ public record Tournament(
       GameType gameType,
       CompetitionType competitionType,
       Integer teamSize,
+      LocalDate eventDate,
       int totalRounds,
       String ownerSub,
       Instant now) {
@@ -71,6 +74,7 @@ public record Tournament(
         gameType,
         competitionType,
         teamSize,
+        eventDate,
         totalRounds,
         0,
         TournamentStatus.PREPARING,
@@ -124,6 +128,28 @@ public record Tournament(
         gameType,
         competitionType,
         teamSize,
+        eventDate,
+        totalRounds,
+        currentRound,
+        status,
+        visibility,
+        shareToken,
+        resultInputEnabled,
+        ownerSub,
+        version,
+        createdAt,
+        updatedAt);
+  }
+
+  /** 開催日の設定・変更。null で未設定に戻す */
+  public Tournament withEventDate(LocalDate newEventDate) {
+    return new Tournament(
+        id,
+        name,
+        gameType,
+        competitionType,
+        teamSize,
+        newEventDate,
         totalRounds,
         currentRound,
         status,
@@ -143,6 +169,7 @@ public record Tournament(
         gameType,
         competitionType,
         teamSize,
+        eventDate,
         totalRounds,
         currentRound,
         status,
@@ -162,6 +189,7 @@ public record Tournament(
         gameType,
         competitionType,
         teamSize,
+        eventDate,
         totalRounds,
         currentRound,
         status,
@@ -181,6 +209,7 @@ public record Tournament(
         gameType,
         competitionType,
         teamSize,
+        eventDate,
         totalRounds,
         currentRound,
         status,
@@ -201,6 +230,7 @@ public record Tournament(
         gameType,
         competitionType,
         teamSize,
+        eventDate,
         totalRounds,
         currentRound,
         status,
@@ -220,6 +250,7 @@ public record Tournament(
         gameType,
         competitionType,
         teamSize,
+        eventDate,
         totalRounds,
         newCurrentRound,
         newStatus,
