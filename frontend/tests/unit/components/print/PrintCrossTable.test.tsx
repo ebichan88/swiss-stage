@@ -2,72 +2,58 @@ import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { PrintCrossTable } from '../../../../src/components/features/print/PrintCrossTable';
-import { matchOf, roundOf, standingOf, summaryOf } from '../../../fixtures';
+import { participantOf } from '../../../fixtures';
 import { renderWithProviders } from '../../../testUtils';
 
 describe('PrintCrossTable', () => {
-  it('画面版(CrossTable)と同じ入力から同じ値(相手No.・結果・勝点・順位)を出力する', () => {
-    const taro = summaryOf({ id: 'p1', name: '架空 太郎', entryOrder: 1, rank: 'DAN_3' });
-    const hanako = summaryOf({
-      id: 'p2',
-      name: '仮名 花子',
-      organization: null,
-      entryOrder: 2,
-      rank: null,
-    });
-    const rounds = [
-      roundOf({
-        roundNumber: 1,
-        matches: [matchOf({ player1: taro, player2: hanako, result: 'PLAYER1_WIN' })],
-      }),
-    ];
-    const standings = [
-      standingOf({ rank: 1, participant: taro, wins: 1 }),
-      standingOf({ rank: 2, participant: hanako, wins: 0 }),
-    ];
+  it('生成済みラウンド数によらず totalRounds 分すべてのラウンド列を出す', () => {
+    renderWithProviders(<PrintCrossTable participants={[participantOf()]} totalRounds={5} />);
+    for (let round = 1; round <= 5; round++) {
+      expect(screen.getByRole('columnheader', { name: `${round}回戦` })).toBeInTheDocument();
+    }
+  });
 
-    renderWithProviders(<PrintCrossTable rounds={rounds} standings={standings} />);
+  it('No.・名前・段級位は入力済みで表示し、対戦相手・結果・勝点・SOS・SOSOS・順位は空欄で出力する', () => {
+    renderWithProviders(
+      <PrintCrossTable
+        participants={[
+          participantOf({
+            entryOrder: 1,
+            name: '架空 太郎',
+            rank: 'DAN_3',
+            organization: 'テスト囲碁会',
+          }),
+        ]}
+        totalRounds={2}
+      />,
+    );
 
     const rows = screen.getAllByRole('row');
-    // ヘッダー2行 + データ2行
-    expect(rows).toHaveLength(4);
-    expect(rows[2]).toHaveTextContent('架空 太郎');
-    expect(rows[2]).toHaveTextContent('3段');
-    expect(rows[2]).toHaveTextContent('2'); // 相手はNo.2(花子)
-    expect(rows[2]).toHaveTextContent('○');
-    expect(rows[3]).toHaveTextContent('仮名 花子');
-    expect(rows[3]).toHaveTextContent('未入力');
-    expect(rows[3]).toHaveTextContent('●');
+    // ヘッダー2行 + データ1行
+    expect(rows).toHaveLength(3);
+    const dataRow = rows[2];
+    expect(dataRow).toHaveTextContent('架空 太郎');
+    expect(dataRow).toHaveTextContent('3段');
+    // 所属は列として出さない
+    expect(dataRow).not.toHaveTextContent('テスト囲碁会');
+
+    // データ行のNo./名前/段級位を除く残り全セル(相手×2ラウンド分・結果×2ラウンド分・勝点・SOS・SOSOS・順位)は空欄
+    const cells = screen.getAllByRole('cell');
+    const blankCells = cells.slice(3); // 先頭3セル(No./名前/段級位)を除く
+    expect(blankCells).toHaveLength(2 * 2 + 4);
+    blankCells.forEach((cell) => expect(cell).toHaveTextContent(''));
   });
 
-  it('Tooltipを使わず、相手はNo.のみで表示する(紙にホバー操作はない)', () => {
-    const taro = summaryOf({ id: 'p1', name: '架空 太郎', entryOrder: 1 });
-    const hanako = summaryOf({ id: 'p2', name: '仮名 花子', entryOrder: 2 });
-    const rounds = [
-      roundOf({
-        roundNumber: 1,
-        matches: [matchOf({ player1: taro, player2: hanako, result: 'PLAYER1_WIN' })],
-      }),
-    ];
-    const standings = [standingOf({ participant: taro }), standingOf({ participant: hanako })];
-
-    renderWithProviders(<PrintCrossTable rounds={rounds} standings={standings} />);
-
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-  });
-
-  it('不戦勝(BYE)は「不戦勝」と表示する', () => {
-    const taro = summaryOf({ id: 'p1', entryOrder: 1 });
-    const rounds = [
-      roundOf({
-        roundNumber: 1,
-        matches: [matchOf({ player1: taro, player2: null, result: 'BYE' })],
-      }),
-    ];
-    const standings = [standingOf({ participant: taro })];
-
-    renderWithProviders(<PrintCrossTable rounds={rounds} standings={standings} />);
-
-    expect(screen.getByText('不戦勝')).toBeInTheDocument();
+  it('棄権(WITHDRAWN)は出力しない', () => {
+    renderWithProviders(
+      <PrintCrossTable
+        participants={[
+          participantOf({ id: 'p1' }),
+          participantOf({ id: 'p2', status: 'WITHDRAWN' }),
+        ]}
+        totalRounds={3}
+      />,
+    );
+    expect(screen.getAllByRole('row')).toHaveLength(3); // ヘッダー2行 + データ1行
   });
 });

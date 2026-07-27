@@ -1,32 +1,23 @@
 import { Fragment } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 
-import { buildTeamCrossTableRows } from '../team/teamCrossTableData';
-import { formatPoints } from '../../../utils/format';
-import type { TeamRound, TeamStanding } from '../../../types/team';
+import { buildPrintTeamCrossTableRows } from './printCrossTableData';
+import type { Team } from '../../../types/team';
 
 export interface PrintTeamCrossTableProps {
-  rounds: TeamRound[];
-  standings: TeamStanding[];
-}
-
-/** ○=success/●=error。△は勝敗色分けの対象トークンが無いため無色のまま(01_design_principles.md) */
-function markColor(mark: string | null): string | undefined {
-  if (mark === '○') {
-    return 'success.main';
-  }
-  if (mark === '●') {
-    return 'error.main';
-  }
-  return undefined;
+  teams: Team[];
+  totalRounds: number;
 }
 
 /**
- * 団体戦の戦績一覧表(印刷)。画面版(TeamCrossTable)と同じ `buildTeamCrossTableRows` を使うため
- * 画面と数値がズレない。個人名は含めない(チーム名のみ)。紙にホバー操作は無いためTooltipは使わない
+ * 団体戦の戦績一覧表(印刷)。大会開始前に印刷し、対戦相手・結果・勝点・SOS・SOSOS・順位は
+ * 手書きで記入する運用のため常に空欄で出力する。ラウンド列は totalRounds 分を最初からすべて出す。
+ * 個人名は含めない(チーム名のみ)
  */
-export function PrintTeamCrossTable({ rounds, standings }: PrintTeamCrossTableProps) {
-  const rows = buildTeamCrossTableRows(rounds, standings);
+export function PrintTeamCrossTable({ teams, totalRounds }: PrintTeamCrossTableProps) {
+  const rows = buildPrintTeamCrossTableRows(teams);
+  const rounds = Array.from({ length: totalRounds }, (_, i) => i + 1);
+
   return (
     <>
       <Table size="small" sx={(theme) => ({ fontSize: theme.print.tableFontSize })}>
@@ -35,8 +26,8 @@ export function PrintTeamCrossTable({ rounds, standings }: PrintTeamCrossTablePr
             <TableCell rowSpan={2}>No.</TableCell>
             <TableCell rowSpan={2}>チーム名</TableCell>
             {rounds.map((round) => (
-              <TableCell key={round.roundNumber} align="center" colSpan={2}>
-                第{round.roundNumber}
+              <TableCell key={round} align="center" colSpan={2}>
+                {round}回戦
               </TableCell>
             ))}
             <TableCell rowSpan={2} align="right">
@@ -52,7 +43,7 @@ export function PrintTeamCrossTable({ rounds, standings }: PrintTeamCrossTablePr
           </TableRow>
           <TableRow>
             {rounds.map((round) => (
-              <Fragment key={round.roundNumber}>
+              <Fragment key={round}>
                 <TableCell align="center">相手</TableCell>
                 <TableCell align="center">結果</TableCell>
               </Fragment>
@@ -60,27 +51,20 @@ export function PrintTeamCrossTable({ rounds, standings }: PrintTeamCrossTablePr
           </TableRow>
         </TableHead>
         <TableBody>
-          {rows.map(({ standing, cells }) => (
-            <TableRow key={standing.team.id}>
-              <TableCell>{standing.team.entryOrder}</TableCell>
-              <TableCell>{standing.team.name}</TableCell>
-              {cells.map((cell, i) => (
-                <Fragment key={rounds[i].roundNumber}>
-                  <TableCell align="center">
-                    {cell.opponent ? cell.opponent.entryOrder : cell.isBye ? '不戦勝' : '―'}
-                  </TableCell>
-                  <TableCell align="center">
-                    <Typography component="span" color={markColor(cell.mark)}>
-                      {cell.mark ?? ''}
-                      {cell.breakdown && ` ${cell.breakdown}`}
-                    </Typography>
-                  </TableCell>
+          {rows.map((row) => (
+            <TableRow key={row.entryOrder}>
+              <TableCell>{row.entryOrder}</TableCell>
+              <TableCell>{row.name}</TableCell>
+              {rounds.map((round) => (
+                <Fragment key={round}>
+                  <TableCell align="center" />
+                  <TableCell align="center" />
                 </Fragment>
               ))}
-              <TableCell align="right">{formatPoints(standing.wins)}</TableCell>
-              <TableCell align="right">{formatPoints(standing.sos)}</TableCell>
-              <TableCell align="right">{formatPoints(standing.sosos)}</TableCell>
-              <TableCell>{standing.rank}</TableCell>
+              <TableCell align="right" />
+              <TableCell align="right" />
+              <TableCell align="right" />
+              <TableCell />
             </TableRow>
           ))}
         </TableBody>
