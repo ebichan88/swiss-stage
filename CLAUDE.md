@@ -102,6 +102,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 ### 📋 プロジェクト要件
 - `.claude/00_project/01_appcadia_concept_requirements.md` — コンセプト・要求定義(最上位の判断基準)
 - `.claude/00_project/02_inception_deck.md` — ビジョン・やらないこと・トレードオフ
+- `.claude/00_project/03_feature_plan_template.md` — **機能追加プランの必須形式(Planモードで従う)**
 
 ### 🏗️ 技術設計(.claude/01_development_docs/)
 - `01_architecture_design.md` — DDDレイヤー構造と責任、ロジック配置基準
@@ -147,7 +148,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 
 | タスク | 参照ドキュメント |
 |-------|----------------|
-| 新機能の追加 | **受け入れ台帳(05_acceptance)にケース追加** → アーキテクチャ → DB設計 → API設計 → フロントエンド設計 |
+| 新機能の追加 | **03_feature_plan_template でプランを立てる** → 受け入れ台帳(05_acceptance)にケース追加 → アーキテクチャ → DB設計 → API設計 → フロントエンド設計 |
 | マッチング・順位計算の実装/修正 | **05_swiss_pairing_algorithm** → テスト戦略 |
 | APIエンドポイント追加 | API設計 → エラーハンドリング → 型定義 |
 | DynamoDBの操作追加 | DB設計 → Enhanced Client → DynamoDB Localテスト |
@@ -163,6 +164,9 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 
 ## ドキュメント運用ルール
 
+- 機能追加・挙動変更のプランは `.claude/00_project/03_feature_plan_template.md` の形式に従う。
+  特に **UI仕様(4状態・レスポンシブ・大量データ時)を実装前に文章で確定させる**(実機で見てからの手戻りを防ぐため)
+- **プラン承認後、プランの「更新する設計資料」に列挙したファイルの更新には追加の承認を求めない**(承認済みの範囲として扱う)
 - 実装と設計ドキュメントが乖離したら、**同じPRでドキュメントを更新する**
   - 受け入れケース台帳(`.claude/05_acceptance/01_acceptance_scope.md`)もこのルールの対象: 新機能・挙動変更は実装前にケースを追加(Status=todo)し、実装PRでdoneに更新する
 - 仕様変更(特にマッチング・順位計算)は先に `05_swiss_pairing_algorithm.md` を更新してから実装する
