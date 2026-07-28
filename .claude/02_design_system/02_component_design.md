@@ -108,6 +108,11 @@
   合わせて手書きで記入するため常に空欄で出す。ラウンド列は生成済みラウンド数によらず `totalRounds` 分をすべて出す
   (画面版のMatchResultsTable/TeamMatchResultsTableとは実データを表示する点で用途が異なるため、専用の純関数 `printMatchResultsTableData.ts`
   を持つ。画面版の `matchResultsTableData.ts`/`teamMatchResultsTableData.ts` とは共有しない)
+- **団体戦の対局カードは転置レイアウト**(`TeamMatchCardSheet`): 実業団囲碁大会の対局カード様式に倣い、ラウンドを列・
+  記入項目(相手/チーム勝敗/個人勝敗)を行にする。左にチーム番号(No.)を大きく、下にチーム勝敗合計・個人勝敗合計の
+  集計欄を置く。個人戦カード(`MatchCardSheet`)はR/卓/相手/結果を縦に並べる別レイアウトを維持する
+- **対局カードも手書き用の濃色罫線**を引く。個人戦はA8で切り取る想定のため外枠のみ破線(`text.primary`)、
+  内部の表・団体戦カードは `writableGridSx` の実線格子。既定の `divider` 色は印刷で見えない
 
 ---
 

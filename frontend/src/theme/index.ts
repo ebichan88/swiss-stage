@@ -21,6 +21,8 @@ interface PrintTokens {
   headerBg: string;
   /** 手書き記入欄を持つ表(対戦結果表)のデータ行の高さ */
   writableRowHeight: string;
+  /** 対局カード(団体戦)の手書き記入行の高さ */
+  cardWritableRowHeight: string;
 }
 
 declare module '@mui/material/styles' {
@@ -67,6 +69,7 @@ export const theme = createTheme({
     cardFontSize: '7pt',
     headerBg: '#EEEEEE',
     writableRowHeight: '14mm',
+    cardWritableRowHeight: '8mm',
   },
   typography: {
     fontFamily: '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif',

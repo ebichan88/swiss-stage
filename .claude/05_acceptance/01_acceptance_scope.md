@@ -174,8 +174,8 @@
 | PRT-AC-007 | P0 | 団体戦の対戦結果表(印刷)・対局カードにメンバー氏名を含めない | done | PrintTeamMatchResultsTable.test, TeamMatchCardSheet.test, matchCardData.test |
 | PRT-AC-008 | P1 | 対局カードは ACTIVE な全参加者/全チーム分を、グループ順→entryOrder順で出力する | done | matchCardData.test |
 | PRT-AC-009 | P1 | 対局カードは totalRounds 分の記入行を持ち、卓番号・対戦相手・結果の欄は空欄で出力される | done | MatchCardSheet.test |
-| PRT-AC-010 | P2 | 個人戦の対局カードはA4 1枚あたり16面(totalRounds≥7 は12面)、団体戦は8面で面付けし、グループが切り替わる位置で改ページする | in_progress | 面付け選択・改ページ境界のロジックはmatchCardData.testで検証済み。実紙面での書きやすさ確認は未実施 |
-| PRT-AC-011 | P1 | 団体戦の対局カードはチーム名とボード役割(主将・副将…)欄のみで構成される | done | TeamMatchCardSheet.test |
+| PRT-AC-010 | P2 | 個人戦の対局カードはA4 1枚あたり16面(totalRounds≥7 は12面)、団体戦は1列×3枚で面付けし、グループが切り替わる位置で改ページする | in_progress | 面付け選択・改ページ境界のロジックはmatchCardData.testで検証済み。実紙面での書きやすさ確認は未実施 |
+| PRT-AC-011 | P1 | 団体戦の対局カードはラウンドを列にした転置レイアウトで、チーム名・相手・チーム勝敗・個人勝敗(主将・副将…)欄と集計欄を持ち、メンバー個人名を含めない | done | TeamMatchCardSheet.test |
 | PRT-AC-012 | P2 | 棄権(WITHDRAWN)の参加者・チームには対局カードを出力しない | done | matchCardData.test |
 | PRT-AC-013 | P2 | 全帳票のヘッダーに大会名と開催日を印字し、開催日が未設定なら空欄にする | done | PrintReportHeader.test |
 

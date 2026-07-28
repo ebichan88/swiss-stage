@@ -24,8 +24,11 @@ export interface CardLayout {
   rows: number;
 }
 
-/** 団体戦は常に2列×4行(8面、A7相当)固定。ボード列(最大5将)が入る幅を確保するため個人戦より広い面が必要 */
-export const TEAM_CARD_LAYOUT: CardLayout = { columns: 2, rows: 4 };
+/**
+ * 団体戦は1列×3行固定。ラウンドを列・記入項目(相手/チーム勝敗/個人勝敗)を行にした転置レイアウトで
+ * 横に広いため、1枚をページ幅いっぱいに使い縦に3枚並べる(実業団囲碁大会の対局カード様式に倣う)
+ */
+export const TEAM_CARD_LAYOUT: CardLayout = { columns: 1, rows: 3 };
 
 /**
  * 個人戦の面付けを決める。4列×4行(16面、A8相当)が既定だが、記入行の高さは行数(縦の分割数)で決まるため、

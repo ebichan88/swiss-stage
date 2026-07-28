@@ -22,8 +22,8 @@ describe('decideLayout', () => {
 });
 
 describe('TEAM_CARD_LAYOUT', () => {
-  it('団体戦は2列×4行(8面)固定', () => {
-    expect(TEAM_CARD_LAYOUT).toEqual({ columns: 2, rows: 4 });
+  it('団体戦は1列×3行(横に広い転置レイアウトのため1枚をページ幅いっぱいに使う)', () => {
+    expect(TEAM_CARD_LAYOUT).toEqual({ columns: 1, rows: 3 });
   });
 });
 

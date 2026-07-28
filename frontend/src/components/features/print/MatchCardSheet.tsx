@@ -1,7 +1,7 @@
 import { Box, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 
 import type { CardLayout, MatchCard } from './matchCardData';
-import { avoidBreakSx, breakAfterPageSx } from './printSx';
+import { avoidBreakSx, breakAfterPageSx, writableGridSx } from './printSx';
 
 export interface MatchCardSheetProps {
   /** `chunkIntoPages()` 済み。1要素=1ページ分のカード */
@@ -13,8 +13,9 @@ function IndividualCard({ card }: { card: MatchCard }) {
   return (
     <Box
       sx={(theme) => ({
+        // A8で切り取る想定のため外枠は破線。既定のdivider色は薄すぎて見えないため text.primary
         border: '1px dashed',
-        borderColor: 'divider',
+        borderColor: 'text.primary',
         p: 0.5,
         fontSize: theme.print.cardFontSize,
         ...avoidBreakSx,
@@ -35,22 +36,22 @@ function IndividualCard({ card }: { card: MatchCard }) {
         {card.name}
         {card.organization ? `(${card.organization})` : ''} {card.rankText}
       </Typography>
-      <Table size="small" sx={{ fontSize: 'inherit' }}>
+      <Table size="small" sx={[{ fontSize: 'inherit', '& td, & th': { p: 0.25 } }, writableGridSx]}>
         <TableHead>
           <TableRow>
-            <TableCell sx={{ fontSize: 'inherit', p: 0.25 }}>R</TableCell>
-            <TableCell sx={{ fontSize: 'inherit', p: 0.25 }}>卓</TableCell>
-            <TableCell sx={{ fontSize: 'inherit', p: 0.25 }}>相手</TableCell>
-            <TableCell sx={{ fontSize: 'inherit', p: 0.25 }}>結果</TableCell>
+            <TableCell>R</TableCell>
+            <TableCell>卓</TableCell>
+            <TableCell>相手</TableCell>
+            <TableCell>結果</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {Array.from({ length: card.rowCount }, (_, i) => (
             <TableRow key={i}>
-              <TableCell sx={{ fontSize: 'inherit', p: 0.25 }}>{i + 1}</TableCell>
-              <TableCell sx={{ fontSize: 'inherit', p: 0.25 }} />
-              <TableCell sx={{ fontSize: 'inherit', p: 0.25 }} />
-              <TableCell sx={{ fontSize: 'inherit', p: 0.25 }} />
+              <TableCell>{i + 1}</TableCell>
+              <TableCell />
+              <TableCell />
+              <TableCell />
             </TableRow>
           ))}
         </TableBody>
