@@ -25,6 +25,8 @@ interface PrintTokens {
   cardWritableRowHeight: string;
   /** 対戦結果表の「相手」列の幅(No.の数字のみで足りるため狭くし、結果列を相対的に広くする) */
   opponentColWidth: string;
+  /** 帳票ヘッダーの開催日が未設定のときに手書き用に確保する記入枠(下線)の幅 */
+  eventDateBlankWidth: string;
 }
 
 declare module '@mui/material/styles' {
@@ -73,6 +75,7 @@ export const theme = createTheme({
     writableRowHeight: '14mm',
     cardWritableRowHeight: '8mm',
     opponentColWidth: '10mm',
+    eventDateBlankWidth: '30mm',
   },
   typography: {
     fontFamily: '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif',

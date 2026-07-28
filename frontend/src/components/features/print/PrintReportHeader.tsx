@@ -35,7 +35,21 @@ export function PrintReportHeader({
           {reportTitle}
           {groupName ? `(${groupName})` : ''}
         </Typography>
-        <Typography variant="body2">開催日: {formatEventDate(eventDate)}</Typography>
+        {/* 開催日が未設定でも手書き用に記入枠(下線)を残す(大会前に印刷してペンで書けるように) */}
+        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+          <Typography variant="body2">開催日:</Typography>
+          {eventDate === null ? (
+            <Box
+              sx={(theme) => ({
+                width: theme.print.eventDateBlankWidth,
+                borderBottom: '1px solid',
+                borderColor: 'text.primary',
+              })}
+            />
+          ) : (
+            <Typography variant="body2">{formatEventDate(eventDate)}</Typography>
+          )}
+        </Box>
       </Box>
     </Box>
   );
