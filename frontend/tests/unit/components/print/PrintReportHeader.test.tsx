@@ -5,7 +5,7 @@ import { PrintReportHeader } from '../../../../src/components/features/print/Pri
 import { renderWithProviders } from '../../../testUtils';
 
 describe('PrintReportHeader', () => {
-  it('大会名・帳票名・開催日を表示する', () => {
+  it('PRT-AC-013: 大会名・帳票名・開催日を表示する', () => {
     renderWithProviders(
       <PrintReportHeader
         tournamentName="第1回テスト囲碁大会"
@@ -19,7 +19,7 @@ describe('PrintReportHeader', () => {
     expect(screen.getByText('2026/8/15')).toBeInTheDocument();
   });
 
-  it('開催日が未設定(null)でも手書き用の記入枠(下線)を残す', () => {
+  it('PRT-AC-013: 開催日が未設定(null)でも手書き用の記入枠(下線)を残す', () => {
     renderWithProviders(
       <PrintReportHeader tournamentName="大会" eventDate={null} reportTitle="参加者名簿" />,
     );

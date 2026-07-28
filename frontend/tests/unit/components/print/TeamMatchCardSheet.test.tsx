@@ -21,13 +21,13 @@ function teamCardOf(overrides: Partial<MatchCard> = {}): MatchCard {
 const layout = { columns: 1, rows: 3 };
 
 describe('TeamMatchCardSheet', () => {
-  it('メンバーの個人名を一切含めない(チーム名のみ表示する)', () => {
+  it('PRT-AC-007,PRT-AC-011: メンバーの個人名を一切含めない(チーム名のみ表示する)', () => {
     renderWithProviders(<TeamMatchCardSheet pages={[[teamCardOf()]]} layout={layout} />);
     expect(screen.getByText('Aチーム')).toBeInTheDocument();
     expect(screen.queryByText('架空 主将')).not.toBeInTheDocument();
   });
 
-  it('転置レイアウト: ラウンドを列に、記入項目(相手/チーム勝敗/個人勝敗)を行に持つ', () => {
+  it('PRT-AC-011: 転置レイアウト: ラウンドを列に、記入項目(相手/チーム勝敗/個人勝敗)を行に持つ', () => {
     renderWithProviders(
       <TeamMatchCardSheet pages={[[teamCardOf({ rowCount: 3 })]]} layout={layout} />,
     );
@@ -38,7 +38,7 @@ describe('TeamMatchCardSheet', () => {
     expect(screen.getByText('個人勝敗')).toBeInTheDocument();
   });
 
-  it('ボード役割(主将・副将…)を各ラウンドの列に出す', () => {
+  it('PRT-AC-011: ボード役割(主将・副将…)を各ラウンドの列に出す', () => {
     renderWithProviders(
       <TeamMatchCardSheet pages={[[teamCardOf({ rowCount: 3 })]]} layout={layout} />,
     );
@@ -47,7 +47,7 @@ describe('TeamMatchCardSheet', () => {
     expect(screen.getAllByText('三将')).toHaveLength(3);
   });
 
-  it('チーム勝敗合計・個人勝敗合計の集計欄を持つ', () => {
+  it('PRT-AC-011: チーム勝敗合計・個人勝敗合計の集計欄を持つ', () => {
     renderWithProviders(<TeamMatchCardSheet pages={[[teamCardOf()]]} layout={layout} />);
     expect(screen.getByText(/チーム勝敗合計/)).toBeInTheDocument();
     expect(screen.getByText(/個人勝敗合計/)).toBeInTheDocument();

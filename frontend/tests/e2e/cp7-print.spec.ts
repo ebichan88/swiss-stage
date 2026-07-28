@@ -13,7 +13,7 @@ import {
  * 技術的な例外)。@page(向き・A4面付け)自体はCSSOMから確認できないため、Chromeの印刷プレビューでの
  * 目視確認をverify手順側で行う。
  */
-test('E2E-AC-009: 印刷画面は印刷メディアでツールバー・ナビゲーションを非表示にする', async ({
+test('E2E-AC-009,PRT-AC-001,PRT-AC-004: 印刷画面は印刷メディアでツールバー・ナビゲーションを非表示にする', async ({
   page,
 }) => {
   await loginAsOrganizer(page);

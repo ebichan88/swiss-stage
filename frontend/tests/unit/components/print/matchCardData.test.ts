@@ -27,7 +27,7 @@ describe('buildMatchCards', () => {
     expect(cards[0].rowCount).toBe(8);
   });
 
-  it('棄権(WITHDRAWN)は除外する', () => {
+  it('PRT-AC-008,PRT-AC-012: 棄権(WITHDRAWN)は除外する', () => {
     const cards = buildMatchCards(
       [
         participantOf({ id: 'p1', status: 'ACTIVE' }),
@@ -39,7 +39,7 @@ describe('buildMatchCards', () => {
     expect(cards).toHaveLength(1);
   });
 
-  it('グループ順→entryOrder順に並ぶ', () => {
+  it('PRT-AC-008: グループ順→entryOrder順に並ぶ', () => {
     const groupA = groupOf({ id: 'gA', name: 'A' });
     const groupB = groupOf({ id: 'gB', name: 'B' });
     const cards = buildMatchCards(
@@ -66,7 +66,7 @@ describe('buildMatchCards', () => {
 });
 
 describe('buildTeamMatchCards', () => {
-  it('個人名を一切含めない(チーム名のみ)', () => {
+  it('PRT-AC-007: 個人名を一切含めない(チーム名のみ)', () => {
     const team = teamOf({ members: [teamMemberOf({ name: '架空 主将' })] });
     const cards = buildTeamMatchCards([team], [groupOf()], 5, 3);
     expect(cards[0].name).toBe(team.name);
@@ -79,7 +79,7 @@ describe('buildTeamMatchCards', () => {
     expect(cards[0].boardLabels).toEqual(['主将', '副将', '三将']);
   });
 
-  it('棄権(WITHDRAWN)チームは除外する', () => {
+  it('PRT-AC-008,PRT-AC-012: 棄権(WITHDRAWN)チームは除外する', () => {
     const cards = buildTeamMatchCards(
       [
         teamOf({ id: 't1', status: 'ACTIVE', members: [] }),

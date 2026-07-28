@@ -7,7 +7,7 @@ describe('printPage', () => {
     vi.restoreAllMocks();
   });
 
-  it('window.print() を呼び出す', () => {
+  it('PRT-AC-004: window.print() を呼び出す', () => {
     const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {});
     printPage();
     expect(printSpy).toHaveBeenCalledTimes(1);

@@ -6,14 +6,14 @@ import { teamOf } from '../../../fixtures';
 import { renderWithProviders } from '../../../testUtils';
 
 describe('PrintTeamMatchResultsTable', () => {
-  it('生成済みラウンド数によらず totalRounds 分すべてのラウンド列を出す', () => {
+  it('PRT-AC-005: 生成済みラウンド数によらず totalRounds 分すべてのラウンド列を出す', () => {
     renderWithProviders(<PrintTeamMatchResultsTable teams={[teamOf()]} totalRounds={5} />);
     for (let round = 1; round <= 5; round++) {
       expect(screen.getByRole('columnheader', { name: `${round}回戦` })).toBeInTheDocument();
     }
   });
 
-  it('No.・チーム名は入力済みで表示し、対戦相手・結果・勝点・SOS・SOSOS・順位は空欄で出力する(段級位列は無い)', () => {
+  it('PRT-AC-005: No.・チーム名は入力済みで表示し、対戦相手・結果・勝点・SOS・SOSOS・順位は空欄で出力する(段級位列は無い)', () => {
     renderWithProviders(
       <PrintTeamMatchResultsTable
         teams={[teamOf({ entryOrder: 1, name: 'Aチーム' })]}
@@ -34,7 +34,7 @@ describe('PrintTeamMatchResultsTable', () => {
     blankCells.forEach((cell) => expect(cell).toHaveTextContent(''));
   });
 
-  it('個人名を一切含めない(チーム名のみ)', () => {
+  it('PRT-AC-007: 個人名を一切含めない(チーム名のみ)', () => {
     renderWithProviders(<PrintTeamMatchResultsTable teams={[teamOf()]} totalRounds={1} />);
     expect(screen.queryByText('架空 主将')).not.toBeInTheDocument();
   });

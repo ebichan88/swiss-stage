@@ -6,14 +6,14 @@ import { groupOf, teamMemberOf, teamOf } from '../../../fixtures';
 import { renderWithProviders } from '../../../testUtils';
 
 describe('PrintTeamRoster', () => {
-  it('運営専用であることを明記する', () => {
+  it('PRT-AC-003: 運営専用であることを明記する', () => {
     renderWithProviders(
       <PrintTeamRoster teams={[teamOf({ members: [teamMemberOf()] })]} groups={[groupOf()]} />,
     );
     expect(screen.getByText('運営用(掲示・配布しないでください)')).toBeInTheDocument();
   });
 
-  it('メンバーの氏名・役割を1行ずつ表示する(運営専用帳票なので個人名を出してよい)', () => {
+  it('PRT-AC-003: メンバーの氏名・役割を1行ずつ表示する(運営専用帳票なので個人名を出してよい)', () => {
     renderWithProviders(
       <PrintTeamRoster
         teams={[
@@ -32,14 +32,14 @@ describe('PrintTeamRoster', () => {
     expect(screen.getByRole('columnheader', { name: '役割' })).toBeInTheDocument();
   });
 
-  it('単一グループ大会はグループ列を出さない', () => {
+  it('PRT-AC-003: 単一グループ大会はグループ列を出さない', () => {
     renderWithProviders(
       <PrintTeamRoster teams={[teamOf({ members: [teamMemberOf()] })]} groups={[groupOf()]} />,
     );
     expect(screen.queryByRole('columnheader', { name: 'グループ' })).not.toBeInTheDocument();
   });
 
-  it('状態列は無く、出欠・備考列を持つ(受付での手書き記入用)', () => {
+  it('PRT-AC-003: 状態列は無く、出欠・備考列を持つ(受付での手書き記入用)', () => {
     renderWithProviders(
       <PrintTeamRoster teams={[teamOf({ members: [teamMemberOf()] })]} groups={[groupOf()]} />,
     );

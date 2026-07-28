@@ -6,7 +6,7 @@ import { participantOf } from '../../../fixtures';
 import { renderWithProviders } from '../../../testUtils';
 
 describe('PrintMatchResultsTable', () => {
-  it('生成済みラウンド数によらず totalRounds 分すべてのラウンド列を出す', () => {
+  it('PRT-AC-005: 生成済みラウンド数によらず totalRounds 分すべてのラウンド列を出す', () => {
     renderWithProviders(
       <PrintMatchResultsTable participants={[participantOf()]} totalRounds={5} />,
     );
@@ -15,7 +15,7 @@ describe('PrintMatchResultsTable', () => {
     }
   });
 
-  it('No.・名前・段級位は入力済みで表示し、対戦相手・結果・勝点・SOS・SOSOS・順位は空欄で出力する', () => {
+  it('PRT-AC-005: No.・名前・段級位は入力済みで表示し、対戦相手・結果・勝点・SOS・SOSOS・順位は空欄で出力する', () => {
     renderWithProviders(
       <PrintMatchResultsTable
         participants={[

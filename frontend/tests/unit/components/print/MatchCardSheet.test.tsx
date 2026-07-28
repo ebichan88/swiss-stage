@@ -31,7 +31,7 @@ describe('MatchCardSheet', () => {
     expect(screen.getAllByRole('table')).toHaveLength(2);
   });
 
-  it('転置レイアウト: ラウンドを列に、相手・勝敗を行に持つ(個人勝敗の行は持たない)', () => {
+  it('PRT-AC-009: 転置レイアウト: ラウンドを列に、相手・勝敗を行に持つ(個人勝敗の行は持たない)', () => {
     renderWithProviders(<MatchCardSheet pages={[[cardOf({ rowCount: 3 })]]} layout={layout} />);
     expect(screen.getByText('1回戦')).toBeInTheDocument();
     expect(screen.getByText('3回戦')).toBeInTheDocument();
