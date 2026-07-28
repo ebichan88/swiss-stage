@@ -1,7 +1,11 @@
 import { Chip } from '@mui/material';
 
-import type { RoundStatus, TournamentStatus } from '../../types/enums';
-import { roundStatusLabels, tournamentStatusLabels } from '../../utils/labels';
+import type { CompetitionType, RoundStatus, TournamentStatus } from '../../types/enums';
+import {
+  competitionTypeLabels,
+  roundStatusLabels,
+  tournamentStatusLabels,
+} from '../../utils/labels';
 
 export interface StatusBadgeProps {
   status: TournamentStatus;
@@ -17,6 +21,15 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       variant={status === 'FINISHED' ? 'outlined' : 'filled'}
     />
   );
+}
+
+export interface CompetitionTypeBadgeProps {
+  competitionType: CompetitionType;
+}
+
+/** 大会形式: 個人戦/団体戦 */
+export function CompetitionTypeBadge({ competitionType }: CompetitionTypeBadgeProps) {
+  return <Chip label={competitionTypeLabels[competitionType]} size="small" variant="outlined" />;
 }
 
 export interface RoundStatusBadgeProps {
