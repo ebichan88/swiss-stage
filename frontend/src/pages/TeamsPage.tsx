@@ -197,13 +197,6 @@ export function TeamsPage() {
             <>
               <Button
                 variant="outlined"
-                startIcon={<CategoryIcon />}
-                onClick={() => setDialog({ kind: 'groups' })}
-              >
-                グループ管理
-              </Button>
-              <Button
-                variant="outlined"
                 startIcon={<UploadFileIcon />}
                 onClick={() => {
                   importMutation.reset();
@@ -211,6 +204,13 @@ export function TeamsPage() {
                 }}
               >
                 CSVインポート
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<CategoryIcon />}
+                onClick={() => setDialog({ kind: 'groups' })}
+              >
+                グループ管理
               </Button>
               <Button
                 variant="contained"
