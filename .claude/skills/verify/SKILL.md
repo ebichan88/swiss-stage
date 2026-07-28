@@ -15,7 +15,7 @@ cd backend && docker compose up -d dynamodb-local && ./scripts/create-table.sh
 ./gradlew bootRun --args='--spring.profiles.active=local'   # backend/ で。起動ログに "Started SwissStageApplication"
 
 # 3. フロントエンド(:5173、/api→:8080 プロキシ)
-cd frontend && npm run dev
+cd frontend && pnpm run dev
 ```
 
 - ログインは `POST /api/v1/auth/test-login`(local/test限定)。UIからは `/login` の「開発用ログイン」ボタン。
@@ -24,7 +24,7 @@ cd frontend && npm run dev
 ## UIの駆動(Playwright)
 
 - Playwright は導入済み(`frontend/tests/e2e/`、CP1〜CP4)。実行は backend 起動済みの状態で:
-  `LD_LIBRARY_PATH=~/.cache/swiss-stage-e2e-libs/usr/lib/x86_64-linux-gnu npm run test:e2e`
+  `LD_LIBRARY_PATH=~/.cache/swiss-stage-e2e-libs/usr/lib/x86_64-linux-gnu pnpm run test:e2e`
 - **sudoなし環境の注意**: headless shell が `libnspr4.so` 等で起動失敗する。必要ライブラリは
   `~/.cache/swiss-stage-e2e-libs/` に展開済み(無ければ `apt-get download libnspr4 libnss3 libasound2t64 libatk1.0-0t64 libatk-bridge2.0-0t64 libcups2t64 libxkbcommon0 libatspi2.0-0t64 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libcairo2 libpango-1.0-0 libpangocairo-1.0-0` → `dpkg -x *.deb <dir>` で再作成)。
 - アドホックにUIを駆動する場合も同じ `LD_LIBRARY_PATH` を付けて `node script.mjs`。

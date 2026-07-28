@@ -50,9 +50,9 @@ frontend/src/
 
 ```bash
 # フロントエンド(frontend/)
-npm run dev            # 開発サーバー(:5173、/api→:8080プロキシ)
-npm run check          # lint + format + type-check + test(コミット前必須)
-npm run test:e2e       # Playwright(backend起動が前提)
+pnpm run dev            # 開発サーバー(:5173、/api→:8080プロキシ)
+pnpm run check          # lint + format + type-check + test(コミット前必須)
+pnpm run test:e2e       # Playwright(backend起動が前提)
 
 # バックエンド(backend/)
 docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
@@ -92,9 +92,9 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
    ユーザー操作起点に限る。`useEffect` 等での自動実行は禁止)
 10. 認証状態のロード完了前にリダイレクトしない(`RequireAuth` の isLoading 待ち)
 11. 大会前日・当日はデプロイしない
-12. コミット前に `npm run check` / `./gradlew check` を必ず実行
+12. コミット前に `pnpm run check` / `./gradlew check` を必ず実行
 13. 順序・優先度に意味のあるenumはordinal(宣言順)に依存しない。明示的な数値フィールド(`sortOrder` 等)で比較し、宣言順との整合をテストで検証する(例: `Rank`)
-14. `package-lock.json` の更新はCIと同じ `npx -y npm@10 install --package-lock-only` で行う(ローカルのnpm 11はpeerDependenciesをlockに含めず、CIの `npm ci` が「Missing from lock file」で落ちる)
+14. `package.json` の依存を変更したら `pnpm install` で `pnpm-lock.yaml` を再生成しコミットに含める(CIの `pnpm/action-setup` は `packageManager` フィールドからバージョンを読むため、ローカルと同じpnpmバージョンで解決される)
 15. コントローラーの `@PathVariable`/`@RequestParam` 等は名前を必ず明示する(省略すると `-parameters` フラグ依存になり、VSCode(Eclipse JDT)ビルドで起動したときだけ実行時エラー。ArchUnitで強制済み)
 
 ## プロジェクトドキュメントガイド

@@ -47,7 +47,7 @@
 各エンドポイントの補足は operation の summary / description に記載する。
 
 - backend: contractテストがスキーマとの一致を機械検査する(`07_type_definitions.md` §1)
-- frontend: `npm run generate:api` で型を生成する
+- frontend: `pnpm run generate:api` で型を生成する
 
 ---
 

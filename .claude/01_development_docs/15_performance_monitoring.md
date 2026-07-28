@@ -48,8 +48,8 @@ fields path, durationMs
 ## 4. フロントエンド計測
 
 - MVP期は Lighthouse CI 相当の手動計測のみ:
-  - リリース前に `npx lighthouse <共有ページURL> --preset=perf` を実行し、Performance 80以上を確認
-  - バンドルサイズは `npx vite-bundle-visualizer` で確認(初期JS gzip 300KB以下)
+  - リリース前に `pnpm dlx lighthouse <共有ページURL> --preset=perf` を実行し、Performance 80以上を確認
+  - バンドルサイズは `pnpm dlx vite-bundle-visualizer` で確認(初期JS gzip 300KB以下)
 - 商用アクセス解析・RUM(Real User Monitoring)はMVPでは導入しない(個人情報保護方針との整合を検討してから)
 
 ---

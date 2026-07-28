@@ -15,7 +15,7 @@
       "type": "node-terminal",
       "name": "Frontend: Vite Dev Server",
       "request": "launch",
-      "command": "npm run dev",
+      "command": "pnpm run dev",
       "cwd": "${workspaceFolder}/frontend"
     }
   ],

@@ -29,16 +29,18 @@ jobs:
     defaults: { run: { working-directory: frontend } }
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { package_json_file: frontend/package.json }
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: npm, cache-dependency-path: frontend/package-lock.json }
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run type-check
-      - run: npm run test:coverage
+        with: { node-version: 20, cache: pnpm, cache-dependency-path: frontend/pnpm-lock.yaml }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run type-check
+      - run: pnpm run test:coverage
       - uses: davelosert/vitest-coverage-report-action@v2
         if: always() && github.event_name == 'pull_request'
         with: { working-directory: frontend }
-      - run: npm run build
+      - run: pnpm run build
 
   backend:
     runs-on: ubuntu-latest
@@ -69,8 +71,8 @@ jobs:
 
 - どちらかのジョブが失敗したPRはマージ禁止(ブランチ保護設定)
 - E2E(Playwright)はPRごとには実行しない(遅いため)。`.github/workflows/e2e.yml`(workflow_dispatch)をリリース前に手動実行
-- 依存更新は Dependabot(週次、`gradle` / `npm` / `github-actions`)
-- backendの `./gradlew check` にはSpotless(`googleJavaFormat`によるフォーマット・未使用import削除・import順序)のチェックが含まれる。frontendの `npm run lint` / `npm run format` に相当する役割(`backend/build.gradle` の `spotless { java { ... } }` 参照、`08_development_setup.md` §7)
+- 依存更新は Dependabot(週次、`gradle` / `pnpm` / `github-actions`)
+- backendの `./gradlew check` にはSpotless(`googleJavaFormat`によるフォーマット・未使用import削除・import順序)のチェックが含まれる。frontendの `pnpm run lint` / `pnpm run format` に相当する役割(`backend/build.gradle` の `spotless { java { ... } }` 参照、`08_development_setup.md` §7)
 
 ### カバレッジ可視化(PRコメント)
 
@@ -109,7 +111,7 @@ PR(open/push) → Reviewer(sticky comment更新, VERDICT: PASS/FAIL)
 
 ```bash
 # 1. フロントエンドをビルドし、Spring Bootのstatic配下へ配置
-cd frontend && npm ci && npm run build
+cd frontend && pnpm install --frozen-lockfile && pnpm run build
 cp -r dist/* ../backend/src/main/resources/static/
 
 # 2. バックエンドをビルド
