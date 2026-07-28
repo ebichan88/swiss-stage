@@ -1,0 +1,4 @@
+overrides:
+  openapi-typescript>typescript: $typescript
+allowBuilds:
+  msw: false

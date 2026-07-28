@@ -98,8 +98,8 @@ Chromeの印刷プレビューでの目視確認とし、`.claude/skills/verify`
 
 ```bash
 # 前提: backend起動済み + DynamoDB Local起動済み
-npm run test:e2e          # ヘッドレス実行
-npm run test:e2e:ui       # UIモード(デバッグ用)
+pnpm run test:e2e          # ヘッドレス実行
+pnpm run test:e2e:ui       # UIモード(デバッグ用)
 ```
 
 ---

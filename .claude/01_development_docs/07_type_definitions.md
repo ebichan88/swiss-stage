@@ -4,7 +4,7 @@
 
 - **API境界のDTO・enumの定義は `schema/openapi.yaml`(リポジトリルート)が唯一の正**。本ドキュメントには個別の型定義を書かない(二重管理しない)
 - バックエンド(Java record)は contractテストの OpenAPI 検証(`ApiContractTestSupport#performApi`)でスキーマとの一致が機械検査される
-- フロントエンド(TypeScript)は `npm run generate:api` で `frontend/src/types/generated/api.d.ts` を生成し、`frontend/src/types/*.ts` が生成型をre-exportする。生成物の鮮度はCIで検査される
+- フロントエンド(TypeScript)は `pnpm run generate:api` で `frontend/src/types/generated/api.d.ts` を生成し、`frontend/src/types/*.ts` が生成型をre-exportする。生成物の鮮度はCIで検査される
 - TypeScriptでは `any` 禁止。`unknown` + 型ガードを使う
 - Javaでは DTO に record を使用。ドメインモデルとDTOを混同しない(§3)
 
@@ -12,7 +12,7 @@
 
 1. `schema/openapi.yaml` を先に更新する(仕様変更は先にスキーマ、が原則。`schema/` はAI Fixerの聖域で人間が判断する)
 2. バックエンドのDTO・実装を追随させる(`./gradlew check` のcontractテストが一致を検証)
-3. `cd frontend && npm run generate:api` で型を再生成する(`npm run check` で追随漏れを検出)
+3. `cd frontend && pnpm run generate:api` で型を再生成する(`pnpm run check` で追随漏れを検出)
 
 ## 2. 命名・変換規約
 

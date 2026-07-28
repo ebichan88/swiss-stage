@@ -1,7 +1,7 @@
 ---
 description: 現在の変更をコミットしてPRを作成する(コミット前チェック込み)
 argument-hint: "[PRタイトルや補足(省略可)]"
-allowed-tools: Bash(git *), Bash(gh *), Bash(./gradlew *), Bash(npm *), Read, Grep, Glob
+allowed-tools: Bash(git *), Bash(gh *), Bash(./gradlew *), Bash(pnpm *), Read, Grep, Glob
 ---
 
 現在の作業ツリーの変更から Pull Request を作成してください。ユーザーからの補足: $ARGUMENTS
@@ -19,7 +19,7 @@ allowed-tools: Bash(git *), Bash(gh *), Bash(./gradlew *), Bash(npm *), Read, Gr
 変更されたディレクトリに応じて必ず実行し、失敗したら修正してから進む:
 
 - `backend/` に変更がある場合: `cd backend && ./gradlew check`
-- `frontend/` に変更がある場合: `cd frontend && npm run check`
+- `frontend/` に変更がある場合: `cd frontend && pnpm run check`
 - ドキュメントのみの変更ならチェック不要
 
 ## 3. ドキュメント整合の確認(CLAUDE.md ドキュメント運用ルール)

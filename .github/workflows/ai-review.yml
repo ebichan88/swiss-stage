@@ -168,12 +168,17 @@ jobs:
 
       # ---- 以下はFixerが起動する場合のみ ----
 
+      - uses: pnpm/action-setup@v4
+        if: steps.gate.outputs.run_fixer == 'true'
+        with:
+          package_json_file: frontend/package.json
+
       - uses: actions/setup-node@v4
         if: steps.gate.outputs.run_fixer == 'true'
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - uses: actions/setup-java@v4
         if: steps.gate.outputs.run_fixer == 'true'
@@ -187,7 +192,7 @@ jobs:
         env:
           DYNAMODB_ENDPOINT: http://localhost:8000
         run: |
-          (cd frontend && npm ci)
+          (cd frontend && pnpm install --frozen-lockfile)
           (cd backend && ./scripts/create-table.sh)
 
       - name: AI Fixer
@@ -209,7 +214,7 @@ jobs:
             前提:
             - レビューレポートは `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --paginate --jq '[.[] | select(.body | startswith("<!-- swiss-stage-ai-review -->"))] | (last // {}) | .body // ""'` で取得できます
             - カレントディレクトリはPRブランチ(${{ github.event.pull_request.head.ref }})のcheckoutです
-            - フロントエンドの依存(npm ci)とDynamoDB Local(localhost:8000、テーブル作成済み)は準備済みです
+            - フロントエンドの依存(pnpm install)とDynamoDB Local(localhost:8000、テーブル作成済み)は準備済みです
 
             手順はfixer.mdの通りですが、CI実行のため順序に注意:
             コミット後、**pushする前に**結果レポート(`<!-- swiss-stage-ai-fixer -->` 形式)をPRコメントに投稿し、pushは最後に行ってください。
@@ -223,7 +228,7 @@ jobs:
             DISPUTED / SKIPPED / FAILED が1件でもある場合は
             `gh pr edit ${{ github.event.pull_request.number }} --add-label needs-human` も実行してください。
           claude_args: |
-            --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh pr edit:*),Bash(gh api:*),Bash(cd:*),Bash(npm:*),Bash(npx:*),Bash(./gradlew:*),Bash(ls:*),Bash(cat:*)"
+            --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh pr edit:*),Bash(gh api:*),Bash(cd:*),Bash(pnpm:*),Bash(./gradlew:*),Bash(ls:*),Bash(cat:*)"
             --permission-mode bypassPermissions
 
       - name: 修正pushの有無を確認

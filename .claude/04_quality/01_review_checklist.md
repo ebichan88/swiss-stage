@@ -17,7 +17,7 @@ AIレビュアー(`.claude/agents/reviewer.md`)がPRレビュー時に参照す�
 | domain層のSpring/AWS SDK依存、レイヤー間の不正依存 | ArchUnit(`ArchitectureTest.java`) |
 | `alert`/`confirm`/`prompt` の使用 | oxlint `no-alert` |
 | `services/` 外での `fetch` 直呼び | oxlint `no-restricted-globals` |
-| フォーマット・型エラー・テスト失敗 | `npm run check` / `./gradlew check` |
+| フォーマット・型エラー・テスト失敗 | `pnpm run check` / `./gradlew check` |
 | API契約(DTO/enum)とスキーマの一致 | contractテストのOpenAPI検証(`schema/openapi.yaml`)+ 生成型の鮮度チェック(CI) |
 
 ## QAエージェント管轄(レビューで指摘しない)

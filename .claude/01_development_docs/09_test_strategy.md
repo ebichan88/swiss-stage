@@ -92,6 +92,6 @@ frontend/tests/
 | タイミング | 実行するもの |
 |-----------|-------------|
 | コード保存時(任意) | 対象ファイルの単体テスト |
-| コミット前(必須) | frontend: `npm run check` / backend: `./gradlew check` |
+| コミット前(必須) | frontend: `pnpm run check` / backend: `./gradlew check` |
 | PR時(CI) | 全単体+統合テスト+ビルド(`11_cicd_design.md`) |
 | リリース前 | E2E含む全テスト |

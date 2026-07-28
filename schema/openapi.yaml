@@ -3,7 +3,7 @@
 # このファイルがAPI境界(リクエスト/レスポンスの形)の唯一の正。
 # - backend: contractテストが swagger-request-validator でこのスキーマに対して検証する
 # - frontend: openapi-typescript で src/types/generated/api.d.ts を生成する
-# - 変更手順: このファイルを先に更新 → backend実装 → `npm run generate:api` → contractテスト
+# - 変更手順: このファイルを先に更新 → backend実装 → `pnpm run generate:api` → contractテスト
 # - スキーマで表現できない設計方針(命名規約・DTO分離・エラーコード表)は
 #   .claude/01_development_docs/ の 03/06/07 を参照
 #

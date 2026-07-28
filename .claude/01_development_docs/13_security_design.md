@@ -94,7 +94,7 @@
 | CORS | 本番は自ドメインのみ許可。`*` 禁止 |
 | インジェクション | DynamoDBのため SQLインジェクションなし。ただしキー組み立て時のユーザー入力混入を禁止(IDはULID検証必須) |
 | レート制限 | 結果入力・トークンアクセスにIPベースの簡易レート制限(bucket4j)。ブルートフォースによるトークン探索対策 |
-| 依存脆弱性 | Dependabot自動更新 + `npm audit` / `gradlew dependencyCheckAnalyze` を月次実行 |
+| 依存脆弱性 | Dependabot自動更新 + `pnpm audit` / `gradlew dependencyCheckAnalyze` を月次実行 |
 | セキュリティヘッダー | `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` |
 
 ---

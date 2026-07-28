@@ -5,6 +5,7 @@
 | ツール | バージョン | 確認コマンド |
 |-------|----------|-------------|
 | Node.js | 20.x LTS | `node -v` |
+| pnpm | `frontend/package.json` の `packageManager` に固定(Corepack管理) | `pnpm -v` |
 | Java JDK | 21 (Temurin推奨) | `java -version` |
 | Gradle | 8.x (Wrapperを使用) | `./gradlew -v` |
 | Docker | 24.x以上 | `docker -v` |
@@ -48,11 +49,10 @@ docker compose up -d dynamodb-local
 
 ```bash
 cd frontend
-npm install
-npm run dev
-# 依存を追加・更新して package-lock.json が変わるときは、CI(Node 20 / npm 10)と
-# 同じ解決になるよう npm@10 で再生成する(npm 11はpeerDependenciesをlockに含めず npm ci が落ちる):
-#   npx -y npm@10 install --package-lock-only
+pnpm install
+pnpm run dev
+# 依存を追加・更新して pnpm-lock.yaml が変わったら、そのままコミットに含める
+# (pnpm はローカル/CIとも package.json の packageManager フィールドで同じバージョンに固定される)
 # → http://localhost:5173 (Viteが /api を localhost:8080 にプロキシ)
 ```
 
@@ -100,7 +100,7 @@ Google OAuth2を実際に通す必要はない。`local`/`test` プロファイ�
 1. `docker compose up -d dynamodb-local` → `./scripts/create-table.sh`(backend/)
 2. `./gradlew bootRun --args='--spring.profiles.active=local'`(backend/)。ログに
    `Started SwissStageApplication` が出れば起動完了(`curl`が使えない環境ではログで確認する)
-3. `npm run dev`(frontend/)。ログに `VITE ready` が出れば起動完了
+3. `pnpm run dev`(frontend/)。ログに `VITE ready` が出れば起動完了
 4. ブラウザで **http://localhost:5173** を開き、`/login` の「開発用ログイン」でログイン
 
 ---
@@ -110,16 +110,16 @@ Google OAuth2を実際に通す必要はない。`local`/`test` プロファイ�
 ### フロントエンド(frontend/)
 
 ```bash
-npm run dev           # 開発サーバー起動
-npm run build         # プロダクションビルド
-npm run lint          # oxlint
-npm run format        # Prettier
-npm run type-check    # tsc --noEmit
-npm run test          # Vitest単体テスト
-npm run test:e2e      # Playwright(バックエンド起動が前提)
-npm run check         # lint + format + type-check + test(コミット前に必ず実行)
-npm run cloc          # プロジェクト全体のコード行数(cloc、要インストール)
-npm run cloc:by-file  # ファイル別のコード行数
+pnpm run dev           # 開発サーバー起動
+pnpm run build         # プロダクションビルド
+pnpm run lint          # oxlint
+pnpm run format        # Prettier
+pnpm run type-check    # tsc --noEmit
+pnpm run test          # Vitest単体テスト
+pnpm run test:e2e      # Playwright(バックエンド起動が前提)
+pnpm run check         # lint + format + type-check + test(コミット前に必ず実行)
+pnpm run cloc          # プロジェクト全体のコード行数(cloc、要インストール)
+pnpm run cloc:by-file  # ファイル別のコード行数
 ```
 
 ### バックエンド(backend/)
@@ -158,7 +158,7 @@ volumes:
 ## 6. Git運用ルール
 
 - ブランチ: `main`(常にデプロイ可能) / `feature/xxx` / `fix/xxx`
-- コミット前に `npm run check`(frontend)・`./gradlew check`(backend)を通す
+- コミット前に `pnpm run check`(frontend)・`./gradlew check`(backend)を通す
   - backendでSpotlessの指摘が出た場合は `./gradlew spotlessApply` で自動修正できる
 - コミットメッセージ: `feat:` `fix:` `docs:` `test:` `refactor:` `chore:` プレフィックス(Conventional Commits)
 - `.claude/` 配下の設計ドキュメントは実装と乖離したら**同じPRで更新する**
@@ -172,7 +172,7 @@ git config blame.ignoreRevsFile .git-blame-ignore-revs
 
 ## 7. Javaのコードフォーマット・import整理(Spotless)
 
-backend/build.gradle に [Spotless](https://github.com/diffplug/spotless) プラグインを導入しており、`googleJavaFormat`(Google Java Style、2スペースインデント)によるフォーマットと、未使用import削除・import順序の検査を `./gradlew check` で強制している(frontendの `npm run lint` / `format:check` に相当)。
+backend/build.gradle に [Spotless](https://github.com/diffplug/spotless) プラグインを導入しており、`googleJavaFormat`(Google Java Style、2スペースインデント)によるフォーマットと、未使用import削除・import順序の検査を `./gradlew check` で強制している(frontendの `pnpm run lint` / `format:check` に相当)。
 
 - 手動で直したい場合: `./gradlew spotlessApply`
 - VSCodeでは `.vscode/settings.json` により保存時に自動整形される(`.vscode/eclipse-java-google-style.xml` を使用。SpotlessのgoogleJavaFormatとほぼ同じ出力になる)。VSCode以外のエディタを使う場合や、保存し忘れた場合はCIの `spotlessCheck` が最終的な保険になる

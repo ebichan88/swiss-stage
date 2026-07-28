@@ -35,7 +35,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 2. 各Critical/Major指摘を上記4分類に振り分ける
 3. FIXED対象を修正する
 4. 検証(変更したファイルに応じて):
-   - `frontend/` を変更した場合: `cd frontend && npm run check`
+   - `frontend/` を変更した場合: `cd frontend && pnpm run check`
    - `backend/` を変更した場合: `cd backend && ./gradlew check`(DynamoDB Localが必要)
    - 失敗したら自分の修正を見直す。解決できない指摘はFAILEDにし、その変更を取り除いて検証を通し直す
 5. コミットする(pushはまだしない)

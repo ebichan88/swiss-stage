@@ -465,8 +465,8 @@ backend/
 on: [pull_request]
 jobs:
   frontend-test:
-    - npm test (Vitest)
-    - npm run lint
+    - pnpm test (Vitest)
+    - pnpm run lint
   backend-test:
     - ./gradlew test
     - ./gradlew build
