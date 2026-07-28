@@ -209,13 +209,6 @@ function IndividualParticipantsPage() {
             <>
               <Button
                 variant="outlined"
-                startIcon={<CategoryIcon />}
-                onClick={() => setDialog({ kind: 'groups' })}
-              >
-                グループ管理
-              </Button>
-              <Button
-                variant="outlined"
                 startIcon={<UploadFileIcon />}
                 onClick={() => {
                   importMutation.reset();
@@ -223,6 +216,13 @@ function IndividualParticipantsPage() {
                 }}
               >
                 CSVインポート
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<CategoryIcon />}
+                onClick={() => setDialog({ kind: 'groups' })}
+              >
+                グループ管理
               </Button>
               <Button
                 variant="contained"
