@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
 
 /**
  * competitionType=TEAM の場合は teamSize(3または5)が必須。INDIVIDUAL の場合は teamSize を指定できない(schema/openapi.yaml
@@ -18,6 +19,9 @@ public record CreateTournamentRequest(
     @NotNull(message = "競技は必須です") GameType gameType,
     @NotNull(message = "大会形式は必須です") CompetitionType competitionType,
     Integer teamSize,
+
+    /** 開催日(YYYY-MM-DD)。null = 未設定。形式不正は Jackson が弾き400になる */
+    LocalDate eventDate,
     @NotNull(message = "ラウンド数は必須です")
         @Min(value = 1, message = "ラウンド数は1以上で入力してください")
         @Max(value = 8, message = "ラウンド数は8以下で入力してください")

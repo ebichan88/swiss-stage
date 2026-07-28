@@ -23,6 +23,8 @@ interface TournamentFormValues {
   gameType: GameType;
   competitionType: CompetitionType;
   teamSize: '3' | '5';
+  /** YYYY-MM-DD。空文字 = 未設定 */
+  eventDate: string;
   totalRounds: string;
 }
 
@@ -37,6 +39,7 @@ export function TournamentCreatePage() {
       gameType: GameType.GO,
       competitionType: CompetitionType.INDIVIDUAL,
       teamSize: '3',
+      eventDate: '',
       totalRounds: '5',
     },
   });
@@ -53,6 +56,7 @@ export function TournamentCreatePage() {
           values.competitionType === CompetitionType.TEAM
             ? (Number(values.teamSize) as 3 | 5)
             : null,
+        eventDate: values.eventDate === '' ? null : values.eventDate,
         totalRounds: Number(values.totalRounds),
       },
       {
@@ -144,6 +148,20 @@ export function TournamentCreatePage() {
               )}
             />
           )}
+          <Controller
+            name="eventDate"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="開催日"
+                type="date"
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+                helperText="任意。帳票印刷のヘッダーに使います(後から変更できます)"
+              />
+            )}
+          />
           <Controller
             name="totalRounds"
             control={control}

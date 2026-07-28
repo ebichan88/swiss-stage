@@ -1,4 +1,5 @@
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PrintIcon from '@mui/icons-material/Print';
 import StopIcon from '@mui/icons-material/Stop';
 import { Alert, Box, Button, Card, CardContent, Grid, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
@@ -13,7 +14,7 @@ import { useFinishTournament, useStartTournament } from '../hooks/useTournaments
 import { ApiError } from '../services/apiClient';
 import { paths } from '../routes';
 import type { Tournament } from '../types/tournament';
-import { formatDateTime } from '../utils/format';
+import { formatDateTime, formatEventDate } from '../utils/format';
 import { gameTypeLabels } from '../utils/labels';
 
 /**
@@ -114,6 +115,7 @@ function TournamentOverviewView({
           : `第${tournament.currentRound} / 全${tournament.totalRounds}ラウンド`,
     },
     { label: entryLabel, value: activeCount === null ? '-' : `${activeCount}${entryUnit}` },
+    { label: '開催日', value: formatEventDate(tournament.eventDate) || '未設定' },
     { label: '作成日時', value: formatDateTime(tournament.createdAt) },
   ];
 
@@ -133,6 +135,43 @@ function TournamentOverviewView({
               </Grid>
             ))}
           </Grid>
+        </CardContent>
+      </Card>
+
+      <Card variant="outlined">
+        <CardContent>
+          <Typography variant="h3" component="h2" gutterBottom>
+            帳票印刷
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            名簿・対局カード・対戦結果表を紙で印刷できます。
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
+            <Button
+              variant="outlined"
+              startIcon={<PrintIcon />}
+              component={Link}
+              to={paths.printRoster(tournament.id)}
+            >
+              名簿を印刷
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<PrintIcon />}
+              component={Link}
+              to={paths.printMatchResults(tournament.id)}
+            >
+              対戦結果表を印刷
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<PrintIcon />}
+              component={Link}
+              to={paths.printMatchCards(tournament.id)}
+            >
+              対局カードを印刷
+            </Button>
+          </Box>
         </CardContent>
       </Card>
 

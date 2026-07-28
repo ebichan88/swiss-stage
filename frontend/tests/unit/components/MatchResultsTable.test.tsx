@@ -1,11 +1,11 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { CrossTable } from '../../../src/components/features/standing/CrossTable';
+import { MatchResultsTable } from '../../../src/components/features/standing/MatchResultsTable';
 import { matchOf, roundOf, standingOf, summaryOf } from '../../fixtures';
 import { renderWithProviders } from '../../testUtils';
 
-describe('CrossTable', () => {
+describe('MatchResultsTable', () => {
   it('No.・氏名・段級位・ラウンドごとの相手番号と結果・勝点・順位を表示する', () => {
     const taro = summaryOf({ id: 'p1', name: '架空 太郎', entryOrder: 1, rank: 'DAN_3' });
     const hanako = summaryOf({
@@ -26,7 +26,7 @@ describe('CrossTable', () => {
       standingOf({ rank: 2, participant: hanako, wins: 0 }),
     ];
 
-    renderWithProviders(<CrossTable rounds={rounds} standings={standings} />);
+    renderWithProviders(<MatchResultsTable rounds={rounds} standings={standings} />);
 
     expect(screen.getByRole('columnheader', { name: '第1ラウンド' })).toBeInTheDocument();
     const rows = screen.getAllByRole('row');
@@ -51,7 +51,7 @@ describe('CrossTable', () => {
     ];
     const standings = [standingOf({ participant: taro })];
 
-    renderWithProviders(<CrossTable rounds={rounds} standings={standings} />);
+    renderWithProviders(<MatchResultsTable rounds={rounds} standings={standings} />);
 
     expect(screen.getByText('不戦勝')).toBeInTheDocument();
   });

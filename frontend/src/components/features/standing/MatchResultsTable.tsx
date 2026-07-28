@@ -10,7 +10,7 @@ import {
   Typography,
 } from '@mui/material';
 
-import { buildCrossTableRows } from './crossTableData';
+import { buildMatchResultsTableRows } from './matchResultsTableData';
 import { TableHeaderTooltip } from '../../ui/TableHeaderTooltip';
 import { formatPoints } from '../../../utils/format';
 import { rankLabel } from '../../../utils/labels';
@@ -18,7 +18,7 @@ import type { ParticipantSummary } from '../../../types/participant';
 import type { Round } from '../../../types/round';
 import type { Standing } from '../../../types/standing';
 
-export interface CrossTableProps {
+export interface MatchResultsTableProps {
   rounds: Round[];
   standings: Standing[];
 }
@@ -41,11 +41,11 @@ function markColor(mark: string | null): string | undefined {
 }
 
 /**
- * 戦績一覧表(参加者×ラウンドの対戦相手・結果を1画面に集約)。
+ * 対戦結果表(参加者×ラウンドの対戦相手・結果を1画面に集約)。
  * 相手列は氏名の代わりにNo.(entryOrder)を表示し、Tooltipで氏名を補足する
  */
-export function CrossTable({ rounds, standings }: CrossTableProps) {
-  const rows = buildCrossTableRows(rounds, standings);
+export function MatchResultsTable({ rounds, standings }: MatchResultsTableProps) {
+  const rows = buildMatchResultsTableRows(rounds, standings);
   return (
     <TableContainer sx={{ overflowX: 'auto' }}>
       <Table size="small">

@@ -102,10 +102,10 @@ const router = createBrowserRouter([
                       })),
                   },
                   {
-                    path: 'cross-table',
+                    path: 'match-results',
                     lazy: () =>
-                      import('./pages/CrossTablePage').then((m) => ({
-                        Component: m.CrossTablePage,
+                      import('./pages/MatchResultsPage').then((m) => ({
+                        Component: m.MatchResultsPage,
                       })),
                   },
                   {
@@ -114,6 +114,38 @@ const router = createBrowserRouter([
                       import('./pages/SettingsPage').then((m) => ({ Component: m.SettingsPage })),
                   },
                 ],
+              },
+            ],
+          },
+          {
+            // 印刷はAppLayoutの外(兄弟)に置く。@pageはルート単位でしか切り替えられないため、
+            // 運営者画面のAppBar・サイドバー・下部タブを一切継承させない設計にする
+            path: '/tournaments/:id/print',
+            lazy: () =>
+              import('./components/layouts/PrintLayout').then((m) => ({
+                Component: m.PrintLayout,
+              })),
+            children: [
+              {
+                path: 'roster',
+                lazy: () =>
+                  import('./pages/PrintRosterPage').then((m) => ({
+                    Component: m.PrintRosterPage,
+                  })),
+              },
+              {
+                path: 'match-results',
+                lazy: () =>
+                  import('./pages/PrintMatchResultsPage').then((m) => ({
+                    Component: m.PrintMatchResultsPage,
+                  })),
+              },
+              {
+                path: 'match-cards',
+                lazy: () =>
+                  import('./pages/PrintMatchCardsPage').then((m) => ({
+                    Component: m.PrintMatchCardsPage,
+                  })),
               },
             ],
           },

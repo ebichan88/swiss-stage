@@ -85,3 +85,25 @@
 | 影 | elevation 0〜2 のみ使用(フラット寄り)。ダイアログのみ8 |
 | 罫線 | 1px solid divider |
 | ダークモード | MVPでは対応しない(テーマ分岐を書かない) |
+
+---
+
+## 5. 印刷トークン(`theme.print`)
+
+帳票印刷(S13)専用。A4の物理寸法(mm)と印刷本文サイズ(pt)は8pxグリッドで表現できないため、
+`palette.rank` と同じ module augmentation で `theme.print` に独立トークンとして持つ(`04_layout_system.md` §5参照)。
+
+| トークン | 値 | 用途 |
+|---------|----|------|
+| pageMargin | 10mm | ページの余白。`@page` ではなく `body` の padding として適用する(下記注記参照) |
+| cardGap | 4mm | 対局カード間の切り取り余白 |
+| bodyFontSize | 10pt | 名簿・対戦結果表の本文 |
+| tableFontSize | 9pt | 名簿・対戦結果表のセル |
+| cardFontSize | 7pt | 対局カードの本文(A8相当は文字が小さくなるため別トークン) |
+| headerBg | #EEEEEE(薄グレー) | 表ヘッダーの地色。緑ベタ塗りはインクを食うためモノクロ運用 |
+| writableRowHeight | 14mm | 手書き記入欄を持つ表(対戦結果表)のデータ行の高さ。相手・結果を手書きできる余白を確保する |
+| cardWritableRowHeight | 8mm | 団体戦の対局カードの手書き記入行(相手・チーム勝敗・個人勝敗)の高さ |
+| opponentColWidth | 10mm | 対戦結果表の各ラウンド「相手」列の幅。相手はNo.(数字)のみのため狭くし、結果列を相対的に広く目立たせる |
+| eventDateBlankWidth | 30mm | 帳票ヘッダーの開催日が未設定のとき、手書き用に確保する記入枠(下線)の幅 |
+
+実装は `theme/index.ts`(変更時はこのファイルと同期すること)。

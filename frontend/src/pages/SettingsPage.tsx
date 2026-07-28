@@ -36,6 +36,8 @@ import { visibilityLabels } from '../utils/labels';
 
 interface SettingsFormValues {
   name: string;
+  /** YYYY-MM-DD。空文字 = 未設定 */
+  eventDate: string;
   visibility: Visibility;
   resultInputEnabled: boolean;
 }
@@ -55,6 +57,7 @@ export function SettingsPage() {
     // 保存成功時は invalidate で tournament が更新され、values 経由でフォームにも反映される
     values: {
       name: tournament.name,
+      eventDate: tournament.eventDate ?? '',
       visibility: tournament.visibility,
       resultInputEnabled: tournament.resultInputEnabled,
     },
@@ -64,6 +67,9 @@ export function SettingsPage() {
     updateMutation.mutate(
       {
         name: formValues.name.trim(),
+        ...(formValues.eventDate === ''
+          ? { clearEventDate: true }
+          : { eventDate: formValues.eventDate }),
         visibility: formValues.visibility,
         resultInputEnabled: formValues.resultInputEnabled,
         version: tournament.version,
@@ -138,6 +144,20 @@ export function SettingsPage() {
                     error={!!fieldState.error}
                     helperText={fieldState.error?.message}
                     fullWidth
+                  />
+                )}
+              />
+              <Controller
+                name="eventDate"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="開催日"
+                    type="date"
+                    fullWidth
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    helperText="任意。帳票印刷のヘッダーに使います"
                   />
                 )}
               />

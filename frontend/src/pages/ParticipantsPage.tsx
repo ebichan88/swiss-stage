@@ -2,9 +2,11 @@ import CategoryIcon from '@mui/icons-material/Category';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import GroupsIcon from '@mui/icons-material/Groups';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import PrintIcon from '@mui/icons-material/Print';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { Box, Button, Typography } from '@mui/material';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import type { ParticipantFormValues } from '../components/features/participant/ParticipantFormDialog';
 import { CsvImportDialog } from '../components/features/participant/CsvImportDialog';
@@ -26,6 +28,7 @@ import {
 } from '../hooks/useParticipants';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { ApiError } from '../services/apiClient';
+import { paths } from '../routes';
 import type { Participant } from '../types/participant';
 import { downloadBlob } from '../utils/downloadBlob';
 import { TeamsPage } from './TeamsPage';
@@ -172,6 +175,22 @@ function IndividualParticipantsPage() {
           {participants && ` (${participants.length}名)`}
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Button
+            variant="outlined"
+            startIcon={<PrintIcon />}
+            component={Link}
+            to={paths.printRoster(tournament.id)}
+          >
+            名簿を印刷
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<PrintIcon />}
+            component={Link}
+            to={paths.printMatchCards(tournament.id)}
+          >
+            対局カードを印刷
+          </Button>
           <Button
             variant="outlined"
             startIcon={<FileDownloadIcon />}

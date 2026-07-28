@@ -134,3 +134,27 @@ import DeleteIcon from '@mui/icons-material/Delete';
 - 各コンポーネントで `<Snackbar>` をレンダリングしない
 - `SnackbarProvider`(Context)+ `useSnackbar()` フックを自作し、アプリで1つの Snackbar を使い回す
 - 同時に複数表示しない(後発が上書き)
+
+---
+
+## 8. GlobalStyles + `@page`(印刷CSS)
+
+帳票印刷(S13)で `@page`/`@media print` を書く場合、CSSファイルを追加せず `GlobalStyles`(theme を受け取る
+関数形式)を使う(`.claude/01_development_docs/10_frontend_design.md` §6)。
+
+```tsx
+<GlobalStyles
+  styles={(theme) => ({
+    '@page': { size: 'A4 portrait', margin: theme.print.pageMargin },
+    '@media print': {
+      'html, body': { printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' },
+      thead: { display: 'table-header-group' }, // 表ヘッダーを各ページに繰り返す
+    },
+  })}
+/>
+```
+
+- `@page` はドキュメント単位でしか向きを切り替えられないため、帳票ごとに専用ルート(1ルート=1向き)を用意し、
+  各印刷ページがこのコンポーネントを1回だけレンダリングする
+- 画面のみ表示・印刷のみ非表示は `sx` の断片(`screenOnlySx` 等、`components/features/print/printSx.ts`)で表現し、
+  グローバルなCSSクラス(`.no-print`等)は使わない

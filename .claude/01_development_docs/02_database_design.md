@@ -39,6 +39,7 @@
 | gameType | `GO` / `SHOGI` | |
 | competitionType | `INDIVIDUAL` / `TEAM` | 作成後変更不可。既定は `INDIVIDUAL` |
 | teamSize | `3` / `5` / 属性なし | `competitionType=TEAM` の時のみ必須。`INDIVIDUAL` では属性を持たない |
+| eventDate | `2026-08-15` / 属性なし | 開催日(YYYY-MM-DD)。任意。帳票印刷のヘッダーに使う。既存アイテムは属性なし=未設定扱い |
 | totalRounds | `5` | |
 | status | `PREPARING` / `IN_PROGRESS` / `FINISHED` | |
 | visibility | `PRIVATE` / `TOKEN` / `PUBLIC` | 公開範囲 |

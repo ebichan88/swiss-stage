@@ -84,6 +84,7 @@ public class InMemoryRepositoryConfig {
             t.gameType(),
             t.competitionType(),
             t.teamSize(),
+            t.eventDate(),
             t.totalRounds(),
             t.currentRound(),
             t.status(),

@@ -23,6 +23,7 @@ public class TournamentItem {
   private String gameType;
   private String competitionType;
   private Integer teamSize;
+  private String eventDate;
   private Integer totalRounds;
   private Integer currentRound;
   private String status;
@@ -95,6 +96,15 @@ public class TournamentItem {
 
   public void setTeamSize(Integer teamSize) {
     this.teamSize = teamSize;
+  }
+
+  /** 開催日(ISO8601 の YYYY-MM-DD)。未設定は null */
+  public String getEventDate() {
+    return eventDate;
+  }
+
+  public void setEventDate(String eventDate) {
+    this.eventDate = eventDate;
   }
 
   public Integer getTotalRounds() {

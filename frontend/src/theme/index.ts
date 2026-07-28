@@ -5,12 +5,42 @@ interface RankPaletteColor {
   background: string;
 }
 
+/** 帳票印刷(A4)専用のトークン。mm/pt は8pxグリッドで表現できないため独立トークンとして持つ */
+interface PrintTokens {
+  /** @page の余白 */
+  pageMargin: string;
+  /** 対局カード間の切り取り余白 */
+  cardGap: string;
+  /** 名簿・対戦結果表の本文サイズ */
+  bodyFontSize: string;
+  /** 名簿・対戦結果表のセルサイズ */
+  tableFontSize: string;
+  /** 対局カードの本文サイズ(A8相当は文字が小さくなるため別トークン) */
+  cardFontSize: string;
+  /** 表ヘッダーの地色。緑ベタ塗りはインクを食うためモノクロ運用にする */
+  headerBg: string;
+  /** 手書き記入欄を持つ表(対戦結果表)のデータ行の高さ */
+  writableRowHeight: string;
+  /** 対局カード(団体戦)の手書き記入行の高さ */
+  cardWritableRowHeight: string;
+  /** 対戦結果表の「相手」列の幅(No.の数字のみで足りるため狭くし、結果列を相対的に広くする) */
+  opponentColWidth: string;
+  /** 帳票ヘッダーの開催日が未設定のときに手書き用に確保する記入枠(下線)の幅 */
+  eventDateBlankWidth: string;
+}
+
 declare module '@mui/material/styles' {
   interface Palette {
     rank: { gold: RankPaletteColor; silver: RankPaletteColor; bronze: RankPaletteColor };
   }
   interface PaletteOptions {
     rank?: { gold: RankPaletteColor; silver: RankPaletteColor; bronze: RankPaletteColor };
+  }
+  interface Theme {
+    print: PrintTokens;
+  }
+  interface ThemeOptions {
+    print?: PrintTokens;
   }
 }
 
@@ -34,6 +64,18 @@ export const theme = createTheme({
       silver: { main: '#9AA0A6', background: '#E4E5E7' },
       bronze: { main: '#C97A3D', background: '#EFD3BC' },
     },
+  },
+  print: {
+    pageMargin: '10mm',
+    cardGap: '4mm',
+    bodyFontSize: '10pt',
+    tableFontSize: '9pt',
+    cardFontSize: '7pt',
+    headerBg: '#EEEEEE',
+    writableRowHeight: '14mm',
+    cardWritableRowHeight: '8mm',
+    opponentColWidth: '10mm',
+    eventDateBlankWidth: '30mm',
   },
   typography: {
     fontFamily: '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif',

@@ -98,7 +98,7 @@ describe('SharedPage', () => {
     expect(screen.queryByRole('list', { name: '順位' })).not.toBeInTheDocument();
   });
 
-  it('戦績一覧タブに切り替えるとラウンドごとの対戦相手・結果を含む一覧表が表示される', async () => {
+  it('対戦結果タブに切り替えるとラウンドごとの対戦相手・結果を含む一覧表が表示される', async () => {
     server.use(
       http.get(`/api/v1/shared/${TOKEN}`, () =>
         HttpResponse.json(
@@ -139,7 +139,7 @@ describe('SharedPage', () => {
     renderSharedPage();
 
     await screen.findByRole('heading', { name: '第1回テスト囲碁大会' });
-    await userEvent.click(screen.getByRole('tab', { name: '戦績一覧' }));
+    await userEvent.click(screen.getByRole('tab', { name: '対戦結果' }));
 
     expect(await screen.findByRole('columnheader', { name: '第1ラウンド' })).toBeInTheDocument();
     const rows = screen.getAllByRole('row');

@@ -87,7 +87,9 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 6. `@DynamoDbBean` はgetterにアノテーション。楽観ロックはEnhanced Client経由のみ有効
 7. MUI: `textTransform: 'none'` をテーマ設定、アイコンは個別import、色・余白のハードコード禁止
 8. ログ・レスポンスに個人情報(氏名・所属)やshareTokenを漏らさない
-9. `window.alert/confirm`・`window.location.href` 禁止(ConfirmDialog / React Router を使う)
+9. `window.alert/confirm`・`window.location.href` 禁止(ConfirmDialog / React Router を使う)。
+   `window.print()` のみ例外(代替APIがないため許容。`utils/printPage.ts` 経由でのみ呼び、
+   ユーザー操作起点に限る。`useEffect` 等での自動実行は禁止)
 10. 認証状態のロード完了前にリダイレクトしない(`RequireAuth` の isLoading 待ち)
 11. 大会前日・当日はデプロイしない
 12. コミット前に `npm run check` / `./gradlew check` を必ず実行

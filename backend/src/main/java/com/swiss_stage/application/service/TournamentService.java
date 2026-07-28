@@ -71,6 +71,7 @@ public class TournamentService {
             request.gameType(),
             request.competitionType(),
             request.teamSize(),
+            request.eventDate(),
             request.totalRounds(),
             ownerSub,
             Instant.now(clock));
@@ -109,8 +110,14 @@ public class TournamentService {
     if (tournament.version() != request.version()) {
       throw new ConflictException();
     }
+    validateEventDate(request);
     if (request.name() != null) {
       tournament = tournament.rename(request.name());
+    }
+    if (Boolean.TRUE.equals(request.clearEventDate())) {
+      tournament = tournament.withEventDate(null);
+    } else if (request.eventDate() != null) {
+      tournament = tournament.withEventDate(request.eventDate());
     }
     if (request.visibility() != null) {
       tournament = tournament.withVisibility(request.visibility());
@@ -121,6 +128,13 @@ public class TournamentService {
     tournamentRepository.save(tournament.touched(Instant.now(clock)));
     sharedViewCache.evict(id);
     return reload(id);
+  }
+
+  /** 開催日の設定と未設定化を同時に指示されたらどちらを優先すべきか決まらないため、明示的に弾く */
+  private void validateEventDate(UpdateTournamentRequest request) {
+    if (Boolean.TRUE.equals(request.clearEventDate()) && request.eventDate() != null) {
+      throw new ValidationException("開催日の変更と未設定化は同時に指定できません");
+    }
   }
 
   /** 共有トークンの発行・再発行(13_security_design.md §2)。 上書き保存のため旧トークンは即時無効になる(キャッシュも同時に破棄)。 */

@@ -17,7 +17,7 @@ import {
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { TeamCrossTable } from '../components/features/team/TeamCrossTable';
+import { TeamMatchResultsTable } from '../components/features/team/TeamMatchResultsTable';
 import { TeamRankingBoard } from '../components/features/team/TeamRankingBoard';
 import {
   boardReportStatus,
@@ -70,7 +70,7 @@ function teamMatchStatusText(match: TeamMatch, canReview: boolean): string {
     return anyBoardDecided ? '対局中' : '未入力';
   }
   const { team1, team2 } = teamAggregatePoints(match);
-  // teamAggregatePoints は2倍値(勝ち=2点)で返すため、盤数の内訳表示は2で割る(teamCrossTableData.tsと同じ変換)
+  // teamAggregatePoints は2倍値(勝ち=2点)で返すため、盤数の内訳表示は2で割る(teamMatchResultsTableData.tsと同じ変換)
   const breakdown = `${team1 / 2}-${team2 / 2}`;
   if (teamMatchHasReportMismatch(match)) {
     return canReview
@@ -147,7 +147,7 @@ interface TeamSharedPageProps {
 
 /** S10 共有ページの団体戦版。個人戦のSharedPageと同じ構成(タブ・ラウンド選択)を踏襲する */
 export function TeamSharedPage({ token, data }: TeamSharedPageProps) {
-  const [tab, setTab] = useState<'pairings' | 'standings' | 'crosstable'>('pairings');
+  const [tab, setTab] = useState<'pairings' | 'standings' | 'matchResults'>('pairings');
   const [selectedRound, setSelectedRound] = useState<number | null>(null);
 
   const { tournament, teamRounds, teamStandings } = data;
@@ -180,13 +180,13 @@ export function TeamSharedPage({ token, data }: TeamSharedPageProps) {
 
       <Tabs
         value={tab}
-        onChange={(_event, newTab: 'pairings' | 'standings' | 'crosstable') => setTab(newTab)}
+        onChange={(_event, newTab: 'pairings' | 'standings' | 'matchResults') => setTab(newTab)}
         sx={{ mt: 2, mb: 3, borderBottom: 1, borderColor: 'divider' }}
         variant="fullWidth"
       >
         <Tab label="組み合わせ" value="pairings" />
         <Tab label="順位表" value="standings" />
-        <Tab label="戦績一覧" value="crosstable" />
+        <Tab label="対戦結果" value="matchResults" />
       </Tabs>
 
       {tab === 'pairings' &&
@@ -269,7 +269,7 @@ export function TeamSharedPage({ token, data }: TeamSharedPageProps) {
           ))
         ))}
 
-      {tab === 'crosstable' &&
+      {tab === 'matchResults' &&
         (standings.every((g) => g.standings.length === 0) ? (
           <EmptyState
             icon={<HourglassEmptyIcon fontSize="inherit" />}
@@ -283,7 +283,7 @@ export function TeamSharedPage({ token, data }: TeamSharedPageProps) {
                   {group.name}
                 </Typography>
               )}
-              <TeamCrossTable
+              <TeamMatchResultsTable
                 rounds={rounds.map((round) => ({
                   ...round,
                   matches: round.matches.filter((m) => m.group.id === group.id),

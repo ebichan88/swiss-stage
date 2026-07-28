@@ -93,3 +93,6 @@ export function useTournament(id: string) {
 - MUIテーマ(`theme/index.ts`)にデザイントークンを集約(`.claude/02_design_system/` と同期)
 - コンポーネント個別のスタイルは `sx` prop を使用。CSSファイルの追加は原則禁止
 - **スマホファースト**: 共有ページ・結果入力は幅375pxを基準にデザインし、PCは余白で調整
+- **印刷CSS(`@page`/`@media print`)も同様にCSSファイルを追加しない**。MUIの `GlobalStyles`(theme
+  を受け取る関数形式)で実装する(`components/features/print/PrintGlobalStyles.tsx`)。ルート単位で1帳票=1向きが
+  確定しているため、各印刷ページが自身の向きでこれを1回レンダリングする(`.claude/02_design_system/04_layout_system.md` §5)

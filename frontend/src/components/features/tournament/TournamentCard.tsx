@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { paths } from '../../../routes';
 import type { Tournament } from '../../../types/tournament';
-import { formatDateTime } from '../../../utils/format';
+import { formatDateTime, formatEventDate } from '../../../utils/format';
 import { gameTypeIcons, gameTypeLabels } from '../../../utils/labels';
 import { StatusBadge } from '../../ui/StatusBadge';
 
@@ -40,6 +40,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
           <Typography variant="body2" color="text.secondary">
             全{tournament.totalRounds}ラウンド
             {tournament.status === 'IN_PROGRESS' && ` ・ 第${tournament.currentRound}ラウンド`}
+            {tournament.eventDate !== null && ` ・ ${formatEventDate(tournament.eventDate)}開催`}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             作成: {formatDateTime(tournament.createdAt)}

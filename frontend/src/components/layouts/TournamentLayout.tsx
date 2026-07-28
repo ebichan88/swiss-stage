@@ -18,25 +18,16 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import {
-  Link,
-  Outlet,
-  useLocation,
-  useNavigate,
-  useOutletContext,
-  useParams,
-} from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useTournament } from '../../hooks/useTournaments';
 import { paths } from '../../routes';
-import type { Tournament } from '../../types/tournament';
 import { ErrorState, FullPageSpinner } from '../ui/QueryStates';
 import { StatusBadge } from '../ui/StatusBadge';
 
-/** 配下ページから大会情報を参照するためのOutletコンテキスト */
-export function useTournamentContext(): Tournament {
-  return useOutletContext<Tournament>();
-}
+// PrintLayout(親が異なるOutlet)からも参照するため tournamentContext.ts に定義本体を置く。
+// 既存の import 元(各ページ)を変えずに済むようここで re-export する
+export { useTournamentContext } from './tournamentContext';
 
 const SIDEBAR_WIDTH = 200;
 
@@ -72,7 +63,7 @@ export function TournamentLayout() {
     },
     { label: 'ラウンド', icon: <FormatListNumberedIcon />, to: paths.rounds(id) },
     { label: '順位', icon: <LeaderboardIcon />, to: paths.standings(id) },
-    { label: '戦績一覧', icon: <TableChartIcon />, to: paths.crossTable(id) },
+    { label: '対戦結果', icon: <TableChartIcon />, to: paths.matchResults(id) },
     { label: '設定', icon: <SettingsIcon />, to: paths.settings(id) },
   ];
   const currentIndex = navItems.findLastIndex((item) => location.pathname.startsWith(item.to));
@@ -118,7 +109,7 @@ export function TournamentLayout() {
             value={currentIndex}
             onChange={(_event, newIndex: number) => navigate(navItems[newIndex].to)}
             sx={{
-              // 項目数が多いスマホでも6項目(概要・参加者・ラウンド・順位・戦績一覧・設定)が
+              // 項目数が多いスマホでも6項目(概要・参加者・ラウンド・順位・対戦結果・設定)が
               // 横スクロールなしで収まるよう、標準より詰めた余白にする
               '& .MuiBottomNavigationAction-root': { minWidth: 0, px: 0.5 },
               '& .MuiBottomNavigationAction-label': { fontSize: 'caption.fontSize' },

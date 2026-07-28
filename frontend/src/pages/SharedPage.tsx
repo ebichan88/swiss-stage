@@ -25,7 +25,7 @@ import {
   resultMark,
   tableLabel,
 } from '../components/features/round/matchDisplay';
-import { CrossTable } from '../components/features/standing/CrossTable';
+import { MatchResultsTable } from '../components/features/standing/MatchResultsTable';
 import { RankingBoard } from '../components/features/standing/RankingBoard';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState, FullPageSpinner } from '../components/ui/QueryStates';
@@ -165,7 +165,7 @@ interface IndividualSharedPageProps {
 }
 
 function IndividualSharedPage({ token, data }: IndividualSharedPageProps) {
-  const [tab, setTab] = useState<'pairings' | 'standings' | 'crosstable'>('pairings');
+  const [tab, setTab] = useState<'pairings' | 'standings' | 'matchResults'>('pairings');
   const [selectedRound, setSelectedRound] = useState<number | null>(null);
 
   const { tournament, rounds: individualRounds, standings: individualStandings } = data;
@@ -199,13 +199,13 @@ function IndividualSharedPage({ token, data }: IndividualSharedPageProps) {
 
       <Tabs
         value={tab}
-        onChange={(_event, newTab: 'pairings' | 'standings' | 'crosstable') => setTab(newTab)}
+        onChange={(_event, newTab: 'pairings' | 'standings' | 'matchResults') => setTab(newTab)}
         sx={{ mt: 2, mb: 3, borderBottom: 1, borderColor: 'divider' }}
         variant="fullWidth"
       >
         <Tab label="組み合わせ" value="pairings" />
         <Tab label="順位表" value="standings" />
-        <Tab label="戦績一覧" value="crosstable" />
+        <Tab label="対戦結果" value="matchResults" />
       </Tabs>
 
       {tab === 'pairings' &&
@@ -288,7 +288,7 @@ function IndividualSharedPage({ token, data }: IndividualSharedPageProps) {
           ))
         ))}
 
-      {tab === 'crosstable' &&
+      {tab === 'matchResults' &&
         (standings.every((g) => g.standings.length === 0) ? (
           <EmptyState
             icon={<HourglassEmptyIcon fontSize="inherit" />}
@@ -302,7 +302,7 @@ function IndividualSharedPage({ token, data }: IndividualSharedPageProps) {
                   {group.name}
                 </Typography>
               )}
-              <CrossTable
+              <MatchResultsTable
                 rounds={rounds.map((round) => ({
                   ...round,
                   matches: round.matches.filter((m) => m.group.id === group.id),
