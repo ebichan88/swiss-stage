@@ -31,7 +31,6 @@
             "Skill(pr:*)"
         ],
         "ask": [
-            "Bash(git push *)",
             "Bash(gh pr merge *)",
             "Bash(gh api --method *)",
             "Bash(gh api -X *)"
