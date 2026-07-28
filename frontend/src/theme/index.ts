@@ -23,6 +23,8 @@ interface PrintTokens {
   writableRowHeight: string;
   /** 対局カード(団体戦)の手書き記入行の高さ */
   cardWritableRowHeight: string;
+  /** 対戦結果表の「相手」列の幅(No.の数字のみで足りるため狭くし、結果列を相対的に広くする) */
+  opponentColWidth: string;
 }
 
 declare module '@mui/material/styles' {
@@ -70,6 +72,7 @@ export const theme = createTheme({
     headerBg: '#EEEEEE',
     writableRowHeight: '14mm',
     cardWritableRowHeight: '8mm',
+    opponentColWidth: '10mm',
   },
   typography: {
     fontFamily: '"Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif',

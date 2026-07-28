@@ -2,7 +2,7 @@ import { Fragment } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 
 import { buildPrintTeamMatchResultsTableRows } from './printMatchResultsTableData';
-import { writableGridSx } from './printSx';
+import { opponentCellSx, writableGridSx } from './printSx';
 import type { Team } from '../../../types/team';
 
 export interface PrintTeamMatchResultsTableProps {
@@ -45,7 +45,7 @@ export function PrintTeamMatchResultsTable({
           <TableRow>
             {rounds.map((round) => (
               <Fragment key={round}>
-                <TableCell>相手</TableCell>
+                <TableCell sx={opponentCellSx}>相手</TableCell>
                 <TableCell>結果</TableCell>
               </Fragment>
             ))}
@@ -61,7 +61,7 @@ export function PrintTeamMatchResultsTable({
               <TableCell>{row.name}</TableCell>
               {rounds.map((round) => (
                 <Fragment key={round}>
-                  <TableCell />
+                  <TableCell sx={opponentCellSx} />
                   <TableCell />
                 </Fragment>
               ))}

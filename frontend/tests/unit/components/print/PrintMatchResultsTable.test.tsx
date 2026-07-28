@@ -94,4 +94,14 @@ describe('PrintMatchResultsTable', () => {
       .join('\n');
     expect(css).toMatch(/text-align:center/);
   });
+
+  it('各ラウンドの「相手」列を狭める(結果列を相対的に広く目立たせる)', () => {
+    renderWithProviders(
+      <PrintMatchResultsTable participants={[participantOf()]} totalRounds={1} />,
+    );
+    const css = Array.from(document.querySelectorAll('style'))
+      .map((el) => el.textContent ?? '')
+      .join('\n');
+    expect(css).toMatch(/width:10mm/);
+  });
 });

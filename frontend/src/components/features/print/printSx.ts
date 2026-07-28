@@ -1,3 +1,5 @@
+import type { Theme } from '@mui/material/styles';
+
 /** 画面には出すが印刷しない(戻るボタン・印刷ボタン等) */
 export const screenOnlySx = { '@media print': { display: 'none' } } as const;
 
@@ -19,3 +21,9 @@ export const writableGridSx = {
     textAlign: 'center',
   },
 } as const;
+
+/**
+ * 対戦結果表の各ラウンドの「相手」列を狭める。相手はNo.(数字)のみで足りるため狭くし、
+ * 紙上で一番に確認したい「結果」列を相対的に広く目立たせる
+ */
+export const opponentCellSx = (theme: Theme) => ({ width: theme.print.opponentColWidth });
