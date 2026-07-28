@@ -4,20 +4,14 @@ import {
   buildMatchCards,
   buildTeamMatchCards,
   chunkIntoPages,
-  decideLayout,
+  INDIVIDUAL_CARD_LAYOUT,
   TEAM_CARD_LAYOUT,
 } from '../../../../src/components/features/print/matchCardData';
 import { groupOf, participantOf, teamMemberOf, teamOf } from '../../../fixtures';
 
-describe('decideLayout', () => {
-  it('totalRounds=6以下は4列×4行(16面)', () => {
-    expect(decideLayout(6)).toEqual({ columns: 4, rows: 4 });
-    expect(decideLayout(1)).toEqual({ columns: 4, rows: 4 });
-  });
-
-  it('totalRounds=7以上は4列×3行(12面)に落ちる(境界値)', () => {
-    expect(decideLayout(7)).toEqual({ columns: 4, rows: 3 });
-    expect(decideLayout(8)).toEqual({ columns: 4, rows: 3 });
+describe('INDIVIDUAL_CARD_LAYOUT', () => {
+  it('個人戦は2列×6行(転置レイアウトだが個人勝敗行が無く2列並べられる)', () => {
+    expect(INDIVIDUAL_CARD_LAYOUT).toEqual({ columns: 2, rows: 6 });
   });
 });
 

@@ -31,12 +31,10 @@ export interface CardLayout {
 export const TEAM_CARD_LAYOUT: CardLayout = { columns: 1, rows: 3 };
 
 /**
- * 個人戦の面付けを決める。4列×4行(16面、A8相当)が既定だが、記入行の高さは行数(縦の分割数)で決まるため、
- * totalRoundsが多い大会では行が潰れる。記入行が6mm以上を確保できるよう、totalRounds≥7は4列×3行(12面)に落とす
+ * 個人戦は2列×6行。団体戦と同じくラウンドを列にした転置レイアウトだが、個人勝敗行が無く
+ * 1枚の幅が狭いため2列並べられる(団体戦は個人勝敗のボード列が入るため1列)
  */
-export function decideLayout(totalRounds: number): CardLayout {
-  return totalRounds >= 7 ? { columns: 4, rows: 3 } : { columns: 4, rows: 4 };
-}
+export const INDIVIDUAL_CARD_LAYOUT: CardLayout = { columns: 2, rows: 6 };
 
 /** ACTIVEのみ・グループ順(APIが返す順=作成順)→entryOrder順に並べる */
 export function buildMatchCards(

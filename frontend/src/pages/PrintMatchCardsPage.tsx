@@ -4,7 +4,7 @@ import {
   buildMatchCards,
   buildTeamMatchCards,
   chunkIntoPages,
-  decideLayout,
+  INDIVIDUAL_CARD_LAYOUT,
   TEAM_CARD_LAYOUT,
 } from '../components/features/print/matchCardData';
 import { MatchCardSheet } from '../components/features/print/MatchCardSheet';
@@ -60,7 +60,7 @@ function PrintIndividualMatchCardsPage() {
     );
   }
 
-  const layout = decideLayout(tournament.totalRounds);
+  const layout = INDIVIDUAL_CARD_LAYOUT;
   const cards = buildMatchCards(participants, groups, tournament.totalRounds);
   const pages = chunkIntoPages(cards, layout.columns * layout.rows);
 
