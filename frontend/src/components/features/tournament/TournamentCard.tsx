@@ -5,7 +5,7 @@ import { paths } from '../../../routes';
 import type { Tournament } from '../../../types/tournament';
 import { formatDateTime, formatEventDate } from '../../../utils/format';
 import { gameTypeIcons, gameTypeLabels } from '../../../utils/labels';
-import { StatusBadge } from '../../ui/StatusBadge';
+import { CompetitionTypeBadge, StatusBadge } from '../../ui/StatusBadge';
 
 export interface TournamentCardProps {
   tournament: Tournament;
@@ -31,11 +31,29 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
                 alt={gameTypeLabels[tournament.gameType]}
                 sx={{ height: 24, width: 24, flexShrink: 0 }}
               />
-              <Typography variant="h3" component="h2" gutterBottom sx={{ wordBreak: 'break-word' }}>
+              <Typography
+                variant="h3"
+                component="h2"
+                gutterBottom
+                title={tournament.name}
+                sx={{
+                  wordBreak: 'break-word',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  minHeight: '2.9rem',
+                }}
+              >
                 {tournament.name}
               </Typography>
             </Box>
-            <StatusBadge status={tournament.status} />
+            <Box
+              sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}
+            >
+              <StatusBadge status={tournament.status} />
+              <CompetitionTypeBadge competitionType={tournament.competitionType} />
+            </Box>
           </Box>
           <Typography variant="body2" color="text.secondary">
             全{tournament.totalRounds}ラウンド
