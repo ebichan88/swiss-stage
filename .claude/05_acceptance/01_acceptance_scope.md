@@ -40,6 +40,8 @@
 | TRN-AC-012 | P2 | 開催日(eventDate)を指定して作成でき、省略時はnullで返る | done | TournamentApiTest |
 | TRN-AC-013 | P2 | 開催日は更新でき、clearEventDate=trueで未設定に戻せる | done | TournamentApiTest |
 | TRN-AC-014 | P2 | 開催日の変更と未設定化の同時指定・日付形式不正はいずれも400 VALIDATION_ERRORになる | done | TournamentApiTest |
+| TRN-AC-015 | P2 | 大会カードで開催日を表示し、未設定なら開催日を表示しない | done | TournamentCard.test(Vitest) |
+| TRN-AC-016 | P2 | 大会作成で開催日を送信でき、設定で開催日を空にするとclearEventDateで送信する | done | TournamentCreatePage.test, SettingsPage.test(Vitest) |
 
 ## PTC: 参加者
 
@@ -177,7 +179,9 @@
 | PRT-AC-010 | P2 | 対局カードは個人戦2列×6枚・団体戦1列×3枚で面付けし、グループが切り替わる位置で改ページする | in_progress | 面付け・改ページ境界のロジックはmatchCardData.testで検証済み。実紙面での書きやすさ確認は未実施 |
 | PRT-AC-011 | P1 | 団体戦の対局カードはラウンドを列にした転置レイアウトで、チーム名・相手・チーム勝敗・個人勝敗(主将・副将…)欄と集計欄を持ち、メンバー個人名を含めない | done | TeamMatchCardSheet.test |
 | PRT-AC-012 | P2 | 棄権(WITHDRAWN)の参加者・チームには対局カードを出力しない | done | matchCardData.test |
-| PRT-AC-013 | P2 | 全帳票のヘッダーに大会名と開催日を印字し、開催日が未設定なら空欄にする | done | PrintReportHeader.test |
+| PRT-AC-013 | P2 | 全帳票のヘッダーに大会名と開催日を印字し、開催日が未設定なら手書き用の記入枠(下線)を残す | done | PrintReportHeader.test |
+| PRT-AC-014 | P2 | 参加者・チームが0件でも名簿・対戦結果表は見出し行を出力する(空欄テンプレートとして使える) | done | PrintRoster.test, PrintMatchResultsTable.test |
+| PRT-AC-015 | P2 | 印刷ページは大会状態(PREPARING/IN_PROGRESS/FINISHED)を問わず利用できる | done | PrintRosterPage.test |
 
 ## E2E: 一気通貫(クリティカルパス)
 

@@ -104,4 +104,12 @@ describe('PrintMatchResultsTable', () => {
       .join('\n');
     expect(css).toMatch(/width:10mm/);
   });
+
+  it('PRT-AC-014: 参加者が0件でも見出し(ラウンド列)を出力する(空欄テンプレートとして使える)', () => {
+    renderWithProviders(<PrintMatchResultsTable participants={[]} totalRounds={3} />);
+    expect(screen.getByRole('columnheader', { name: '1回戦' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '3回戦' })).toBeInTheDocument();
+    // ヘッダー2行のみ(データ行は無い)
+    expect(screen.getAllByRole('row')).toHaveLength(2);
+  });
 });

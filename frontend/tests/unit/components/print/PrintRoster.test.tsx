@@ -28,4 +28,12 @@ describe('PrintRoster', () => {
     expect(screen.getByRole('columnheader', { name: '出欠' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: '備考' })).toBeInTheDocument();
   });
+
+  it('PRT-AC-014: 参加者が0件でも見出し行を出力する(空欄テンプレートとして使える)', () => {
+    renderWithProviders(<PrintRoster participants={[]} groups={[groupOf()]} />);
+    expect(screen.getByRole('columnheader', { name: 'No.' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '氏名' })).toBeInTheDocument();
+    // データ行は無い(ヘッダー行のみ)
+    expect(screen.getAllByRole('row')).toHaveLength(1);
+  });
 });
