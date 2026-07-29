@@ -3,3 +3,7 @@
 
 # Google OAuthのローカル用シークレット(テンプレート: .swiss-stage-oauth.env.template)
 .swiss-stage-oauth.env
+
+# Pythonキャッシュ(.claude/hooks/ 配下のスクリプト用)
+__pycache__/
+*.pyc
