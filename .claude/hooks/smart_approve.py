@@ -53,6 +53,10 @@ def decompose(cmd):
             current.append(c)
             if i + 1 < len(cmd):
                 current.append(cmd[i+1]); i += 2
+            else:
+                # 末尾が \ 単独で終わる場合、次の文字が存在しないため
+                # i を進めないと while ループが終了しない(無限ループ)。
+                i += 1
             continue
         if c == "'" and not in_dq:
             in_sq = not in_sq

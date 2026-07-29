@@ -29,9 +29,6 @@
             "Bash(pnpm exec tsc *)",
             "Bash(pnpm exec vitest *)",
             "Bash(pnpm dlx *)",
-            "Bash(echo)",
-            "Bash(cat)",
-            "Bash(tee)",
             "Skill(pr)",
             "Skill(pr:*)"
         ],

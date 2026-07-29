@@ -4,6 +4,7 @@
 実行方法: python3 .claude/hooks/test_smart_approve.py
 """
 import sys
+import threading
 import unittest
 from pathlib import Path
 
@@ -54,6 +55,22 @@ class DecomposeTests(unittest.TestCase):
             ['echo "line1\nline2"'],
         )
 
+    def test_trailing_backslash_does_not_hang(self):
+        # M1: 末尾が \ 単独で終わる入力で i が進まなくなると
+        # while ループが無限ループになる(PreToolUseフックが応答不能になる)。
+        # 修正が壊れた場合にテストスイート自体がハングしないよう、
+        # 別スレッド + join(timeout) で検証する。
+        result = {}
+
+        def run():
+            result["value"] = decompose("git commit -m foo\\")
+
+        t = threading.Thread(target=run, daemon=True)
+        t.start()
+        t.join(timeout=2)
+        self.assertFalse(t.is_alive(), "decompose() が末尾の \\ で無限ループした")
+        self.assertEqual(result["value"], ["git commit -m foo\\"])
+
 
 class BypassRegressionTests(unittest.TestCase):
     """C1: `& rm -rf` / 埋め込み改行 での自動承認バイパスが
@@ -88,6 +105,30 @@ class BypassRegressionTests(unittest.TestCase):
         self.assertTrue(
             self._would_auto_approve("git status && git diff", allow)
         )
+
+    def test_echo_append_redirect_is_never_auto_approved(self):
+        # M2: `echo ... >> file` はUNSAFE_SHELL_PATTERN(`>`)により
+        # 常にブロックされる設計。echo自体を許可リストに入れても
+        # リダイレクトを伴う用途は自動承認されない(意図した動作)。
+        allow = [("echo", False)]
+        self.assertFalse(
+            self._would_auto_approve('echo "log line" >> session_log.md', allow)
+        )
+
+    def test_pipe_tee_append_is_never_auto_approved(self):
+        # M2: `... | tee -a file` も同様にリダイレクト相当のUNSAFE_SHELL_PATTERNには
+        # 引っかからないが、decompose()で `tee -a file` ステージに分割された後、
+        # `Bash(tee)`(完全一致・引数なし)にはマッチしないため自動承認されない。
+        allow = [("git log", True), ("tee", False)]
+        self.assertFalse(
+            self._would_auto_approve("git log | tee -a session_log.md", allow)
+        )
+
+    def test_bare_echo_without_redirect_is_auto_approved(self):
+        # `Bash(echo)`(完全一致・引数なし)が許可リストにある場合、
+        # 引数もリダイレクトも伴わない bare `echo` のみが自動承認される。
+        allow = [("echo", False)]
+        self.assertTrue(self._would_auto_approve("echo", allow))
 
 
 if __name__ == "__main__":
