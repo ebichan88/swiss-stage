@@ -17,8 +17,9 @@
 | `vrt.yml` | `workflow_dispatch` | StorybookページのVisual Regression Test。大きめのUI変更をしたPRで手動実行(`09_test_strategy.md`) |
 | `ai-review.yml` | `pull_request` | AIコードレビュー・自動修正(Critical/Majorのみ。§2.5) |
 | `ai-qa.yml` | `pull_request` | 受け入れケース台帳との突合(レポートのみ・非ゲート。`.claude/agents/qa.md`) |
+| `guard.yml` | `pull_request` | テスト弱体化ガード。AI自動修正の安全装置(§2.6) |
 
-`ci.yml` 以外はPRごとに自動実行しない(重い、または人間の追加判断を要するため)。
+`ci.yml` / `guard.yml` 以外はPRごとに自動実行しない(重い、または人間の追加判断を要するため)。
 
 ### `vrt.yml` の運用
 
@@ -122,6 +123,36 @@ PR(open/push) → Reviewer(sticky comment更新, VERDICT: PASS/FAIL)
 - **needs-human ラベル**: 付いている間は自動ループ停止。人間が対応してラベルを外すと再開
 - **Fixerのpush**: pushがpull_requestイベントを発火しない環境向けに、同一ラン内でCI手動起動(`workflow_dispatch`)と再レビューを行う。発火する環境ではconcurrencyで新しいランに引き継がれる
 - **マージ判断は常に人間**。PASSは「人間レビューの前処理完了」の意味
+
+---
+
+## 2.6 テスト弱体化ガード(`.github/workflows/guard.yml`)
+
+AIの自動修正は「指摘や失敗を閉じること」が目的であるため、**テストを弱めて通す**動機が構造的に働く。これを機械的に塞ぐ安全装置であり、**このガードが機能していることを前提に自動修正の範囲を広げる**。
+
+検査本体は `.github/scripts/check-test-weakening.sh`(検証は同ディレクトリの `test-check-test-weakening.sh`)。
+
+### 適用の強度
+
+| 対象 | モード | 検査項目 | 違反時 |
+|---|---|---|---|
+| `[ai-fix]` / `[ci-fix]` コミットの差分(1コミットずつ) | strict | 全項目 | BLOCK → **CI失敗** + `needs-human` / ESCALATE → `needs-human` のみ |
+| PR全体の差分 | light | BLOCK相当のみ | PRコメントで警告(**ゲートしない**) |
+
+人間のPRをゲートしないのは、テストの整理・削除には正当な理由がありうるため。
+
+### 判定
+
+| 検査項目 | 判定 |
+|---|---|
+| テストの無効化(`@Disabled` / `@Ignore` / `.skip()` / `xit()` / `.only()` の追加) | BLOCK |
+| 受け入れケースID(`XXX-AC-nnn`)を含むテストの削除 | BLOCK(台帳のStatusと連動するため人間の判断が要る) |
+| `src/main/` の削除を伴わないテストの削除 | ESCALATE |
+| アサーションの純減 | ESCALATE(正当なリファクタでも起きうるためブロックしない) |
+
+**実装クラスの廃止に伴うテスト削除は正当**として許容する(同一差分に `src/main/` の削除があり、かつ受け入れケースIDを含まない場合)。
+
+規約側の二重化として `.claude/agents/fixer.md` にも「テストを弱める修正は禁止」を明記している。
 
 ---
 

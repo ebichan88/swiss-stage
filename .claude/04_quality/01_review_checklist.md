@@ -19,6 +19,7 @@ AIレビュアー(`.claude/agents/reviewer.md`)がPRレビュー時に参照す�
 | `services/` 外での `fetch` 直呼び | oxlint `no-restricted-globals` |
 | フォーマット・型エラー・テスト失敗 | `pnpm run check` / `./gradlew check` |
 | API契約(DTO/enum)とスキーマの一致 | contractテストのOpenAPI検証(`schema/openapi.yaml`)+ 生成型の鮮度チェック(CI) |
+| テストの無効化(`@Disabled`/`@Ignore`/`.skip()`/`xit()`/`.only()`)、受け入れケースID付きテストの削除 | テスト弱体化ガード(`.github/workflows/guard.yml`、全PR) |
 
 ## QAエージェント管轄(レビューで指摘しない)
 
@@ -70,7 +71,7 @@ AIレビュアー(`.claude/agents/reviewer.md`)がPRレビュー時に参照す�
 - **TEST-1**: domain層の変更に対応するユニットテストが追加・更新されているか(`05_swiss_pairing_algorithm.md` §4 の必須ケースを壊していないか)
 - **TEST-2**: マッチング・順位計算のロジック変更に、jqwikプロパティテストの観点(不変条件)が反映されているか
 - **TEST-3**: リポジトリ実装のテストがDynamoDB Local実機で行われているか(モックにすり替わっていないか)
-- **TEST-4**: テストが実装詳細ではなく仕様(振る舞い)を検証しているか。テストの削除・スキップ・アサーション弱体化で「通した」形跡がないか
+- **TEST-4**: テストが実装詳細ではなく仕様(振る舞い)を検証しているか。**アサーションの弱体化・検証対象のすり替え**で「通した」形跡がないか(無効化マーカーの追加と受け入れケースID付きテストの削除は上表のとおり機械検査されるので指摘しない。アサーションの弱体化はAI修正コミットしか機械検査されないため、人間のPRではここで見る)
 
 ## DOC: ドキュメント同期
 

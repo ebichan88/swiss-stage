@@ -1,0 +1,175 @@
+# .github/scripts/check-test-weakening.sh を実行し、AIの自動修正が
+# 「テストを弱めて失敗を消す」経路を選んでいないかを検査する安全装置。
+#
+# 適用の強度を2段に分ける:
+#   AI修正コミット([ai-fix]/[ci-fix])の差分 … 全項目(strict)。BLOCKならCI失敗 + needs-human
+#   PR全体の差分                            … BLOCK相当のみ(light)。コメントで警告するだけ
+#
+# 人間のPRをゲートしないのは、テストの整理・削除には正当な理由がありうるため。
+# 一方AIの自動修正は「指摘を閉じること」が目的なので、弱体化の誘因が構造的に強い。
+name: Test Weakening Guard
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+concurrency:
+  group: guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write # needs-humanラベルの作成・付与
+
+jobs:
+  guard:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # PRブランチ実体を、コミット単位の検査ができる深さでcheckoutする
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: テスト弱体化ガード
+        id: guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+        run: |
+          # GitHub Actionsは既定で `bash -e` 起動するが、ここではガードの終了コード
+          # (0/1/2)を判定材料として使うため -e を明示的に切る
+          set +e
+          set -uo pipefail
+          GUARD=.github/scripts/check-test-weakening.sh
+
+          git fetch origin "$BASE" -q
+          MERGE_BASE=$(git merge-base "origin/$BASE" HEAD)
+          echo "merge-base: $MERGE_BASE"
+
+          REPORT=/tmp/guard-report.md
+          {
+            echo "<!-- swiss-stage-test-guard -->"
+            echo "# テスト弱体化ガード"
+            echo
+          } > "$REPORT"
+
+          ai_blocked=0
+          ai_escalated=0
+          pr_flagged=0
+
+          # ---- AI修正コミットを1つずつ厳格に検査する ----
+          # `git log --grep` はコミット本文も検索してしまい、本文で [ai-fix] に言及した
+          # 人間のコミットまで拾う。マーカーはsubjectに付ける規約(fixer.md)なので
+          # subjectだけを対象にする
+          AI_COMMITS=$(git log "$MERGE_BASE..HEAD" --format='%H%x09%s' \
+            | grep -E $'^[0-9a-f]+\t.*\\[(ai-fix|ci-fix)\\]' | cut -f1 || true)
+
+          if [ -n "$AI_COMMITS" ]; then
+            echo "## AI修正コミットの検査(strict)" >> "$REPORT"
+            echo >> "$REPORT"
+            for sha in $AI_COMMITS; do
+              if ! git rev-parse "$sha^" >/dev/null 2>&1; then
+                echo "初回コミットのため検査をスキップ: $sha"
+                continue
+              fi
+              subject=$(git log -1 --format=%s "$sha")
+              out=$("$GUARD" strict "$sha^" "$sha" 2>&1)
+              code=$?
+              echo "[$code] $sha $subject"
+              if [ "$code" -eq 0 ]; then
+                echo "- ✅ \`${sha:0:7}\` $subject" >> "$REPORT"
+              else
+                [ "$code" -eq 1 ] && ai_blocked=1
+                [ "$code" -eq 2 ] && ai_escalated=1
+                {
+                  echo "- ❌ \`${sha:0:7}\` $subject"
+                  echo
+                  echo '```'
+                  printf '%s\n' "$out"
+                  echo '```'
+                } >> "$REPORT"
+              fi
+              echo >> "$REPORT"
+            done
+          else
+            echo "## AI修正コミットの検査(strict)" >> "$REPORT"
+            echo >> "$REPORT"
+            echo "対象の \`[ai-fix]\` / \`[ci-fix]\` コミットはありません。" >> "$REPORT"
+            echo >> "$REPORT"
+          fi
+
+          # ---- PR全体をBLOCK相当のみ検査する(警告のみ・ゲートしない) ----
+          out=$("$GUARD" light "$MERGE_BASE" HEAD 2>&1)
+          code=$?
+          echo "[$code] PR全体(light)"
+          {
+            echo "## PR全体の検査(light)"
+            echo
+          } >> "$REPORT"
+          if [ "$code" -eq 0 ]; then
+            echo "違反はありません。" >> "$REPORT"
+          else
+            pr_flagged=1
+            {
+              echo "⚠️ 以下を検知しました。**マージはブロックしません**が、意図した変更か確認してください。"
+              echo
+              echo '```'
+              printf '%s\n' "$out"
+              echo '```'
+            } >> "$REPORT"
+          fi
+          echo >> "$REPORT"
+
+          # ---- 判定 ----
+          if [ "$ai_blocked" -eq 1 ]; then
+            VERDICT=BLOCK
+          elif [ "$ai_escalated" -eq 1 ]; then
+            VERDICT=ESCALATE
+          else
+            VERDICT=OK
+          fi
+          echo "verdict=$VERDICT" >> "$GITHUB_OUTPUT"
+          echo "pr_flagged=$pr_flagged" >> "$GITHUB_OUTPUT"
+
+          case "$VERDICT" in
+            BLOCK)
+              echo "**判定: BLOCK** — AI修正がテストを無効化、または受け入れケースID付きテストを削除しています。人間の対応が必要です。" >> "$REPORT"
+              ;;
+            ESCALATE)
+              echo "**判定: ESCALATE** — AI修正で検証が弱まった可能性があります。マージはブロックしませんが、人間の確認が必要です。" >> "$REPORT"
+              ;;
+            OK)
+              echo "**判定: OK**" >> "$REPORT"
+              ;;
+          esac
+
+          # ---- レポート投稿(1PRにつき1コメントを更新し続けるsticky方式) ----
+          if [ "$VERDICT" != "OK" ] || [ "$pr_flagged" -eq 1 ]; then
+            ID=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+              --paginate --jq '.[] | select(.body | startswith("<!-- swiss-stage-test-guard -->")) | .id' | head -1)
+            if [ -n "$ID" ]; then
+              gh api --method PATCH "repos/${{ github.repository }}/issues/comments/$ID" -F body=@"$REPORT"
+            else
+              gh pr comment "${{ github.event.pull_request.number }}" --body-file "$REPORT"
+            fi
+          fi
+
+      - name: needs-humanラベルを付与
+        if: steps.guard.outputs.verdict == 'BLOCK' || steps.guard.outputs.verdict == 'ESCALATE'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh label create needs-human --color B60205 \
+            --description "AIレビューの自動対応範囲外。人間の判断が必要(外すと自動レビュー再開)" --force
+          gh pr edit "${{ github.event.pull_request.number }}" --add-label needs-human
+
+      - name: BLOCK時はCIを失敗させる
+        if: steps.guard.outputs.verdict == 'BLOCK'
+        run: |
+          echo "AI修正がテストを弱体化しています。レポートを確認してください。" >&2
+          exit 1
