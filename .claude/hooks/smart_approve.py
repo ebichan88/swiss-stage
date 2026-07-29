@@ -44,7 +44,7 @@ def matches(pattern, wildcard, command):
     return command == pattern
 
 def decompose(cmd):
-    # クォートを考慮してパイプ・&&・; で分割
+    # クォートを考慮してパイプ・&&・単一の&(バックグラウンド実行)・;・改行 で分割
     parts, current, in_sq, in_dq = [], [], False, False
     i = 0
     while i < len(cmd):
@@ -59,11 +59,22 @@ def decompose(cmd):
         elif c == '"' and not in_sq:
             in_dq = not in_dq
         elif not in_sq and not in_dq:
-            if c == '|' or c == ';' or (c == '&' and i+1 < len(cmd) and cmd[i+1] == '&'):
+            if c == '|' or c == ';' or c == '\n':
                 parts.append(''.join(current).strip())
                 current = []
-                if c == '&': i += 2; continue
                 i += 1; continue
+            if c == '&':
+                # `&&` (論理AND) と単一の `&` (バックグラウンド実行) の両方を
+                # ステージ区切りとして扱う。単一&を放置すると
+                # `git log & rm -rf /path` のような後続コマンドが
+                # 分割されずに許可パターンのstartswithマッチをすり抜ける。
+                parts.append(''.join(current).strip())
+                current = []
+                if i + 1 < len(cmd) and cmd[i+1] == '&':
+                    i += 2
+                else:
+                    i += 1
+                continue
         current.append(c); i += 1
     parts.append(''.join(current).strip())
     return [p for p in parts if p]
