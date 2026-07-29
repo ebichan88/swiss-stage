@@ -75,6 +75,9 @@
 `.claude/05_acceptance/00_acceptance_policy.md` の体系(`<PREFIX>-AC-<3桁連番>`)に従って、
 追加・変更するケースを列挙する。**実装前に台帳へ Status=todo で追加し、実装PRで done にする。**
 
+ケースの洗い出しには `.claude/01_development_docs/09_test_strategy.md` §2.5 の技法を使う。
+特に §2 の画面シナリオから起こしたケースに対して、**境界値(両側)と条件の組み合わせの抜け**を確認する。
+
 | ID | P | 受け入れ基準 | 検証手段 |
 |---|---|---|---|
 | | | | contract / Vitest / E2E |
