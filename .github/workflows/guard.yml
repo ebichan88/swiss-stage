@@ -62,7 +62,11 @@ jobs:
           pr_flagged=0
 
           # ---- AI修正コミットを1つずつ厳格に検査する ----
-          AI_COMMITS=$(git log "$MERGE_BASE..HEAD" --grep='\[ai-fix\]' --grep='\[ci-fix\]' --format=%H || true)
+          # `git log --grep` はコミット本文も検索してしまい、本文で [ai-fix] に言及した
+          # 人間のコミットまで拾う。マーカーはsubjectに付ける規約(fixer.md)なので
+          # subjectだけを対象にする
+          AI_COMMITS=$(git log "$MERGE_BASE..HEAD" --format='%H%x09%s' \
+            | grep -E $'^[0-9a-f]+\t.*\\[(ai-fix|ci-fix)\\]' | cut -f1 || true)
 
           if [ -n "$AI_COMMITS" ]; then
             echo "## AI修正コミットの検査(strict)" >> "$REPORT"

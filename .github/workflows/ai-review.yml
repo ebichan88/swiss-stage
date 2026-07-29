@@ -116,18 +116,23 @@ jobs:
             STOP="聖域(domain/service または 05_swiss_pairing_algorithm.md)への指摘のため自動修正しません"
           fi
 
-          # 自動修正の試行回数上限([ai-fix]コミット数で数える)
+          # 自動修正の試行回数上限([ai-fix]コミット数で数える)。
+          # `git log --grep` はコミット本文も検索するため、本文で [ai-fix] に言及した
+          # 人間のコミットまで数えて回数を水増しし、Fixerを早期停止させてしまう。
+          # マーカーはsubjectに付ける規約(fixer.md)なのでsubjectだけを対象にする
           git fetch origin "$BASE" -q
-          ATTEMPTS=$(git log "origin/$BASE..HEAD" --grep='\[ai-fix\]' --oneline | wc -l)
+          AI_FIX_COMMITS=$(git log "origin/$BASE..HEAD" --format='%H%x09%s' \
+            | grep -E $'^[0-9a-f]+\t.*\\[ai-fix\\]' | cut -f1 || true)
+          ATTEMPTS=$(printf '%s' "$AI_FIX_COMMITS" | grep -c . || true)
           echo "これまでの自動修正回数: $ATTEMPTS"
           if [ -z "$STOP" ] && [ "$ATTEMPTS" -ge "$MAX_FIX_ATTEMPTS" ]; then
             STOP="自動修正の上限(${MAX_FIX_ATTEMPTS}回)に達しました"
           fi
 
           # 同一指摘の再発チェック: 過去の[ai-fix]コミットが直したはずの指摘が再指摘されたら停止
-          if [ -z "$STOP" ]; then
+          if [ -z "$STOP" ] && [ -n "$AI_FIX_COMMITS" ]; then
             for s in $SLUGS; do
-              if git log "origin/$BASE..HEAD" --grep='\[ai-fix\]' --format=%B | grep -q "Fixed: $s"; then
+              if git show -s --format=%B $AI_FIX_COMMITS | grep -q "Fixed: $s"; then
                 STOP="指摘 $s が自動修正後も再指摘されています(修正が無効か、指摘が不安定)"
                 break
               fi
