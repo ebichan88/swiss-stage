@@ -86,22 +86,38 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: write # 修正コミットのpush
-      actions: write # 修正後のCI再実行(gh workflow run)
+      contents: write # 修正コミットのpush(AUTOFIX_TOKEN未設定時のフォールバック用)
+      pull-requests: write # PRコメント
     steps:
       - uses: actions/checkout@v4
         with:
           # merge refではなくPRブランチ実体をcheckoutする(pushするため)
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
+          # AUTOFIX_TOKEN(人間名義のPAT)でpushする。GITHUB_TOKENでpushすると
+          # (1) 後続のpull_request実行が action_required で手動承認待ちになり、
+          # (2) actorが github-actions[bot] になるため allowed_bots に弾かれて
+          # AIレビュー・QAがハード失敗する。実測で確認済み(§2.7)
+          token: ${{ secrets.AUTOFIX_TOKEN || github.token }}
+          persist-credentials: true
 
       - name: 実行要否を判定
         id: decide
         env:
           BASE: ${{ github.event.pull_request.base.ref }}
+          AUTOFIX_TOKEN: ${{ secrets.AUTOFIX_TOKEN }}
         run: |
           set -euo pipefail
           git fetch origin "$BASE" -q
+
+          # AUTOFIX_TOKENが未設定なら自動pushしない(bot pushの副作用を避けるため)
+          if [ -z "${AUTOFIX_TOKEN}" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "token_missing=true" >> "$GITHUB_OUTPUT"
+            echo "AUTOFIX_TOKEN が未設定のため自動修正を行いません(セットアップ手順は 11_cicd_design.md §2.7)"
+            exit 0
+          fi
+          echo "token_missing=false" >> "$GITHUB_OUTPUT"
 
           # ループ防止: 決定論的な修正は1回で収束するはずなので、既に [ci-fix] が
           # 積まれているのに失敗しているなら、それは自動修正で直る種類の失敗ではない。
@@ -180,15 +196,8 @@ jobs:
           git push origin "HEAD:$BRANCH"
           echo "pushed=true" >> "$GITHUB_OUTPUT"
 
-      # GITHUB_TOKENによるpushはワークフローを再発火しない(GitHubの仕様)ため、
-      # 明示的にCIを起動する。ai-review.yml が持つ保険と同じパターン
-      - name: 修正後のCIを起動
-        if: steps.push.outputs.pushed == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: gh workflow run ci.yml --ref "$BRANCH"
-
+      # AUTOFIX_TOKEN(人間名義)でpushしているため、pull_requestイベントが通常どおり
+      # 発火して新しいCIが自動で走る。gh workflow run による明示起動は不要
       - name: 結果をPRに通知
         if: steps.push.outputs.pushed == 'true'
         env:
@@ -199,6 +208,26 @@ jobs:
             echo "🔧 **CIの決定論的な失敗を自動修正しました**(\`[ci-fix]\` コミット)"
             echo ""
             echo "prettier / OpenAPI生成型の再生成 / Spotless のいずれかで直る失敗でした。"
-            echo "修正後のCIを起動しています。"
+            echo "修正後のCIが自動で走ります。"
           } > /tmp/ci-fix.md
           gh pr comment "$PR" --body-file /tmp/ci-fix.md
+
+      - name: セットアップ未完了を通知
+        if: steps.decide.outputs.token_missing == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          {
+            echo "ℹ️ **CIの自動修正は無効です**: リポジトリSecretsに \`AUTOFIX_TOKEN\` が設定されていません。"
+            echo ""
+            echo "フォーマット・生成物のズレが原因の失敗であれば、ローカルで次を実行してください。"
+            echo ""
+            echo '```bash'
+            echo "cd frontend && pnpm run format && pnpm run generate:api"
+            echo "cd backend && ./gradlew spotlessApply"
+            echo '```'
+            echo ""
+            echo "セットアップ手順は \`.claude/01_development_docs/11_cicd_design.md\` §2.7 を参照してください。"
+          } > /tmp/ci-fix-setup.md
+          gh pr comment "$PR" --body-file /tmp/ci-fix-setup.md

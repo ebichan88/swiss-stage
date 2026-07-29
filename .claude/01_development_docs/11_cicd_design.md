@@ -220,11 +220,25 @@ CI失敗のうち**コマンド一発で決定論的に直るもの**だけを�
 - **`[ci-fix]` コミットの判定は subject のみを対象にする**(`git log --grep` は本文も検索してしまうため。
   §2.5 の自動修正回数カウントと同じ理由)
 
-### GITHUB_TOKEN の push はワークフローを再発火しない
+### セットアップ: `AUTOFIX_TOKEN`(必須)
 
-GitHubの仕様上、`GITHUB_TOKEN` によるpushは新しいワークフロー実行を作らない。そのため
-push後に `gh workflow run ci.yml --ref <branch>` で明示的にCIを起動する(`actions: write` 権限が必要)。
-`ai-review.yml` が持つ保険と同じパターン。
+修正コミットのpushには、リポジトリSecretsの **`AUTOFIX_TOKEN`**(人間名義のfine-grained PAT、
+`Contents: Read and write`)を使う。未設定の場合、autofixは**pushせず**、ローカルでの修正コマンドを
+案内するコメントだけを投稿する。
+
+**`GITHUB_TOKEN` でpushしてはいけない。** 実測で次の2つの問題が確認されている:
+
+1. bot pushで作られた `pull_request` 実行が `action_required`(手動承認待ち)で止まる。
+   承認するまで**PRにチェックが1つも表示されない**。`gh workflow run` で起動した
+   `workflow_dispatch` 実行の結果はSHAには紐づくが、**PRのチェック欄には集計されない**
+2. 後続実行の actor が `github-actions[bot]` になるため、`allowed_bots: "claude"` に弾かれて
+   AIレビュー・QAが `Workflow initiated by non-human actor` でハード失敗する
+
+人間名義のPATでpushすれば `pull_request` イベントが通常どおり発火するため、
+どちらの問題も発生せず、明示的なCI再起動も不要になる。
+
+> 同じ理由で、`ai-review.yml` のFixerが正常に動いているのは claude-code-action が
+> **Appトークン**でpushしているためであり、`GITHUB_TOKEN` とは挙動が異なる。
 
 ---
 
