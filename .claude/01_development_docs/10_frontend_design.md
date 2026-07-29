@@ -96,3 +96,44 @@ export function useTournament(id: string) {
 - **印刷CSS(`@page`/`@media print`)も同様にCSSファイルを追加しない**。MUIの `GlobalStyles`(theme
   を受け取る関数形式)で実装する(`components/features/print/PrintGlobalStyles.tsx`)。ルート単位で1帳票=1向きが
   確定しているため、各印刷ページが自身の向きでこれを1回レンダリングする(`.claude/02_design_system/04_layout_system.md` §5)
+
+---
+
+## 7. Storybook(ページレベル)
+
+**実装前にUIの合意を取り、実機で動かしてからの手戻りを防ぐための仕組み。**
+`components/ui/` 単体のカタログ化はしない(過剰な保守コストを避けるため)。ページのみを対象にする。
+
+### 対象範囲
+
+- 新規画面、または既存画面のレイアウトを大きく変える場合に作成する
+- 既存画面の小さな修正では作らない
+- 対象は `.claude/02_design_system/00_basic_design.md` §4 の優先度に従う
+  (共有ページ > 結果入力 > 順位表 > 運営者管理画面)
+
+### 配置とファイル名
+
+- `src/pages/XxxPage.stories.tsx` にコロケーション(`tests/` 配下には置かない)。
+  `tsconfig.app.json` の `include: ["src"]` に自然に入り、`pnpm run type-check` で
+  ストーリーの腐敗(propsの変更漏れ等)が自動検出されるため
+- ページは本番と同じ経路(直import・propsなし・hooks経由)でレンダリングする。
+  ストーリー専用のダミー画面は作らない
+
+### Provider・データ
+
+- `.storybook/decorators.tsx` の `withProviders` が `tests/testUtils.tsx` の
+  `renderWithProviders` と同じProvider構成(Theme/QueryClient/Snackbar/Router)を提供する
+- `useOutletContext<Tournament>()` に依存するページは `parameters.tournament` で供給する
+  (`tests/unit/pages/SettingsPage.test.tsx` と同じOutlet contextパターン)
+- APIモックは `msw-storybook-addon` 経由。ハンドラは `tests/msw/handlers.ts` の
+  `handlersFor` に用途別(filled/empty/error等)で定義し、`tests/fixtures.ts` の
+  データビルダーを再利用する。**既存のVitestテストの `server.use()` 方式は変更しない**
+- ストーリー内で `new Date()` / `Date.now()` / ランダムなULID生成を使わない
+  (将来のVisual Regression Testが毎回差分になるため。`tests/fixtures.ts` の固定値を使う)
+
+### 実行
+
+```bash
+pnpm run storybook        # 開発サーバー(:6006)
+pnpm run build-storybook  # 静的ビルド(storybook-static/、コミットしない)
+```

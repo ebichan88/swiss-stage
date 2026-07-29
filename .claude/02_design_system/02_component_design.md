@@ -131,4 +131,5 @@
 
 - 独自コンポーネントは `components/ui/` に置き、Propsは `XxxProps` で export
 - MUIをラップする場合、元のPropsを `...rest` で透過させる
-- Storybookは導入しない(MVP)。代わりに本ドキュメントのルールを守る
+- Storybookは**ページレベルのみ**導入する(`10_frontend_design.md` §7)。`components/ui/` 単体のカタログ化はしない。
+  当初「導入しない(MVP)」としていたが、実装前にUIの合意を取れず手戻りが発生する課題を解消するため撤回した

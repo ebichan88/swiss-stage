@@ -76,7 +76,15 @@ frontend/tests/
 - **テスト対象の優先順位**: services(APIクライアント) > hooks > 複雑な表示ロジックを持つコンポーネント
 - ユーザー視点でテストする: `getByRole` / `getByLabelText` を優先(`data-testid` は最終手段)
 - APIは MSW(Mock Service Worker)でモックする(fetchの手モック禁止)
-- スナップショットテストは原則使わない(壊れやすく意味が薄い)
+- **スナップショットテスト(DOM)は原則使わない(壊れやすく意味が薄い)。**
+  これはVitestのコンポーネントテストの話であり、Storybook(下記)やVisual Regression Test(画像比較)とは別物。
+  画像によるデグレ検知は「壊れやすいから禁止」ではなく、対象をページレベルに絞ることで運用する
+
+### Storybook(ページレベル)
+
+新規画面・大きなレイアウト変更では、実装前に `src/pages/XxxPage.stories.tsx` を作成し、
+実機を起動せずにUIの4状態(通常/空/ローディング/エラー)を確認・合意する(`10_frontend_design.md` §7)。
+`components/ui/` 単体のカタログ化はしない。詳細は同ドキュメントを参照。
 
 ---
 
