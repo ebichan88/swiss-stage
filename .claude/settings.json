@@ -29,6 +29,9 @@
             "Bash(pnpm exec tsc *)",
             "Bash(pnpm exec vitest *)",
             "Bash(pnpm dlx *)",
+            "Bash(echo)",
+            "Bash(cat)",
+            "Bash(tee)",
             "Skill(pr)",
             "Skill(pr:*)"
         ],
@@ -45,6 +48,20 @@
             "Bash(git push origin main)",
             "Bash(curl *)",
             "Bash(wget *)"
+        ]
+    },
+    "hooks": {
+        "PreToolUse": [
+            {
+                "matcher": "Bash",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "python3 ./.claude/hooks/smart_approve.py",
+                        "timeout": 5
+                    }
+                ]
+            }
         ]
     }
 }
