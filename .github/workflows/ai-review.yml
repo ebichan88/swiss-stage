@@ -101,13 +101,25 @@ jobs:
           echo "verdict=$VERDICT" >> "$GITHUB_OUTPUT"
           echo "AIレビューのVERDICT: $VERDICT"
 
-          # UNKNOWN = レビューレポートが見つからない(Reviewerが投稿に失敗した・
-          # 途中で終了した・形式が壊れた)。**レビューが実施されていない**状態なので
-          # 素通りさせない(fail-closed)。ここをPASS扱いにすると「レビューされて
-          # いないのにAIレビュー済みとしてマージできる」事故が起きる
+          git fetch origin "$BASE" -q
+
+          # UNKNOWN = レビューレポートが見つからない。**レビューが実施されていない**状態なので
+          # 素通りさせない(fail-closed)。ここをPASS扱いにすると「レビューされていないのに
+          # AIレビュー済みとしてマージできる」事故が起きる。
+          # ただし原因が2種類あり、扱いを分ける:
+          #   workflow-validation … ワークフローファイルを変更したPR。claude-code-actionは
+          #                         既定ブランチと内容が一致しない限り実行を拒否する(セキュリティ機構)。
+          #                         回避不能なのでneeds-humanのみ(CIは落とさない)
+          #   missing             … それ以外(投稿失敗・途中終了・形式崩れ)。CIを失敗させる
           if [ "$VERDICT" = "UNKNOWN" ]; then
             echo "run_fixer=false" >> "$GITHUB_OUTPUT"
-            echo "stop_reason=AIレビューのレポートが見つかりません(レビューが実施されていない可能性)" >> "$GITHUB_OUTPUT"
+            if git diff --name-only "origin/$BASE...HEAD" | grep -q '^\.github/workflows/'; then
+              echo "unknown_reason=workflow-validation" >> "$GITHUB_OUTPUT"
+              echo "stop_reason=ワークフローファイルを変更しているPRのため、claude-code-actionのワークフロー検証によりAIレビューがスキップされました(既定ブランチと同一内容である必要があります)。**このPRは人間がレビューしてください**。マージ後は通常どおり動作します" >> "$GITHUB_OUTPUT"
+            else
+              echo "unknown_reason=missing" >> "$GITHUB_OUTPUT"
+              echo "stop_reason=AIレビューのレポートが見つかりません(レビューが実施されていない可能性)" >> "$GITHUB_OUTPUT"
+            fi
             exit 0
           fi
 
@@ -138,7 +150,6 @@ jobs:
           # `git log --grep` はコミット本文も検索するため、本文で [ai-fix] に言及した
           # 人間のコミットまで数えて回数を水増しし、Fixerを早期停止させてしまう。
           # マーカーはsubjectに付ける規約(fixer.md)なのでsubjectだけを対象にする
-          git fetch origin "$BASE" -q
           AI_FIX_COMMITS=$(git log "origin/$BASE..HEAD" --format='%H%x09%s' \
             | grep -E $'^[0-9a-f]+\t.*\\[ai-fix\\]' | cut -f1 || true)
           ATTEMPTS=$(printf '%s' "$AI_FIX_COMMITS" | grep -c . || true)
@@ -191,9 +202,11 @@ jobs:
 
       # レビューが実施されていない場合はジョブを失敗させる(fail-closed)。
       # VERDICT=FAIL は既存どおりジョブを失敗させない(Fixerと人間が対応する運用)が、
-      # UNKNOWN は「レビュー自体が無い」ため、緑のまま通してはならない
+      # UNKNOWN は「レビュー自体が無い」ため、緑のまま通してはならない。
+      # ただしワークフロー変更PRのスキップは回避不能な仕様なので、needs-humanラベルと
+      # 説明コメントだけに留める(恒久的に赤いチェックを作らない)
       - name: レビュー未実施はCIを失敗させる
-        if: steps.gate.outputs.verdict == 'UNKNOWN'
+        if: steps.gate.outputs.verdict == 'UNKNOWN' && steps.gate.outputs.unknown_reason != 'workflow-validation'
         run: |
           echo "AIレビューのレポートが見つかりません。レビューが実施されていない可能性があります。" >&2
           echo "Reviewerのログを確認してください(サブエージェントへの委譲・途中終了・形式崩れ)。" >&2
