@@ -68,7 +68,8 @@ backend/src/test/java/com/swiss_stage/
 ```
 frontend/tests/
 ├── unit/            # Vitest + Testing Library
-└── e2e/             # Playwright
+├── e2e/             # Playwright(バックエンド・DynamoDB Local前提)
+└── vrt/             # Playwright(Visual Regression Test。Storybookページに対して実行、バックエンド不要)
 ```
 
 ### 方針
@@ -85,6 +86,25 @@ frontend/tests/
 新規画面・大きなレイアウト変更では、実装前に `src/pages/XxxPage.stories.tsx` を作成し、
 実機を起動せずにUIの4状態(通常/空/ローディング/エラー)を確認・合意する(`10_frontend_design.md` §7)。
 `components/ui/` 単体のカタログ化はしない。詳細は同ドキュメントを参照。
+
+### Visual Regression Test(VRT)
+
+Storybookのページストーリーをスクリーンショット比較し、大きめのUI変更による意図しないデグレを検知する。
+**PRごとには実行しない**(重いため)。大会前日・当日はデプロイしないのと同様、大きめのUI変更をした
+PRでのみ手動実行する(`11_cicd_design.md`)。
+
+- 対象: `frontend/tests/vrt/stories.spec.ts` が `storybook-static/index.json` から
+  Storybookの全ページストーリーを自動列挙する(ストーリーを追加すれば対象も増える)
+- 実行環境: `frontend/scripts/vrt.sh`(ローカル)/ `.github/workflows/vrt.yml`(`workflow_dispatch`)。
+  **必ず同じPlaywright公式コンテナイメージ(`mcr.microsoft.com/playwright:v1.61.1-noble`)から実行する。**
+  ローカルのネイティブ環境でベースラインを生成しない(OSごとにフォントレンダリングが異なり
+  100%差分になるため)
+- 決定論の制約(**これを崩すと運用が破綻する**): アニメーション・トランジション停止、
+  外部フォント(Google Fonts)への依存禁止(`@fontsource/noto-sans-jp` を使用)、
+  ストーリー内で `new Date()` 等の非決定的な値を使わない
+- ベースライン更新: `./scripts/vrt.sh --update`(ローカル確認用)または
+  `gh workflow run vrt.yml -f update_snapshots=true`(CI経由。**ベースライン更新は必ずCI経由**とし、
+  更新は意図したUI変更のときのみ・1PRにまとめる)
 
 ---
 
