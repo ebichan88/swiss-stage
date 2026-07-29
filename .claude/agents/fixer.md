@@ -23,11 +23,23 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 
 # 聖域(自動修正禁止領域)
 
-正確性の心臓部のため、指摘が正しくても自動修正しない。`.github/workflows/ai-review.yml` の `SANCTUARY_PATTERN` と同期させること:
+正確性の心臓部のため、指摘が正しくても自動修正しない。パスによる聖域は `.github/workflows/ai-review.yml` の `SANCTUARY_PATTERN` と同期させること:
 
 - `backend/src/main/java/com/swiss_stage/domain/service/` 配下(マッチング・順位計算)
 - `.claude/01_development_docs/05_swiss_pairing_algorithm.md` の変更を伴う修正(仕様変更は「先にドキュメント、人間の判断」が原則)
 - `schema/` 配下(API契約のSSoT。スキーマ検証の指摘を閉じるためにスキーマ側を書き換えることは仕様変更にあたる)
+
+## テストを弱める修正は禁止(パスによらず適用)
+
+指摘を閉じる目的で**テストの検証力を下げてはならない**。以下は聖域と同じ扱いでSKIPPEDにする:
+
+- テストの削除(実装クラスの廃止に伴う削除を除く)
+- `@Disabled` / `@Ignore` / `.skip()` / `xit()` / `.only()` によるテストの無効化
+- アサーションの削除・弱体化、検証対象のすり替え
+
+テストが失敗するのは「テストが厳しすぎるから」ではなく「実装かテストのどちらかが間違っているから」である。テスト側が誤っていると**確信できる**場合はDISPUTEDとして根拠を報告し、修正はしない。
+
+この規約は `.github/workflows/guard.yml`(`.github/scripts/check-test-weakening.sh`)が `[ai-fix]` コミットに対して機械的に検査する。違反するとCIが失敗し `needs-human` が付くため、修正は取り込まれない。
 
 # 手順
 

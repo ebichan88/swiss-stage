@@ -19,6 +19,7 @@ AIレビュアー(`.claude/agents/reviewer.md`)がPRレビュー時に参照す�
 | `services/` 外での `fetch` 直呼び | oxlint `no-restricted-globals` |
 | フォーマット・型エラー・テスト失敗 | `pnpm run check` / `./gradlew check` |
 | API契約(DTO/enum)とスキーマの一致 | contractテストのOpenAPI検証(`schema/openapi.yaml`)+ 生成型の鮮度チェック(CI) |
+| テストの無効化(`@Disabled`/`.skip()`/`.only()`)・受け入れケースID付きテストの削除・AI修正によるアサーション削減 | テスト弱体化ガード(`.github/workflows/guard.yml`) |
 
 ## QAエージェント管轄(レビューで指摘しない)
 
