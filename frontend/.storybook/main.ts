@@ -6,6 +6,8 @@ const config: StorybookConfig = {
     name: '@storybook/react-vite',
     options: {},
   },
+  // public/mockServiceWorker.js を配信するために必要(msw-storybook-addonのworker登録先)
+  staticDirs: ['../public'],
 };
 
 export default config;
