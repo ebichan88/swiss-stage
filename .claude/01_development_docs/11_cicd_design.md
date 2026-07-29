@@ -12,7 +12,7 @@
 
 | ワークフロー | トリガー | 目的 |
 |---|---|---|
-| `ci.yml` | `pull_request` / `push`(main) | 単体・統合テスト、ビルド(PRごと必須。§2) |
+| `ci.yml` | `pull_request` / `push`(main) | 単体・統合テスト、ビルド(PRごと必須。§2)+ 失敗時の決定論的な自動修正(§2.7) |
 | `e2e.yml` | `workflow_dispatch` | クリティカルパスのE2E(Playwright)。リリース前・大会前に手動実行(`12_e2e_test_design.md`) |
 | `vrt.yml` | `workflow_dispatch` | StorybookページのVisual Regression Test。大きめのUI変更をしたPRで手動実行(`09_test_strategy.md`) |
 | `ai-review.yml` | `pull_request` | AIコードレビュー・自動修正(Critical/Majorのみ。§2.5) |
@@ -116,6 +116,17 @@ PR(open/push) → Reviewer(sticky comment更新, VERDICT: PASS/FAIL)
             └ それ以外           → needs-humanラベル + **CI失敗**(レビュー未実施を素通りさせない)
 ```
 
+- **役割定義**: Reviewer = `.claude/agents/reviewer.md` / Fixer = `.claude/agents/fixer.md`。品質基準は `.claude/04_quality/`
+- **ゲート(Fixer起動条件)**: 以下のいずれかに該当したらFixerを起動せず `needs-human` ラベルを付ける
+  - 聖域への指摘: `backend/**/domain/service/**`(マッチング・順位計算)、`05_swiss_pairing_algorithm.md`(`SANCTUARY_PATTERN`)
+  - 自動修正回数が上限(`MAX_FIX_ATTEMPTS`=3、`[ai-fix]` コミット数で計測)
+  - 過去に `Fixed: <slug>` 済みの指摘が再指摘された(修正が無効)
+  - レポートの形式崩れ(指摘を抽出できない)
+  - レポートが存在しない(`UNKNOWN`)。この場合はCIも失敗させる
+- **needs-human ラベル**: 付いている間は自動ループ停止。人間が対応してラベルを外すと再開
+- **Fixerのpush**: pushがpull_requestイベントを発火しない環境向けに、同一ラン内でCI手動起動(`workflow_dispatch`)と再レビューを行う。発火する環境ではconcurrencyで新しいランに引き継がれる
+- **マージ判断は常に人間**。PASSは「人間レビューの前処理完了」の意味
+
 ### fail-closed の原則
 
 ゲートはレポート本文から `VERDICT:` 行を読む。レポートが見つからない場合は `UNKNOWN` となり、
@@ -149,16 +160,6 @@ AIレビュー済みとしてマージできる」状態になり、ゲートと
 また、ワークフロー自体の変更は**マージ後に初めて実際の動作を確認できる**。変更をマージしたら、
 次のPRで意図どおり動いているかをログで確認すること。
 
-- **役割定義**: Reviewer = `.claude/agents/reviewer.md` / Fixer = `.claude/agents/fixer.md`。品質基準は `.claude/04_quality/`
-- **ゲート(Fixer起動条件)**: 以下のいずれかに該当したらFixerを起動せず `needs-human` ラベルを付ける
-  - 聖域への指摘: `backend/**/domain/service/**`(マッチング・順位計算)、`05_swiss_pairing_algorithm.md`(`SANCTUARY_PATTERN`)
-  - 自動修正回数が上限(`MAX_FIX_ATTEMPTS`=3、`[ai-fix]` コミット数で計測)
-  - 過去に `Fixed: <slug>` 済みの指摘が再指摘された(修正が無効)
-  - レポートの形式崩れ(指摘を抽出できない)
-  - レポートが存在しない(`UNKNOWN`)。この場合はCIも失敗させる
-- **needs-human ラベル**: 付いている間は自動ループ停止。人間が対応してラベルを外すと再開
-- **Fixerのpush**: pushがpull_requestイベントを発火しない環境向けに、同一ラン内でCI手動起動(`workflow_dispatch`)と再レビューを行う。発火する環境ではconcurrencyで新しいランに引き継がれる
-- **マージ判断は常に人間**。PASSは「人間レビューの前処理完了」の意味
 
 ---
 
@@ -189,6 +190,41 @@ AIの自動修正は「指摘や失敗を閉じること」が目的であるた
 **実装クラスの廃止に伴うテスト削除は正当**として許容する(同一差分に `src/main/` の削除があり、かつ受け入れケースIDを含まない場合)。
 
 規約側の二重化として `.claude/agents/fixer.md` にも「テストを弱める修正は禁止」を明記している。
+
+---
+
+## 2.7 CI失敗の自動修正(`ci.yml` の `autofix` ジョブ)
+
+CI失敗のうち**コマンド一発で決定論的に直るもの**だけを、AIを使わずに自動修正してpushする。
+エージェント課金ゼロ・数十秒で終わり、「普段の開発の煩わしさ」の大半を占める失敗を人間の目に触れさせない。
+
+| 失敗の種類 | 自動修正 | 担当 |
+|---|---|---|
+| prettier(`format:check`) | `pnpm run format` | **autofix** |
+| 生成型の鮮度チェック | `pnpm run generate:api` | **autofix** |
+| Spotless | `./gradlew spotlessApply` | **autofix** |
+| 型エラー・テスト失敗 | 判断が必要 | 人間 / ci-fixer(将来) |
+| カバレッジ不足 | **意図的に自動化しない** | 人間 |
+
+> カバレッジ不足をAIに埋めさせると「アサーションの薄いテストを量産して閾値を通す」= 基準hackそのものになるため、
+> 将来ci-fixerを入れる際も**この項目だけは常に人間**に回す。
+
+### 設計上の要点
+
+- **起動条件**: `needs: [frontend, backend]` + `if: failure() && github.event_name == 'pull_request'`。
+  失敗したジョブに対応する修正だけを実行する(`needs.frontend.result == 'failure'` 等で分岐)
+- **ループ防止**: `[ci-fix]` コミットが既にあれば実行しない。決定論的な修正は1回で収束するため、
+  それでも失敗しているなら自動修正で直る種類の失敗ではない
+- **差分がなければ何もしない**: 判断を要する失敗(型エラー・テスト失敗)では差分が出ないので、
+  コミットもコメントも発生しない
+- **`[ci-fix]` コミットの判定は subject のみを対象にする**(`git log --grep` は本文も検索してしまうため。
+  §2.5 の自動修正回数カウントと同じ理由)
+
+### GITHUB_TOKEN の push はワークフローを再発火しない
+
+GitHubの仕様上、`GITHUB_TOKEN` によるpushは新しいワークフロー実行を作らない。そのため
+push後に `gh workflow run ci.yml --ref <branch>` で明示的にCIを起動する(`actions: write` 権限が必要)。
+`ai-review.yml` が持つ保険と同じパターン。
 
 ---
 

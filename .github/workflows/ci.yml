@@ -76,3 +76,129 @@ jobs:
           update-comment: true
           min-coverage-overall: 0
           min-coverage-changed-lines: 0
+
+  # CI失敗のうち「コマンド一発で決定論的に直るもの」だけを自動修正してpushする。
+  # AIは使わない(エージェント課金ゼロ・数十秒)。判断を要する失敗(型エラー・
+  # テスト失敗・カバレッジ不足)は対象外で、人間またはci-fixerが扱う(11_cicd_design.md §2.7)
+  autofix:
+    needs: [frontend, backend]
+    if: ${{ failure() && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # 修正コミットのpush
+      actions: write # 修正後のCI再実行(gh workflow run)
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # merge refではなくPRブランチ実体をcheckoutする(pushするため)
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: 実行要否を判定
+        id: decide
+        env:
+          BASE: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$BASE" -q
+
+          # ループ防止: 決定論的な修正は1回で収束するはずなので、既に [ci-fix] が
+          # 積まれているのに失敗しているなら、それは自動修正で直る種類の失敗ではない。
+          # `git log --grep` は本文も検索してしまうため subject だけを対象にする
+          # (ai-review.yml のゲートと同じ理由)
+          CI_FIX_COUNT=$(git log "origin/$BASE..HEAD" --format='%H%x09%s' \
+            | grep -cE $'^[0-9a-f]+\t.*\\[ci-fix\\]' || true)
+          echo "既存の[ci-fix]コミット数: $CI_FIX_COUNT"
+
+          if [ "$CI_FIX_COUNT" -gt 0 ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "既に自動修正済みのため実行しません(決定論的な修正は1回で収束する)"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ---- frontendが失敗した場合のみ ----
+      - uses: pnpm/action-setup@v4
+        if: steps.decide.outputs.run == 'true' && needs.frontend.result == 'failure'
+        with:
+          package_json_file: frontend/package.json
+
+      - uses: actions/setup-node@v4
+        if: steps.decide.outputs.run == 'true' && needs.frontend.result == 'failure'
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: frontendの決定論的修正(prettier / 生成型の再生成)
+        if: steps.decide.outputs.run == 'true' && needs.frontend.result == 'failure'
+        working-directory: frontend
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm run format
+          pnpm run generate:api
+
+      # ---- backendが失敗した場合のみ ----
+      - uses: actions/setup-java@v4
+        if: steps.decide.outputs.run == 'true' && needs.backend.result == 'failure'
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: backendの決定論的修正(Spotless)
+        if: steps.decide.outputs.run == 'true' && needs.backend.result == 'failure'
+        working-directory: backend
+        run: ./gradlew spotlessApply
+
+      # ---- コミット・push ----
+      - name: 修正をコミットしてpush
+        id: push
+        if: steps.decide.outputs.run == 'true'
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            echo "決定論的に直せる差分はありませんでした(判断を要する失敗です)"
+            exit 0
+          fi
+
+          echo "--- 自動修正の差分 ---"
+          git diff --stat
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q \
+            -m "[ci-fix] フォーマット・生成物の自動修正" \
+            -m "CI失敗のうち決定論的に修正できるものを自動適用した。実行内容: prettier / OpenAPI生成型の再生成 / Spotless" \
+            -m "Co-Authored-By: Claude <noreply@anthropic.com>"
+          git push origin "HEAD:$BRANCH"
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      # GITHUB_TOKENによるpushはワークフローを再発火しない(GitHubの仕様)ため、
+      # 明示的にCIを起動する。ai-review.yml が持つ保険と同じパターン
+      - name: 修正後のCIを起動
+        if: steps.push.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: gh workflow run ci.yml --ref "$BRANCH"
+
+      - name: 結果をPRに通知
+        if: steps.push.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          {
+            echo "🔧 **CIの決定論的な失敗を自動修正しました**(\`[ci-fix]\` コミット)"
+            echo ""
+            echo "prettier / OpenAPI生成型の再生成 / Spotless のいずれかで直る失敗でした。"
+            echo "修正後のCIを起動しています。"
+          } > /tmp/ci-fix.md
+          gh pr comment "$PR" --body-file /tmp/ci-fix.md
