@@ -8,6 +8,26 @@
 
 ---
 
+## 1.5 ワークフロー一覧
+
+| ワークフロー | トリガー | 目的 |
+|---|---|---|
+| `ci.yml` | `pull_request` / `push`(main) | 単体・統合テスト、ビルド(PRごと必須。§2) |
+| `e2e.yml` | `workflow_dispatch` | クリティカルパスのE2E(Playwright)。リリース前・大会前に手動実行(`12_e2e_test_design.md`) |
+| `vrt.yml` | `workflow_dispatch` | StorybookページのVisual Regression Test。大きめのUI変更をしたPRで手動実行(`09_test_strategy.md`) |
+| `ai-review.yml` | `pull_request` | AIコードレビュー・自動修正(Critical/Majorのみ。§2.5) |
+| `ai-qa.yml` | `pull_request` | 受け入れケース台帳との突合(レポートのみ・非ゲート。`.claude/agents/qa.md`) |
+
+`ci.yml` 以外はPRごとに自動実行しない(重い、または人間の追加判断を要するため)。
+
+### `vrt.yml` の運用
+
+- `workflow_dispatch` の入力 `update_snapshots`(boolean)で「比較のみ」と「ベースライン更新」を切り替える
+- **ベースライン更新は必ずこのワークフロー経由で行う**(ローカルではPRに含めるベースラインを生成しない。`09_test_strategy.md`)。更新時はコンテナ内でコミット・pushする(`permissions: contents: write`)
+- 実行対象はローカル確認用の `frontend/scripts/vrt.sh` と同じPlaywright公式コンテナイメージを使う(フォントレンダリング差分を避けるため)
+
+---
+
 ## 2. CIパイプライン(PR時)
 
 `.github/workflows/ci.yml`
