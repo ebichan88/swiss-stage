@@ -57,7 +57,10 @@ jobs:
           # pushで再起動される前提)。"*"は他リポジトリ由来のbot(Dependabot等)にも書き込み
           # 権限付きの自動処理を許してしまうため使わない(claude-code-actionのdocs/security.md)
           allowed_bots: "claude"
-          # TODO: PR#37以降レビューコメントが投稿されなくなった原因調査用。切り分け後に削除する
+          # 原因判明: Reviewerがレビューをサブエージェントにバックグラウンド委譲して即座に
+          # ターンを終えており、ジョブ終了とともにそのエージェントが強制終了されるため
+          # レポートが投稿されていなかった(promptの委譲禁止 + disallowedTools で対処)。
+          # 再発時の切り分けに必要なため、しばらくは全出力を残す
           show_full_output: true
           prompt: |
             REPO: ${{ github.repository }}
@@ -74,8 +77,13 @@ jobs:
             4. 見つからなければ `gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/review-report.md` で新規投稿する
 
             レポートはPRコメントとしてのみ投稿してください。レビュー結果をメッセージ本文に出力しないでください。
+            **重要**: サブエージェント(Agent / Task ツール)に委譲しないでください。
+            このジョブはあなたのターンが終わると同時に終了するため、バックグラウンドで
+            起動したエージェントは投稿する前に強制終了され、レポートが永久に投稿されません。
+            必ずあなた自身がこのターン内で作業を完了し、投稿まで終えてください。
           claude_args: |
             --allowedTools "Read,Grep,Glob,Write,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*)"
+            --disallowedTools "Task,Agent"
 
       - name: Fixerゲート判定
         id: gate
@@ -92,6 +100,16 @@ jobs:
           VERDICT=$(printf '%s\n' "$BODY" | grep -m1 -oE 'VERDICT: *(PASS|FAIL)' | grep -oE 'PASS|FAIL' || echo "UNKNOWN")
           echo "verdict=$VERDICT" >> "$GITHUB_OUTPUT"
           echo "AIレビューのVERDICT: $VERDICT"
+
+          # UNKNOWN = レビューレポートが見つからない(Reviewerが投稿に失敗した・
+          # 途中で終了した・形式が壊れた)。**レビューが実施されていない**状態なので
+          # 素通りさせない(fail-closed)。ここをPASS扱いにすると「レビューされて
+          # いないのにAIレビュー済みとしてマージできる」事故が起きる
+          if [ "$VERDICT" = "UNKNOWN" ]; then
+            echo "run_fixer=false" >> "$GITHUB_OUTPUT"
+            echo "stop_reason=AIレビューのレポートが見つかりません(レビューが実施されていない可能性)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           if [ "$VERDICT" != "FAIL" ]; then
             echo "run_fixer=false" >> "$GITHUB_OUTPUT"
@@ -149,7 +167,7 @@ jobs:
           fi
 
       - name: needs-humanラベルを用意
-        if: steps.gate.outputs.verdict == 'FAIL'
+        if: steps.gate.outputs.verdict == 'FAIL' || steps.gate.outputs.verdict == 'UNKNOWN'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -157,7 +175,7 @@ jobs:
             --description "AIレビューの自動対応範囲外。人間の判断が必要(外すと自動レビュー再開)" --force
 
       - name: 人間レビュー要求(自動修正の対象外)
-        if: steps.gate.outputs.verdict == 'FAIL' && steps.gate.outputs.run_fixer != 'true'
+        if: (steps.gate.outputs.verdict == 'FAIL' || steps.gate.outputs.verdict == 'UNKNOWN') && steps.gate.outputs.run_fixer != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
@@ -170,6 +188,16 @@ jobs:
             echo "対応後、\`needs-human\` ラベルを外すと自動レビューが再開されます。"
           } > /tmp/needs-human.md
           gh pr comment "$PR" --body-file /tmp/needs-human.md
+
+      # レビューが実施されていない場合はジョブを失敗させる(fail-closed)。
+      # VERDICT=FAIL は既存どおりジョブを失敗させない(Fixerと人間が対応する運用)が、
+      # UNKNOWN は「レビュー自体が無い」ため、緑のまま通してはならない
+      - name: レビュー未実施はCIを失敗させる
+        if: steps.gate.outputs.verdict == 'UNKNOWN'
+        run: |
+          echo "AIレビューのレポートが見つかりません。レビューが実施されていない可能性があります。" >&2
+          echo "Reviewerのログを確認してください(サブエージェントへの委譲・途中終了・形式崩れ)。" >&2
+          exit 1
 
       # ---- 以下はFixerが起動する場合のみ ----
 
@@ -232,8 +260,14 @@ jobs:
 
             DISPUTED / SKIPPED / FAILED が1件でもある場合は
             `gh pr edit ${{ github.event.pull_request.number }} --add-label needs-human` も実行してください。
+
+            **重要**: サブエージェント(Agent / Task ツール)に委譲しないでください。
+            このジョブはあなたのターンが終わると同時に終了するため、バックグラウンドで
+            起動したエージェントは修正・投稿・pushを終える前に強制終了されます。
+            必ずあなた自身がこのターン内で作業を完了してください。
           claude_args: |
             --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh pr edit:*),Bash(gh api:*),Bash(cd:*),Bash(pnpm:*),Bash(./gradlew:*),Bash(ls:*),Bash(cat:*)"
+            --disallowedTools "Task,Agent"
             --permission-mode bypassPermissions
 
       - name: 修正pushの有無を確認
@@ -293,5 +327,10 @@ jobs:
             4. 見つからなければ `gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/review-report.md` で新規投稿する
 
             レポートはPRコメントとしてのみ投稿してください。レビュー結果をメッセージ本文に出力しないでください。
+            **重要**: サブエージェント(Agent / Task ツール)に委譲しないでください。
+            このジョブはあなたのターンが終わると同時に終了するため、バックグラウンドで
+            起動したエージェントは投稿する前に強制終了され、レポートが永久に投稿されません。
+            必ずあなた自身がこのターン内で作業を完了し、投稿まで終えてください。
           claude_args: |
             --allowedTools "Read,Grep,Glob,Write,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*)"
+            --disallowedTools "Task,Agent"

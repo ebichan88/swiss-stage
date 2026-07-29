@@ -54,5 +54,10 @@ jobs:
             4. 見つからなければ `gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/qa-report.md` で新規投稿する
 
             レポートはPRコメントとしてのみ投稿してください。結果をメッセージ本文に出力しないでください。
+            **重要**: サブエージェント(Agent / Task ツール)に委譲しないでください。
+            このジョブはあなたのターンが終わると同時に終了するため、バックグラウンドで
+            起動したエージェントは投稿する前に強制終了され、レポートが永久に投稿されません。
+            必ずあなた自身がこのターン内で作業を完了し、投稿まで終えてください。
           claude_args: |
             --allowedTools "Read,Grep,Glob,Write,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*),Bash(grep:*),Bash(sort:*),Bash(comm:*),Bash(wc:*)"
+            --disallowedTools "Task,Agent"

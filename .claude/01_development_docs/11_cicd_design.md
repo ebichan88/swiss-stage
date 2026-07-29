@@ -108,11 +108,29 @@ PRごとに `anthropics/claude-code-action@v1` でAIレビューを実行し、1
 
 ```text
 PR(open/push) → Reviewer(sticky comment更新, VERDICT: PASS/FAIL)
-  PASS → 終了(マージ判断は人間)
-  FAIL → ゲート判定(bash・決定的)
-           ├ 起動可 → Fixer(Critical/Majorのみ修正 → 検証 → レポート投稿 → push)→ 再レビュー
-           └ 起動不可 → needs-humanラベル + 理由コメント
+  PASS    → 終了(マージ判断は人間)
+  FAIL    → ゲート判定(bash・決定的)
+              ├ 起動可 → Fixer(Critical/Majorのみ修正 → 検証 → レポート投稿 → push)→ 再レビュー
+              └ 起動不可 → needs-humanラベル + 理由コメント
+  UNKNOWN → needs-humanラベル + **CI失敗**(レビュー未実施を素通りさせない)
 ```
+
+### fail-closed の原則
+
+ゲートはレポート本文から `VERDICT:` 行を読む。レポートが見つからない場合は `UNKNOWN` となり、
+**PASSではなくCI失敗として扱う**。ここをPASS相当にすると「レビューが一度も行われていないのに
+AIレビュー済みとしてマージできる」状態になり、ゲートとして意味を失う。
+
+> 実際にこの事故が起きていた。Reviewerがレビュー作業を**サブエージェントにバックグラウンド委譲**して
+> 即座にターンを終えており、ジョブ終了と同時にそのエージェントが強制終了されるため、レポートが
+> 永久に投稿されていなかった。当時のゲートは `VERDICT != FAIL` で素通りしていたため、
+> AI Reviewは緑のまま長期間まったく機能していなかった。
+
+対策は2層:
+
+1. **fail-closed**(構造): `UNKNOWN` で `needs-human` + CI失敗。原因が何であれ素通りを防ぐ
+2. **委譲の禁止**(直接原因): 各エージェントのpromptで委譲を禁止し、`--disallowedTools "Task,Agent"` を指定する。
+   `ai-qa.yml` にも同じ対策を入れている(同じ失敗をしうるため)
 
 - **役割定義**: Reviewer = `.claude/agents/reviewer.md` / Fixer = `.claude/agents/fixer.md`。品質基準は `.claude/04_quality/`
 - **ゲート(Fixer起動条件)**: 以下のいずれかに該当したらFixerを起動せず `needs-human` ラベルを付ける
@@ -120,6 +138,7 @@ PR(open/push) → Reviewer(sticky comment更新, VERDICT: PASS/FAIL)
   - 自動修正回数が上限(`MAX_FIX_ATTEMPTS`=3、`[ai-fix]` コミット数で計測)
   - 過去に `Fixed: <slug>` 済みの指摘が再指摘された(修正が無効)
   - レポートの形式崩れ(指摘を抽出できない)
+  - レポートが存在しない(`UNKNOWN`)。この場合はCIも失敗させる
 - **needs-human ラベル**: 付いている間は自動ループ停止。人間が対応してラベルを外すと再開
 - **Fixerのpush**: pushがpull_requestイベントを発火しない環境向けに、同一ラン内でCI手動起動(`workflow_dispatch`)と再レビューを行う。発火する環境ではconcurrencyで新しいランに引き継がれる
 - **マージ判断は常に人間**。PASSは「人間レビューの前処理完了」の意味
