@@ -2,7 +2,7 @@ import { http, HttpResponse } from 'msw';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
 import { matchOf, roundOf, sharedSummaryOf, sharedTournamentOf } from '../../tests/fixtures';
-import { apiSuccess } from '../../tests/msw/server';
+import { apiSuccess } from '../../tests/msw/apiResponse';
 import { SharedResultPage } from './SharedResultPage';
 
 const API = '/api/v1';

@@ -17,7 +17,7 @@ import {
   teamStandingOf,
   tournamentOf,
 } from '../fixtures';
-import { apiError, apiSuccess } from './server';
+import { apiError, apiSuccess } from './apiResponse';
 
 /**
  * Storybookのページストーリー用MSWハンドラ(msw-storybook-addon)。
