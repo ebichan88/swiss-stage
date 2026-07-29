@@ -2,8 +2,7 @@
 import json, sys, re
 from pathlib import Path
 
-def load_patterns():
-    settings_file = Path.home() / ".claude" / "settings.json"
+def _load_permissions(settings_file):
     if not settings_file.exists():
         return [], []
     with open(settings_file) as f:
@@ -14,15 +13,35 @@ def load_patterns():
         for r in rules:
             if r.startswith("Bash(") and r.endswith(")"):
                 p = r[5:-1]
+                wildcard = bool(re.search(r'(:\*| \*)$', p))
                 p = re.sub(r':\*$', '', p)
                 p = re.sub(r' \*$', '', p)
-                result.append(p)
+                result.append((p, wildcard))
         return result
     return extract(perms.get("allow", [])), extract(perms.get("deny", []))
 
-def matches(pattern, command):
+def load_patterns():
+    # ユーザーのホーム設定とプロジェクト設定(このファイルが属するリポジトリの
+    # .claude/settings.json)の両方を読み込み、マージする。プロジェクト側の
+    # deny がホーム側の allow によって迂回されないようにするため。
+    project_settings = Path(__file__).resolve().parent.parent / "settings.json"
+    home_settings = Path.home() / ".claude" / "settings.json"
+    allow_patterns, deny_patterns = [], []
+    for settings_file in (home_settings, project_settings):
+        allow, deny = _load_permissions(settings_file)
+        allow_patterns += allow
+        deny_patterns += deny
+    return allow_patterns, deny_patterns
+
+# 単一の `>`/`>>`/`<` によるファイルリダイレクトやコマンド置換(`$(...)`/バッククォート)
+# を検出したら安全側に倒し、自動許可しない
+UNSAFE_SHELL_PATTERN = re.compile(r'[><`]|\$\(')
+
+def matches(pattern, wildcard, command):
     command = command.strip()
-    return command == pattern or command.startswith(pattern + " ")
+    if wildcard:
+        return command == pattern or command.startswith(pattern + " ")
+    return command == pattern
 
 def decompose(cmd):
     # クォートを考慮してパイプ・&&・; で分割
@@ -62,12 +81,16 @@ def main():
         sys.exit(0)
     stages = decompose(command)
     for stage in stages:
-        clean = re.sub(r'\d*>[>&]\d*', '', stage).strip()
+        # fdの複製(例: 2>&1)のみを安全な冗長表現として除去する。
+        # ファイルへのリダイレクト(単一の `>`/`>>`/`<`)はここでは除去しない。
+        clean = re.sub(r'\d*>&\d*', '', stage).strip()
         if not clean:
             continue
-        if any(matches(p, clean) for p in deny_patterns):
+        if UNSAFE_SHELL_PATTERN.search(clean):
             sys.exit(0)
-        if not any(matches(p, clean) for p in allow_patterns):
+        if any(matches(p, w, clean) for p, w in deny_patterns):
+            sys.exit(0)
+        if not any(matches(p, w, clean) for p, w in allow_patterns):
             sys.exit(0)
     print(json.dumps({
         "hookSpecificOutput": {
