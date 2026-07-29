@@ -190,11 +190,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
+          VERDICT: ${{ steps.gate.outputs.verdict }}
           REASON: ${{ steps.gate.outputs.stop_reason }}
         run: |
           gh pr edit "$PR" --add-label needs-human
+          # 見出しは状況に合わせる。UNKNOWNは「レビュー自体が無い」ので
+          # 「Fixerが実行されない」と書くと実態を誤って伝える
+          if [ "$VERDICT" = "UNKNOWN" ]; then
+            HEADLINE="⚠️ **AIレビューは実施されていません**"
+          else
+            HEADLINE="🚨 **AI Fixerは実行されません**"
+          fi
           {
-            echo "🚨 **AI Fixerは実行されません**: ${REASON}"
+            echo "${HEADLINE}: ${REASON}"
             echo ""
             echo "対応後、\`needs-human\` ラベルを外すと自動レビューが再開されます。"
           } > /tmp/needs-human.md
