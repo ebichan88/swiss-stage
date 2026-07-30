@@ -243,6 +243,31 @@ CI失敗のうち**コマンド一発で決定論的に直るもの**だけを�
   =何が起きたか分からない」を素通りさせない)
 - **push**: `AUTOFIX_TOKEN` チェックアウトの資格情報を引き継ぐため、追加の設定は不要
   (§2.7セットアップの節を参照)
+- **needs-humanが付いている間は起動しない**: `ai-review.yml` の `review` ジョブと同じ
+  ジョブレベルの `if` ゲート(`!contains(github.event.pull_request.labels.*.name, 'needs-human')`)。
+  ループ防止を `[ci-fix]` コミット数だけに頼ると、ci-fixerがDISPUTED/FAILED(無コミット)や
+  coverage-only(ci-fixer自体が起動しない)と判定した場合にコミット数が増えないため、
+  `needs-human` 付与後もPRへの無関係な後続pushのたびに再実行されてしまう
+- **カバレッジ不足の判定はbackend単独の失敗に限る**: `frontend` も同時に失敗している場合は
+  `coverage_only` にしない(frontendの型エラー等をci-fixerで直せる余地を残すため)。
+  `jacocoTestCoverageVerification` はgradleの `dependsOn test` 成立後にのみ実行されるため、
+  backend単独の失敗であればログの検知だけで「カバレッジ不足以外の原因が同時に無い」と
+  判断できる
+
+### 信頼境界に関する設計判断
+
+ci-fixerは `--permission-mode bypassPermissions` と広いBashツール(`Bash(git:*)` 等)を持ち、
+入力として `gh run view --log-failed` の生ログ(テストのstdout/stderrを含む)を直接読む。
+`ai-review.yml` のReviewer(読み取り専用・bypassPermissionsなし)と比べて信頼境界が広い。
+
+これは受け入れている設計判断である。理由:
+
+- ci-fixerが動く前提は「テストコードは信頼できる」こと(悪意あるテストコードの混入自体は
+  レビュー・マージ時点で防ぐべき問題であり、CI自動修正の責務ではない)
+- 聖域(domain/service・schema・テストの弱体化)はci-fixer自身の判断とテスト弱体化ガード
+  (`guard.yml`)の機械検証で二重に守られている
+- 最終的な差分は人間のレビュー(このPRのマージ判断)を経る。ci-fixerの出力は「マージ前提の
+  最終成果物」ではなく「人間が確認する前提の提案」である
 
 ### セットアップ: `AUTOFIX_TOKEN`(必須)
 

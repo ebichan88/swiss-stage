@@ -88,7 +88,13 @@ jobs:
   # テスト失敗・カバレッジ不足)は対象外で、人間またはci-fixerが扱う(11_cicd_design.md §2.7)
   autofix:
     needs: [frontend, backend]
-    if: ${{ failure() && github.event_name == 'pull_request' }}
+    # needs-humanが付いている間は起動しない(ai-review.ymlのreviewジョブと同じゲート)。
+    # ループ防止をコミット数だけに頼ると、ci-fixerがDISPUTED/FAILED(無コミット)や
+    # coverage-only(ci-fixer自体が起動しない)と判定した場合に [ci-fix] コミットが
+    # 増えないため、needs-human付与後もPRへの無関係な後続pushのたびにこのジョブが
+    # 再実行され、ci-fixerが何度でも起動し非stickyな通知コメントでPRがスパムされる
+    # (AIレビューで指摘・修正: M1 ci-fixer-loop-missing-needs-human-gate)
+    if: ${{ failure() && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'needs-human') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -281,6 +287,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set +e
+          # frontendも失敗している場合は「カバレッジ不足のみ」ではありえない
+          # (frontendの型エラー等をci-fixerで直せる余地があるため、coverage_onlyには
+          # しない)。jacocoTestCoverageVerificationはgradleのdependsOn test成立後にのみ
+          # 実行される(= backend単体内でコンパイル・テスト失敗と同時には起きない)ため、
+          # backend単独の失敗であればログの検知だけで十分特定できる
+          # (AIレビューで指摘・修正: M2 coverage-only-classification-not-exclusive)
+          if [ "${{ needs.frontend.result }}" = "failure" ]; then
+            echo "coverage_only=false" >> "$GITHUB_OUTPUT"
+            echo "frontendも失敗しているためcoverage_only判定の対象外です"
+            exit 0
+          fi
+
           # 決定論的修正の直後で、frontend/backendジョブは既に完了しているため
           # 同一run内でもログを取得できる。取得に失敗した場合は安全側(false)に倒し、
           # 実際の判定はci-fixer自身のログ確認による自己申告(SKIPPED)に委ねる
