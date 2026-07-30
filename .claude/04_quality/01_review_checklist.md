@@ -20,7 +20,7 @@ AIレビュアー(`.claude/agents/reviewer.md`)がPRレビュー時に参照す�
 | フォーマット・型エラー・テスト失敗 | `pnpm run check` / `./gradlew check` |
 | API契約(DTO/enum)とスキーマの一致 | contractテストのOpenAPI検証(`schema/openapi.yaml`)+ 生成型の鮮度チェック(CI) |
 | テストの無効化(`@Disabled`/`@Ignore`/`.skip()`/`xit()`/`.only()`)、受け入れケースID付きテストの削除 | テスト弱体化ガード(`.github/workflows/guard.yml`、全PR) |
-| 受け入れケースIDの形式・重複・未登録プレフィックス、台帳↔テストIDの双方向突合、`.claude/**`内のファイル参照切れ | docs-lint(`.github/scripts/docs-lint.py`、CIの`frontend`ジョブ) |
+| 受け入れケースIDの形式・重複・未登録プレフィックス、台帳↔テストIDの双方向突合、`.claude/**`および`CLAUDE.md`内のファイル参照切れ | docs-lint(`.github/scripts/docs-lint.py`、CIの`frontend`ジョブ) |
 
 ## QAエージェント管轄(レビューで指摘しない)
 
