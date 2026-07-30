@@ -12,8 +12,9 @@ import {
 
 /**
  * CP2: 参加者の結果送信(スマホ)(12_e2e_test_design.md)。
- * 共有URLにモバイルビューポートでアクセス → 自分の卓を確認 → 結果入力 → 送信
- * → 運営者側に反映されていること
+ * 共有URLにモバイルビューポートでアクセス → 自分の卓を確認 → 自己申告(あなたはどちら
+ * ですか → 勝敗選択 → 確認ダイアログ → 送信)→ 両者の申告が一致した時点で運営者側に
+ * 確定として反映されること(2c17b8a: 対戦結果を両者の自己申告の突き合わせで確定する方式)
  */
 test('E2E-AC-003: CP2: 参加者がスマホの共有ページから結果を送信できる', async ({
   page,
@@ -27,23 +28,39 @@ test('E2E-AC-003: CP2: 参加者がスマホの共有ページから結果を送
   await generateRound(page, tournamentId, 1);
   const token = await publishShareUrl(page, tournamentId, { allowResultInput: true });
 
-  // 参加者: ログインなし・モバイルビューポート(375x667)の別コンテキスト
-  const phone = await browser.newContext({ viewport: { width: 375, height: 667 } });
-  const phonePage = await phone.newPage();
-  await phonePage.goto(`http://localhost:5173/s/${token}`);
-
-  // 組み合わせ表で自分(卓1のplayer1)の卓を確認する
   const rounds = await fetchRounds(page, tournamentId);
   const myMatch = rounds[0].matches.find((m) => m.tableNumber === 1);
-  if (!myMatch) throw new Error('卓1が見つかりません');
-  await expect(phonePage.getByText(myMatch.player1.name).first()).toBeVisible();
+  if (!myMatch || myMatch.player2 === null) throw new Error('卓1の対局が見つかりません');
 
-  // 卓1の結果入力 → player1の勝ち → 登録
-  await phonePage.getByRole('link', { name: '結果入力' }).first().click();
-  await phonePage.getByRole('button', { name: `${myMatch.player1.name} の勝ち` }).click();
-  await phonePage.getByRole('button', { name: '登録する' }).click();
-  await expect(phonePage.getByText('結果を登録しました')).toBeVisible();
-  await phone.close();
+  // player1側: ログインなし・モバイルビューポート(375x667)の別コンテキスト
+  const phone1 = await browser.newContext({ viewport: { width: 375, height: 667 } });
+  const phone1Page = await phone1.newPage();
+
+  // 組み合わせ表で自分(卓1のplayer1)の卓を確認する
+  await phone1Page.goto(`http://localhost:5173/s/${token}`);
+  await expect(phone1Page.getByText(myMatch.player1.name).first()).toBeVisible();
+
+  // player1側: 自己申告(あなたはどちらですか → player1 → 勝ち → 確認 → 申告する)
+  await phone1Page.goto(`http://localhost:5173/s/${token}/matches/${myMatch.id}`);
+  await phone1Page.getByRole('button', { name: myMatch.player1.name, exact: true }).click();
+  await phone1Page.getByRole('button', { name: '勝ち' }).click();
+  await phone1Page.getByRole('button', { name: '申告する' }).click();
+  await expect(phone1Page.getByText('申告を送信しました')).toBeVisible();
+  await phone1.close();
+
+  // まだ片方の申告のみなので運営者側は未確定のまま
+  const afterFirstReport = await fetchRounds(page, tournamentId);
+  expect(afterFirstReport[0].matches.find((m) => m.tableNumber === 1)?.result).toBe('NONE');
+
+  // player2側: player1の勝ちと一致する内容(自分から見て「負け」)で申告
+  const phone2 = await browser.newContext({ viewport: { width: 375, height: 667 } });
+  const phone2Page = await phone2.newPage();
+  await phone2Page.goto(`http://localhost:5173/s/${token}/matches/${myMatch.id}`);
+  await phone2Page.getByRole('button', { name: myMatch.player2.name, exact: true }).click();
+  await phone2Page.getByRole('button', { name: '負け', exact: true }).click();
+  await phone2Page.getByRole('button', { name: '申告する' }).click();
+  await expect(phone2Page.getByText('申告を送信しました')).toBeVisible();
+  await phone2.close();
 
   // 運営者画面に反映されている(リロード後の卓1に○が表示され、APIでも確定)
   await page.goto(`/tournaments/${tournamentId}/rounds`);
