@@ -4,7 +4,9 @@
 
 - ツール: **Playwright**(`frontend/tests/e2e/`。CP1〜CP4実装済み)
 - 対象: **クリティカルパスのみ**(大会当日に絶対に動かなければならないフロー)
-- 実行タイミング: リリース前・大会前(PRごとには実行しない)。GitHub Actionsは `.github/workflows/e2e.yml`(workflow_dispatch)
+- 実行タイミング: **PRごとに自動実行**(結合の抜けをマージ前に検知するため)+ リリース前・大会前の手動実行。
+  GitHub Actionsは `.github/workflows/e2e.yml`(`pull_request` / `workflow_dispatch`)。
+  当面は required check にしない(所要時間を実測してから昇格を判断する。`11_cicd_design.md` §2.8)
 - バックエンド + DynamoDB Local を起動した状態で実行する(Vite開発サーバーは `playwright.config.ts` の webServer が自動起動)
 
 ---

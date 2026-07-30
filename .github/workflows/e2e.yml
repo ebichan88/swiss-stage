@@ -1,11 +1,24 @@
-# E2E(Playwright)。PRごとには実行しない(遅いため)。
-# リリース前・大会前に手動実行する(11_cicd_design.md / 12_e2e_test_design.md)
+# E2E(Playwright)。クリティカルパスのみ(11_cicd_design.md / 12_e2e_test_design.md)。
+#
+# PRごとに自動実行する。単体テストが通っても実機で画面が動かない「結合の抜け」を
+# マージ前に検知するため。ただし当面は required check にしない(所要時間を実測して
+# から昇格を判断する。11_cicd_design.md §2.8)。
+# リリース前・大会前の確認用に workflow_dispatch も残す。
 name: E2E
 on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
   workflow_dispatch:
+
+# 同一PRで連続pushされたら古い実行をキャンセルして最新だけ残す(E2Eは重いため)
+concurrency:
+  group: e2e-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   e2e:
+    # draft PRでは走らせない(重いため)
+    if: ${{ github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     services:
       dynamodb-local:

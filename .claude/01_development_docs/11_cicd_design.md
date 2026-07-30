@@ -13,17 +13,21 @@
 | ワークフロー | トリガー | 目的 |
 |---|---|---|
 | `ci.yml` | `pull_request` / `push`(main) | 単体・統合テスト、ビルド(PRごと必須。§2) |
-| `e2e.yml` | `workflow_dispatch` | クリティカルパスのE2E(Playwright)。リリース前・大会前に手動実行(`12_e2e_test_design.md`) |
-| `vrt.yml` | `workflow_dispatch` | StorybookページのVisual Regression Test。大きめのUI変更をしたPRで手動実行(`09_test_strategy.md`) |
+| `e2e.yml` | `pull_request` / `workflow_dispatch` | クリティカルパスのE2E(Playwright)。PRごとに自動実行(当面は非required。§2.8) |
+| `vrt.yml` | `pull_request`(UI関連pathsのみ) / `workflow_dispatch` | StorybookページのVisual Regression Test。**非ブロッキング**。ベースライン更新は`workflow_dispatch`のみ(§2.8) |
 | `ai-review.yml` | `pull_request` | AIコードレビュー・自動修正(Critical/Majorのみ。§2.5) |
 | `ai-qa.yml` | `pull_request` | 受け入れケース台帳との突合(レポートのみ・非ゲート。`.claude/agents/qa.md`) |
 | `guard.yml` | `pull_request` | テスト弱体化ガード。AI自動修正の安全装置(§2.6) |
 
-`ci.yml` / `guard.yml` 以外はPRごとに自動実行しない(重い、または人間の追加判断を要するため)。
+全ワークフローがPRごとに自動実行される(`vrt.yml` はUI関連のpathsに限る)。ただし
+**マージをブロックするのは `ci.yml` / `guard.yml` のみ**で、`e2e.yml` / `vrt.yml` は
+所要時間と安定性の実績を見てから required check への昇格を判断する(§2.8)。
 
 ### `vrt.yml` の運用
 
 - `workflow_dispatch` の入力 `update_snapshots`(boolean)で「比較のみ」と「ベースライン更新」を切り替える
+- **ベースライン更新は `workflow_dispatch` のときだけ**。PRトリガーでは絶対に更新しない
+  (更新されると「差分を検知せず素通り」する事故になるため、`github.event_name` を条件に明示している)
 - **ベースライン更新は必ずこのワークフロー経由で行う**(ローカルではPRに含めるベースラインを生成しない。`09_test_strategy.md`)。更新時はコンテナ内でコミット・pushする(`permissions: contents: write`)
 - 実行対象はローカル確認用の `frontend/scripts/vrt.sh` と同じPlaywright公式コンテナイメージを使う(フォントレンダリング差分を避けるため)
 
@@ -91,7 +95,7 @@ jobs:
 ### ルール
 
 - どちらかのジョブが失敗したPRはマージ禁止(ブランチ保護設定)
-- E2E(Playwright)はPRごとには実行しない(遅いため)。`.github/workflows/e2e.yml`(workflow_dispatch)をリリース前に手動実行
+- E2E(Playwright)はPRごとに実行する(§2.8)。ただし当面は required check にしない
 - 依存更新は Dependabot(週次、`gradle` / `pnpm` / `github-actions`)
 - backendの `./gradlew check` にはSpotless(`googleJavaFormat`によるフォーマット・未使用import削除・import順序)のチェックが含まれる。frontendの `pnpm run lint` / `pnpm run format` に相当する役割(`backend/build.gradle` の `spotless { java { ... } }` 参照、`08_development_setup.md` §7)
 
@@ -189,6 +193,39 @@ AIの自動修正は「指摘や失敗を閉じること」が目的であるた
 **実装クラスの廃止に伴うテスト削除は正当**として許容する(同一差分に `src/main/` の削除があり、かつ受け入れケースIDを含まない場合)。
 
 規約側の二重化として `.claude/agents/fixer.md` にも「テストを弱める修正は禁止」を明記している。
+
+---
+
+## 2.8 E2E・VRTのPR実行(非ブロッキング)
+
+単体テストが通っても実機で画面が動かない「結合の抜け」と、UIのデグレを**マージ前**に検知する。
+それまでは両方 `workflow_dispatch` のみで、検知が最後まで遅れていた。
+
+| | トリガー | 絞り込み | ゲート |
+|---|---|---|---|
+| `e2e.yml` | `pull_request` + `workflow_dispatch` | **絞らない**(7 spec / 計575行と小さいため) | 当面 **required にしない** |
+| `vrt.yml` | `pull_request`(UI関連pathsのみ)+ `workflow_dispatch` | `frontend/src/**` / `.storybook/**` / `tests/vrt/**` / `package.json` / `pnpm-lock.yaml` / `playwright-vrt.config.ts` | **非ブロッキング** |
+
+いずれも draft PR では実行しない。`concurrency` で連続pushの古い実行はキャンセルする。
+
+### なぜ required にしないのか
+
+- **E2E**: backend の `gradlew bootRun` 起動込みで所要時間が読めない。数PR分を実測してから昇格を判断する
+- **VRT**: `toHaveScreenshot` が `maxDiffPixelRatio: 0`(ピクセル完全一致)と厳しく、ノイズが出た場合に
+  運用が回らなくなる可能性がある。数PR分の安定実績を見てから検討する
+
+required にするかどうかはブランチ保護設定の変更であり、**人間が判断して設定する**。
+
+### VRTのベースライン更新導線
+
+VRTの弱点は差分の検知ではなく、**更新導線が `workflow_dispatch` 画面しかない**ことだった。
+差分を検出したPRには `notify` ジョブが sticky comment で更新コマンドを案内する:
+
+```bash
+gh workflow run vrt.yml -f update_snapshots=true --ref <branch>
+```
+
+`notify` を別ジョブにしているのは、`vrt` ジョブがPlaywrightコンテナ内で動き `gh` CLIを持たないため。
 
 ---
 
