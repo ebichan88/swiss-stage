@@ -117,6 +117,25 @@ domain層の90%はCI(`./gradlew check`)で機械的に強制する(`jacocoTestCo
 
 ---
 
+## 2.6 Mutation Testing(PITest)
+
+**カバレッジ(LINE/BRANCH)は「そのコードを実行したか」しか測らない。** アサーションが空でも
+高い値を達成できる。PITestは「コードを壊したらテストが気づくか」を測り、アサーションの薄い
+箇所を名指しで炙り出す。domain層(マッチング・順位計算・モデル)に対象を絞る。
+
+- **実行**: `./gradlew pitest`(ローカル)/ `.github/workflows/mutation.yml`(`workflow_dispatch` + 週次)。
+  **`check` には紐付けない**(PR CIを遅くしないため。e2e.yml/vrt.ymlと同じ「重いものは別ワークフロー」方針)
+- **対象**: `targetClasses = ['com.swiss_stage.domain.*']`
+- **`targetTests` は明示指定が必須**: 既定値は `targetClasses` と同じパターンになるが、
+  domainのテストは `com.swiss_stage.unit.domain.*` パッケージにあり `com.swiss_stage.domain.*`
+  直下ではないため、指定しないと対象テストが0件と判定され `NO_COVERAGE`(0%)になる(実際に踏んだ)
+- **jqwikのプロパティテストはJUnit Platform経由**のため `pitest-junit5-plugin` が必須
+- **`mutationThreshold` は設定しない**(2026-07-30時点の実測: Mutation Coverage 86% / Test Strength 88%、
+  397 mutations・実行59秒。閾値はこの先の実績を見てから固定する)
+- HTMLレポートはArtifactsに30日保存。job summaryにスコアのサマリを出す
+
+---
+
 ## 3. バックエンドテスト構成
 
 ```

@@ -4,6 +4,7 @@ plugins {
     id 'org.springframework.boot' version '3.4.1'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'com.diffplug.spotless' version '8.8.0'
+    id 'info.solidsoft.pitest' version '1.15.0'
 }
 
 group = 'com.swiss_stage'
@@ -85,7 +86,15 @@ jacocoTestReport {
     }
 }
 
-// domain層(マッチング・順位計算)はカバレッジ90%以上を強制(09_test_strategy.md)
+// domain層(マッチング・順位計算)はカバレッジ90%以上を強制(09_test_strategy.md)。
+// LINEは「実行したか」しか測らずアサーションが空でも達成できるため、BRANCHも
+// 強制する(「分岐を網羅したか」を見る)。
+//
+// BRANCHの閾値はパッケージごとに実測値(2026-07-30時点)を実質下回らない水準で固定した
+// (element='PACKAGE'はパッケージ単位で個別に評価されるため、合算値ではなくパッケージ
+// ごとの最小値を見る必要がある。domain.model 83.23% / domain.service 92.68% と差が
+// あった)。テスト順序等の微小な揺らぎを吸収する余裕を持たせつつ回帰は検知できる
+// (いきなり両方0.90にはしない。開発プロセス自動化 PR4)。
 jacocoTestCoverageVerification {
     dependsOn test
     violationRules {
@@ -98,11 +107,46 @@ jacocoTestCoverageVerification {
                 minimum = 0.90
             }
         }
+        rule {
+            element = 'PACKAGE'
+            includes = ['com.swiss_stage.domain.model']
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.80
+            }
+        }
+        rule {
+            element = 'PACKAGE'
+            includes = ['com.swiss_stage.domain.service']
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.90
+            }
+        }
     }
 }
 
 tasks.named('check') {
     dependsOn jacocoTestCoverageVerification
+}
+
+// Mutation Testing(PITest)。カバレッジが「実行したか」しか測らないのに対し、
+// 「コードを壊したらテストが気づくか」を測る。domain層のみに絞り、checkには
+// 紐付けない(PR CIが大幅に遅くなるため。e2e.yml/vrt.ymlと同じ「重いものは別
+// ワークフロー」方針。開発プロセス自動化 PR4)。実行は .github/workflows/mutation.yml
+// (workflow_dispatch + 週次schedule)から行う。
+//
+// mutationThresholdは設定しない。初回は実測値を見てから次PRで閾値を固定する。
+pitest {
+    targetClasses = ['com.swiss_stage.domain.*']
+    // targetTestsの既定値はtargetClassesと同じパターンだが、domainのテストは
+    // com.swiss_stage.unit.domain 配下にあり com.swiss_stage.domain 直下ではないため
+    // 明示しないと「対象テストが0件」でNO_COVERAGE(0%)になる(実際に踏んだ)
+    targetTests = ['com.swiss_stage.unit.domain.*']
+    junit5PluginVersion = '1.2.1'
+    timestampedReports = false
 }
 
 // コードフォーマット(Google Java Style)・未使用import・import順の自動検査(checkに自動的に含まれる)
