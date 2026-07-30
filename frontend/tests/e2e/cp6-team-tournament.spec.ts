@@ -106,7 +106,8 @@ test('E2E-AC-008: CP6補: 団体戦の共有ページから両チームの自己
   await phonePage.getByRole('button', { name: myMatch.team2.name }).click();
   for (const label of boardLabels) {
     await phonePage.getByRole('combobox', { name: label }).click();
-    await phonePage.getByRole('option', { name: '負け' }).click();
+    // 「両者負け」にも部分一致してしまうため exact 指定が必須(strict mode violation になる)
+    await phonePage.getByRole('option', { name: '負け', exact: true }).click();
   }
   await phonePage.getByRole('button', { name: '確認して申告する' }).click();
   await phonePage.getByRole('button', { name: '申告する' }).click();
