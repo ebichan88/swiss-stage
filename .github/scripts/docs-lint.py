@@ -18,7 +18,11 @@ Python標準ライブラリのみで動作する(依存追加なし)。Reviewer�
   3. .claude/** と CLAUDE.md 内のファイル参照切れ
      - この リポジトリの規約はMarkdownリンク`[text](path)`ではなく、
        バッククォート引用された `NN_xxx.md` 形式のファイル名参照(実測して確認済み)。
-       参照されたファイル名が .claude/ 配下のどこかに実在するかを確認する
+       `04_quality/01_review_checklist.md` のようにディレクトリプレフィックス付きで
+       引用されることもあるため、両方の形式を認識する(プレフィックスの有無に
+       かかわらず、実在確認は basename の一致で行う。.claude/ 配下に同名ファイルが
+       複数存在しないことを実測で確認済み)
+     - 参照されたファイル名が .claude/ 配下のどこかに実在するかを確認する
 
 終了コード: 0=違反なし、1=違反あり(hard fail扱いの項目が1件以上)。
 """
@@ -39,7 +43,10 @@ ID_STRICT = re.compile(r"^([A-Z0-9]+)-AC-(\d+)$")
 LEDGER_ID_CELL = re.compile(r"^[A-Z0-9]+-AC-\d+$")
 PREFIX_TABLE_ROW = re.compile(r"^\|\s*([A-Z0-9]+)\s*\|")
 TEST_ID_PATTERN = re.compile(r"[A-Z0-9]+-AC-[0-9]+")
-BACKTICK_MD_REF = re.compile(r"`([0-9]{2}_[A-Za-z0-9_]+\.md)`")
+# ディレクトリプレフィックス付き参照(例: `04_quality/01_review_checklist.md`)も
+# 認識できるよう、任意のパスプレフィックスを許容する。実在確認はbasenameで行う
+# (check_file_references参照)
+BACKTICK_MD_REF = re.compile(r"`((?:[A-Za-z0-9_.-]+/)*[0-9]{2}_[A-Za-z0-9_]+\.md)`")
 
 TEST_DIRS = [
     REPO_ROOT / "backend/src/test/java/com/swiss_stage/contract",
@@ -208,7 +215,11 @@ def check_file_references(errors: list[str]) -> None:
         rel = path.relative_to(REPO_ROOT)
         for m in BACKTICK_MD_REF.finditer(text):
             ref = m.group(1)
-            if ref not in existing_basenames:
+            # ディレクトリプレフィックス付き参照(例: 04_quality/01_review_checklist.md)は
+            # basenameだけを見て実在確認する(.claude/配下に同名ファイルが複数存在しない
+            # ことを実測で確認済みのため、パスの厳密な一致までは求めない)
+            basename = ref.rsplit("/", 1)[-1]
+            if basename not in existing_basenames:
                 line_no = text.count("\n", 0, m.start()) + 1
                 fail(
                     errors,
