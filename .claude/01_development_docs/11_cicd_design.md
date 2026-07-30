@@ -19,6 +19,7 @@
 | `ai-qa.yml` | `pull_request` | 受け入れケース台帳との突合。**VERDICT: FAILはゲート**(§2.5.5) |
 | `guard.yml` | `pull_request` | テスト弱体化ガード。AI自動修正の安全装置(§2.6) |
 | `mutation.yml` | `workflow_dispatch` / 週次schedule | Mutation Testing(PITest、domain層限定。`09_test_strategy.md` §2.6) |
+| `ai-design-review.yml` | `pull_request`(`.claude/**`/`schema/**`/`CLAUDE.md`のみ) | 設計ドキュメント間の整合性(非ゲート・レポートのみ。§2.10) |
 
 全ワークフローがPRごとに自動実行される(`vrt.yml` はUI関連のpathsに限る)。ただし
 **マージをブロックするのは `ci.yml` / `guard.yml` のみ**で、`e2e.yml` / `vrt.yml` は
@@ -428,6 +429,24 @@ PR(open/push) → QA(sticky comment更新, VERDICT: PASS/FAIL)
   IDタグの追記作業でこれらに触れる必要は本来ないはずだが、念のため明記している
 - **push**: qa-fixerはClaude GitHub Appの認証で動く(`ai-review.yml` のFixerと同じ)。
   テストファイルのみを対象とするため `.github/workflows/**` への書き込み制約(§2.5)は関係ない
+
+---
+
+## 2.10 設計ドキュメントの整合性レビュー(`.github/workflows/ai-design-review.yml`)
+
+Reviewerは「実装↔コード品質」、QAは「実装↔受け入れケース台帳」を見るが、どちらも
+**設計ドキュメント同士の整合性**は見ていない。例えば `schema/openapi.yaml` にエラーコードを
+追加したのに `06_error_handling_design.md` のエラーコード表が追随していない、といった乖離を
+`design-reviewer`(`.claude/agents/design-reviewer.md`)が検出する。
+
+- **トリガー**: `pull_request` かつ `.claude/**` / `schema/**` / `CLAUDE.md` を変更した場合のみ
+  (paths フィルタ。設計ドキュメントに触れないPRでは起動しない)
+- **非ゲート**: レポートのみ(FAILでもCIは失敗しない・自動修正との連携もない)。VERDICT行は
+  可読性のために出力するが、`ai-review.yml`/`ai-qa.yml` と違いゲート判定には使わない
+- **責務の切り分け**: コード品質(Reviewer)・台帳整合(QA)・機械検査済み項目(docs-lint)は
+  指摘しない。`01_review_checklist.md` の「機械検査済みの項目」表と同じ発想で、
+  design-reviewer自身の定義内に「禁止」節として明記している
+- **sticky comment**: `<!-- swiss-stage-ai-design-review -->`
 
 ---
 

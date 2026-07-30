@@ -145,6 +145,8 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 - QA本体は `.claude/agents/qa.md`、CI連携は `.github/workflows/ai-qa.yml`(PRごとに受け入れケース台帳と差分を突合。**VERDICT: FAILはジョブを失敗させるゲート**。各指摘に `close:` 分類を付け、`test-side`〈既存テストのIDタグ欠落〉のみ qa-fixer が自動修正。`ledger-side`〈台帳更新〉・`human-only`〈基準hack等〉は常に人間)
 - qa-fixer本体は `.claude/agents/qa-fixer.md`(上限2回・台帳自体は聖域として触れない)
 - ci-fixer本体は `.claude/agents/ci-fixer.md`、CI連携は `.github/workflows/ci.yml` の `autofix` ジョブ(決定論的修正〈prettier/generate:api/spotlessApply〉で直らないCI失敗〈型エラー・テスト失敗〉のみAIに委譲。カバレッジ不足は常に人間・上限2回・行き詰まったら `needs-human` ラベルで人間へ)
+- design-reviewer本体は `.claude/agents/design-reviewer.md`、CI連携は `.github/workflows/ai-design-review.yml`(`.claude/**`/`schema/**`/`CLAUDE.md`を変更したPRのみ起動。設計ドキュメント同士の意味的な矛盾を検出。非ゲート・レポートのみ)
+- 受け入れケース台帳のID整合・ファイル参照切れの機械検査は `.github/scripts/docs-lint.py`(CIの`frontend`ジョブ)
 
 ### クイックリファレンスマップ
 
