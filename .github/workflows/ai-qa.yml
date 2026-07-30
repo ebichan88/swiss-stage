@@ -1,9 +1,19 @@
 name: AI QA
 
 # 受け入れケース台帳(.claude/05_acceptance/)とPR差分の突合レビュー。
-# ai-review.yml と独立に動き、レポートのみ(非ゲート・Fixer連携なし)。
-# QAのFAILをFixerに流すと「AIが台帳=仕様を書き換えて指摘を閉じる」経路が
-# できてしまうため、意図的にループを持たない。
+#
+# ai-review.ymlとは独立に動くが、以下の点でai-review.ymlと同じ設計原則を踏襲する:
+#   - fail-closed: レポートが見つからない(UNKNOWN)場合はPASS扱いにせず、
+#     ワークフロー検証によるスキップ(このファイル自体を変更したPR)以外はCIを失敗させる
+#   - VERDICT: FAIL は常にジョブを失敗させる(exit 1)。QAは「情報提供のみ・非ゲート」
+#     だったため通知がPRコメントに埋もれがちだった。PR画面が赤くなることで解決する
+#     (Slack等の追加通知は不要)
+#
+# 一方、QAのFAILをそのままFixerに流すことはしない。「AIが台帳=仕様を書き換えて指摘を
+# 閉じる」経路ができてしまうため。QAの各指摘には close: (ledger-side/test-side/human-only)
+# が必須で、**close: test-side(既存テストにIDタグが付いていないだけ)の指摘のみ** を
+# qa-fixerに委譲する。ledger-side・human-only が1件でも混ざっていればqa-fixerは
+# 起動せず、常にneeds-humanにする。
 on:
   pull_request:
     # unlabeled: needs-humanラベルを外した際に自動処理を再開するため
@@ -16,9 +26,15 @@ concurrency:
   group: ai-qa-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+env:
+  # [qa-fix]コミットの上限。ai-review.ymlのMAX_FIX_ATTEMPTS/ci.ymlのMAX_FIX_ATTEMPTSと
+  # 同じ数え方(コミット数)
+  MAX_FIX_ATTEMPTS: 2
+
 permissions:
-  contents: read
+  contents: write # qa-fixerの修正コミットpush
   pull-requests: write
+  issues: write # needs-humanラベルの作成・付与
   id-token: write
 
 jobs:
@@ -27,9 +43,20 @@ jobs:
     # unlabeledイベントはneeds-human以外のラベル除去では発火させない
     if: ${{ !github.event.pull_request.draft && !contains(github.event.pull_request.labels.*.name, 'needs-human') && (github.event.action != 'unlabeled' || github.event.label.name == 'needs-human') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
+    services:
+      # qa-fixerの検証(./gradlew check)用。ci.ymlのautofixジョブ・ai-review.ymlの
+      # reviewジョブと同じ構成(各ワークフローが個別ジョブのため個別に必要)
+      dynamodb-local:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8000:8000
     steps:
       - uses: actions/checkout@v4
+        with:
+          # merge refではなくPRブランチ実体をcheckoutする(qa-fixerがpushするため)
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
 
       - name: AI QA
         uses: anthropics/claude-code-action@v1
@@ -61,3 +88,319 @@ jobs:
           claude_args: |
             --allowedTools "Read,Grep,Glob,Write,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*),Bash(grep:*),Bash(sort:*),Bash(comm:*),Bash(wc:*)"
             --disallowedTools "Task,Agent"
+
+      - name: QAゲート判定
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+
+          BODY=$(gh api "repos/$REPO/issues/$PR/comments" --paginate \
+            --jq '[.[] | select(.body | startswith("<!-- swiss-stage-ai-qa -->"))] | (last // {}) | .body // ""')
+          VERDICT=$(printf '%s\n' "$BODY" | grep -m1 -oE 'VERDICT: *(PASS|FAIL)' | grep -oE 'PASS|FAIL' || echo "UNKNOWN")
+          echo "verdict=$VERDICT" >> "$GITHUB_OUTPUT"
+          echo "QAのVERDICT: $VERDICT"
+
+          git fetch origin "$BASE" -q
+
+          # UNKNOWN = レポートが見つからない(fail-closed。ai-review.ymlと同じ原則)。
+          # このファイル(ai-qa.yml)自体を変更したPRのみワークフロー検証で回避不能に
+          # スキップされる(needs-humanのみ・CIは落とさない)。それ以外は本物の失敗として
+          # CIを失敗させる
+          if [ "$VERDICT" = "UNKNOWN" ]; then
+            echo "run_fixer=false" >> "$GITHUB_OUTPUT"
+            if git diff --name-only "origin/$BASE...HEAD" | grep -q '^\.github/workflows/ai-qa\.yml$'; then
+              echo "unknown_reason=workflow-validation" >> "$GITHUB_OUTPUT"
+              echo "stop_reason=ai-qa.yml自体を変更しているPRのため、claude-code-actionのワークフロー検証によりQAがスキップされました。**このPRは人間が確認してください**。マージ後は通常どおり動作します" >> "$GITHUB_OUTPUT"
+            else
+              echo "unknown_reason=missing" >> "$GITHUB_OUTPUT"
+              echo "stop_reason=QAのレポートが見つかりません(実施されていない可能性)" >> "$GITHUB_OUTPUT"
+            fi
+            exit 0
+          fi
+
+          if [ "$VERDICT" != "FAIL" ]; then
+            echo "run_fixer=false" >> "$GITHUB_OUTPUT"
+            echo "stop_reason=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # 「## 台帳整合・対応検証・基準hack」セクションから指摘スラッグとclose分類を抽出
+          CM=$(printf '%s\n' "$BODY" | awk '/^## 台帳整合・対応検証・基準hack/{f=1} /^## 提案/{f=0} f')
+          SLUGS=$(printf '%s\n' "$CM" | grep -oE '^#+ +\[Q[0-9]+\] +[A-Za-z0-9._-]+' | awk '{print $NF}' || true)
+          CLOSES=$(printf '%s\n' "$CM" | grep -oE '^- close: *[a-z-]+' | sed -E 's/^- close: *//' || true)
+
+          STOP=""
+
+          # FAILなのに指摘・close分類を抽出できない場合はレポートの形式崩れ
+          if [ -z "$SLUGS" ] || [ -z "$CLOSES" ]; then
+            STOP="レポートから指摘またはclose分類を抽出できませんでした(形式崩れの可能性)"
+          fi
+
+          # close: test-side 以外(ledger-side/human-only)が1件でもあればqa-fixerは起動しない。
+          # `grep -qv`(quiet+invert-match)は環境によって正しく動作しないことがあるため
+          # (ugrepで実際に確認: 非一致行が存在してもexit 1を返す不具合)、-c(件数)で判定する
+          NON_TEST_SIDE_COUNT=$(printf '%s\n' "$CLOSES" | grep -cvE '^test-side$' || true)
+          if [ -z "$STOP" ] && [ "${NON_TEST_SIDE_COUNT:-0}" -gt 0 ]; then
+            STOP="台帳側の修正(ledger-side)または人間判断(human-only)が必要な指摘が含まれるため自動修正しません"
+          fi
+
+          # 自動修正の試行回数上限([qa-fix]コミット数で数える)。
+          # `git log --grep` は本文も検索してしまうため subject だけを対象にする
+          # (ai-review.yml/ci.ymlのゲートと同じ理由)
+          QA_FIX_COMMITS=$(git log "origin/$BASE..HEAD" --format='%H%x09%s' \
+            | grep -E $'^[0-9a-f]+\t.*\\[qa-fix\\]' | cut -f1 || true)
+          ATTEMPTS=$(printf '%s' "$QA_FIX_COMMITS" | grep -c . || true)
+          echo "これまでの自動修正回数: $ATTEMPTS"
+          if [ -z "$STOP" ] && [ "$ATTEMPTS" -ge "$MAX_FIX_ATTEMPTS" ]; then
+            STOP="自動修正の上限(${MAX_FIX_ATTEMPTS}回)に達しました"
+          fi
+
+          # 同一指摘の再発チェック: 過去の[qa-fix]コミットが直したはずの指摘が再指摘されたら停止
+          if [ -z "$STOP" ] && [ -n "$QA_FIX_COMMITS" ]; then
+            for s in $SLUGS; do
+              if git show -s --format=%B $QA_FIX_COMMITS | grep -q "Fixed: $s"; then
+                STOP="指摘 $s が自動修正後も再指摘されています(修正が無効か、指摘が不安定)"
+                break
+              fi
+            done
+          fi
+
+          if [ -n "$STOP" ]; then
+            echo "run_fixer=false" >> "$GITHUB_OUTPUT"
+            echo "stop_reason=$STOP" >> "$GITHUB_OUTPUT"
+            echo "qa-fixerを起動しません: $STOP"
+          else
+            echo "run_fixer=true" >> "$GITHUB_OUTPUT"
+            echo "stop_reason=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: needs-humanラベルを用意
+        if: steps.gate.outputs.verdict == 'FAIL' || steps.gate.outputs.verdict == 'UNKNOWN'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create needs-human --color B60205 \
+            --description "AIレビューの自動対応範囲外。人間の判断が必要(外すと自動レビュー再開)" --force
+
+      - name: 人間確認要求(自動修正の対象外)
+        if: (steps.gate.outputs.verdict == 'FAIL' || steps.gate.outputs.verdict == 'UNKNOWN') && steps.gate.outputs.run_fixer != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          VERDICT: ${{ steps.gate.outputs.verdict }}
+          REASON: ${{ steps.gate.outputs.stop_reason }}
+        run: |
+          gh pr edit "$PR" --add-label needs-human
+          if [ "$VERDICT" = "UNKNOWN" ]; then
+            HEADLINE="⚠️ **QAは実施されていません**"
+          else
+            HEADLINE="🚨 **qa-fixerは実行されません**"
+          fi
+          {
+            echo "${HEADLINE}: ${REASON}"
+            echo ""
+            echo "対応後、\`needs-human\` ラベルを外すと自動処理が再開されます。"
+          } > /tmp/qa-needs-human.md
+          gh pr comment "$PR" --body-file /tmp/qa-needs-human.md
+
+      # fail-closed(ai-review.ymlと同じ原則)。ai-qa.yml自体を変更したPRのワークフロー
+      # 検証スキップは回避不能なのでCIは落とさない
+      - name: QA未実施はCIを失敗させる
+        if: steps.gate.outputs.verdict == 'UNKNOWN' && steps.gate.outputs.unknown_reason != 'workflow-validation'
+        run: |
+          echo "QAのレポートが見つかりません。実施されていない可能性があります。" >&2
+          exit 1
+
+      # ---- 以下はqa-fixerが起動する場合のみ ----
+
+      - uses: pnpm/action-setup@v4
+        if: steps.gate.outputs.run_fixer == 'true'
+        with:
+          package_json_file: frontend/package.json
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.run_fixer == 'true'
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - uses: actions/setup-java@v4
+        if: steps.gate.outputs.run_fixer == 'true'
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: フロントエンド依存とDynamoDB Localテーブルを準備
+        if: steps.gate.outputs.run_fixer == 'true'
+        env:
+          DYNAMODB_ENDPOINT: http://localhost:8000
+        run: |
+          (cd frontend && pnpm install --frozen-lockfile)
+          (cd backend && ./scripts/create-table.sh)
+
+      - name: qa-fixer実行前のHEADを記録
+        id: pre_fixer
+        if: steps.gate.outputs.run_fixer == 'true'
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: qa-fixer(close:test-sideのみ自動修正)
+        if: steps.gate.outputs.run_fixer == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "claude"
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            あなたはこのリポジトリのqa-fixerです。
+            `.claude/agents/qa-fixer.md` を読み、その指示に厳密に従って直近のQA指摘を修正してください。
+
+            前提:
+            - QAレポートは `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --paginate --jq '[.[] | select(.body | startswith("<!-- swiss-stage-ai-qa -->"))] | (last // {}) | .body // ""'` で取得できます
+            - カレントディレクトリはPRブランチ(${{ github.event.pull_request.head.ref }})のcheckoutです
+            - フロントエンドの依存(pnpm install)とDynamoDB Local(localhost:8000、テーブル作成済み)は準備済みです
+            - **`close: test-side` の指摘のみが対象です**。`ledger-side`/`human-only` には一切触れないでください
+
+            手順はqa-fixer.mdの通りですが、CI実行のため順序に注意:
+            コミット後、**pushする前に**結果レポート(`<!-- swiss-stage-qa-fixer -->` 形式)をPRコメントに投稿し、pushは最後に行ってください。
+
+            結果レポートの投稿(sticky方式):
+            1. レポートを /tmp/qa-fixer-report.md に書き出す
+            2. `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --paginate --jq '.[] | select(.body | startswith("<!-- swiss-stage-qa-fixer -->")) | .id'` で既存コメントを探す
+            3. 見つかったら `gh api --method PATCH repos/${{ github.repository }}/issues/comments/<ID> -F body=@/tmp/qa-fixer-report.md` で更新する
+            4. 見つからなければ `gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/qa-fixer-report.md` で新規投稿する
+
+            DISPUTED / SKIPPED / FAILED が1件でもある場合は
+            `gh pr edit ${{ github.event.pull_request.number }} --add-label needs-human` も実行してください。
+
+            **重要**: サブエージェント(Agent / Task ツール)に委譲しないでください。
+            このジョブはあなたのターンが終わると同時に終了するため、バックグラウンドで
+            起動したエージェントは修正・投稿・pushを終える前に強制終了されます。
+            必ずあなた自身がこのターン内で作業を完了してください。
+          claude_args: |
+            --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh pr edit:*),Bash(gh api:*),Bash(cd:*),Bash(pnpm:*),Bash(./gradlew:*),Bash(ls:*),Bash(cat:*)"
+            --disallowedTools "Task,Agent"
+            --permission-mode bypassPermissions
+
+      - name: qa-fixerのpush有無を確認
+        id: post_fixer
+        if: steps.gate.outputs.run_fixer == 'true'
+        run: |
+          set -euo pipefail
+          LOCAL=$(git rev-parse HEAD)
+          if [ "$LOCAL" != "${{ steps.pre_fixer.outputs.sha }}" ]; then
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+            echo "qa-fixerの修正コミット $LOCAL がpushされました"
+          else
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            echo "qa-fixerによる修正pushはありません"
+          fi
+
+      # fail-closed: qa-fixerのレポートが見つからない場合、内容にかかわらずneeds-humanにする
+      # (§2.5「fail-closedの原則」と同じ理由。「レポートが無い=何が起きたか分からない」を
+      # 素通りさせない)
+      - name: qa-fixerの結果を判定
+        id: fixer_report
+        if: steps.gate.outputs.run_fixer == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set +e
+          BODY=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" --paginate \
+            --jq '[.[] | select(.body | startswith("<!-- swiss-stage-qa-fixer -->"))] | (last // {}) | .body // ""')
+          if [ -z "$BODY" ]; then
+            echo "status=missing" >> "$GITHUB_OUTPUT"
+          elif printf '%s' "$BODY" | grep -q "人間の確認が必要です"; then
+            echo "status=needs_human" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: needs-humanラベルを用意(qa-fixer)
+        if: steps.gate.outputs.run_fixer == 'true' && steps.fixer_report.outputs.status != 'ok'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create needs-human --color B60205 \
+            --description "AIレビューの自動対応範囲外。人間の判断が必要(外すと自動レビュー再開)" --force
+
+      - name: qa-fixerレポート不在を通知(fail-closed)
+        if: steps.gate.outputs.run_fixer == 'true' && steps.fixer_report.outputs.status == 'missing'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr edit "$PR" --add-label needs-human
+          {
+            echo "⚠️ **qa-fixerのレポートが見つかりません**。修正が実施されたか不明なため人間の確認が必要です。"
+            echo ""
+            echo "対応後、\`needs-human\` ラベルを外すと自動処理が再開されます。"
+          } > /tmp/qa-fixer-missing.md
+          gh pr comment "$PR" --body-file /tmp/qa-fixer-missing.md
+
+      - name: qa-fixerの要対応を通知
+        if: steps.gate.outputs.run_fixer == 'true' && steps.fixer_report.outputs.status == 'needs_human'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: gh pr edit "$PR" --add-label needs-human
+
+      # qa-fixerが全指摘をFIXEDし、pushも成功した場合のみ同一ラン内でQAを再実行する
+      # (ai-review.ymlの「修正後の再レビュー」と同じパターン)。ジョブの最終的な合否は
+      # 次のステップで「その時点の最新VERDICT」を見て決めるため、ここでは再実行するだけでよい
+      - name: QA(修正後の再突合)
+        if: steps.gate.outputs.run_fixer == 'true' && steps.post_fixer.outputs.pushed == 'true' && steps.fixer_report.outputs.status == 'ok'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "claude"
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            あなたはこのリポジトリのQAエージェントです。qa-fixerによる修正pushの直後の再突合です。
+            `.claude/agents/qa.md` を読み、その指示に厳密に従ってこのPRの**現在の状態**を受け入れケース台帳と突合してください。
+            差分は `gh pr diff ${{ github.event.pull_request.number }}` で取得します。
+
+            レポートの投稿(1PRにつき1コメントを更新し続けるsticky方式):
+            1. レポートを一時ファイル(例: /tmp/qa-report.md)に書き出す
+            2. `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --paginate --jq '.[] | select(.body | startswith("<!-- swiss-stage-ai-qa -->")) | .id'` で既存のQAコメントを探す
+            3. 見つかったら `gh api --method PATCH repos/${{ github.repository }}/issues/comments/<ID> -F body=@/tmp/qa-report.md` で更新する
+            4. 見つからなければ `gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/qa-report.md` で新規投稿する
+
+            レポートはPRコメントとしてのみ投稿してください。結果をメッセージ本文に出力しないでください。
+            **重要**: サブエージェント(Agent / Task ツール)に委譲しないでください。
+            このジョブはあなたのターンが終わると同時に終了するため、バックグラウンドで
+            起動したエージェントは投稿する前に強制終了され、レポートが永久に投稿されません。
+            必ずあなた自身がこのターン内で作業を完了し、投稿まで終えてください。
+          claude_args: |
+            --allowedTools "Read,Grep,Glob,Write,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*),Bash(grep:*),Bash(sort:*),Bash(comm:*),Bash(wc:*)"
+            --disallowedTools "Task,Agent"
+
+      # ジョブの最終的な合否。「情報提供のみ・非ゲート」だったQAを実質的なゲートにする
+      # (PR画面が赤くなることで通知経路の問題を解決する。追加のSlack通知等は不要)。
+      # ここでは再度sticky commentの最新VERDICTを読む(qa-fixer→再突合が走った場合は
+      # その結果を、走らなかった場合は最初のVERDICTをそのまま見る)
+      - name: 最終VERDICTでジョブの合否を決定
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          BODY=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" --paginate \
+            --jq '[.[] | select(.body | startswith("<!-- swiss-stage-ai-qa -->"))] | (last // {}) | .body // ""')
+          FINAL_VERDICT=$(printf '%s\n' "$BODY" | grep -m1 -oE 'VERDICT: *(PASS|FAIL)' | grep -oE 'PASS|FAIL' || echo "UNKNOWN")
+          echo "最終VERDICT: $FINAL_VERDICT"
+          if [ "$FINAL_VERDICT" = "FAIL" ]; then
+            echo "QAがFAILのためジョブを失敗させます。" >&2
+            exit 1
+          fi

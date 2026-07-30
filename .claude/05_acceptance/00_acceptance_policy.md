@@ -78,6 +78,19 @@ API契約に変化がなく**UI表示のみ**を追加・変更するケース(�
 3. ケース自体の追加・変更・廃止(=仕様の決定)は**人間が判断する**。AIエージェント(特にFixer)は指摘を閉じる目的で台帳を書き換えてはならない
 4. QAエージェントの誤検知・見逃しに気づいたら、本ファイルまたは台帳を同じPRで直して育てる(`01_review_checklist.md` と同じ運用)
 
+## 7.5 QAの close 分類とqa-fixerの自動修正範囲
+
+QAエージェント(`.claude/agents/qa.md`)の各指摘には `close:`(`ledger-side` / `test-side` /
+`human-only`)を必須で付ける。**qa-fixer(`.claude/agents/qa-fixer.md`)が自動修正してよいのは
+`close: test-side` の指摘のみ**(既存テストは該当ケースを実質的に検証済みで、`@DisplayName`
+やテストタイトルにIDタグが付いていないだけの場合)。
+
+台帳自体の書き換え(`ledger-side`: 新ケース追加・Status更新)や、基準hack検出・不足提案
+(常に `human-only`)は**qa-fixerも触らない**。上記§7-3「AIエージェントは指摘を閉じる目的で
+台帳を書き換えてはならない」の原則は、qa-fixer導入後も変わらず適用される
+(`.github/workflows/ai-qa.yml` のゲートが `close: test-side` 以外を含む場合はqa-fixerを
+起動せず `needs-human` にする)。
+
 ## 8. やらないこと(out-of-scope)の扱い
 
 - 台帳冒頭の「やらないこと」欄に載っているものは、QAエージェントは不足ケースとして**提案しない**

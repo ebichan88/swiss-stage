@@ -2,8 +2,8 @@
 # 「テストを弱めて失敗を消す」経路を選んでいないかを検査する安全装置。
 #
 # 適用の強度を2段に分ける:
-#   AI修正コミット([ai-fix]/[ci-fix])の差分 … 全項目(strict)。BLOCKならCI失敗 + needs-human
-#   PR全体の差分                            … BLOCK相当のみ(light)。コメントで警告するだけ
+#   AI修正コミット([ai-fix]/[ci-fix]/[qa-fix])の差分 … 全項目(strict)。BLOCKならCI失敗 + needs-human
+#   PR全体の差分                                     … BLOCK相当のみ(light)。コメントで警告するだけ
 #
 # 人間のPRをゲートしないのは、テストの整理・削除には正当な理由がありうるため。
 # 一方AIの自動修正は「指摘を閉じること」が目的なので、弱体化の誘因が構造的に強い。
@@ -62,11 +62,11 @@ jobs:
           pr_flagged=0
 
           # ---- AI修正コミットを1つずつ厳格に検査する ----
-          # `git log --grep` はコミット本文も検索してしまい、本文で [ai-fix] に言及した
+          # `git log --grep` はコミット本文も検索してしまい、本文で [ai-fix]/[qa-fix] に言及した
           # 人間のコミットまで拾う。マーカーはsubjectに付ける規約(fixer.md)なので
           # subjectだけを対象にする
           AI_COMMITS=$(git log "$MERGE_BASE..HEAD" --format='%H%x09%s' \
-            | grep -E $'^[0-9a-f]+\t.*\\[(ai-fix|ci-fix)\\]' | cut -f1 || true)
+            | grep -E $'^[0-9a-f]+\t.*\\[(ai-fix|ci-fix|qa-fix)\\]' | cut -f1 || true)
 
           if [ -n "$AI_COMMITS" ]; then
             echo "## AI修正コミットの検査(strict)" >> "$REPORT"
@@ -98,7 +98,7 @@ jobs:
           else
             echo "## AI修正コミットの検査(strict)" >> "$REPORT"
             echo >> "$REPORT"
-            echo "対象の \`[ai-fix]\` / \`[ci-fix]\` コミットはありません。" >> "$REPORT"
+            echo "対象の \`[ai-fix]\` / \`[ci-fix]\` / \`[qa-fix]\` コミットはありません。" >> "$REPORT"
             echo >> "$REPORT"
           fi
 

@@ -16,7 +16,7 @@
 | `e2e.yml` | `pull_request` / `workflow_dispatch` | クリティカルパスのE2E(Playwright)。PRごとに自動実行(当面は非required。§2.8) |
 | `vrt.yml` | `pull_request`(UI関連pathsのみ) / `workflow_dispatch` | StorybookページのVisual Regression Test。**非ブロッキング**。ベースライン更新は`workflow_dispatch`のみ(§2.8) |
 | `ai-review.yml` | `pull_request` | AIコードレビュー・自動修正(Critical/Majorのみ。§2.5) |
-| `ai-qa.yml` | `pull_request` | 受け入れケース台帳との突合(レポートのみ・非ゲート。`.claude/agents/qa.md`) |
+| `ai-qa.yml` | `pull_request` | 受け入れケース台帳との突合。**VERDICT: FAILはゲート**(§2.5.5) |
 | `guard.yml` | `pull_request` | テスト弱体化ガード。AI自動修正の安全装置(§2.6) |
 | `mutation.yml` | `workflow_dispatch` / 週次schedule | Mutation Testing(PITest、domain層限定。`09_test_strategy.md` §2.6) |
 
@@ -374,6 +374,60 @@ gh workflow run vrt.yml -f update_snapshots=true --ref <branch>
 ```
 
 `notify` を別ジョブにしているのは、`vrt` ジョブがPlaywrightコンテナ内で動き `gh` CLIを持たないため。
+
+---
+
+## 2.9 AI QAのゲート化 + qa-fixer(`.github/workflows/ai-qa.yml`)
+
+導入当初、QAは「情報提供のみ・非ゲート」で運用していた(FAILでもマージはブロックされない)。
+しかし通知経路がPRコメントのみだったため読み飛ばしが構造的に起きやすく、**VERDICT: FAILは
+ジョブそのものを失敗させる**ようにした(PR画面が赤くなることで解決する。Slack等の追加通知は
+不要)。
+
+```text
+PR(open/push) → QA(sticky comment更新, VERDICT: PASS/FAIL)
+  PASS    → ジョブ成功
+  FAIL    → ゲート判定(bash・決定的)
+              ├ 全指摘が close:test-side → qa-fixer(IDタグの追記のみ → 検証 → レポート投稿 → push)→ 再突合
+              └ close:ledger-side/human-only を含む → needs-humanラベル + 理由コメント
+  UNKNOWN → ├ ai-qa.yml自体を変更したPR → needs-humanラベル + 説明コメント(CIは落とさない)
+            └ それ以外                  → needs-humanラベル + **CI失敗**(fail-closed。§2.5と同じ原則)
+ジョブの最終合否: その時点の最新sticky commentのVERDICTがFAILならexit 1
+```
+
+### QAをそのままFixerに繋がない理由(維持している設計判断)
+
+「QAのFAILをFixerに流すと、AIが台帳(=仕様)を書き換えて指摘を閉じる経路ができてしまう」という
+当初からの設計判断は変えていない。QAの4責務それぞれに `close:` を付けさせ、**`close: test-side`
+(既存テストは該当ケースを実質的に検証済みで、IDタグが付いていないだけ)の指摘のみ**qa-fixerに
+委譲する。
+
+| QA責務 | `close:` | qa-fixer |
+|---|---|---|
+| 台帳整合(新ケース未追加・Status未更新) | `ledger-side` | ❌ 台帳=仕様を書く行為のため人間のみ |
+| 対応検証・IDタグの欠落のみ | `test-side` | ✅ IDタグを追記するだけ |
+| 対応検証・テスト自体が存在しない | `human-only` | ❌ 新規テストの実装は人間 |
+| 対応検証・Statusが古い | `ledger-side` | ❌ 台帳のStatus変更は仕様側の記録 |
+| 基準hack検出 | `human-only`(**固定**) | ❌ **絶対に人間**。AIが弱めたテストをAIが直すのは隠蔽方向に働く |
+| 不足提案 | `human-only` | ❌ 人間(VERDICTに影響しないためゲート対象外) |
+
+1件でも `close: test-side` 以外が混ざっていれば、qa-fixerは起動せず `needs-human` にする。
+
+### 設計上の要点
+
+- **MAX_FIX_ATTEMPTS=2**: `[qa-fix]` コミット数で数える(ai-review.yml/ci.ymlと同じ数え方)
+- **fail-closed**: qa-fixerのsticky reportが見つからない場合、内容にかかわらず `needs-human`
+  にする(§2.5と同じ理由)
+- **修正後の再突合**: qa-fixerが全指摘をFIXEDしpushにも成功した場合、同一ラン内でQAを
+  再実行する(`ai-review.yml` の「修正後の再レビュー」と同じパターン)。ジョブの最終合否は
+  その時点の最新VERDICTで決まる
+- **`[qa-fix]` コミットもテスト弱体化ガードの対象**: `guard.yml` の対象コミット判定
+  (`[ai-fix]`/`[ci-fix]`)に `[qa-fix]` を追加した。qa-fixerはテストファイルしか触らない
+  ため、このガードの対象として特に重要
+- **聖域**: `fixer.md`/`ci-fixer.md` と同じ3領域 + `.claude/05_acceptance/**`(台帳自体)。
+  IDタグの追記作業でこれらに触れる必要は本来ないはずだが、念のため明記している
+- **push**: qa-fixerはClaude GitHub Appの認証で動く(`ai-review.yml` のFixerと同じ)。
+  テストファイルのみを対象とするため `.github/workflows/**` への書き込み制約(§2.5)は関係ない
 
 ---
 
