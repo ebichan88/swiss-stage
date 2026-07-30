@@ -76,6 +76,9 @@ sourceSets {
 tasks.named('test') {
     useJUnitPlatform()
     finalizedBy jacocoTestReport
+    // -Dcharacterization.update=true はGradle自身のJVMに渡るだけで、testはデフォルトで
+    // フォークした別JVMで動くため自動転送されない(CharacterizationTest用)。明示的に転送する
+    systemProperty 'characterization.update', System.getProperty('characterization.update')
 }
 
 jacocoTestReport {

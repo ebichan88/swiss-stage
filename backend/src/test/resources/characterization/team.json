@@ -1,0 +1,107 @@
+{
+  "rounds" : {
+    "round1" : [ {
+      "pairs" : [ {
+        "team1" : "T001",
+        "team2" : "T002"
+      }, {
+        "team1" : "T003",
+        "team2" : "T004"
+      }, {
+        "team1" : "T005",
+        "team2" : "T006"
+      } ],
+      "bye" : null,
+      "relaxations" : [ ]
+    } ],
+    "round2" : [ {
+      "pairs" : [ {
+        "team1" : "T001",
+        "team2" : "T003"
+      }, {
+        "team1" : "T005",
+        "team2" : "T002"
+      }, {
+        "team1" : "T004",
+        "team2" : "T006"
+      } ],
+      "bye" : null,
+      "relaxations" : [ ]
+    } ],
+    "round3" : [ {
+      "pairs" : [ {
+        "team1" : "T001",
+        "team2" : "T005"
+      }, {
+        "team1" : "T003",
+        "team2" : "T006"
+      }, {
+        "team1" : "T004",
+        "team2" : "T002"
+      } ],
+      "bye" : null,
+      "relaxations" : [ ]
+    } ]
+  },
+  "finalStandings" : [ {
+    "rank" : 1,
+    "teamId" : "T001",
+    "wins" : 3,
+    "losses" : 0,
+    "draws" : 0,
+    "points" : 6,
+    "sos" : 8,
+    "sosos" : 30,
+    "hadBye" : false
+  }, {
+    "rank" : 2,
+    "teamId" : "T003",
+    "wins" : 2,
+    "losses" : 1,
+    "draws" : 0,
+    "points" : 4,
+    "sos" : 10,
+    "sosos" : 24,
+    "hadBye" : false
+  }, {
+    "rank" : 3,
+    "teamId" : "T005",
+    "wins" : 2,
+    "losses" : 1,
+    "draws" : 0,
+    "points" : 4,
+    "sos" : 6,
+    "sosos" : 34,
+    "hadBye" : false
+  }, {
+    "rank" : 4,
+    "teamId" : "T004",
+    "wins" : 2,
+    "losses" : 1,
+    "draws" : 0,
+    "points" : 4,
+    "sos" : 4,
+    "sosos" : 36,
+    "hadBye" : false
+  }, {
+    "rank" : 5,
+    "teamId" : "T002",
+    "wins" : 0,
+    "losses" : 3,
+    "draws" : 0,
+    "points" : 0,
+    "sos" : 14,
+    "sosos" : 18,
+    "hadBye" : false
+  }, {
+    "rank" : 6,
+    "teamId" : "T006",
+    "wins" : 0,
+    "losses" : 3,
+    "draws" : 0,
+    "points" : 0,
+    "sos" : 12,
+    "sosos" : 20,
+    "hadBye" : false
+  } ]
+}

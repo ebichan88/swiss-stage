@@ -1,0 +1,310 @@
+{
+  "rounds" : {
+    "round1" : [ {
+      "pairs" : [ {
+        "player1" : "P001",
+        "player2" : "P002"
+      }, {
+        "player1" : "P003",
+        "player2" : "P004"
+      }, {
+        "player1" : "P005",
+        "player2" : "P006"
+      }, {
+        "player1" : "P007",
+        "player2" : "P008"
+      }, {
+        "player1" : "P009",
+        "player2" : "P010"
+      }, {
+        "player1" : "P011",
+        "player2" : "P012"
+      }, {
+        "player1" : "P013",
+        "player2" : "P014"
+      }, {
+        "player1" : "P015",
+        "player2" : "P016"
+      } ],
+      "bye" : null,
+      "relaxations" : [ ]
+    } ],
+    "round2" : [ {
+      "pairs" : [ {
+        "player1" : "P001",
+        "player2" : "P003"
+      }, {
+        "player1" : "P005",
+        "player2" : "P007"
+      }, {
+        "player1" : "P009",
+        "player2" : "P011"
+      }, {
+        "player1" : "P013",
+        "player2" : "P015"
+      }, {
+        "player1" : "P002",
+        "player2" : "P004"
+      }, {
+        "player1" : "P006",
+        "player2" : "P008"
+      }, {
+        "player1" : "P010",
+        "player2" : "P012"
+      }, {
+        "player1" : "P014",
+        "player2" : "P016"
+      } ],
+      "bye" : null,
+      "relaxations" : [ ]
+    } ],
+    "round3" : [ {
+      "pairs" : [ {
+        "player1" : "P001",
+        "player2" : "P005"
+      }, {
+        "player1" : "P009",
+        "player2" : "P013"
+      }, {
+        "player1" : "P002",
+        "player2" : "P003"
+      }, {
+        "player1" : "P006",
+        "player2" : "P007"
+      }, {
+        "player1" : "P010",
+        "player2" : "P011"
+      }, {
+        "player1" : "P014",
+        "player2" : "P015"
+      }, {
+        "player1" : "P004",
+        "player2" : "P008"
+      }, {
+        "player1" : "P012",
+        "player2" : "P016"
+      } ],
+      "bye" : null,
+      "relaxations" : [ ]
+    } ],
+    "round4" : [ {
+      "pairs" : [ {
+        "player1" : "P001",
+        "player2" : "P009"
+      }, {
+        "player1" : "P005",
+        "player2" : "P013"
+      }, {
+        "player1" : "P002",
+        "player2" : "P010"
+      }, {
+        "player1" : "P006",
+        "player2" : "P014"
+      }, {
+        "player1" : "P003",
+        "player2" : "P011"
+      }, {
+        "player1" : "P007",
+        "player2" : "P015"
+      }, {
+        "player1" : "P004",
+        "player2" : "P012"
+      }, {
+        "player1" : "P008",
+        "player2" : "P016"
+      } ],
+      "bye" : null,
+      "relaxations" : [ ]
+    } ],
+    "round5" : [ {
+      "pairs" : [ {
+        "player1" : "P001",
+        "player2" : "P006"
+      }, {
+        "player1" : "P005",
+        "player2" : "P002"
+      }, {
+        "player1" : "P009",
+        "player2" : "P003"
+      }, {
+        "player1" : "P013",
+        "player2" : "P007"
+      }, {
+        "player1" : "P010",
+        "player2" : "P004"
+      }, {
+        "player1" : "P014",
+        "player2" : "P008"
+      }, {
+        "player1" : "P011",
+        "player2" : "P016"
+      }, {
+        "player1" : "P015",
+        "player2" : "P012"
+      } ],
+      "bye" : null,
+      "relaxations" : [ ]
+    } ]
+  },
+  "finalStandings" : [ {
+    "rank" : 1,
+    "participantId" : "P001",
+    "wins" : 5,
+    "losses" : 0,
+    "draws" : 0,
+    "points" : 10,
+    "sos" : 32,
+    "sosos" : 156,
+    "hadBye" : false
+  }, {
+    "rank" : 2,
+    "participantId" : "P005",
+    "wins" : 4,
+    "losses" : 1,
+    "draws" : 0,
+    "points" : 8,
+    "sos" : 32,
+    "sosos" : 150,
+    "hadBye" : false
+  }, {
+    "rank" : 3,
+    "participantId" : "P009",
+    "wins" : 4,
+    "losses" : 1,
+    "draws" : 0,
+    "points" : 8,
+    "sos" : 30,
+    "sosos" : 138,
+    "hadBye" : false
+  }, {
+    "rank" : 4,
+    "participantId" : "P002",
+    "wins" : 3,
+    "losses" : 2,
+    "draws" : 0,
+    "points" : 6,
+    "sos" : 32,
+    "sosos" : 140,
+    "hadBye" : false
+  }, {
+    "rank" : 5,
+    "participantId" : "P006",
+    "wins" : 3,
+    "losses" : 2,
+    "draws" : 0,
+    "points" : 6,
+    "sos" : 30,
+    "sosos" : 128,
+    "hadBye" : false
+  }, {
+    "rank" : 6,
+    "participantId" : "P013",
+    "wins" : 3,
+    "losses" : 2,
+    "draws" : 0,
+    "points" : 6,
+    "sos" : 30,
+    "sosos" : 124,
+    "hadBye" : false
+  }, {
+    "rank" : 7,
+    "participantId" : "P010",
+    "wins" : 3,
+    "losses" : 2,
+    "draws" : 0,
+    "points" : 6,
+    "sos" : 24,
+    "sosos" : 120,
+    "hadBye" : false
+  }, {
+    "rank" : 8,
+    "participantId" : "P014",
+    "wins" : 3,
+    "losses" : 2,
+    "draws" : 0,
+    "points" : 6,
+    "sos" : 18,
+    "sosos" : 116,
+    "hadBye" : false
+  }, {
+    "rank" : 9,
+    "participantId" : "P003",
+    "wins" : 2,
+    "losses" : 3,
+    "draws" : 0,
+    "points" : 4,
+    "sos" : 32,
+    "sosos" : 134,
+    "hadBye" : false
+  }, {
+    "rank" : 10,
+    "participantId" : "P007",
+    "wins" : 2,
+    "losses" : 3,
+    "draws" : 0,
+    "points" : 4,
+    "sos" : 26,
+    "sosos" : 130,
+    "hadBye" : false
+  }, {
+    "rank" : 11,
+    "participantId" : "P004",
+    "wins" : 2,
+    "losses" : 3,
+    "draws" : 0,
+    "points" : 4,
+    "sos" : 20,
+    "sosos" : 126,
+    "hadBye" : false
+  }, {
+    "rank" : 12,
+    "participantId" : "P011",
+    "wins" : 2,
+    "losses" : 3,
+    "draws" : 0,
+    "points" : 4,
+    "sos" : 20,
+    "sosos" : 122,
+    "hadBye" : false
+  }, {
+    "rank" : 13,
+    "participantId" : "P015",
+    "wins" : 2,
+    "losses" : 3,
+    "draws" : 0,
+    "points" : 4,
+    "sos" : 18,
+    "sosos" : 110,
+    "hadBye" : false
+  }, {
+    "rank" : 14,
+    "participantId" : "P008",
+    "wins" : 1,
+    "losses" : 4,
+    "draws" : 0,
+    "points" : 2,
+    "sos" : 20,
+    "sosos" : 112,
+    "hadBye" : false
+  }, {
+    "rank" : 15,
+    "participantId" : "P012",
+    "wins" : 1,
+    "losses" : 4,
+    "draws" : 0,
+    "points" : 2,
+    "sos" : 18,
+    "sosos" : 100,
+    "hadBye" : false
+  }, {
+    "rank" : 16,
+    "participantId" : "P016",
+    "wins" : 0,
+    "losses" : 5,
+    "draws" : 0,
+    "points" : 0,
+    "sos" : 18,
+    "sosos" : 94,
+    "hadBye" : false
+  } ]
+}
