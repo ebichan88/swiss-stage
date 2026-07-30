@@ -143,6 +143,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 - `02_severity.md` — Critical/Major/Minorの定義とPASS/FAIL判定基準
 - Reviewer本体は `.claude/agents/reviewer.md`、Fixer本体は `.claude/agents/fixer.md`、CI連携は `.github/workflows/ai-review.yml`(PRごとに自動レビュー。FAIL時はCritical/MajorのみFixerが自動修正 → 再レビュー。上限3回・domain/serviceは聖域・行き詰まったら `needs-human` ラベルで人間へ)
 - QA本体は `.claude/agents/qa.md`、CI連携は `.github/workflows/ai-qa.yml`(PRごとに受け入れケース台帳と差分を突合。レポートのみ・非ゲート・Fixer連携なし)
+- ci-fixer本体は `.claude/agents/ci-fixer.md`、CI連携は `.github/workflows/ci.yml` の `autofix` ジョブ(決定論的修正〈prettier/generate:api/spotlessApply〉で直らないCI失敗〈型エラー・テスト失敗〉のみAIに委譲。カバレッジ不足は常に人間・上限2回・行き詰まったら `needs-human` ラベルで人間へ)
 
 ### クイックリファレンスマップ
 

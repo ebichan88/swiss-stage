@@ -6,6 +6,12 @@ on:
   # AI Fixerの修正コミットがイベントを発火しない場合に ai-review.yml から起動する
   workflow_dispatch:
 
+env:
+  # [ci-fix]コミットの上限(決定論的修正+ci-fixerの合計)。ai-review.ymlのMAX_FIX_ATTEMPTS
+  # と同じ数え方(コミット数)。決定論的修正だけで直る場合は1回で収束するので、通常は
+  # 「決定論的修正1回 → まだ失敗 → ci-fixer1回」の最大2回で打ち切りになる
+  MAX_FIX_ATTEMPTS: 2
+
 permissions:
   contents: read
   pull-requests: write # カバレッジレポートのPRコメント投稿用
@@ -82,12 +88,26 @@ jobs:
   # テスト失敗・カバレッジ不足)は対象外で、人間またはci-fixerが扱う(11_cicd_design.md §2.7)
   autofix:
     needs: [frontend, backend]
-    if: ${{ failure() && github.event_name == 'pull_request' }}
+    # needs-humanが付いている間は起動しない(ai-review.ymlのreviewジョブと同じゲート)。
+    # ループ防止をコミット数だけに頼ると、ci-fixerがDISPUTED/FAILED(無コミット)や
+    # coverage-only(ci-fixer自体が起動しない)と判定した場合に [ci-fix] コミットが
+    # 増えないため、needs-human付与後もPRへの無関係な後続pushのたびにこのジョブが
+    # 再実行され、ci-fixerが何度でも起動し非stickyな通知コメントでPRがスパムされる
+    # (AIレビューで指摘・修正: M1 ci-fixer-loop-missing-needs-human-gate)
+    if: ${{ failure() && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'needs-human') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: write # 修正コミットのpush(AUTOFIX_TOKEN未設定時のフォールバック用)
       pull-requests: write # PRコメント
+      issues: write # needs-humanラベルの作成・付与
+    services:
+      # ci-fixerの検証(./gradlew check)用。backendジョブとは別ジョブのため個別に必要
+      # (ai-review.ymlのreviewジョブと同じ構成)
+      dynamodb-local:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8000:8000
     steps:
       - uses: actions/checkout@v4
         with:
@@ -119,19 +139,20 @@ jobs:
           fi
           echo "token_missing=false" >> "$GITHUB_OUTPUT"
 
-          # ループ防止: 決定論的な修正は1回で収束するはずなので、既に [ci-fix] が
-          # 積まれているのに失敗しているなら、それは自動修正で直る種類の失敗ではない。
-          # `git log --grep` は本文も検索してしまうため subject だけを対象にする
-          # (ai-review.yml のゲートと同じ理由)
+          # ループ防止: [ci-fix]コミット数(決定論的修正+ci-fixerの合計)がMAX_FIX_ATTEMPTSに
+          # 達したら以後は実行しない。`git log --grep` は本文も検索してしまうため
+          # subject だけを対象にする(ai-review.yml のゲートと同じ理由)
           CI_FIX_COUNT=$(git log "origin/$BASE..HEAD" --format='%H%x09%s' \
             | grep -cE $'^[0-9a-f]+\t.*\\[ci-fix\\]' || true)
-          echo "既存の[ci-fix]コミット数: $CI_FIX_COUNT"
+          echo "これまでの自動修正回数: $CI_FIX_COUNT"
 
-          if [ "$CI_FIX_COUNT" -gt 0 ]; then
+          if [ "$CI_FIX_COUNT" -ge "$MAX_FIX_ATTEMPTS" ]; then
             echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "既に自動修正済みのため実行しません(決定論的な修正は1回で収束する)"
+            echo "max_attempts_reached=true" >> "$GITHUB_OUTPUT"
+            echo "自動修正の上限(${MAX_FIX_ATTEMPTS}回)に達したため実行しません"
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "max_attempts_reached=false" >> "$GITHUB_OUTPUT"
           fi
 
       # ---- frontendが失敗した場合のみ ----
@@ -231,3 +252,224 @@ jobs:
             echo "セットアップ手順は \`.claude/01_development_docs/11_cicd_design.md\` §2.7 を参照してください。"
           } > /tmp/ci-fix-setup.md
           gh pr comment "$PR" --body-file /tmp/ci-fix-setup.md
+
+      - name: needs-humanラベルを用意(上限到達)
+        if: steps.decide.outputs.max_attempts_reached == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create needs-human --color B60205 \
+            --description "AIレビューの自動対応範囲外。人間の判断が必要(外すと自動レビュー再開)" --force
+
+      - name: 自動修正の上限到達を通知
+        if: steps.decide.outputs.max_attempts_reached == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr edit "$PR" --add-label needs-human
+          {
+            echo "🚨 **CI自動修正の上限(${MAX_FIX_ATTEMPTS}回)に達しました**。人間の対応が必要です。"
+            echo ""
+            echo "対応後、\`needs-human\` ラベルを外すと自動レビューが再開されます。"
+          } > /tmp/max-attempts.md
+          gh pr comment "$PR" --body-file /tmp/max-attempts.md
+
+      # ---- ここから ci-fixer(決定論的修正で直らなかった失敗をAIに委譲) ----
+      # 起動条件: 自動修正の余地がある(run==true) かつ 決定論的修正では差分が出なかった
+      # (pushed!=true。差分が出た場合は既にそちらで1回分のコミットを使い切っており、
+      # 残りの失敗の有無は次のCI実行で判明する)
+
+      - name: カバレッジ不足のみの失敗かを判定
+        id: classify
+        if: steps.decide.outputs.run == 'true' && steps.push.outputs.pushed != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          # frontendも失敗している場合は「カバレッジ不足のみ」ではありえない
+          # (frontendの型エラー等をci-fixerで直せる余地があるため、coverage_onlyには
+          # しない)。jacocoTestCoverageVerificationはgradleのdependsOn test成立後にのみ
+          # 実行される(= backend単体内でコンパイル・テスト失敗と同時には起きない)ため、
+          # backend単独の失敗であればログの検知だけで十分特定できる
+          # (AIレビューで指摘・修正: M2 coverage-only-classification-not-exclusive)
+          if [ "${{ needs.frontend.result }}" = "failure" ]; then
+            echo "coverage_only=false" >> "$GITHUB_OUTPUT"
+            echo "frontendも失敗しているためcoverage_only判定の対象外です"
+            exit 0
+          fi
+
+          # 決定論的修正の直後で、frontend/backendジョブは既に完了しているため
+          # 同一run内でもログを取得できる。取得に失敗した場合は安全側(false)に倒し、
+          # 実際の判定はci-fixer自身のログ確認による自己申告(SKIPPED)に委ねる
+          LOG=$(gh run view "${{ github.run_id }}" --log-failed 2>&1)
+          if printf '%s' "$LOG" | grep -q "Rule violated for package"; then
+            echo "coverage_only=true" >> "$GITHUB_OUTPUT"
+            echo "カバレッジ不足(jacocoTestCoverageVerification)を検知しました"
+          else
+            echo "coverage_only=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: needs-humanラベルを用意(カバレッジ不足)
+        if: steps.classify.outputs.coverage_only == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create needs-human --color B60205 \
+            --description "AIレビューの自動対応範囲外。人間の判断が必要(外すと自動レビュー再開)" --force
+
+      - name: カバレッジ不足を通知(ci-fixerは起動しない)
+        if: steps.classify.outputs.coverage_only == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr edit "$PR" --add-label needs-human
+          {
+            echo "🚨 **カバレッジ不足を検知しました**。ci-fixerは起動しません(意図的にAIへ委譲しない設計)。"
+            echo ""
+            echo "アサーションの薄いテストを量産して閾値を通すことは基準hackにあたるため、"
+            echo "domain層のテストを人間が追加してください(\`09_test_strategy.md\` §2.5 のテスト設計技法を参照)。"
+            echo ""
+            echo "対応後、\`needs-human\` ラベルを外すと自動レビューが再開されます。"
+          } > /tmp/coverage-only.md
+          gh pr comment "$PR" --body-file /tmp/coverage-only.md
+
+      - uses: pnpm/action-setup@v4
+        if: steps.classify.outputs.coverage_only == 'false'
+        with:
+          package_json_file: frontend/package.json
+
+      - uses: actions/setup-node@v4
+        if: steps.classify.outputs.coverage_only == 'false'
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - uses: actions/setup-java@v4
+        if: steps.classify.outputs.coverage_only == 'false'
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: フロントエンド依存とDynamoDB Localテーブルを準備
+        if: steps.classify.outputs.coverage_only == 'false'
+        env:
+          DYNAMODB_ENDPOINT: http://localhost:8000
+        run: |
+          (cd frontend && pnpm install --frozen-lockfile)
+          (cd backend && ./scripts/create-table.sh)
+
+      - name: ci-fixer実行前のHEADを記録
+        id: pre_fixer
+        if: steps.classify.outputs.coverage_only == 'false'
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: ci-fixer(決定論的修正で直らなかった失敗をAIが修正)
+        if: steps.classify.outputs.coverage_only == 'false'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "claude"
+          prompt: |
+            REPO: ${{ github.repository }}
+            RUN ID: ${{ github.run_id }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+            BRANCH: ${{ github.event.pull_request.head.ref }}
+
+            あなたはこのリポジトリのci-fixerです。
+            `.claude/agents/ci-fixer.md` を読み、その指示に厳密に従ってこのCI失敗を修正してください。
+            失敗内容は `gh run view ${{ github.run_id }} --log-failed` で取得します。
+
+            前提:
+            - カレントディレクトリはPRブランチ(${{ github.event.pull_request.head.ref }})のcheckoutです
+            - フロントエンドの依存(pnpm install)とDynamoDB Local(localhost:8000、テーブル作成済み)は準備済みです
+            - 決定論的な自動修正(prettier / generate:api / spotlessApply)は既に試行済みで、
+              それでも残っている失敗が対象です
+
+            手順はci-fixer.mdの通りですが、CI実行のため順序に注意:
+            コミット後、**pushする前に**結果レポート(`<!-- swiss-stage-ci-fixer -->` 形式)をPRコメントに投稿し、pushは最後に行ってください。
+
+            結果レポートの投稿(sticky方式):
+            1. レポートを /tmp/ci-fixer-report.md に書き出す
+            2. `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --paginate --jq '.[] | select(.body | startswith("<!-- swiss-stage-ci-fixer -->")) | .id'` で既存コメントを探す
+            3. 見つかったら `gh api --method PATCH repos/${{ github.repository }}/issues/comments/<ID> -F body=@/tmp/ci-fixer-report.md` で更新する
+            4. 見つからなければ `gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/ci-fixer-report.md` で新規投稿する
+
+            DISPUTED / SKIPPED / FAILED が1件でもある場合は
+            `gh pr edit ${{ github.event.pull_request.number }} --add-label needs-human` も実行してください。
+
+            **重要**: サブエージェント(Agent / Task ツール)に委譲しないでください。
+            このジョブはあなたのターンが終わると同時に終了するため、バックグラウンドで
+            起動したエージェントは修正・投稿・pushを終える前に強制終了されます。
+            必ずあなた自身がこのターン内で作業を完了してください。
+          claude_args: |
+            --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git:*),Bash(gh run view:*),Bash(gh pr comment:*),Bash(gh pr edit:*),Bash(gh api:*),Bash(cd:*),Bash(pnpm:*),Bash(./gradlew:*),Bash(ls:*),Bash(cat:*)"
+            --disallowedTools "Task,Agent"
+            --permission-mode bypassPermissions
+
+      - name: ci-fixerのpush有無を確認
+        id: post_fixer
+        if: steps.classify.outputs.coverage_only == 'false'
+        run: |
+          set -euo pipefail
+          LOCAL=$(git rev-parse HEAD)
+          if [ "$LOCAL" != "${{ steps.pre_fixer.outputs.sha }}" ]; then
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+            echo "ci-fixerの修正コミット $LOCAL がpushされました"
+          else
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            echo "ci-fixerによる修正pushはありません"
+          fi
+
+      # fail-closed(11_cicd_design.md §2.5と同じ原則): ci-fixerのレポートが
+      # 見つからない場合、レポート内容にかかわらずneeds-humanにする。
+      # 「レポートが無い=何が起きたか分からない」を素通りさせない
+      - name: ci-fixerの結果を判定
+        id: fixer_report
+        if: steps.classify.outputs.coverage_only == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set +e
+          BODY=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" --paginate \
+            --jq '[.[] | select(.body | startswith("<!-- swiss-stage-ci-fixer -->"))] | (last // {}) | .body // ""')
+          if [ -z "$BODY" ]; then
+            echo "status=missing" >> "$GITHUB_OUTPUT"
+          elif printf '%s' "$BODY" | grep -q "人間の確認が必要です"; then
+            echo "status=needs_human" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: needs-humanラベルを用意(ci-fixer)
+        if: steps.classify.outputs.coverage_only == 'false' && steps.fixer_report.outputs.status != 'ok'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create needs-human --color B60205 \
+            --description "AIレビューの自動対応範囲外。人間の判断が必要(外すと自動レビュー再開)" --force
+
+      - name: ci-fixerレポート不在を通知(fail-closed)
+        if: steps.classify.outputs.coverage_only == 'false' && steps.fixer_report.outputs.status == 'missing'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr edit "$PR" --add-label needs-human
+          {
+            echo "⚠️ **ci-fixerのレポートが見つかりません**。修正が実施されたか不明なため人間の確認が必要です。"
+            echo ""
+            echo "対応後、\`needs-human\` ラベルを外すと自動レビューが再開されます。"
+          } > /tmp/ci-fixer-missing.md
+          gh pr comment "$PR" --body-file /tmp/ci-fixer-missing.md
+
+      - name: ci-fixerの要対応を通知
+        if: steps.classify.outputs.coverage_only == 'false' && steps.fixer_report.outputs.status == 'needs_human'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: gh pr edit "$PR" --add-label needs-human
