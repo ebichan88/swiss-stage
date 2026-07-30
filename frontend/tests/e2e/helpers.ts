@@ -56,6 +56,10 @@ export async function importParticipantsCsv(
     .setInputFiles(path.join(import.meta.dirname, 'fixtures', fixtureFile));
   await page.getByRole('button', { name: 'インポートする' }).click();
   await expect(page.getByText(`${expectedCount}名をインポートしました`)).toBeVisible();
+  // インポートダイアログのプレビューもMUIのテーブル(MuiTableCell)で作られており、
+  // 閉じるアニメーション中は背後の参加者テーブルと同じ名前が一時的に重複してDOMに残る
+  // (strict mode violation の原因)。ダイアログが完全に閉じるまで待ってから戻る
+  await expect(page.getByRole('dialog')).toBeHidden();
 }
 
 /** 大会概要(S05)から大会を開始する */
@@ -88,11 +92,17 @@ export async function inputAllResults(page: Page): Promise<void> {
     await page.getByRole('option', { name: /^○/ }).first().click();
     await expect(page.getByRole('option', { name: /^○/ }).first()).toBeHidden();
   }
-  await expect(page.getByText(/未確定 \d+件/)).toBeHidden();
+  // 「未確定 N件」チップの非表示ではなく確定ボタンの活性化を待つ(否定アサーションだと
+  // 再フェッチ中に要素が一時的に存在しない瞬間を通過してしまい、直後にチップが復活して
+  // ボタンがdisabledに戻る。11_cicd_design.md §2.8「肯定的な条件を待つ」原則)
+  await expect(page.getByRole('button', { name: /ラウンドを確定する$/ })).toBeEnabled();
 }
 
 /** 表示中のラウンドを確定する */
 export async function confirmRound(page: Page, roundNumber: number): Promise<void> {
+  await expect(
+    page.getByRole('button', { name: `第${roundNumber}ラウンドを確定する` }),
+  ).toBeEnabled();
   await page.getByRole('button', { name: `第${roundNumber}ラウンドを確定する` }).click();
   await page.getByRole('button', { name: '確定する' }).click();
   await expect(page.getByText(`第${roundNumber}ラウンドを確定しました`)).toBeVisible();
@@ -171,7 +181,8 @@ export async function inputAllTeamResults(page: Page): Promise<void> {
     await page.getByRole('option', { name: /^○/ }).first().click();
     await expect(page.getByRole('option', { name: /^○/ }).first()).toBeHidden();
   }
-  await expect(page.getByText(/未確定 \d+件/)).toBeHidden();
+  // inputAllResults と同じ理由(チップの非表示ではなくボタンの活性化を待つ。11_cicd_design.md §2.8)
+  await expect(page.getByRole('button', { name: /ラウンドを確定する$/ })).toBeEnabled();
 }
 
 /** 団体戦のラウンド一覧をAPIから取得(ペア検証・ボード内訳検証用) */
