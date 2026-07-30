@@ -29,6 +29,16 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 - `.claude/01_development_docs/05_swiss_pairing_algorithm.md` の変更を伴う修正(仕様変更は「先にドキュメント、人間の判断」が原則)
 - `schema/` 配下(API契約のSSoT。スキーマ検証の指摘を閉じるためにスキーマ側を書き換えることは仕様変更にあたる)
 
+## ワークフローファイルへの指摘は起動されない(技術的制約)
+
+`.github/workflows/**` への指摘は `WORKFLOW_PATH_PATTERN` によりFixer起動前にブロックされ、
+最初から人間対応になる。理由は業務上の聖域ではなく**技術的制約**: FixerはClaude GitHub App
+の認証で動くが、実行時にAnthropic側が発行する個別トークンのスコープに `workflows` の
+write権限が含まれないため、`.github/workflows/**` へのpushが拒否される(Appのインストール
+権限自体には `workflows` の read/write が含まれているにもかかわらず失敗する。詳細は
+`11_cicd_design.md` §2.5)。もしこのファイルに変更を加える場合、pushしようとせず
+その旨をレポートに記載すること。
+
 ## テストを弱める修正は禁止(パスによらず適用)
 
 指摘を閉じる目的で**テストの検証力を下げてはならない**。以下は聖域と同じ扱いでSKIPPEDにする:
