@@ -205,25 +205,44 @@ CI失敗のうち**コマンド一発で決定論的に直るもの**だけを�
 
 | 失敗の種類 | 自動修正 | 担当 |
 |---|---|---|
-| prettier(`format:check`) | `pnpm run format` | **autofix** |
-| 生成型の鮮度チェック | `pnpm run generate:api` | **autofix** |
-| Spotless | `./gradlew spotlessApply` | **autofix** |
-| 型エラー・テスト失敗 | 判断が必要 | 人間 / ci-fixer(将来) |
-| カバレッジ不足 | **意図的に自動化しない** | 人間 |
+| prettier(`format:check`) | `pnpm run format` | **autofix**(決定論的・AI不使用) |
+| 生成型の鮮度チェック | `pnpm run generate:api` | **autofix**(決定論的・AI不使用) |
+| Spotless | `./gradlew spotlessApply` | **autofix**(決定論的・AI不使用) |
+| 型エラー・テスト失敗 | 判断が必要 | **ci-fixer**(`.claude/agents/ci-fixer.md`) |
+| カバレッジ不足(`jacocoTestCoverageVerification`) | **意図的に自動化しない** | 常に人間 |
 
-> カバレッジ不足をAIに埋めさせると「アサーションの薄いテストを量産して閾値を通す」= 基準hackそのものになるため、
-> 将来ci-fixerを入れる際も**この項目だけは常に人間**に回す。
+> カバレッジ不足をAIに埋めさせると「アサーションの薄いテストを量産して閾値を通す」= 基準hackそのものに
+> なるため、**この項目だけは常に人間**に回す。ワークフロー側でログから
+> `Rule violated for package`(jacocoの違反メッセージ)を検知し、ci-fixerを起動せず直接
+> `needs-human` にする。加えて ci-fixer 自身の指示にも「カバレッジ不足はSKIPPEDにする」旨を
+> 明記しており、ワークフロー側の検知漏れに対する二重の防御にしている。
 
-### 設計上の要点
+### 設計上の要点(決定論的修正)
 
 - **起動条件**: `needs: [frontend, backend]` + `if: failure() && github.event_name == 'pull_request'`。
   失敗したジョブに対応する修正だけを実行する(`needs.frontend.result == 'failure'` 等で分岐)
-- **ループ防止**: `[ci-fix]` コミットが既にあれば実行しない。決定論的な修正は1回で収束するため、
-  それでも失敗しているなら自動修正で直る種類の失敗ではない
 - **差分がなければ何もしない**: 判断を要する失敗(型エラー・テスト失敗)では差分が出ないので、
   コミットもコメントも発生しない
 - **`[ci-fix]` コミットの判定は subject のみを対象にする**(`git log --grep` は本文も検索してしまうため。
   §2.5 の自動修正回数カウントと同じ理由)
+
+### ci-fixer(判断を要する失敗のAI修正)
+
+決定論的修正では差分が出なかった(=判断を要する失敗が残っている)場合に、`ci-fixer`
+(`.claude/agents/ci-fixer.md`)を起動する。`ai-review.yml` のFixerと同じ構造(4分類・聖域・
+最小変更・sticky report)を踏襲する。
+
+- **入力**: `gh run view <RUN_ID> --log-failed`(同一ワークフロー実行内で `needs: [frontend, backend]`
+  が既に完了しているため、同一runのログを参照できる)
+- **判定**: FIXED / DISPUTED(テスト側の誤りだと確信) / SKIPPED(聖域 or カバレッジ不足) / FAILED
+- **聖域**: `ai-review.yml`/`fixer.md` と同じ3領域 + テストの弱体化(パスによらず適用)
+- **`MAX_FIX_ATTEMPTS=2`**: 決定論的修正とci-fixerの合計で数える(`[ci-fix]` コミット数)。
+  通常は「決定論的修正1回 → まだ失敗 → ci-fixer1回」の最大2回で打ち切りになる
+- **fail-closed**: ci-fixerのsticky reportが見つからない場合、内容にかかわらず `needs-human`
+  にする(§2.5「fail-closedの原則」と同じ理由。レビューと同様、AI修正でも「レポートが無い
+  =何が起きたか分からない」を素通りさせない)
+- **push**: `AUTOFIX_TOKEN` チェックアウトの資格情報を引き継ぐため、追加の設定は不要
+  (§2.7セットアップの節を参照)
 
 ### セットアップ: `AUTOFIX_TOKEN`(必須)
 
