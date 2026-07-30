@@ -22,6 +22,15 @@ env:
   MAX_FIX_ATTEMPTS: 3
   # 自動修正禁止領域(正確性の心臓部とAPI契約=仕様)。.claude/agents/fixer.md の聖域定義と同期させること
   SANCTUARY_PATTERN: '^(backend/src/main/java/com/swiss_stage/domain/service/|\.claude/01_development_docs/05_swiss_pairing_algorithm\.md|schema/)'
+  # 業務上の聖域とは理由が異なる技術的制約: FixerはClaude GitHub Appの認証で動くが、
+  # このAppのインストール権限(Settings > Applications > Claude)には workflows の
+  # read/write が含まれているにもかかわらず、実行時にAnthropic側が発行する個別トークンは
+  # それより狭いスコープに絞られており、.github/workflows/** へのpushは
+  # 「refusing to allow a GitHub App to create or update workflow ... without
+  # workflows permission」で拒否される(実際にPR #93で発生・確認済み)。この絞り込みは
+  # Anthropicのバックエンド実装側の挙動でありGitHub側の設定では変更できないため、
+  # Fixerを起動する前に弾いて最初から人間対応にする
+  WORKFLOW_PATH_PATTERN: '^\.github/workflows/'
 
 jobs:
   review:
@@ -144,6 +153,12 @@ jobs:
           # 聖域チェック: マッチング・順位計算への指摘は自動修正しない
           if [ -z "$STOP" ] && printf '%s\n' "$PATHS" | grep -qE "$SANCTUARY_PATTERN"; then
             STOP="聖域(domain/service または 05_swiss_pairing_algorithm.md)への指摘のため自動修正しません"
+          fi
+
+          # ワークフローファイルへの指摘はFixerを起動しても押せない(技術的制約。上記コメント参照)。
+          # 起動して失敗させるより、最初から人間対応にする
+          if [ -z "$STOP" ] && printf '%s\n' "$PATHS" | grep -qE "$WORKFLOW_PATH_PATTERN"; then
+            STOP="ワークフローファイル(.github/workflows/**)への指摘のため自動修正しません(Fixerはpushできない技術的制約があります。詳細は11_cicd_design.md §2.5)"
           fi
 
           # 自動修正の試行回数上限([ai-fix]コミット数で数える)。

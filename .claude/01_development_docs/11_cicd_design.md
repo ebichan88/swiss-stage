@@ -157,10 +157,44 @@ AIレビュー済みとしてマージできる」状態になり、ゲートと
 2. **委譲の禁止**(原因2への直接対処): 各エージェントのpromptで委譲を禁止し、
    `--disallowedTools "Task,Agent"` を指定する。`ai-qa.yml` にも同じ対策を入れている
 
-### 運用上の帰結: ワークフローを変更するPRはAIレビューされない
+### 運用上の帰結: `ai-review.yml` 自体を変更するPRはAIレビューされない
 
-上記(1)により、`.github/workflows/**` に触れるPRは構造的にAIレビューの対象外になる。
-**このようなPRは人間が必ずレビューする**。ゲートが `needs-human` ラベルと説明コメントで明示する。
+上記(1)でAIレビューがスキップされるのは、**claude-code-actionのステップを含むワークフロー
+ファイル(`ai-review.yml`)自体が既定ブランチと差分を持つ場合のみ**である。`ci.yml` /
+`e2e.yml` 等、他のワークフローファイルを変更するPRは(`ai-review.yml`自体が無変更であれば)
+**通常どおりAIレビューが実行される**。
+
+> 訂正: 当初このドキュメントは「`.github/workflows/**` を変更するPRは構造的にAIレビュー
+> 対象外になる」と広く記載していたが誤りだった。実際にはPR #88・#93 で `ci.yml` を
+> 変更した際もAIレビューは正常に実行され、Major指摘とFixerの起動まで行われている
+> (次項「Fixerがワークフローファイルをpushできない」問題はこの延長で発覚した)。
+
+### Fixerはワークフローファイルへの指摘を修正できない(技術的制約)
+
+`ai-review.yml`自体を変更していないPR(例: `ci.yml` の変更)ではAIレビューが正常に走るが、
+その指摘が `.github/workflows/**` 配下を対象とする場合、**Fixerは修正をpushできない**。
+
+> **実際に起きた事象(PR #93)。** FixerがCritical/Major指摘を修正してローカルコミットまで
+> 完了したが、pushで以下のエラーが発生した:
+> ```
+> refusing to allow a GitHub App to create or update workflow ... without workflows permission
+> ```
+> Claude GitHub Appの**インストール権限自体には `workflows` の read/write が含まれている**
+> (リポジトリ所有者のGitHub Apps設定画面で確認済み)にもかかわらず失敗する。つまり原因は
+> GitHub側の権限設定ではなく、**実行時にAnthropicのバックエンドが発行する個別トークンの
+> スコープが、インストール権限より狭く絞られている**ことにある。この絞り込みはAnthropicの
+> サーバー実装側の挙動であり、リポジトリ側の設定(GitHub App権限・`AUTOFIX_TOKEN`双方)では
+> 変更できない。
+>
+> `AUTOFIX_TOKEN`(人間名義のPAT)への差し替えも検討したが、`claude-code-action`公式
+> セキュリティドキュメントが「静的なPATは使うな(プロンプトインジェクション経由で
+> 時間をかけて漏洩しうる)」と明記しており、Fixerの認証方式をPATに切り替えることは
+> 採用しなかった。
+
+**対策**: `ai-review.yml` の `WORKFLOW_PATH_PATTERN`(`^\.github/workflows/`)で、指摘の対象
+パスがワークフローファイルの場合はFixerを起動する前にブロックし、最初から `needs-human`
+にする(`SANCTUARY_PATTERN` と同じゲート機構だが、理由は「業務上触らせない」ではなく
+「起動しても技術的にpushできない」)。
 
 また、ワークフロー自体の変更は**マージ後に初めて実際の動作を確認できる**。変更をマージしたら、
 次のPRで意図どおり動いているかをログで確認すること。
