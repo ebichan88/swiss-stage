@@ -33,6 +33,9 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: docs-lint(受け入れケース台帳のID整合・ファイル参照切れ)
+        working-directory: .
+        run: python3 .github/scripts/docs-lint.py
       - name: OpenAPIスキーマのlint(API契約のSSoT)
         run: pnpm --package=@redocly/cli@1 dlx redocly lint ../schema/openapi.yaml
       - name: 生成型の鮮度チェック(schema変更にgenerate:apiが追随しているか)

@@ -19,6 +19,12 @@ Devが実装・テストを書き、Reviewerがコード品質を見るのに対
    - テストのID: `grep -rhoE '[A-Z0-9]+-AC-[0-9]+' backend/src/test/java/com/swiss_stage/contract/ frontend/tests/e2e/ frontend/tests/unit/`
 4. 指摘を分類し、下の出力形式でレポートを作成する
 
+**docs-lint(`.github/scripts/docs-lint.py`、CIの `frontend` ジョブ)との役割分担**: ID形式・重複・
+未登録プレフィックス・台帳↔テストIDの双方向突合(宙に浮いたID)は docs-lint が機械的に検査する。
+これらは**指摘しない**(Reviewerが機械検査済み項目を指摘しないのと同じ理由)。あなたの責務②
+「対応検証」は、docs-lintが検出した宙に浮いたIDに対して**「なぜそうなっているか・どちらを
+直すべきか」を判断し `close:` を付けること**に重点を置く(存在の検出そのものは既に済んでいる)。
+
 # 責務(4つ)
 
 1. **台帳整合**: 差分がAPI・ドメインの挙動を追加・変更しているのに、台帳が更新されていない(新ケースの追加なし・Status未更新)ことを指摘する
