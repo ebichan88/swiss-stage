@@ -182,13 +182,14 @@ frontend/tests/
 
 ### Visual Regression Test(VRT)
 
-Storybookのページストーリーをスクリーンショット比較し、大きめのUI変更による意図しないデグレを検知する。
-**PRごとには実行しない**(重いため)。大会前日・当日はデプロイしないのと同様、大きめのUI変更をした
-PRでのみ手動実行する(`11_cicd_design.md`)。
+Storybookのページストーリーをスクリーンショット比較し、UI変更による意図しないデグレを検知する。
+**UI関連のファイルを変更したPRで自動実行する**(pathsフィルタで絞る)。ただし
+`maxDiffPixelRatio: 0`(ピクセル完全一致)と厳しいため、当面は**非ブロッキング**で運用し、
+安定実績を見てから required check への昇格を検討する(`11_cicd_design.md` §2.8)。
 
 - 対象: `frontend/tests/vrt/stories.spec.ts` が `storybook-static/index.json` から
   Storybookの全ページストーリーを自動列挙する(ストーリーを追加すれば対象も増える)
-- 実行環境: `frontend/scripts/vrt.sh`(ローカル)/ `.github/workflows/vrt.yml`(`workflow_dispatch`)。
+- 実行環境: `frontend/scripts/vrt.sh`(ローカル)/ `.github/workflows/vrt.yml`(`pull_request` / `workflow_dispatch`)。
   **必ず同じPlaywright公式コンテナイメージ(`mcr.microsoft.com/playwright:v1.61.1-noble`)から実行する。**
   ローカルのネイティブ環境でベースラインを生成しない(OSごとにフォントレンダリングが異なり
   100%差分になるため)
@@ -196,8 +197,9 @@ PRでのみ手動実行する(`11_cicd_design.md`)。
   外部フォント(Google Fonts)への依存禁止(`@fontsource/noto-sans-jp` を使用)、
   ストーリー内で `new Date()` 等の非決定的な値を使わない
 - ベースライン更新: `./scripts/vrt.sh --update`(ローカル確認用)または
-  `gh workflow run vrt.yml -f update_snapshots=true`(CI経由。**ベースライン更新は必ずCI経由**とし、
-  更新は意図したUI変更のときのみ・1PRにまとめる)
+  `gh workflow run vrt.yml -f update_snapshots=true --ref <branch>`(CI経由。**ベースライン更新は必ずCI経由**とし、
+  更新は意図したUI変更のときのみ・1PRにまとめる)。**PRトリガーではベースラインを更新しない**
+  (更新されると差分を検知せず素通りするため)。差分を検出したPRには更新コマンドが自動でコメントされる
 
 ---
 
@@ -214,5 +216,5 @@ PRでのみ手動実行する(`11_cicd_design.md`)。
 |-----------|-------------|
 | コード保存時(任意) | 対象ファイルの単体テスト |
 | コミット前(必須) | frontend: `pnpm run check` / backend: `./gradlew check` |
-| PR時(CI) | 全単体+統合テスト+ビルド(`11_cicd_design.md`) |
-| リリース前 | E2E含む全テスト |
+| PR時(CI) | 全単体+統合テスト+ビルド、**E2E**、**VRT**(UI変更時)(`11_cicd_design.md`) |
+| リリース前 | 全テスト + 実機での動作確認(`.claude/skills/verify`) |

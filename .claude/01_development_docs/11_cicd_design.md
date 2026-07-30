@@ -13,17 +13,21 @@
 | ワークフロー | トリガー | 目的 |
 |---|---|---|
 | `ci.yml` | `pull_request` / `push`(main) | 単体・統合テスト、ビルド(PRごと必須。§2)+ 失敗時の決定論的な自動修正(§2.7) |
-| `e2e.yml` | `workflow_dispatch` | クリティカルパスのE2E(Playwright)。リリース前・大会前に手動実行(`12_e2e_test_design.md`) |
-| `vrt.yml` | `workflow_dispatch` | StorybookページのVisual Regression Test。大きめのUI変更をしたPRで手動実行(`09_test_strategy.md`) |
+| `e2e.yml` | `pull_request` / `workflow_dispatch` | クリティカルパスのE2E(Playwright)。PRごとに自動実行(当面は非required。§2.8) |
+| `vrt.yml` | `pull_request`(UI関連pathsのみ) / `workflow_dispatch` | StorybookページのVisual Regression Test。**非ブロッキング**。ベースライン更新は`workflow_dispatch`のみ(§2.8) |
 | `ai-review.yml` | `pull_request` | AIコードレビュー・自動修正(Critical/Majorのみ。§2.5) |
 | `ai-qa.yml` | `pull_request` | 受け入れケース台帳との突合(レポートのみ・非ゲート。`.claude/agents/qa.md`) |
 | `guard.yml` | `pull_request` | テスト弱体化ガード。AI自動修正の安全装置(§2.6) |
 
-`ci.yml` / `guard.yml` 以外はPRごとに自動実行しない(重い、または人間の追加判断を要するため)。
+全ワークフローがPRごとに自動実行される(`vrt.yml` はUI関連のpathsに限る)。ただし
+**マージをブロックするのは `ci.yml` / `guard.yml` のみ**で、`e2e.yml` / `vrt.yml` は
+所要時間と安定性の実績を見てから required check への昇格を判断する(§2.8)。
 
 ### `vrt.yml` の運用
 
 - `workflow_dispatch` の入力 `update_snapshots`(boolean)で「比較のみ」と「ベースライン更新」を切り替える
+- **ベースライン更新は `workflow_dispatch` のときだけ**。PRトリガーでは絶対に更新しない
+  (更新されると「差分を検知せず素通り」する事故になるため、`github.event_name` を条件に明示している)
 - **ベースライン更新は必ずこのワークフロー経由で行う**(ローカルではPRに含めるベースラインを生成しない。`09_test_strategy.md`)。更新時はコンテナ内でコミット・pushする(`permissions: contents: write`)
 - 実行対象はローカル確認用の `frontend/scripts/vrt.sh` と同じPlaywright公式コンテナイメージを使う(フォントレンダリング差分を避けるため)
 
@@ -91,7 +95,7 @@ jobs:
 ### ルール
 
 - どちらかのジョブが失敗したPRはマージ禁止(ブランチ保護設定)
-- E2E(Playwright)はPRごとには実行しない(遅いため)。`.github/workflows/e2e.yml`(workflow_dispatch)をリリース前に手動実行
+- E2E(Playwright)はPRごとに実行する(§2.8)。ただし当面は required check にしない
 - 依存更新は Dependabot(週次、`gradle` / `pnpm` / `github-actions`)
 - backendの `./gradlew check` にはSpotless(`googleJavaFormat`によるフォーマット・未使用import削除・import順序)のチェックが含まれる。frontendの `pnpm run lint` / `pnpm run format` に相当する役割(`backend/build.gradle` の `spotless { java { ... } }` 参照、`08_development_setup.md` §7)
 
@@ -239,6 +243,58 @@ CI失敗のうち**コマンド一発で決定論的に直るもの**だけを�
 
 > 同じ理由で、`ai-review.yml` のFixerが正常に動いているのは claude-code-action が
 > **Appトークン**でpushしているためであり、`GITHUB_TOKEN` とは挙動が異なる。
+
+---
+
+## 2.8 E2E・VRTのPR実行(非ブロッキング)
+
+単体テストが通っても実機で画面が動かない「結合の抜け」と、UIのデグレを**マージ前**に検知する。
+それまでは両方 `workflow_dispatch` のみで、検知が最後まで遅れていた。
+
+| | トリガー | 絞り込み | ゲート |
+|---|---|---|---|
+| `e2e.yml` | `pull_request` + `workflow_dispatch` | **絞らない**(7 spec / 計575行と小さいため) | 当面 **required にしない** |
+| `vrt.yml` | `pull_request`(UI関連pathsのみ)+ `workflow_dispatch` | `frontend/src/**` / `.storybook/**` / `tests/vrt/**` / `package.json` / `pnpm-lock.yaml` / `playwright-vrt.config.ts` | **非ブロッキング** |
+
+いずれも draft PR では実行しない。`concurrency` で連続pushの古い実行はキャンセルする。
+
+### なぜ required にしないのか
+
+- **E2E**: 所要時間の実測が必要(初回実測は **8分05秒** / テスト実行6.4分。backend の `gradlew bootRun`
+  起動を含む)。加えて下記の既知の不備を解消するまでは required にできない
+- **VRT**: `toHaveScreenshot` が `maxDiffPixelRatio: 0`(ピクセル完全一致)と厳しく、ノイズが出た場合に
+  運用が回らなくなる可能性がある。数PR分の安定実績を見てから検討する
+
+required にするかどうかはブランチ保護設定の変更であり、**人間が判断して設定する**。
+
+### PR実行を有効化して判明した既知の不備(required化の前提条件)
+
+E2Eを手動実行のみで運用していた期間に、テストが実装から取り残されていた。
+**PRごとに走らせた初回で発覚したもの**:
+
+| テスト | 台帳 | 症状 | 原因 |
+|---|---|---|---|
+| `cp2-shared-mobile` | **E2E-AC-003 / P0** | 失敗 | UIが自己申告方式に変わった(PR #38)のにテストが旧UI(`〜の勝ち`ボタン / `登録する` / `結果を登録しました`)を前提にしたまま |
+| `cp6-team-tournament` | E2E-AC-008 / P1 | 失敗 | `getByRole('option', { name: '負け' })` が `両者負け` にも部分一致(**本PRで `exact: true` を付けて修正**) |
+| `cp1` Shift_JIS | E2E-AC-002 | flaky | `getByText('井山 太郎')` が2要素に一致(インポート直後はダイアログとテーブルの両方に出る) |
+| `cp3-bye` | E2E-AC-004 / P0 | flaky | `inputAllResults` の最後が否定アサーション(`未確定 N件` の `toBeHidden`)。再フェッチ中は要素が一時的に存在せず**ローディングの隙間で通過**し、直後にチップが復活して確定ボタンが `disabled` に戻る |
+
+**教訓**: 検証は「動かして初めて分かる」。台帳で `done` になっているP0ケースが、実際には何も検証して
+いない状態で数か月放置されていた。E2Eをゲートに載せない期間が長いほどこの乖離は進む。
+
+**否定アサーションの禁止**: 「要素が消えたこと」を待つ検証は、ローディング中に要素が存在しない瞬間を
+通過してしまう。**押せるようになったこと(`toBeEnabled`)のような肯定的な条件を待つ**こと。
+
+### VRTのベースライン更新導線
+
+VRTの弱点は差分の検知ではなく、**更新導線が `workflow_dispatch` 画面しかない**ことだった。
+差分を検出したPRには `notify` ジョブが sticky comment で更新コマンドを案内する:
+
+```bash
+gh workflow run vrt.yml -f update_snapshots=true --ref <branch>
+```
+
+`notify` を別ジョブにしているのは、`vrt` ジョブがPlaywrightコンテナ内で動き `gh` CLIを持たないため。
 
 ---
 
