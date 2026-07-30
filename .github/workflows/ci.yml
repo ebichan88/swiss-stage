@@ -104,6 +104,7 @@ jobs:
       contents: write # 修正コミットのpush(AUTOFIX_TOKEN未設定時のフォールバック用)
       pull-requests: write # PRコメント
       issues: write # needs-humanラベルの作成・付与
+      id-token: write # claude-code-action(ci-fixer)のOIDCトークン交換(GitHub App認証)に必須
     services:
       # ci-fixerの検証(./gradlew check)用。backendジョブとは別ジョブのため個別に必要
       # (ai-review.ymlのreviewジョブと同じ構成)
