@@ -1,0 +1,61 @@
+# Mutation Testing(PITest)。domain層(マッチング・順位計算・モデル)限定。
+#
+# カバレッジ(LINE/BRANCH)は「そのコードを実行したか」しか測らず、アサーションが
+# 空でも高い値を達成できる。PITestは「コードを壊したらテストが気づくか」を測り、
+# アサーションの薄い箇所を名指しで炙り出す(09_test_strategy.md §3.5)。
+#
+# ローカル実測で59秒(397 mutations)と軽量だが、CIランナー差やキャッシュ無しの
+# 初回実行を考慮して単独ワークフローに分離する(e2e.yml/vrt.ymlと同じ「重いものは
+# 別ワークフロー」方針)。PRごとには実行しない。
+name: Mutation Testing
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 毎週月曜 03:00 UTC(日本時間 正午)
+    - cron: '0 3 * * 1'
+
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Run PITest(domain層限定)
+        run: ./gradlew pitest
+
+      - name: Job summaryにmutation scoreを出力
+        if: always()
+        run: |
+          # トップレベルの index.html にある全体サマリ表(Line Coverage / Mutation
+          # Coverage / Test Strength の3列)から数値だけを抜く
+          SCORES=$(grep -oE '[0-9]+%' build/reports/pitest/index.html 2>/dev/null | head -3 | tr '\n' ' ')
+          {
+            echo "## Mutation Testing 結果(domain層)"
+            echo
+            if [ -n "$SCORES" ]; then
+              echo "Line Coverage / Mutation Coverage / Test Strength: $SCORES"
+            else
+              echo "サマリーの抽出に失敗しました。Artifactsのレポートを確認してください。"
+            fi
+            echo
+            echo "詳細はこのランのArtifacts(\`pitest-report\`)のHTMLレポートを参照してください。"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: レポートをArtifactにアップロード
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pitest-report
+          path: backend/build/reports/pitest/
+          retention-days: 30
