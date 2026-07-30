@@ -116,15 +116,22 @@ jobs:
           # 素通りさせない(fail-closed)。ここをPASS扱いにすると「レビューされていないのに
           # AIレビュー済みとしてマージできる」事故が起きる。
           # ただし原因が2種類あり、扱いを分ける:
-          #   workflow-validation … ワークフローファイルを変更したPR。claude-code-actionは
+          #   workflow-validation … このワークフローファイル(ai-review.yml)自体を変更したPR。
+          #                         claude-code-actionは、自身を起動するワークフローファイルが
           #                         既定ブランチと内容が一致しない限り実行を拒否する(セキュリティ機構)。
-          #                         回避不能なのでneeds-humanのみ(CIは落とさない)
+          #                         回避不能なのでneeds-humanのみ(CIは落とさない)。
+          #                         【注意】他のワークフローファイル(ci.yml等)を変更しただけの
+          #                         PRはこれに該当しない(AIレビューは正常に実行される。実測で
+          #                         確認済み。11_cicd_design.md §2.5「運用上の帰結」)。以前は
+          #                         このチェックが `.github/workflows/` 全体にマッチしており、
+          #                         ai-review.yml以外の変更で発生した本物の失敗まで
+          #                         workflow-validation(非ブロッキング)に誤分類していた
           #   missing             … それ以外(投稿失敗・途中終了・形式崩れ)。CIを失敗させる
           if [ "$VERDICT" = "UNKNOWN" ]; then
             echo "run_fixer=false" >> "$GITHUB_OUTPUT"
-            if git diff --name-only "origin/$BASE...HEAD" | grep -q '^\.github/workflows/'; then
+            if git diff --name-only "origin/$BASE...HEAD" | grep -q '^\.github/workflows/ai-review\.yml$'; then
               echo "unknown_reason=workflow-validation" >> "$GITHUB_OUTPUT"
-              echo "stop_reason=ワークフローファイルを変更しているPRのため、claude-code-actionのワークフロー検証によりAIレビューがスキップされました(既定ブランチと同一内容である必要があります)。**このPRは人間がレビューしてください**。マージ後は通常どおり動作します" >> "$GITHUB_OUTPUT"
+              echo "stop_reason=ai-review.yml自体を変更しているPRのため、claude-code-actionのワークフロー検証によりAIレビューがスキップされました(既定ブランチと同一内容である必要があります)。**このPRは人間がレビューしてください**。マージ後は通常どおり動作します" >> "$GITHUB_OUTPUT"
             else
               echo "unknown_reason=missing" >> "$GITHUB_OUTPUT"
               echo "stop_reason=AIレビューのレポートが見つかりません(レビューが実施されていない可能性)" >> "$GITHUB_OUTPUT"
