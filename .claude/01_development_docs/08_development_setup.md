@@ -6,8 +6,8 @@
 |-------|----------|-------------|
 | Node.js | 20.x LTS | `node -v` |
 | pnpm | `frontend/package.json` の `packageManager` に固定(Corepack管理) | `pnpm -v` |
-| Java JDK | 21 (Temurin推奨) | `java -version` |
-| Gradle | 8.x (Wrapperを使用) | `./gradlew -v` |
+| Java JDK | 25 (Temurin推奨) | `java -version` |
+| Gradle | 9.x (Wrapperを使用) | `./gradlew -v` |
 | Docker | 24.x以上 | `docker -v` |
 | AWS CLI | 2.x | `aws --version` |
 | cloc(任意) | - | `cloc --version` |

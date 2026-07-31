@@ -334,9 +334,9 @@ frontend/
 
 | カテゴリ | 技術 | バージョン | 用途 |
 |---------|------|----------|------|
-| 言語 | Java | 21 (LTS) | 堅牢なバックエンド実装 |
+| 言語 | Java | 25 (LTS) | 堅牢なバックエンド実装 |
 | フレームワーク | Spring Boot | 3.x | REST API・DIコンテナ |
-| ビルドツール | Gradle | 8.x | 依存管理・ビルド |
+| ビルドツール | Gradle | 9.x | 依存管理・ビルド |
 | DynamoDBクライアント | DynamoDB Enhanced Client (AWS SDK for Java v2) | 2.25+ | DynamoDBアクセス(型安全マッピング) |
 
 ### Spring Boot主要依存
@@ -499,8 +499,8 @@ jobs:
 | ツール | バージョン | 用途 |
 |-------|----------|------|
 | Node.js | 20.x LTS | フロントエンドビルド |
-| Java JDK | 21 (Temurin推奨) | バックエンド実行 |
-| Gradle | 8.x | バックエンドビルド |
+| Java JDK | 25 (Temurin推奨) | バックエンド実行 |
+| Gradle | 9.x | バックエンドビルド |
 | Docker | 24.x | DynamoDB Local実行 |
 | AWS CLI | 2.x | AWSリソース操作 |
 
