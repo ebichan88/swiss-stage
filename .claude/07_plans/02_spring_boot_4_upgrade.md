@@ -18,6 +18,13 @@ Spring Boot 4.0はSpring Framework 7.0を基盤として2025-11-20にGAされて
 本Plan PRのマージ時点で`Accepted`に更新するが、それは「移行方針が決まった」ことを意味するのみで、
 実際の着手可能時期は引き続き#102の完了を待つ(ADR Acceptedと実装着手は別軸)。
 
+**追記(2026-08-01、#102実装PR #106時点)**: #102は実装PR #106で対応中。実装の過程で
+「Gradleラッパーを9.6.1に更新」「`options.release = 21`を固定」という2つの決定が発生し、
+後者は`CLAUDE.md`の落とし穴が増える性質の決定だったため`06_adr/03_java25_bytecode_release_pin.md`
+を新規に起票した(本Planに紐づく`06_adr/02_spring_boot_4_upgrade.md`とは別ファイル。
+`04_development_process.md` §4「書き換えず積む」原則により、既存ADRへの追記ではなく
+新規ADR起票を選んだ)。詳細は§4.1・§7・§8を参照。
+
 このIssueは種別`chore`だが「アーキテクチャ・技術選定の決定を含む」に該当するため、
 `04_development_process.md` §2 のトリガー表に従いPlan PR・ADR([`06_adr/02_spring_boot_4_upgrade.md`](../06_adr/02_spring_boot_4_upgrade.md))が必須。
 一方で同じ表の「受け入れケース」列は当該行が `—`(対象外)であり、利用者から見た挙動変更を
@@ -42,9 +49,11 @@ contractテスト・ArchUnit)が移行後も従来と同じ結果を保証する
 
 | 項目 | 現状 | 変更後 | 根拠 |
 |---|---|---|---|
-| Gradleラッパー | 8.12 | **8.14以上**(9系推奨) | Spring Boot 4は最低Gradle 8.14を要求 |
+| Gradleラッパー | ~~8.12~~ → **9.6.1(#102で対応済み)** | 変更不要 | #102(Java 25化)のCIで、Gradle 8.12は実行JVM自体がJava25を認識できず(`Unsupported class file major version 69`)全ジョブが失敗することが判明した。Gradle公式の互換性表(`docs.gradle.org/current/userguide/compatibility.html`)でJava25を実行JVMとしてサポートするのは**9.1.0以降**と明記されており、8.14系を含む8系は対象外と分かっていたため、8.14での追試はせず9系最新(9.6.1)を採用した。Spring Boot 4の要件(最低Gradle 8.14)も満たしている |
+| `info.solidsoft.pitest`プラグイン | ~~1.15.0~~ → **1.19.0(#102で対応済み)** | 変更不要 | Gradle 9で`reporting.baseDir`が削除され1.15.0が起動不能になったため#102で更新済み |
 | Spring Bootプラグイン | 3.4.1 | 4.0.x(最新パッチ) | — |
 | Javaツールチェイン | 21 | 25(#102で先行対応) | Spring Boot 4はJava 17+互換、25を第一級サポート |
+| `options.release`(JavaCompile) | **21に固定(#102で導入)** | **25に戻せるか要検証** | #102でSpring Boot 3.4.1のASM(`SimpleMetadataReader`)がJava25バイトコードを読めないためreleaseを21に固定した(`CLAUDE.md`落とし穴#16、決定の経緯は`06_adr/03_java25_bytecode_release_pin.md`)。Spring Framework 7でこの制約が解消されているか実装PR着手時に確認し、解消されていれば削除してtoolchainとreleaseの両方をJava25に揃える |
 
 ### 4.2 依存関係(`backend/build.gradle`)
 
@@ -105,7 +114,9 @@ Spring Boot 4はJackson 3(グループID `tools.jackson`。`jackson-annotations`
 - [ ] `CLAUDE.md` — 技術スタック表の「Spring Boot 3.x」の更新に加え、「避けるべき落とし穴」#4
       「`spring-data-dynamodb` を追加しない(Spring Boot 3非対応)」の文言もバージョン前提が
       古くなるため実装PRで見直す(実装PRで完了後に反映。本Plan PRでは変更しない)
-- [ ] `.claude/01_development_docs/01_architecture_design.md` — 「Spring Boot (Java 21)」の記載を実装PRで更新
+- [x] `.claude/01_development_docs/01_architecture_design.md` — #102(Java 25化)で「Spring Boot (Java 21)」→
+      「Spring Boot (Java 25)」に更新済み。Spring Boot自体のバージョン番号は記載されていないため、
+      本Issue(#103)での追加更新は不要と判明した
 - [ ] `.claude/03_library_docs/02_dynamodb_enhanced_client.md` — タイトル「DynamoDB × Spring Boot 3
       実装パターン」のバージョン表記を実装PRで更新
 - [ ] `.claude/03_library_docs/04_react_router_patterns.md` — §5のSPAフォールバック実装が前提とする
@@ -120,7 +131,11 @@ Spring Boot 4はJackson 3(グループID `tools.jackson`。`jackson-annotations`
 
 ## 7. DoD(完了の定義)
 
-- [ ] `./gradlew check` が Java 25 / Spring Boot 4 / Gradle 8.14+ の組み合わせで通る
+- [ ] `./gradlew check` が Java 25 / Spring Boot 4 / Gradle 9.6.1(#102で導入済み)の組み合わせで通る
+- [ ] `options.release = 21`(#102で導入、`CLAUDE.md`落とし穴#16、`06_adr/03_java25_bytecode_release_pin.md`)
+      を25に戻せるか検証する。戻せるなら削除し、`06_adr/03_java25_bytecode_release_pin.md`の
+      `Status`を撤回条件成立として`Superseded by`に更新し、`CLAUDE.md`落とし穴#16も削除する。
+      戻せない場合(制約が継続する場合)はADR 03の決定を維持し、変更しない
 - [ ] domain層のカバレッジ閾値(90%以上)を実装PRでも維持している
 - [ ] contractテスト・ArchUnitテストが全件グリーン
 - [ ] Jackson 2→3移行に伴うAPIレスポンスの挙動差分がないことをcontractテストで確認済み
@@ -142,6 +157,11 @@ Spring Boot 4はJackson 3(グループID `tools.jackson`。`jackson-annotations`
   移行を延期しBoot 3系に留まる。Issueをbacklogに戻し、次のマイナーバージョンで再挑戦する
 - **却下した代替**: Jackson 3対応を避けるため `spring.jackson.use-jackson2-defaults=true` で
   互換動作に留める案は、いずれ剥がす前提の暫定措置が増え「シンプルさ」に反するため却下(§4.3)
+- **`options.release = 21`固定の解除確認**: #102でSpring Boot 3.4.1のASM制約により導入した
+  この固定(`CLAUDE.md`落とし穴#16、決定の経緯は`06_adr/03_java25_bytecode_release_pin.md`)は、
+  Spring Framework 7がJava25のクラスファイル形式を読めるようになっていれば本Issueで削除できる
+  はずである。実装PR着手時に最初に確認すること(確認を怠ると、releaseだけ21のまま取り残され、
+  toolchainとreleaseの不一致が放置される)
 - 実装PRは1本にまとめる(スパイク調査は本Plan PRの技術設計セクションで完結させた。ユーザーの
   意向により、GitHubのStacked pull requestsは本Issueでは使用しない)
 - **中止条件に達した場合の切り戻し手順**: 実装ブランチをマージせずクローズし、

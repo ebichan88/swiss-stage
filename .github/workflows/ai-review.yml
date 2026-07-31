@@ -260,7 +260,7 @@ jobs:
         if: steps.gate.outputs.run_fixer == 'true'
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
           cache: gradle
 
       - name: フロントエンド依存とDynamoDB Localテーブルを準備

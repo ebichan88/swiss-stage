@@ -1,6 +1,6 @@
 # 02. Spring Boot 4系(Spring Framework 7)への移行
 
-- Status: Proposed
+- Status: Accepted
 - Issue: #103
 - Date: 2026-07-31
 
@@ -23,7 +23,10 @@ ADRとして決定と却下案を残す。
 
 Spring Bootを4系(Spring Framework 7ベース)に移行する。実装PRの中で以下を一括して行う:
 
-- Gradleラッパーを8.14以上に更新する(Spring Boot 4の最低要件)
+- Gradleラッパーを8.14以上に更新する(Spring Boot 4の最低要件。**追記(2026-08-01)**:
+  #102の実装PR #106で、Gradle 8系はJDK25を実行JVMとして認識できず(9.1.0以降が必要)
+  9.6.1へ既に更新済み。本ADRでの追加対応は不要。詳細は
+  `.claude/07_plans/02_spring_boot_4_upgrade.md` §4.1)
 - `spring-boot-starter-web` → `spring-boot-starter-webmvc`、
   `spring-boot-starter-oauth2-client` → `spring-boot-starter-security-oauth2-client` へ
   artifact名を追随させる

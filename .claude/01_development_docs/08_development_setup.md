@@ -6,11 +6,16 @@
 |-------|----------|-------------|
 | Node.js | 20.x LTS | `node -v` |
 | pnpm | `frontend/package.json` の `packageManager` に固定(Corepack管理) | `pnpm -v` |
-| Java JDK | 21 (Temurin推奨) | `java -version` |
-| Gradle | 8.x (Wrapperを使用) | `./gradlew -v` |
+| Java JDK | 25 (Temurin推奨) | `java -version` |
+| Gradle | 9.x (Wrapperを使用) | `./gradlew -v` |
 | Docker | 24.x以上 | `docker -v` |
 | AWS CLI | 2.x | `aws --version` |
 | cloc(任意) | - | `cloc --version` |
+
+> ローカルにJDK25が無い場合、`backend/settings.gradle`の`foojay-resolver-convention`
+> プラグインがFoojay Disco API経由でJDKを自動ダウンロードする。オフライン環境・社内
+> プロキシ配下ではこの外部ネットワークアクセスが失敗しうるため、その場合は事前にJDK25を
+> 手動インストールしておくこと。
 
 ---
 
