@@ -1,0 +1,84 @@
+name: リファクタ・保守・開発プロセス改善
+description: 利用者から見た挙動を変えない改善(内部構造・依存更新・CI・ドキュメント・AIエージェント)
+title: "[chore] "
+labels: ["type:chore"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        利用者から見た挙動が変わる場合は「機能追加・挙動変更」を使ってください。
+        この分類は原則 Plan PR 不要ですが、**アーキテクチャ・技術選定に踏み込む場合は Plan PR と ADR が必須**です
+        (`.claude/00_project/04_development_process.md` §2 トリガー表・§3 ADRを書く条件)。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 背景・解決したい課題
+      description: 今の何が問題か。放置するとどうなるか。
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 対象領域
+      options:
+        - バックエンド(Java / Spring Boot)
+        - フロントエンド(React / TypeScript)
+        - CI・自動化(.github/**)
+        - 設計ドキュメント・AIエージェント(.claude/**)
+        - 依存関係の更新
+        - その他
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: 完了時に得られる状態
+    validations:
+      required: true
+
+  - type: dropdown
+    id: architectural
+    attributes:
+      label: アーキテクチャ・技術選定の決定を含むか
+      description: 「はい」の場合は Plan PR と ADR が必要になります。
+      options:
+        - いいえ(既存の方針の範囲内)
+        - はい(新しい技術・ライブラリの採用、レイヤー構造や規約の変更を含む)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 優先度
+      description: 判定基準は `.claude/04_quality/02_severity.md` の判定フローに従う(ここでは再記述しない)。対応するラベルは `/issue` が付与します。
+      options:
+        - P0(≒Critical / 大会当日に運営が止まる・結果が狂う・情報が漏れる)
+        - P1(≒Major)
+        - P2(≒Minor)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: timing
+    attributes:
+      label: 対応時期
+      description: 「未定(backlog)」を選ぶと課題だけ記録して着手しません。
+      options:
+        - 今すぐ
+        - 次の大会まで
+        - 未定(backlog)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: progress
+    attributes:
+      label: 進捗
+      description: 着手に伴って更新します(作成時は未チェックのままで構いません)。
+      options:
+        - label: Plan PR(アーキテクチャ・技術選定を含む場合のみ)
+        - label: 実装PR がすべてマージされた

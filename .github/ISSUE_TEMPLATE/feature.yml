@@ -1,0 +1,83 @@
+name: 機能追加・挙動変更
+description: 新しい画面・ユースケースの追加、既存の挙動やレイアウトの変更
+title: "[feature] "
+labels: ["type:feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        この分類は **Plan PR が必須**です
+        (`.claude/00_project/04_development_process.md` §2 トリガー表)。
+        ここには**要件**だけを書いてください。画面シナリオ・UI仕様・受け入れケース・技術設計は
+        `/plan <このIssue番号>` が Plan PR で作成します。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 背景・解決したい課題
+      description: なぜ必要か。今どう困っているか。
+    validations:
+      required: true
+
+  - type: dropdown
+    id: user
+    attributes:
+      label: 主な利用者
+      options:
+        - 運営者(PC・管理画面)
+        - 参加者(スマホ・共有ページ・ログイン不要)
+        - 両方
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: 完了時に得られる状態
+      description: 何ができるようになれば完了か。数値や条件があれば書く。
+    validations:
+      required: true
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: 制約・やらないこと
+      description: |
+        スコープ外にしたいこと、既に決まっている制約があれば。
+        MVPのスコープ判断は `.claude/00_project/02_inception_deck.md` §3 に照らす。
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 優先度
+      description: 判定基準は `.claude/04_quality/02_severity.md` の判定フローに従う(ここでは再記述しない)。対応するラベルは `/issue` が付与します。
+      options:
+        - P0(≒Critical / 大会当日に運営が止まる・結果が狂う・情報が漏れる)
+        - P1(≒Major)
+        - P2(≒Minor)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: timing
+    attributes:
+      label: 対応時期
+      description: 「未定(backlog)」を選ぶと課題だけ記録して着手しません。
+      options:
+        - 今すぐ
+        - 次の大会まで
+        - 未定(backlog)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: progress
+    attributes:
+      label: 進捗
+      description: 着手に伴って更新します(作成時は未チェックのままで構いません)。
+      options:
+        - label: Plan PR(計画・ADR・受け入れケース追加)がマージされた
+        - label: 実装PR がすべてマージされた
+        - label: 受け入れケースが台帳で done になった
