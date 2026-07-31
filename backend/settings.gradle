@@ -1,1 +1,7 @@
+plugins {
+    // Javaツールチェイン(build.gradleのJavaLanguageVersion.of(25))がローカルに
+    // 見つからない場合、Foojay Disco APIから自動ダウンロードするためのリゾルバ
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+}
+
 rootProject.name = 'swiss-stage'

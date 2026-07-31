@@ -105,7 +105,9 @@ Spring Boot 4はJackson 3(グループID `tools.jackson`。`jackson-annotations`
 - [ ] `CLAUDE.md` — 技術スタック表の「Spring Boot 3.x」の更新に加え、「避けるべき落とし穴」#4
       「`spring-data-dynamodb` を追加しない(Spring Boot 3非対応)」の文言もバージョン前提が
       古くなるため実装PRで見直す(実装PRで完了後に反映。本Plan PRでは変更しない)
-- [ ] `.claude/01_development_docs/01_architecture_design.md` — 「Spring Boot (Java 21)」の記載を実装PRで更新
+- [x] `.claude/01_development_docs/01_architecture_design.md` — #102(Java 25化)で「Spring Boot (Java 21)」→
+      「Spring Boot (Java 25)」に更新済み。Spring Boot自体のバージョン番号は記載されていないため、
+      本Issue(#103)での追加更新は不要と判明した
 - [ ] `.claude/03_library_docs/02_dynamodb_enhanced_client.md` — タイトル「DynamoDB × Spring Boot 3
       実装パターン」のバージョン表記を実装PRで更新
 - [ ] `.claude/03_library_docs/04_react_router_patterns.md` — §5のSPAフォールバック実装が前提とする

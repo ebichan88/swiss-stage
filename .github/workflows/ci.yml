@@ -68,7 +68,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
           cache: gradle
       - name: Create DynamoDB Local table
         run: ./scripts/create-table.sh
@@ -186,7 +186,7 @@ jobs:
         if: steps.decide.outputs.run == 'true' && needs.backend.result == 'failure'
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
           cache: gradle
 
       - name: backendの決定論的修正(Spotless)
@@ -355,7 +355,7 @@ jobs:
         if: steps.classify.outputs.coverage_only == 'false'
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
           cache: gradle
 
       - name: フロントエンド依存とDynamoDB Localテーブルを準備

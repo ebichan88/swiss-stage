@@ -16,7 +16,7 @@
 | 領域 | 技術 |
 |------|------|
 | フロントエンド | React 19 + TypeScript + Vite + Material-UI + React Router v7 + TanStack Query |
-| バックエンド | Java 21 + Spring Boot 3.x + Gradle 8 |
+| バックエンド | Java 25 + Spring Boot 3.x + Gradle 8 |
 | データベース | DynamoDB(シングルテーブル設計、AWS SDK v2 Enhanced Client) |
 | インフラ | AWS(EC2 t3.micro + ALB + Route53 + CloudWatch)、予算 ~$17/月 |
 | 認証 | Google OAuth2 + JWT Cookie(運営者)/ 共有トークン(参加者) |

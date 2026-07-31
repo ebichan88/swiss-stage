@@ -80,7 +80,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 21, cache: gradle }
+        with: { distribution: temurin, java-version: 25, cache: gradle }
       - run: ./scripts/create-table.sh
         env: { DYNAMODB_ENDPOINT: "http://localhost:8000" }
       - run: ./gradlew check build
