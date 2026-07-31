@@ -5,6 +5,18 @@
 >
 > 対象: 新規画面の追加、既存画面のレイアウト変更、新しいユースケースの追加。
 > 対象外: バグ修正、リファクタリング、ドキュメントのみの変更(該当セクションは省略してよい)。
+> Plan PR・ADRの要否は `.claude/00_project/04_development_process.md` §2 のトリガー表に従う。
+
+Plan PRでは、このテンプレートに沿って書いたファイルを `.claude/07_plans/NN_<slug>.md` として
+リポジトリに残す(`04_development_process.md` §5)。ファイル冒頭に次のヘッダを付ける:
+
+```markdown
+# NN. <計画のタイトル>
+
+- Status: planned
+- Issue: #<Issue番号>
+- PR: -
+```
 
 ---
 
@@ -91,6 +103,7 @@
 更新対象のファイルを**事前に列挙する**。プラン承認 = この範囲の更新の承認。
 
 - [ ] `.claude/05_acceptance/01_acceptance_scope.md` — ケース追加(ほぼ常に対象)
+- [ ] `.claude/06_adr/NN_<slug>.md` — ADRを書く条件(`04_development_process.md` §3)に当たる場合
 - [ ] `schema/openapi.yaml` — API変更がある場合(実装より先)
 - [ ] `.claude/01_development_docs/05_swiss_pairing_algorithm.md` — マッチング・順位計算の仕様変更(実装より先)
 - [ ] その他(`02_database_design.md` / `04_screen_transition_design.md` / `06_error_handling_design.md` / `02_component_design.md` …)
