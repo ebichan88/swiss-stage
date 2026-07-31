@@ -20,6 +20,7 @@
 | `guard.yml` | `pull_request` | テスト弱体化ガード。AI自動修正の安全装置(§2.6) |
 | `mutation.yml` | `workflow_dispatch` / 週次schedule | Mutation Testing(PITest、domain層限定。`09_test_strategy.md` §2.6) |
 | `ai-design-review.yml` | `pull_request`(`.claude/**`/`schema/**`/`CLAUDE.md`のみ) | 設計ドキュメント間の整合性(非ゲート・レポートのみ。§2.10) |
+| `ai-plan-review.yml` | `pull_request`(`.claude/07_plans/**`/`.claude/06_adr/**`のみ) | Plan PRの計画の抜け(異常系・境界・4状態・受け入れケース)を検出(非ゲート・レポートのみ。§2.11) |
 
 全ワークフローがPRごとに自動実行される(`vrt.yml` はUI関連のpathsに限る)。ただし
 **マージをブロックするのは `ci.yml` / `guard.yml` のみ**で、`e2e.yml` / `vrt.yml` は
@@ -447,6 +448,30 @@ Reviewerは「実装↔コード品質」、QAは「実装↔受け入れケー�
   指摘しない。`01_review_checklist.md` の「機械検査済みの項目」表と同じ発想で、
   design-reviewer自身の定義内に「禁止」節として明記している
 - **sticky comment**: `<!-- swiss-stage-ai-design-review -->`
+
+---
+
+## 2.11 計画レビュー(`.github/workflows/ai-plan-review.yml`)
+
+design-reviewerが「設計ドキュメント同士の矛盾」を見るのに対し、Plan PR(`.claude/07_plans/**`)
+そのものの**中身の抜け**(異常系・境界・4状態・受け入れケースの過不足)を検出するのが
+`plan-reviewer`(`.claude/agents/plan-reviewer.md`)。`03_feature_plan_template.md` の各節を
+検査軸にする。上流プロセス(`04_development_process.md`)の一部として、Plan PRに対して
+design-reviewerと同時に起動する。
+
+- **トリガー**: `pull_request` かつ `.claude/07_plans/**` / `.claude/06_adr/**` を変更した場合のみ
+- **非ゲート**: レポートのみ(FAILでもCIは失敗しない・自動修正との連携もない)。
+  Plan PRの承認(マージ)は常に人間が行う(`04_development_process.md` §1)
+
+> **なぜ非ゲートで始めるのか**: 下流(`ai-qa.yml`)は「実装が受け入れケースを満たしているか」という
+> 判断がグレーになりにくい領域でゲート化できているが、上流(計画の抜け)は判断がグレーになりやすい。
+> design-reviewerが非ゲートで安定運用できている前例に倣い、まず非ゲートで開始し、誤検知の実績を
+> 見てからゲート化を再検討する(却下案の詳細は `.claude/06_adr/01_upstream_process_artifacts.md` §3)。
+
+- **責務の切り分け**: コード品質(Reviewer)・設計ドキュメント間の矛盾(design-reviewer)・
+  台帳整合(QA)・機械検査済み項目(ADR/プランのヘッダ・命名規約はdocs-lint)は指摘しない。
+  `01_review_checklist.md` と同じ発想で、plan-reviewer自身の定義内に「禁止」節として明記している
+- **sticky comment**: `<!-- swiss-stage-ai-plan-review -->`
 
 ---
 

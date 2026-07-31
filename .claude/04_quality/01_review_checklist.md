@@ -21,10 +21,15 @@ AIレビュアー(`.claude/agents/reviewer.md`)がPRレビュー時に参照す�
 | API契約(DTO/enum)とスキーマの一致 | contractテストのOpenAPI検証(`schema/openapi.yaml`)+ 生成型の鮮度チェック(CI) |
 | テストの無効化(`@Disabled`/`@Ignore`/`.skip()`/`xit()`/`.only()`)、受け入れケースID付きテストの削除 | テスト弱体化ガード(`.github/workflows/guard.yml`、全PR) |
 | 受け入れケースIDの形式・重複・未登録プレフィックス、台帳↔テストIDの双方向突合、`.claude/**`および`CLAUDE.md`内のファイル参照切れ | docs-lint(`.github/scripts/docs-lint.py`、CIの`frontend`ジョブ) |
+| ADR(`.claude/06_adr/`)・プラン(`.claude/07_plans/`)のファイル名規約(`NN_<snake_case>.md`)、必須ヘッダ(`Status`/`Issue`/`Date`または`PR`)の有無、連番重複、Superseded参照切れ | docs-lint(`.github/scripts/docs-lint.py`、CIの`frontend`ジョブ) |
 
 ## QAエージェント管轄(レビューで指摘しない)
 
 受け入れケース台帳(`.claude/05_acceptance/`)との整合 — 台帳の更新漏れ・ケースIDとテストの対応・受け入れテストの基準hack — はQAエージェント(`.claude/agents/qa.md`、CIは `ai-qa.yml`)が検証する。Reviewerは**テストとコード・設計ドキュメントの関係**(TEST-1〜4)を見る。
+
+## plan-reviewerエージェント管轄(レビューで指摘しない)
+
+Plan PR(`.claude/07_plans/**`)の計画そのものの抜け — 画面シナリオの異常系・境界・4状態の見せ方・受け入れケースの過不足 — はplan-reviewerエージェント(`.claude/agents/plan-reviewer.md`、CIは `ai-plan-review.yml`)が検証する(非ゲート)。Reviewerは実装後のコードを見るため、Plan PR(コード0行)自体はレビュー対象にならない。
 
 ---
 
