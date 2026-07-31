@@ -23,6 +23,17 @@ Python標準ライブラリのみで動作する(依存追加なし)。Reviewer�
        かかわらず、実在確認は basename の一致で行う。.claude/ 配下に同名ファイルが
        複数存在しないことを実測で確認済み)
      - 参照されたファイル名が .claude/ 配下のどこかに実在するかを確認する
+  4. ADR(.claude/06_adr/)・プラン(.claude/07_plans/)のファイル名規約とヘッダ
+     (04_development_process.md §4・§5)
+     - ファイル名が `NN_<snake_case>.md` 規約に反していないか(違反すると上記2の
+       参照切れ検査からそのファイルが漏れるため、命名自体を規約違反として報告する)
+     - 連番の重複(informational・非エラー: 欠番。永久欠番と同じ発想で正当な場合がある)
+     - ADR: `Status` / `Issue` / `Date` ヘッダの有無。`Status` が
+       `Proposed`/`Accepted`/`Superseded by NN_xxx.md` のいずれかで、Supersededの
+       参照先ADRが実在するか
+     - プラン: `Status` / `Issue` / `PR` ヘッダの有無。`Status` が
+       `planned`/`in_progress`/`done` のいずれかで、`done` なのに `PR` が未記入
+       (`-` のまま)になっていないか
 
 終了コード: 0=違反なし、1=違反あり(hard fail扱いの項目が1件以上)。
 """
@@ -38,6 +49,8 @@ CLAUDE_DIR = REPO_ROOT / ".claude"
 LEDGER_PATH = CLAUDE_DIR / "05_acceptance" / "01_acceptance_scope.md"
 POLICY_PATH = CLAUDE_DIR / "05_acceptance" / "00_acceptance_policy.md"
 CLAUDE_MD_PATH = REPO_ROOT / "CLAUDE.md"
+ADR_DIR = CLAUDE_DIR / "06_adr"
+PLAN_DIR = CLAUDE_DIR / "07_plans"
 
 ID_STRICT = re.compile(r"^([A-Z0-9]+)-AC-(\d+)$")
 LEDGER_ID_CELL = re.compile(r"^[A-Z0-9]+-AC-\d+$")
@@ -47,6 +60,19 @@ TEST_ID_PATTERN = re.compile(r"[A-Z0-9]+-AC-[0-9]+")
 # 認識できるよう、任意のパスプレフィックスを許容する。実在確認はbasenameで行う
 # (check_file_references参照)
 BACKTICK_MD_REF = re.compile(r"`((?:[A-Za-z0-9_.-]+/)*[0-9]{2}_[A-Za-z0-9_]+\.md)`")
+
+# ADR・プランのファイル名規約(04_development_process.md §4・§5)。
+# 2桁の連番で始まらないと BACKTICK_MD_REF にマッチせず参照切れ検査から漏れるため、
+# 命名規約そのものを個別に検査する
+NN_FILENAME = re.compile(r"^([0-9]{2})_[a-z0-9_]+\.md$")
+STATUS_LINE = re.compile(r"^-\s*Status:\s*(.+)$")
+ISSUE_LINE = re.compile(r"^-\s*Issue:\s*(.+)$")
+DATE_LINE = re.compile(r"^-\s*Date:\s*(.+)$")
+PR_LINE = re.compile(r"^-\s*PR:\s*(.+)$")
+SUPERSEDED_BY = re.compile(r"^Superseded by ([0-9]{2}_[A-Za-z0-9_]+\.md)$")
+
+ADR_STATUS_VALUES = {"Proposed", "Accepted"}
+PLAN_STATUS_VALUES = {"planned", "in_progress", "done"}
 
 TEST_DIRS = [
     REPO_ROOT / "backend/src/test/java/com/swiss_stage/contract",
@@ -227,6 +253,109 @@ def check_file_references(errors: list[str]) -> None:
                 )
 
 
+# --- 4. ADR・プランのファイル名規約とヘッダ ------------------------------------
+
+
+def _find_header_value(text: str, pattern: re.Pattern[str]) -> str | None:
+    for line in text.splitlines():
+        m = pattern.match(line.strip())
+        if m:
+            return m.group(1).strip()
+    return None
+
+
+def check_numbered_docs(
+    errors: list[str], notes: list[str], dir_path: Path, kind: str
+) -> dict[str, Path]:
+    """dir_path配下の *.md をファイル名規約(NN_<snake_case>.md)で検証する。
+
+    連番の重複はerror、欠番はinformational(台帳のID体系と同じ発想: 削除済みの
+    ADR・プランがあり得るため、欠番自体は仕様上正当)。
+    規約に違反したファイル名は、check_file_referencesの参照切れ検査から
+    そのまま漏れてしまうため、ここで個別に報告する。
+    """
+    if not dir_path.exists():
+        return {}
+
+    by_number: dict[str, list[Path]] = {}
+    for path in sorted(dir_path.glob("*.md")):
+        rel = path.relative_to(REPO_ROOT)
+        m = NN_FILENAME.match(path.name)
+        if not m:
+            fail(
+                errors,
+                f"[{rel}] ファイル名が規約(NN_<snake_case>.md)に反しています"
+                f"(この規約から外れると参照切れ検査の対象外になる)",
+            )
+            continue
+        by_number.setdefault(m.group(1), []).append(path)
+
+    for num, paths in sorted(by_number.items()):
+        if len(paths) > 1:
+            names = ", ".join(p.name for p in paths)
+            fail(errors, f"[{kind}] 連番 {num} が重複しています: {names}")
+
+    valid_nums = sorted(int(n) for n in by_number)
+    if valid_nums:
+        gaps = [n for n in range(valid_nums[0], valid_nums[-1] + 1) if n not in valid_nums]
+        if gaps:
+            gap_str = ", ".join(f"{g:02d}" for g in gaps)
+            notes.append(f"[情報] {kind} に欠番があります: {gap_str}(削除済みなら正常)")
+
+    return {num: paths[0] for num, paths in by_number.items() if len(paths) == 1}
+
+
+def check_adr_headers(errors: list[str], adr_files: dict[str, Path]) -> None:
+    known_filenames = {p.name for p in adr_files.values()}
+    for path in adr_files.values():
+        rel = path.relative_to(REPO_ROOT)
+        text = read_text(path)
+
+        status = _find_header_value(text, STATUS_LINE)
+        if status is None:
+            fail(errors, f"[{rel}] `- Status:` ヘッダがありません")
+        elif status not in ADR_STATUS_VALUES:
+            m = SUPERSEDED_BY.match(status)
+            if not m:
+                fail(
+                    errors,
+                    f"[{rel}] Statusの値が不正です: {status}"
+                    f"(Proposed / Accepted / Superseded by NN_xxx.md のいずれか)",
+                )
+            elif m.group(1) not in known_filenames:
+                fail(errors, f"[{rel}] Supersededの参照先が存在しません: {m.group(1)}")
+
+        if _find_header_value(text, ISSUE_LINE) is None:
+            fail(errors, f"[{rel}] `- Issue:` ヘッダがありません")
+        if _find_header_value(text, DATE_LINE) is None:
+            fail(errors, f"[{rel}] `- Date:` ヘッダがありません")
+
+
+def check_plan_headers(errors: list[str], plan_files: dict[str, Path]) -> None:
+    for path in plan_files.values():
+        rel = path.relative_to(REPO_ROOT)
+        text = read_text(path)
+
+        status = _find_header_value(text, STATUS_LINE)
+        if status is None:
+            fail(errors, f"[{rel}] `- Status:` ヘッダがありません")
+        elif status not in PLAN_STATUS_VALUES:
+            fail(
+                errors,
+                f"[{rel}] Statusの値が不正です: {status}"
+                f"(planned / in_progress / done のいずれか)",
+            )
+
+        if _find_header_value(text, ISSUE_LINE) is None:
+            fail(errors, f"[{rel}] `- Issue:` ヘッダがありません")
+
+        pr = _find_header_value(text, PR_LINE)
+        if pr is None:
+            fail(errors, f"[{rel}] `- PR:` ヘッダがありません")
+        elif status == "done" and pr == "-":
+            fail(errors, f"[{rel}] Status=done なのに `- PR:` が未記入です(`-` のまま)")
+
+
 # --- main ------------------------------------------------------------------
 
 
@@ -237,6 +366,11 @@ def main() -> int:
     rows = check_ledger_id_integrity(errors, notes)
     check_bidirectional_mapping(errors, rows)
     check_file_references(errors)
+
+    adr_files = check_numbered_docs(errors, notes, ADR_DIR, "ADR")
+    check_adr_headers(errors, adr_files)
+    plan_files = check_numbered_docs(errors, notes, PLAN_DIR, "プラン")
+    check_plan_headers(errors, plan_files)
 
     if notes:
         print("--- 情報(失敗要因にしない) ---")

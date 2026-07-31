@@ -139,6 +139,11 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 - `00_acceptance_policy.md` — 受け入れケースのID体系・優先度・テスト紐づけの運用ルール
 - `01_acceptance_scope.md` — 受け入れケース台帳(コンポーネント別・優先度付き・Status管理)。contractテストの `@DisplayName` / PlaywrightのテストタイトルとIDで紐づく
 
+### 📝 決定記録・実装計画(.claude/06_adr/・.claude/07_plans/)
+- `.claude/06_adr/NN_*.md` — ADR(決定記録)。後から覆すのが高くつく決定・複数案から1つを選んだ決定の経緯と却下案(条件は `04_development_process.md` §3)。書き換えず `Superseded by` で積む
+- `.claude/07_plans/NN_*.md` — Plan PRで作成する実装計画の実体(形式は `03_feature_plan_template.md`)。実装完了で `Status: done` に更新して凍結
+- ファイル名・ヘッダ(`Status`/`Issue`/`Date`または`PR`)は `.github/scripts/docs-lint.py` が機械検査する
+
 ### 🔍 品質基準・AIレビュー(.claude/04_quality/)
 - `01_review_checklist.md` — AIレビューの観点(機械検査できない項目のみ。lint/ArchUnitで検査可能なものは載せない)
 - `02_severity.md` — Critical/Major/Minorの定義とPASS/FAIL判定基準
