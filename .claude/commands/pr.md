@@ -26,6 +26,8 @@ allowed-tools: Bash(git *), Bash(gh *), Bash(./gradlew *), Bash(pnpm *), Read, G
 
 - 実装と設計ドキュメント(`.claude/01_development_docs/` 等)が乖離する変更なら、同じPRでドキュメントも更新されているか確認する
 - 特にマッチング・順位計算の変更は `05_swiss_pairing_algorithm.md` の更新が先行しているべき
+- 受け入れケース台帳(`.claude/05_acceptance/01_acceptance_scope.md`)に対応するケースがあれば、Statusを todo → done に更新し、検証列を埋める
+- 対応する `.claude/07_plans/NN_*.md` があれば、`Status: in_progress` → `done` に更新し、`PR:` にこのPRの番号を追記する(`04_development_process.md` §5)
 
 ## 4. ブランチ作成
 
@@ -43,6 +45,8 @@ allowed-tools: Bash(git *), Bash(gh *), Bash(./gradlew *), Bash(pnpm *), Read, G
 
 - `git push -u origin <ブランチ名>`
 - `gh pr create` で作成。タイトルはコミットメッセージ1行目と揃える
+- 起点となった Issue があれば、本文の冒頭に `Closes #<Issue番号>` を付ける(**実装PRのみ**。
+  Plan PR は `Refs #N` を使う。`/plan` コマンド参照)
 - PR本文は以下のテンプレート(日本語):
 
 ```markdown
@@ -69,6 +73,8 @@ allowed-tools: Bash(git *), Bash(gh *), Bash(./gradlew *), Bash(pnpm *), Read, G
 
 - PR の URL を報告する
 - CI で AIレビュー(`.github/workflows/ai-review.yml`)が自動実行されることを添え、レビュー結果を確認してからマージするよう伝える
+- `Closes #N` を付けた場合、マージ時にその Issue が自動クローズされることを伝える。この実装PRで
+  Issue の作業がすべて終わらない(残タスクがある)場合は、`Closes` を使わず Issue を開いたままにするかユーザーに確認する
 
 ## 8. 依存関係のある複数PR(スタックPR)を同一セッションで作成する場合
 
