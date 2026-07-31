@@ -24,7 +24,7 @@ AI: 不明点を質問 → Plan PR(コード0行)
       schema/openapi.yaml・設計ドキュメント (必要なら)
   │
   ▼  CI: docs-lint → ai-design-review → ai-plan-review(いずれも非ゲート)
-人間: Plan PR を Approve してマージ              ← 人間の承認はここだけ
+人間: Plan PR を Approve してマージ              ← Plan PRの承認はここ(人間が要件どおりの計画かを判断する最初のゲート)
   │
   ▼  /pr
 AI: 実装PR(`Closes #N`)→ reviewer / qa / fixer / ci-fixer が回る(`11_cicd_design.md`)
