@@ -27,7 +27,8 @@ allowed-tools: Bash(git *), Bash(gh *), Bash(./gradlew *), Bash(pnpm *), Read, G
 - 実装と設計ドキュメント(`.claude/01_development_docs/` 等)が乖離する変更なら、同じPRでドキュメントも更新されているか確認する
 - 特にマッチング・順位計算の変更は `05_swiss_pairing_algorithm.md` の更新が先行しているべき
 - 受け入れケース台帳(`.claude/05_acceptance/01_acceptance_scope.md`)に対応するケースがあれば、Statusを todo → done に更新し、検証列を埋める
-- 対応する `.claude/07_plans/NN_*.md` があれば、`Status: in_progress` → `done` に更新し、`PR:` にこのPRの番号を追記する(`04_development_process.md` §5)
+- 対応する `.claude/06_adr/NN_*.md` が `Status: Proposed` であれば `Accepted` に更新する(Plan PRがマージされ実装に着手した時点のため。`04_development_process.md` §4)
+- 対応する `.claude/07_plans/NN_*.md` があれば、実装対象であることを確認する(`Status`/`PR` の更新はPR作成後に行う。`04_development_process.md` §5)
 
 ## 4. ブランチ作成
 
@@ -68,6 +69,10 @@ allowed-tools: Bash(git *), Bash(gh *), Bash(./gradlew *), Bash(pnpm *), Read, G
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
+
+- 対応する `.claude/07_plans/NN_*.md` があれば、`Status: planned` → `in_progress` に更新し、`PR:` に
+  作成したPR番号を追記して追加コミット・pushする(`04_development_process.md` §5)。`done` への更新は
+  実装PRがマージされた後に別途行う(現時点で自動化ステップはなく、マージ後のフォローアップとして対応する)
 
 ## 7. 報告
 

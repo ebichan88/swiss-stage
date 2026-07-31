@@ -38,7 +38,8 @@ AskUserQuestion で**最大3問**にまとめて確認する。優先すべき�
 - 冒頭ヘッダ: `Status: planned` / `Issue: #$ARGUMENTS` / `PR: -`
 - `04_development_process.md` §3 のADR条件に1つでも当てはまる場合は、`.claude/06_adr/NN_<slug>.md`
   を同じ連番規約で作成する(ADR用の連番は `.claude/06_adr/` 内で独立してカウントする)。
-  ヘッダは `Status: Accepted` / `Issue: #$ARGUMENTS` / `Date: <今日の日付>`
+  ヘッダは `Status: Proposed`(Plan PR レビュー中のため。マージ後に `/pr` が `Accepted` へ更新する)
+  / `Issue: #$ARGUMENTS` / `Date: <今日の日付>`
 - API変更があれば `schema/openapi.yaml` を、マッチング・順位計算の仕様変更があれば
   `05_swiss_pairing_algorithm.md` を、その他該当する設計ドキュメントを計画と同じPRで更新する
 
