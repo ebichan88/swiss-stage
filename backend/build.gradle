@@ -24,7 +24,8 @@ repositories {
 // 留める(release)。Spring Boot 3.4.1(Spring Framework 6.2系)のクラスパススキャン(ASMベースの
 // SimpleMetadataReader)はJava 25のクラスファイル形式(major version 69)をまだ認識できず、
 // ClassFormatExceptionで全@SpringBootTestが起動失敗する(実測)。Spring Boot 4系への
-// 移行(#103, `06_adr/02_spring_boot_4_upgrade.md`)まではreleaseを21に固定する。
+// 移行(#103, `06_adr/02_spring_boot_4_upgrade.md`)まではreleaseを21に固定する
+// (決定の経緯は `06_adr/03_java25_bytecode_release_pin.md`)。
 //
 // Spring Bootプラグインが自動付与する -parameters はVSCode(Eclipse JDT)のビルドに
 // 伝わらないため明示する(省略時、名前なし @PathVariable の解決が実行時に失敗する)

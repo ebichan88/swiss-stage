@@ -96,7 +96,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 13. 順序・優先度に意味のあるenumはordinal(宣言順)に依存しない。明示的な数値フィールド(`sortOrder` 等)で比較し、宣言順との整合をテストで検証する(例: `Rank`)
 14. `package.json` の依存を変更したら `pnpm install` で `pnpm-lock.yaml` を再生成しコミットに含める(CIの `pnpm/action-setup` は `packageManager` フィールドからバージョンを読むため、ローカルと同じpnpmバージョンで解決される)
 15. コントローラーの `@PathVariable`/`@RequestParam` 等は名前を必ず明示する(省略すると `-parameters` フラグ依存になり、VSCode(Eclipse JDT)ビルドで起動したときだけ実行時エラー。ArchUnitで強制済み)
-16. `backend/build.gradle` の `tasks.withType(JavaCompile) { options.release = 21 }` を外さない(Spring Boot 4系への移行(`06_adr/02_spring_boot_4_upgrade.md`)まで)。Spring Boot 3.4.1のクラスパススキャン(ASMベースの`SimpleMetadataReader`)がJava 25のクラスファイル形式(major version 69)を認識できず、外すと全`@SpringBootTest`が`ClassFormatException`で起動失敗する(実測)。Spring Boot 4移行時にこの制約を解除できるか再検証すること
+16. `backend/build.gradle` の `tasks.withType(JavaCompile) { options.release = 21 }` を外さない(Spring Boot 4系への移行(`06_adr/02_spring_boot_4_upgrade.md`)まで。決定の経緯は `06_adr/03_java25_bytecode_release_pin.md`)。Spring Boot 3.4.1のクラスパススキャン(ASMベースの`SimpleMetadataReader`)がJava 25のクラスファイル形式(major version 69)を認識できず、外すと全`@SpringBootTest`が`ClassFormatException`で起動失敗する(実測)。Spring Boot 4移行時にこの制約を解除できるか再検証すること
 
 ## プロジェクトドキュメントガイド
 
