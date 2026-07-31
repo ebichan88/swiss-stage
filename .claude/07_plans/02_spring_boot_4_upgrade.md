@@ -49,7 +49,7 @@ contractテスト・ArchUnit)が移行後も従来と同じ結果を保証する
 
 | 項目 | 現状 | 変更後 | 根拠 |
 |---|---|---|---|
-| Gradleラッパー | ~~8.12~~ → **9.6.1(#102で対応済み)** | 変更不要 | #102(Java 25化)のCIで、Gradle 8.12は実行JVM自体がJava25を認識できず(`Unsupported class file major version 69`)全ジョブが失敗することが判明し、Gradle 9.6.1に更新済み。Spring Boot 4の要件(最低Gradle 8.14)は満たしている |
+| Gradleラッパー | ~~8.12~~ → **9.6.1(#102で対応済み)** | 変更不要 | #102(Java 25化)のCIで、Gradle 8.12は実行JVM自体がJava25を認識できず(`Unsupported class file major version 69`)全ジョブが失敗することが判明した。Gradle公式の互換性表(`docs.gradle.org/current/userguide/compatibility.html`)でJava25を実行JVMとしてサポートするのは**9.1.0以降**と明記されており、8.14系を含む8系は対象外と分かっていたため、8.14での追試はせず9系最新(9.6.1)を採用した。Spring Boot 4の要件(最低Gradle 8.14)も満たしている |
 | `info.solidsoft.pitest`プラグイン | ~~1.15.0~~ → **1.19.0(#102で対応済み)** | 変更不要 | Gradle 9で`reporting.baseDir`が削除され1.15.0が起動不能になったため#102で更新済み |
 | Spring Bootプラグイン | 3.4.1 | 4.0.x(最新パッチ) | — |
 | Javaツールチェイン | 21 | 25(#102で先行対応) | Spring Boot 4はJava 17+互換、25を第一級サポート |

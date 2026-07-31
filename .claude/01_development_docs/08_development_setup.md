@@ -12,6 +12,11 @@
 | AWS CLI | 2.x | `aws --version` |
 | cloc(任意) | - | `cloc --version` |
 
+> ローカルにJDK25が無い場合、`backend/settings.gradle`の`foojay-resolver-convention`
+> プラグインがFoojay Disco API経由でJDKを自動ダウンロードする。オフライン環境・社内
+> プロキシ配下ではこの外部ネットワークアクセスが失敗しうるため、その場合は事前にJDK25を
+> 手動インストールしておくこと。
+
 ---
 
 ## 2. リポジトリ構成(モノレポ)
