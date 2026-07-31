@@ -103,6 +103,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 - `.claude/00_project/01_appcadia_concept_requirements.md` — コンセプト・要求定義(最上位の判断基準)
 - `.claude/00_project/02_inception_deck.md` — ビジョン・やらないこと・トレードオフ
 - `.claude/00_project/03_feature_plan_template.md` — **機能追加プランの必須形式(Planモードで従う)**
+- `.claude/00_project/04_development_process.md` — **開発プロセスの正典。Issue→Plan PR→実装PRの流れ、分類ごとのADR・受け入れケースの要否**
 
 ### 🏗️ 技術設計(.claude/01_development_docs/)
 - `01_architecture_design.md` — DDDレイヤー構造と責任、ロジック配置基準
@@ -138,6 +139,11 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 - `00_acceptance_policy.md` — 受け入れケースのID体系・優先度・テスト紐づけの運用ルール
 - `01_acceptance_scope.md` — 受け入れケース台帳(コンポーネント別・優先度付き・Status管理)。contractテストの `@DisplayName` / PlaywrightのテストタイトルとIDで紐づく
 
+### 📝 決定記録・実装計画(.claude/06_adr/・.claude/07_plans/)
+- `.claude/06_adr/NN_*.md` — ADR(決定記録)。後から覆すのが高くつく決定・複数案から1つを選んだ決定の経緯と却下案(条件は `04_development_process.md` §3)。書き換えず `Superseded by` で積む
+- `.claude/07_plans/NN_*.md` — Plan PRで作成する実装計画の実体(形式は `03_feature_plan_template.md`)。実装完了で `Status: done` に更新して凍結
+- ファイル名・ヘッダ(`Status`/`Issue`/`Date`または`PR`)は `.github/scripts/docs-lint.py` が機械検査する
+
 ### 🔍 品質基準・AIレビュー(.claude/04_quality/)
 - `01_review_checklist.md` — AIレビューの観点(機械検査できない項目のみ。lint/ArchUnitで検査可能なものは載せない)
 - `02_severity.md` — Critical/Major/Minorの定義とPASS/FAIL判定基準
@@ -152,7 +158,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 
 | タスク | 参照ドキュメント |
 |-------|----------------|
-| 新機能の追加 | **03_feature_plan_template でプランを立てる** → 受け入れ台帳(05_acceptance)にケース追加 → アーキテクチャ → DB設計 → API設計 → フロントエンド設計 |
+| 新機能の追加 | **04_development_process に従い Issue → Plan PR**(03_feature_plan_template でプランを立てる)→ 受け入れ台帳(05_acceptance)にケース追加 → アーキテクチャ → DB設計 → API設計 → フロントエンド設計 |
 | マッチング・順位計算の実装/修正 | **05_swiss_pairing_algorithm** → テスト戦略 |
 | APIエンドポイント追加 | API設計 → エラーハンドリング → 型定義 |
 | DynamoDBの操作追加 | DB設計 → Enhanced Client → DynamoDB Localテスト |
@@ -168,6 +174,8 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 
 ## ドキュメント運用ルール
 
+- 開発プロセス全体(要件→Issue→Plan PR→実装PR)は `.claude/00_project/04_development_process.md` に従う。
+  分類ごとに Plan PR・ADR・受け入れケースが必要かは同ファイル §2 のトリガー表で判断する。
 - 機能追加・挙動変更のプランは `.claude/00_project/03_feature_plan_template.md` の形式に従う。
   特に **UI仕様(4状態・レスポンシブ・大量データ時)を実装前に文章で確定させる**(実機で見てからの手戻りを防ぐため)
 - **プラン承認後、プランの「更新する設計資料」に列挙したファイルの更新には追加の承認を求めない**(承認済みの範囲として扱う)

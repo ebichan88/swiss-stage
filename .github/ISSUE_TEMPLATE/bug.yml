@@ -1,0 +1,86 @@
+name: バグ報告
+description: 動作が仕様と異なる、エラーが出る、結果が正しくない
+title: "[bug] "
+labels: ["type:bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        バグ修正は Plan PR を作らず、実装PRに直接進みます
+        (`.claude/00_project/04_development_process.md` §2 トリガー表)。
+        ただし**再発防止の受け入れケースを1件追加する**のが原則です。
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 概要
+      description: 何が起きているかを1〜2文で。
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      placeholder: |
+        1. 大会を作成し参加者を16名登録する
+        2. 第1ラウンドを開始する
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_actual
+    attributes:
+      label: 期待する挙動 / 実際の挙動
+      description: エラーメッセージやスタックトレースがあれば貼ってください。
+      placeholder: |
+        期待: 再戦にならない組み合わせが生成される
+        実際: 第3ラウンドで第1ラウンドと同じ対戦が発生した
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: 影響範囲
+      options:
+        - 運営者(PC・管理画面)
+        - 参加者(スマホ・共有ページ)
+        - 両方
+        - 開発・CIのみ(利用者影響なし)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 優先度
+      description: 判定基準は `.claude/04_quality/02_severity.md` の判定フローに従う(ここでは再記述しない)。対応するラベルは `/issue` が付与します。
+      options:
+        - P0(≒Critical / 大会当日に運営が止まる・結果が狂う・情報が漏れる)
+        - P1(≒Major)
+        - P2(≒Minor)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: timing
+    attributes:
+      label: 対応時期
+      description: 「未定(backlog)」を選ぶと課題だけ記録して着手しません。
+      options:
+        - 今すぐ
+        - 次の大会まで
+        - 未定(backlog)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: progress
+    attributes:
+      label: 進捗
+      description: 着手に伴って更新します(作成時は未チェックのままで構いません)。
+      options:
+        - label: 実装PR
+        - label: 再発防止の受け入れケースを台帳に追加した

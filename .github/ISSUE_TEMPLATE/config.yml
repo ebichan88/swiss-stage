@@ -1,0 +1,9 @@
+# 空のIssueを禁止し、必ず分類テンプレートを通す。
+# 分類が決まっていないと `.claude/00_project/04_development_process.md` の
+# トリガー表(Plan PR・ADR・受け入れケースの要否)を判定できないため。
+blank_issues_enabled: false
+
+contact_links:
+  - name: 開発プロセスの説明
+    url: https://github.com/ebichan88/swiss-stage/blob/main/.claude/00_project/04_development_process.md
+    about: Issue作成後の流れ(Plan PR → 承認 → 実装PR)と、分類ごとに何が必要かはここを参照してください。
