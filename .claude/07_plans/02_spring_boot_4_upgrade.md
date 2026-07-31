@@ -14,6 +14,9 @@
 Spring Boot 4.0はSpring Framework 7.0を基盤として2025-11-20にGAされており(Spring Framework 7.0は
 2025-11-13GA)、Java 25を第一級サポートする(Java 17は引き続きサポート)。Java 25化(#102)の
 完了後に着手する前提であり、本Plan PRはSpring Boot 4系化(#103)のみを対象とする。
+本Plan PR作成時点(2026-07-31)で#102は未着手(Open、実装PRなし)。本ADRの`Status`は
+本Plan PRのマージ時点で`Accepted`に更新するが、それは「移行方針が決まった」ことを意味するのみで、
+実際の着手可能時期は引き続き#102の完了を待つ(ADR Acceptedと実装着手は別軸)。
 
 このIssueは種別`chore`だが「アーキテクチャ・技術選定の決定を含む」に該当するため、
 `04_development_process.md` §2 のトリガー表に従いPlan PR・ADR([`06_adr/02_spring_boot_4_upgrade.md`](../06_adr/02_spring_boot_4_upgrade.md))が必須。
@@ -82,7 +85,12 @@ Spring Boot 4はJackson 3(グループID `tools.jackson`。`jackson-annotations`
 
 - domain / application: 変更なし(Spring/AWS SDK非依存の原則どおり)
 - infrastructure: DynamoDB Enhanced Client設定、`SecurityConfig`(OAuth2クライアントプロパティキー)の確認・必要なら追随
-- presentation: artifact名変更に伴うimport・自動設定クラス名の変更があれば追随
+- presentation: artifact名変更に伴うimport・自動設定クラス名の変更があれば追随。加えて、
+  `presentation/WebMvcConfig#addResourceHandlers` のSPAフォールバック実装(`PathResourceResolver`を
+  継承したリソースハンドラ方式)は、「Spring Boot 3のPathPatternParserでは`/**/{path}`形式の
+  コントローラマッピングが使えない」というSpring Boot 3固有の制約を前提にした設計判断
+  (`04_react_router_patterns.md` §5)。Spring Framework 7でこの制約が変わっていないか
+  実装PR着手時に再検証し、前提が変わっていれば`04_react_router_patterns.md`を更新する(§6)
 - API変更・マッチング/順位計算の仕様変更: なし(`schema/openapi.yaml`・`05_swiss_pairing_algorithm.md`の更新は不要)
 
 ## 5. 受け入れケース
@@ -93,15 +101,22 @@ Spring Boot 4はJackson 3(グループID `tools.jackson`。`jackson-annotations`
 
 ## 6. 更新する設計資料
 
-- [x] `.claude/06_adr/02_spring_boot_4_upgrade.md` — 本PRで新規作成(ADR)
-- [x] `CLAUDE.md` — 技術スタック表の「Spring Boot 3.x」を「Spring Boot 4.x」に更新(実装PRで完了後に反映。本Plan PRでは変更しない)
+- [x] `.claude/06_adr/02_spring_boot_4_upgrade.md` — 本PRで新規作成(ADR、Status: Proposed。本PRマージ時にAcceptedへ更新)
+- [ ] `CLAUDE.md` — 技術スタック表の「Spring Boot 3.x」の更新に加え、「避けるべき落とし穴」#4
+      「`spring-data-dynamodb` を追加しない(Spring Boot 3非対応)」の文言もバージョン前提が
+      古くなるため実装PRで見直す(実装PRで完了後に反映。本Plan PRでは変更しない)
 - [ ] `.claude/01_development_docs/01_architecture_design.md` — 「Spring Boot (Java 21)」の記載を実装PRで更新
+- [ ] `.claude/03_library_docs/02_dynamodb_enhanced_client.md` — タイトル「DynamoDB × Spring Boot 3
+      実装パターン」のバージョン表記を実装PRで更新
+- [ ] `.claude/03_library_docs/04_react_router_patterns.md` — §5のSPAフォールバック実装が前提とする
+      「Spring Boot 3のPathPatternParserの制約」を実装PR着手時に再検証し、前提が変われば更新(§4.5参照)
 - [ ] `.claude/05_acceptance/01_acceptance_scope.md` — 対象外(§5参照)
 - [ ] `schema/openapi.yaml` — 対象外(API変更なし)
 - [ ] `.claude/01_development_docs/05_swiss_pairing_algorithm.md` — 対象外(仕様変更なし)
 
-> 上記のうちCLAUDE.md・01_architecture_design.mdの実際の書き換えは**実装PR**で行う
-> (バージョン番号は実装が完了して初めて確定するため)。本Plan PRではADRのみ新規作成する。
+> 上記のうちADR以外(CLAUDE.md・01_architecture_design.md・02_dynamodb_enhanced_client.md・
+> 04_react_router_patterns.md)の実際の書き換えは**実装PR**で行う(バージョン番号・制約の
+> 再検証結果は実装が完了して初めて確定するため)。本Plan PRではADRのみ新規作成する。
 
 ## 7. DoD(完了の定義)
 
@@ -109,8 +124,11 @@ Spring Boot 4はJackson 3(グループID `tools.jackson`。`jackson-annotations`
 - [ ] domain層のカバレッジ閾値(90%以上)を実装PRでも維持している
 - [ ] contractテスト・ArchUnitテストが全件グリーン
 - [ ] Jackson 2→3移行に伴うAPIレスポンスの挙動差分がないことをcontractテストで確認済み
+- [ ] Jackson 2→3の挙動差分がフロントエンドに影響しないことを、既存のE2Eクリティカルパス
+      またはフロントエンドのMSW/契約整合テストで確認済み
 - [ ] `jjwt-jackson` → `jjwt-gson` の差し替え後もJWT発行・検証が既存テストで確認済み
-- [ ] `CLAUDE.md`・`01_architecture_design.md`のバージョン記載が実装PRで更新されている
+- [ ] `CLAUDE.md`・`01_architecture_design.md`・`02_dynamodb_enhanced_client.md`・
+      `04_react_router_patterns.md`(該当する場合)のバージョン記載が実装PRで更新されている
 - [ ] ローカル実機で動作確認済み(`.claude/skills/verify`)
 
 ## 8. リスク・未確定事項
@@ -126,3 +144,7 @@ Spring Boot 4はJackson 3(グループID `tools.jackson`。`jackson-annotations`
   互換動作に留める案は、いずれ剥がす前提の暫定措置が増え「シンプルさ」に反するため却下(§4.3)
 - 実装PRは1本にまとめる(スパイク調査は本Plan PRの技術設計セクションで完結させた。ユーザーの
   意向により、GitHubのStacked pull requestsは本Issueでは使用しない)
+- **中止条件に達した場合の切り戻し手順**: 実装ブランチをマージせずクローズし、
+  `backend/build.gradle`は変更前の状態(Spring Boot 3.4.1系)のまま維持する。本ADRは
+  編集せず、新しいADRを起こして`Superseded by`で置き換え、Boot 3系継続の判断として記録する
+  (`04_development_process.md` §4「書き換えず積む」原則)

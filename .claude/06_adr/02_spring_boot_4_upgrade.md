@@ -1,6 +1,6 @@
 # 02. Spring Boot 4系(Spring Framework 7)への移行
 
-- Status: Accepted
+- Status: Proposed
 - Issue: #103
 - Date: 2026-07-31
 
