@@ -150,6 +150,9 @@
 | SHR-AC-015 | P1 | 申告不一致・確定後の食い違いは、状態語だけでなく誰が何を申告したかが運営者画面・共有画面の両方に具体的に表示される | done | MatchResultControl.test, SharedResultPage.test, SharedPage.test(Vitest) |
 | SHR-AC-016 | P2 | 共有ページの順位表はトップ3をカード、4位以降をリストで表示し、初期表示時にフェードインする | done | RankingBoard.test(Vitest) |
 | SHR-AC-017 | P1 | 共有ページの順位表はラウンド1が確定するまで表示されない(未確定時は全員同率rank=1になり表示が崩れるため) | done | SharedPage.test, TeamSharedPage.test(Vitest) |
+| SHR-AC-018 | P1 | 共有ページ・結果入力ページの本文タイポグラフィ(body1)が16px以上である | todo | theme.test(Vitest) |
+| SHR-AC-019 | P1 | テーマで定義した文字色と背景色の主要な組み合わせがWCAG AA(4.5:1)以上のコントラスト比を満たす | todo | theme.test(Vitest) |
+| SHR-AC-020 | P1 | 共有ページの対局カードは勝敗を色だけでなく記号(○/●)で併記する | todo | SharedPage.test(Vitest) |
 
 ## SPA: SPA配信
 
