@@ -28,6 +28,8 @@
 - スペーシングは `theme.spacing()`(8px基準)のみ使用
 - タイポグラフィは `<Typography variant="...">` のみ使用(生の `<h1>` や fontSize 直指定禁止)
 - 新しいUIパターンが必要になったら、まず `02_component_design.md` に定義を追加してから実装する
+- UIの新規実装・改修時は `fixing-accessibility` skill(`.claude/skills/`)でARIAラベル・
+  キーボード操作・フォーカス管理・コントラスト・フォームエラーをチェックする
 
 ---
 
