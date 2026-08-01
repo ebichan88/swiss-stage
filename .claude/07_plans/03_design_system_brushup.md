@@ -24,7 +24,7 @@
 
 - 参加者が最も多く触れる共有ページ(S10)・結果入力(S11)が、コンセプトを体現した見た目になっている
 - デザイントークンが刷新され、`01_design_principles.md` と `theme/index.ts` が同期している
-- `frontend-design` / `baseline-ui` skill がリポジトリに入り、以後のUI実装で継続的に使える
+- `frontend-design` skill がリポジトリに入り、以後のUI実装で継続的に使える
 - #112 で獲得したアクセシビリティ水準が維持され、**回帰を機械検査で防げる**状態になっている
 
 **最重要原則: 正確性 > シンプルさ > コスト > 機能 > 速度**
@@ -116,7 +116,7 @@
     ↓
 ⑤ 共有ページ・結果入力の改装 → 全画面の追従確認
     ↓
-⑥ fixing-accessibility 再実行 → baseline-ui でチェック
+⑥ fixing-accessibility 再実行 → frontend-design の自己批評 + reviewer で仕上げ(§4-4)
     ↓
 ⑦ VRTベースライン更新
 ```
@@ -262,41 +262,61 @@ Issue #115 の決定「トークンは全画面に効かせ、コンポーネン
 | skill | 出所 | ライセンス | 用途 |
 |---|---|---|---|
 | `frontend-design` | Anthropic公式 `anthropics/skills` | Apache-2.0 | ②の意匠探索 |
-| `baseline-ui` | `ibelick/ui-skills` | MIT | ⑥の仕上げチェック(**自動適用しない**) |
 
 SKILL.md は上流のまま改変せずに置く(上流更新との差分を追えるようにするため)。
 プロジェクト固有の適用条件は本節に書く。
 
-#### `baseline-ui` は Tailwind 前提であり、大半のルールが本プロジェクトに適用できない
+#### `frontend-design` の適用条件
 
-`baseline-ui` の SKILL.md は Tailwind CSS + Base UI/Radix + `motion/react` を前提に書かれている。
-本プロジェクト(MUI + Emotion)とは前提が異なり、**そのまま従うと既存規約に違反する**。
-特に次は明確に衝突するため、**指摘されても採用しない**。
+このプロジェクトと相性がよいのは中核メソッドの **"Ground it in the subject"**(題材の世界・素材・
+道具・固有の言い回しから独自性を導く)である。囲碁・将棋は素材が豊かで(碁盤の格子・碁石の白黒・
+駒の五角形・棋譜の記法・対局時計・段級位の表記体系)、現行UIはこれをほとんど使っていない。
+ここが最大の伸びしろであり、②の探索ではこの語彙を明示的にブリーフに含める。
 
-| `baseline-ui` のルール | 本プロジェクトでの扱い |
+第1パスの出力形式(4〜6個の名前付きhex + 2種以上の書体ロール + レイアウト構想 + signature要素)は、
+本計画が実装前に確定させたいもの(新パレット + タイポスケール → `01_design_principles.md`)と
+ほぼ一致するため、そのまま成果物として使える。
+
+ただし SKILL.md はランディングページ的な文脈で書かれており、次の3点は**枠付けしてから使う**。
+
+| SKILL.md の記述 | 本プロジェクトでの補正 |
 |---|---|
-| MUST use Tailwind CSS defaults | 不適用(MUIテーマを使う。`00_basic_design.md` §2) |
-| MUST use `cn` utility(clsx + tailwind-merge) | 不適用(`sx` / styleOverrides を使う) |
-| MUST use Base UI / React Aria / Radix、SHOULD prefer Base UI | **不採用**(MUIで統一する。primitiveの混在は禁止) |
-| MUST use `motion/react`(framer-motion) | **不採用**。`03_animation_system.md` §4 でアニメーションライブラリの追加を禁止済み |
-| MUST use an `AlertDialog` | 読み替え。本プロジェクトは `ConfirmDialog`(`02_component_design.md` §2) |
-| `h-dvh` / `text-balance` / `tabular-nums` / `size-*` / `z-*` 等のクラス名指定 | クラス名としては不適用。意図(等幅数字など)は既存トークンで満たす |
+| 「hero は主張であれ」「signature要素を1つ持て」 | 運用ツールであり、騒がしい会場で急いでいる20〜70代が使う。装飾を順位表・対局カードに持ち込まない。§3-2 の不変条件と3原則が優先 |
+| 「display と body の書体を意図的にペアリングせよ」 | 和文ディスプレイ書体の追加は**原則しない**。既に Google Fonts から Noto Sans JP(400/600/700)を配信しており、和文をもう1書体足すと配信量が重くなる(EC2 t3.micro・予算 ~$17/月)。ウェイト・サイズ・字間での階層付けを優先する |
+| 「ページロード演出・スクロール連動・アンビエント」 | **不採用**。`03_animation_system.md` §4 でページ全体のトランジション演出・パララックス・スクロール連動演出を禁止済み |
 
-**採用してよい(スタック非依存の指摘)**:
+また `frontend-design` は `primary.main` の制約(§4-2 の「表ヘッダーの白文字AA」と
+「主要ボタンの重さ」の両立)を知り得ないため、**ブリーフに条件として明示的に渡す**。
 
-- アニメーション: compositor プロパティ(`transform`/`opacity`)のみを動かす、レイアウト
-  プロパティを動かさない、インタラクションのフィードバックは200msを超えない、
-  `prefers-reduced-motion` を尊重する
-- デザイン: グラデーションを使わない、アクセントカラーは1画面1つ、空状態には明確な次の行動を1つ置く
-- アクセシビリティ: アイコンのみのボタンに `aria-label` を付ける
-- パフォーマンス: 大きな `blur()`/`backdrop-filter` を動かさない、`will-change` を常設しない
+#### `baseline-ui` を採用しなかった理由
 
-`baseline-ui` を自動適用しない理由は上記の衝突に加えてもう1つある。汎用の「スペーシング・タイポを
-整える」パスであり、本計画で意図的に決めたデザイン選択を「不揃い」と見なして潰す可能性がある。
-**必ず `/baseline-ui <file>` の指摘出力モードで使い、採否は人間が判断する。**
+当初は⑥の仕上げチェックに `ibelick/ui-skills` の `baseline-ui` を使う計画だったが、
+SKILL.md を精査した結果**採用しない**と判断した。
 
-> 実装PRで、この適用条件を `00_basic_design.md` へ昇格させるか検討する。本計画は完了後に
-> 凍結されるため、恒久的な規約はプランではなく設計ドキュメント側に置くべきものが残る。
+- Tailwind CSS + Base UI/Radix + `motion/react` を前提に書かれており、MUI + Emotion 構成の
+  本プロジェクトとはルールの大半が噛み合わない
+- 特に `MUST use motion/react`(= framer-motion)は `03_animation_system.md` §4 の
+  「アニメーションライブラリの追加禁止」と正面から衝突する。
+  `MUST use Base UI / React Aria / Radix` も primitive の混在を招く
+- スタック非依存で採用できる指摘(約10件)を既存ドキュメントと突き合わせたところ、
+  7件は既出(200ms以内・`prefers-reduced-motion`・空状態の次の行動・等幅数字・アクセント1画面1つ 等)、
+  2件は該当なし(グラデーション・`blur()` をそもそも使っていない)で、
+  **実質的な増分は「compositor プロパティ(`transform`/`opacity`)のみを動かし、
+  レイアウトプロパティを動かさない」の1件のみ**だった
+- その1件のために、以後のセッションが「どのMUSTを無視すべきか」を毎回確認する必要が生じる。
+  失敗モードが沈黙(素直に従うと禁止ライブラリが入る)であり、割に合わない
+
+**増分の1件は `03_animation_system.md` に直接追記する**(実装PR。§6)。
+
+⑥の仕上げ工程は次で代替する:
+
+- `frontend-design` 自身の自己批評パス(SKILL.md の "critique, build, critique again" /
+  「鏡を見てアクセサリーを1つ外す」)
+- `fixing-accessibility` skill
+- 既存の reviewer エージェントと `04_quality/01_review_checklist.md`
+
+> 実装PRで、`frontend-design` の適用条件を `00_basic_design.md` へ昇格させるか検討する。
+> 本計画は完了後に凍結されるため、恒久的な規約はプランではなく設計ドキュメント側に置く。
 
 ## 5. 受け入れケース
 
@@ -331,14 +351,15 @@ Prefix は `SHR`(共有)。既存最大 `SHR-AC-017` の次から採番する。
 - [x] `.claude/06_adr/06_design_system_direction.md` — 方針転換のADR(このPR)
 - [x] `.claude/05_acceptance/01_acceptance_scope.md` — SHR-AC-018〜020 を Status=todo で追加(このPR)
 - [x] `.claude/skills/frontend-design/`(SKILL.md + LICENSE.txt)— skill追加(このPR。§4-4)
-- [x] `.claude/skills/baseline-ui/`(SKILL.md + LICENSE.txt)— skill追加(このPR。§4-4)
 - [ ] `.claude/02_design_system/01_design_principles.md` — **実装PR**。新パレット・タイポスケール・
       角丸/影の方針。`theme/index.ts` と同期させる
 - [ ] `.claude/02_design_system/00_basic_design.md` — **実装PR**。§4 の「運営者管理画面はMUI標準に
       寄せてよい」の扱いを決めた結果を反映
 - [ ] `.claude/02_design_system/02_component_design.md` — **実装PR**。共有ページの対局カード・
       結果入力ボタンの意匠を変更した場合の記述更新
-- [ ] `.claude/02_design_system/03_animation_system.md` — **実装PR**。トランジションを増やす場合のみ
+- [ ] `.claude/02_design_system/03_animation_system.md` — **実装PR**。「compositor プロパティ
+      (`transform`/`opacity`)のみを動かし、レイアウトプロパティを動かさない」を追記する
+      (`baseline-ui` を採用しなかった代わりの取り込み。§4-4)。トランジションを増やす場合の更新も兼ねる
 - [ ] `.claude/02_design_system/04_layout_system.md` — **実装PR**。余白・グリッドの基準を変える場合のみ
 
 `schema/openapi.yaml` と `05_swiss_pairing_algorithm.md` は**更新しない**(API・マッチング・順位計算に変更なし)。
@@ -353,8 +374,8 @@ Prefix は `SHR`(共有)。既存最大 `SHR-AC-017` の次から採番する。
 - [ ] ローカル実機で動作確認済み(`.claude/skills/verify`)。**375px の実機スマホで確認する**
 - [ ] `fixing-accessibility` skill を再実行し、コントラスト・フォーカス可視・タップ領域の
       回帰がないことを確認した
-- [ ] `baseline-ui` skill を `/baseline-ui <file>` の指摘出力モードで実行し、採否を判断した
-      (§4-4 の「不採用」に該当する指摘は採らない。全採用しなくてよい)
+- [ ] `frontend-design` の自己批評パス(「この部分は他のどんなページでも出すであろう既定解に
+      なっていないか」)を通し、reviewer エージェントのレビューも受けた(§4-4)
 - [ ] `vrt.yml` を手動実行してベースラインを更新した。**差分が共有ページ以外にも出るため、
       全スクリーンショットの差分を目視で確認してから更新する**(意図しない崩れの検出機会)
 - [ ] 印刷帳票をブラウザの印刷プレビューで確認した(モノクロ運用・手書き罫線の視認性)

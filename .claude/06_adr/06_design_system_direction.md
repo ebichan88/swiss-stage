@@ -66,9 +66,22 @@ Storybook で探索 → 実機確認 → go/no-go を人間が判断してから
 
 ### 2-4. 支援ツールの位置づけ
 
-`.claude/skills/` に `frontend-design`(Anthropic公式)と `baseline-ui`(ibelick/ui-skills)を追加する。
-`baseline-ui` は**自動適用せずチェック用**とする。汎用の整形パスであり、意図的に決めた
-デザイン選択を「不揃い」と見なして潰す可能性があるためである。
+`.claude/skills/` に `frontend-design`(Anthropic公式)を追加する。中核メソッドである
+"Ground it in the subject"(題材の世界・素材・道具・固有の言い回しから独自性を導く)が、
+素材の豊かな囲碁・将棋という題材と噛み合うためである。適用条件は
+`.claude/07_plans/03_design_system_brushup.md` §4-4 に定める。
+
+**`baseline-ui`(ibelick/ui-skills)は採用しない。** 当初は仕上げチェックに使う計画だったが、
+Tailwind CSS + Base UI/Radix + `motion/react` を前提に書かれており、本プロジェクト
+(MUI + Emotion)とはルールの大半が噛み合わない。特に `MUST use motion/react` は
+`03_animation_system.md` §4 の「アニメーションライブラリの追加禁止」と正面から衝突する。
+スタック非依存で採用できる指摘を既存ドキュメントと突き合わせた結果、実質的な増分は
+「compositor プロパティのみを動かす」の1件のみであり、その1件は `03_animation_system.md` へ
+直接追記すれば足りる(詳細な検討結果は同 §4-4)。
+
+導入判断の一般則として、**skill は「どのMUSTを無視すべきか」を毎回確認しなければ使えない
+状態になった時点で採用しない**。逸脱が沈黙のうちに規約違反(禁止ライブラリの導入)を生む
+ものは特に避ける。
 
 ## 3. 却下した案
 
