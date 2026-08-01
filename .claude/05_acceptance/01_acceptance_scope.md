@@ -152,7 +152,7 @@
 | SHR-AC-017 | P1 | 共有ページの順位表はラウンド1が確定するまで表示されない(未確定時は全員同率rank=1になり表示が崩れるため) | done | SharedPage.test, TeamSharedPage.test(Vitest) |
 | SHR-AC-018 | P1 | 共有ページ・結果入力ページの本文タイポグラフィ(body1)が16px以上である | todo | theme.test(Vitest) |
 | SHR-AC-019 | P1 | テーマで定義した文字色と背景色の主要な組み合わせがWCAG AA(4.5:1)以上のコントラスト比を満たす | todo | theme.test(Vitest) |
-| SHR-AC-020 | P2 | 共有ページの対局カードは勝敗を色だけでなく記号(○/●)で併記する | todo | SharedPage.test(Vitest) |
+| SHR-AC-020 | P1 | 共有ページの対局カードは勝敗を色だけでなく記号(○/●)で併記する | todo | SharedPage.test(Vitest) |
 
 ## SPA: SPA配信
 

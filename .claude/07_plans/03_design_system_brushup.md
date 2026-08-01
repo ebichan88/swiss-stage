@@ -8,8 +8,9 @@
 
 ## 1. 背景・目的
 
-現行UIは見た目が「MUI標準そのまま」に寄っており、`02_design_system/00_basic_design.md` が掲げる
-コンセプト(「和の競技にふさわしい、落ち着いた品のある見た目」/ 深緑 `#1B5E43`)が画面に表れていない。
+現行UIは見た目が「MUI標準そのまま」に寄っており、`02_design_system/00_basic_design.md` §1 が掲げる
+コンセプト(「和の競技にふさわしい、落ち着いた品のある見た目」)と、それを受けて
+`01_design_principles.md` §1 が定義する基調色(`primary.main` = 深緑 `#1B5E43`)が、画面に表れていない。
 
 実態は `frontend/src/theme/index.ts` が示している。102行のうち大半がトークン定義で、
 `components` の styleOverrides は `MuiButton`(textTransform / disableElevation)と
@@ -104,9 +105,10 @@
 ### 3-4. 探索の進め方と go/no-go
 
 ```
-① skill追加 + 不変条件の確定(本計画のマージで完了)
+① skill追加 + 不変条件の確定(本計画のマージで完了。skillは本PRで追加済み・§6参照)
     ↓
-② frontend-design で共有ページの意匠を探索(Storybook上。既存 SharedPage.stories.tsx を使う)
+② frontend-design で共有ページの意匠を探索(Storybook上)
+   既存の SharedPage.stories.tsx(S10)と SharedResultPage.stories.tsx(S11)の両方を対象にする
     ↓
 ③ 実機(スマホ実寸)で確認 → go / no-go を人間が判断   ← ここが唯一のゲート
     ↓ go
@@ -186,12 +188,27 @@ Container(maxWidth="sm", py:4)
 
 いずれも**現行の挙動を維持する**。改装で失わないことを確認する対象として明示する。
 
-| 状態 | 共有ページの表示(現行・維持) |
+**S10 共有ページ**
+
+| 状態 | 表示(現行・維持) |
 |---|---|
 | 通常 | タブ切替で 組み合わせ / 順位表 / 対戦結果 |
 | 空(0件) | `EmptyState`。大会開始前・組み合わせ未生成・順位未確定・戦績なしでメッセージを出し分け |
 | ローディング | `FullPageSpinner` |
-| エラー | `ErrorState`(再試行ボタン付き)。無効トークンのみ専用画面 |
+| エラー | `ErrorState`(再試行ボタン付き)。無効トークンのみ専用画面(「このURLは無効です」) |
+
+**S11 結果入力**
+
+| 状態 | 表示(現行・維持) |
+|---|---|
+| 通常 | 「あなたはどちらですか?」→ 勝敗の選択 → `ConfirmDialog` の2段階 |
+| 空(0件) | **該当なし**(一覧を持たない画面のため)。代わりに対局が特定できない場合 ——`mid` が不正、またはBYE(`player2 === null`)—— に「対局が見つかりません。組み合わせを確認してください。」+ 戻る導線を出す |
+| ローディング | `FullPageSpinner` |
+| エラー | `ErrorState`(再試行ボタン付き)。送信失敗はSnackbar(error)で通知し、同じ画面から再試行できる |
+| 締切後 | 「この対局の結果入力は締め切られています」+ 運営者への連絡案内。選択UIは出さない |
+
+いずれの状態も改装後に維持する。特に S11 の「対局が見つかりません」「締切後」は
+`EmptyState` を使っていない独自表示のため、意匠を変える際に見落としやすい。
 
 - **レスポンシブ**: 375px を主対象とする(参加者はスマホ)。共有ページは `maxWidth="md"`、
   結果入力は `maxWidth="sm"`。デスクトップでは中央寄せの1カラムのまま。この方針は変えない
@@ -242,14 +259,44 @@ Issue #115 の決定「トークンは全画面に効かせ、コンポーネン
 
 `.claude/skills/` 配下に置き、リポジトリで共有・バージョン管理する(`fixing-accessibility` と同じ運用)。
 
-| skill | 出所 | 用途 |
-|---|---|---|
-| `frontend-design` | Anthropic公式 `anthropics/skills` | ②の意匠探索 |
-| `baseline-ui` | `ibelick/ui-skills` | ⑥の仕上げチェック(**自動適用しない**) |
+| skill | 出所 | ライセンス | 用途 |
+|---|---|---|---|
+| `frontend-design` | Anthropic公式 `anthropics/skills` | Apache-2.0 | ②の意匠探索 |
+| `baseline-ui` | `ibelick/ui-skills` | MIT | ⑥の仕上げチェック(**自動適用しない**) |
 
-`baseline-ui` を自動適用しない理由: 汎用の「スペーシング・タイポを整える」パスであり、
-本計画で意図的に決めたデザイン選択を「不揃い」と見なして潰す可能性がある。指摘を読んで
-人間が採否を判断する。
+SKILL.md は上流のまま改変せずに置く(上流更新との差分を追えるようにするため)。
+プロジェクト固有の適用条件は本節に書く。
+
+#### `baseline-ui` は Tailwind 前提であり、大半のルールが本プロジェクトに適用できない
+
+`baseline-ui` の SKILL.md は Tailwind CSS + Base UI/Radix + `motion/react` を前提に書かれている。
+本プロジェクト(MUI + Emotion)とは前提が異なり、**そのまま従うと既存規約に違反する**。
+特に次は明確に衝突するため、**指摘されても採用しない**。
+
+| `baseline-ui` のルール | 本プロジェクトでの扱い |
+|---|---|
+| MUST use Tailwind CSS defaults | 不適用(MUIテーマを使う。`00_basic_design.md` §2) |
+| MUST use `cn` utility(clsx + tailwind-merge) | 不適用(`sx` / styleOverrides を使う) |
+| MUST use Base UI / React Aria / Radix、SHOULD prefer Base UI | **不採用**(MUIで統一する。primitiveの混在は禁止) |
+| MUST use `motion/react`(framer-motion) | **不採用**。`03_animation_system.md` §4 でアニメーションライブラリの追加を禁止済み |
+| MUST use an `AlertDialog` | 読み替え。本プロジェクトは `ConfirmDialog`(`02_component_design.md` §2) |
+| `h-dvh` / `text-balance` / `tabular-nums` / `size-*` / `z-*` 等のクラス名指定 | クラス名としては不適用。意図(等幅数字など)は既存トークンで満たす |
+
+**採用してよい(スタック非依存の指摘)**:
+
+- アニメーション: compositor プロパティ(`transform`/`opacity`)のみを動かす、レイアウト
+  プロパティを動かさない、インタラクションのフィードバックは200msを超えない、
+  `prefers-reduced-motion` を尊重する
+- デザイン: グラデーションを使わない、アクセントカラーは1画面1つ、空状態には明確な次の行動を1つ置く
+- アクセシビリティ: アイコンのみのボタンに `aria-label` を付ける
+- パフォーマンス: 大きな `blur()`/`backdrop-filter` を動かさない、`will-change` を常設しない
+
+`baseline-ui` を自動適用しない理由は上記の衝突に加えてもう1つある。汎用の「スペーシング・タイポを
+整える」パスであり、本計画で意図的に決めたデザイン選択を「不揃い」と見なして潰す可能性がある。
+**必ず `/baseline-ui <file>` の指摘出力モードで使い、採否は人間が判断する。**
+
+> 実装PRで、この適用条件を `00_basic_design.md` へ昇格させるか検討する。本計画は完了後に
+> 凍結されるため、恒久的な規約はプランではなく設計ドキュメント側に置くべきものが残る。
 
 ## 5. 受け入れケース
 
@@ -264,21 +311,27 @@ Prefix は `SHR`(共有)。既存最大 `SHR-AC-017` の次から採番する。
 |---|---|---|---|
 | SHR-AC-018 | P1 | 共有ページ・結果入力ページの本文タイポグラフィ(body1)が16px以上である | Vitest |
 | SHR-AC-019 | P1 | テーマで定義した文字色と背景色の主要な組み合わせがWCAG AA(4.5:1)以上のコントラスト比を満たす | Vitest |
-| SHR-AC-020 | P2 | 共有ページの対局カードは勝敗を色だけでなく記号(○/●)で併記する | Vitest |
+| SHR-AC-020 | P1 | 共有ページの対局カードは勝敗を色だけでなく記号(○/●)で併記する | Vitest |
 
 - SHR-AC-019 の「主要な組み合わせ」は最低限次を含む:
   `text.primary`/`background.default`、`text.primary`/`background.paper`、
   `text.secondary`/`background.default`、`primary.contrastText`/`primary.main`(表ヘッダー)、
   `error.main`・`success.main`・`warning.main` の各文字色/`background.paper`
-- 優先度は `02_severity.md` に従い P1(仕様違反・ユーザー影響のあるバグ。大会当日に運営が
-  止まる・結果が狂う・情報が漏れるには当たらないため P0 ではない)。
-  SHR-AC-020 は既存実装が満たしており回帰検知が目的のため P2
+- 優先度は `00_acceptance_policy.md` §4 の定義(P0/P1/P2)に従う。判定フローは同節が
+  流用元として挙げる `02_severity.md` を用いる。
+  **3件とも P1**: いずれも破られると「利用者が情報を読めない・読み違える」状態になり、
+  仕様違反かつユーザー影響のあるバグに当たる(≒Major)。一方、大会当日に運営が止まる・
+  結果が狂う・情報が漏れるには当たらないため P0 ではない。
+  3件は「現行実装が既に満たしており、改装での回帰を防ぐ」という同一の性質を持つため、
+  優先度に差を付けない
 
 ## 6. 更新する設計資料
 
 - [x] `.claude/07_plans/03_design_system_brushup.md` — 本計画(このPR)
 - [x] `.claude/06_adr/06_design_system_direction.md` — 方針転換のADR(このPR)
 - [x] `.claude/05_acceptance/01_acceptance_scope.md` — SHR-AC-018〜020 を Status=todo で追加(このPR)
+- [x] `.claude/skills/frontend-design/`(SKILL.md + LICENSE.txt)— skill追加(このPR。§4-4)
+- [x] `.claude/skills/baseline-ui/`(SKILL.md + LICENSE.txt)— skill追加(このPR。§4-4)
 - [ ] `.claude/02_design_system/01_design_principles.md` — **実装PR**。新パレット・タイポスケール・
       角丸/影の方針。`theme/index.ts` と同期させる
 - [ ] `.claude/02_design_system/00_basic_design.md` — **実装PR**。§4 の「運営者管理画面はMUI標準に
@@ -300,7 +353,8 @@ Prefix は `SHR`(共有)。既存最大 `SHR-AC-017` の次から採番する。
 - [ ] ローカル実機で動作確認済み(`.claude/skills/verify`)。**375px の実機スマホで確認する**
 - [ ] `fixing-accessibility` skill を再実行し、コントラスト・フォーカス可視・タップ領域の
       回帰がないことを確認した
-- [ ] `baseline-ui` skill を実行し、指摘の採否を判断した(全採用しなくてよい)
+- [ ] `baseline-ui` skill を `/baseline-ui <file>` の指摘出力モードで実行し、採否を判断した
+      (§4-4 の「不採用」に該当する指摘は採らない。全採用しなくてよい)
 - [ ] `vrt.yml` を手動実行してベースラインを更新した。**差分が共有ページ以外にも出るため、
       全スクリーンショットの差分を目視で確認してから更新する**(意図しない崩れの検出機会)
 - [ ] 印刷帳票をブラウザの印刷プレビューで確認した(モノクロ運用・手書き罫線の視認性)
