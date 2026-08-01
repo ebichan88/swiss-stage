@@ -96,7 +96,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 13. 順序・優先度に意味のあるenumはordinal(宣言順)に依存しない。明示的な数値フィールド(`sortOrder` 等)で比較し、宣言順との整合をテストで検証する(例: `Rank`)
 14. `package.json` の依存を変更したら `pnpm install` で `pnpm-lock.yaml` を再生成しコミットに含める(CIの `pnpm/action-setup` は `packageManager` フィールドからバージョンを読むため、ローカルと同じpnpmバージョンで解決される)
 15. コントローラーの `@PathVariable`/`@RequestParam` 等は名前を必ず明示する(省略すると `-parameters` フラグ依存になり、VSCode(Eclipse JDT)ビルドで起動したときだけ実行時エラー。ArchUnitで強制済み)
-16. `spring-boot-starter-test` 4系がバンドルする `junit-platform-launcher` のバージョンが `junit-jupiter` と噛み合わないことがある(実測でNoSuchMethodError)。`backend/build.gradle` の `resolutionStrategy.eachDependency` で明示的に揃えている設定を外さない
+16. `spring-boot-starter-test` 4系がバンドルする `junit-platform-launcher` のバージョンが `junit-jupiter` と噛み合わないことがある(実測でNoSuchMethodError)。`backend/build.gradle` の `resolutionStrategy.eachDependency` で明示的に揃えている設定を外さない(決定の経緯は `06_adr/05_junit_platform_launcher_pin.md`)
 
 ## プロジェクトドキュメントガイド
 

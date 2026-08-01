@@ -335,7 +335,7 @@ frontend/
 | カテゴリ | 技術 | バージョン | 用途 |
 |---------|------|----------|------|
 | 言語 | Java | 25 (LTS) | 堅牢なバックエンド実装 |
-| フレームワーク | Spring Boot | 3.x | REST API・DIコンテナ |
+| フレームワーク | Spring Boot | 4.x | REST API・DIコンテナ |
 | ビルドツール | Gradle | 9.x | 依存管理・ビルド |
 | DynamoDBクライアント | DynamoDB Enhanced Client (AWS SDK for Java v2) | 2.25+ | DynamoDBアクセス(型安全マッピング) |
 
@@ -344,14 +344,14 @@ frontend/
 ```gradle
 dependencies {
     // Web API
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     
     // DynamoDB (AWS SDK for Java v2 Enhanced Client)
-    implementation platform('software.amazon.awssdk:bom:2.25.+')
+    implementation platform('software.amazon.awssdk:bom:2.42.+')
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
     
     // セキュリティ（Google OAuth2）
-    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-client'
     
     // バリデーション
     implementation 'org.springframework.boot:spring-boot-starter-validation'
