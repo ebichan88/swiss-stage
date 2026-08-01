@@ -1,6 +1,5 @@
 package com.swiss_stage.presentation.filter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swiss_stage.application.exception.ErrorCode;
 import com.swiss_stage.presentation.api.ApiError;
 import io.github.bucket4j.Bucket;
@@ -19,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * 共有トークン系エンドポイント(/api/v1/shared/**)のIPベース簡易レート制限 (13_security_design.md §5。トークン探索のブルートフォース対策)。
@@ -34,12 +34,12 @@ public class SharedRateLimitFilter extends OncePerRequestFilter {
   private static final int MAX_TRACKED_IPS = 10_000;
 
   private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
-  private final ObjectMapper objectMapper;
+  private final JsonMapper objectMapper;
   private final long capacity;
   private final long refillPerMinute;
 
   public SharedRateLimitFilter(
-      ObjectMapper objectMapper,
+      JsonMapper objectMapper,
       @Value("${app.rate-limit.shared.capacity:60}") long capacity,
       @Value("${app.rate-limit.shared.refill-per-minute:60}") long refillPerMinute) {
     this.objectMapper = objectMapper;

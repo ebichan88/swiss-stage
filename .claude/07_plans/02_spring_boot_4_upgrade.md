@@ -53,7 +53,8 @@ contractテスト・ArchUnit)が移行後も従来と同じ結果を保証する
 | `info.solidsoft.pitest`プラグイン | ~~1.15.0~~ → **1.19.0(#102で対応済み)** | 変更不要 | Gradle 9で`reporting.baseDir`が削除され1.15.0が起動不能になったため#102で更新済み |
 | Spring Bootプラグイン | 3.4.1 | 4.0.x(最新パッチ) | — |
 | Javaツールチェイン | 21 | 25(#102で先行対応) | Spring Boot 4はJava 17+互換、25を第一級サポート |
-| `options.release`(JavaCompile) | **21に固定(#102で導入)** | **25に戻せるか要検証** | #102でSpring Boot 3.4.1のASM(`SimpleMetadataReader`)がJava25バイトコードを読めないためreleaseを21に固定した(`CLAUDE.md`落とし穴#16、決定の経緯は`06_adr/03_java25_bytecode_release_pin.md`)。Spring Framework 7でこの制約が解消されているか実装PR着手時に確認し、解消されていれば削除してtoolchainとreleaseの両方をJava25に揃える |
+| `options.release`(JavaCompile) | 21に固定(#102で導入) | **削除済み(実装PRで対応)** | Spring Framework 7のクラスパススキャンはJava25のクラスファイル形式を問題なく認識することを実測で確認(206件のテスト全件グリーン)。`options.release=21`を削除し、コンパイル・テスト実行・生成バイトコードのすべてをJava25に統一した。`06_adr/03_java25_bytecode_release_pin.md`は`06_adr/04_java25_bytecode_release_pin_removed.md`にSupersededとした |
+| `junit-platform-launcher`(テスト実行時) | 未知(Boot3では顕在化せず) | **6.0.3を明示** | `spring-boot-starter-test`4.0.7がバンドルする`junit-platform-launcher`が`junit-jupiter`(6.0.3)と噛み合わずNoSuchMethodErrorで全テストエンジンが起動失敗した(実測)。`resolutionStrategy.eachDependency`で明示的に揃える必要があった(`CLAUDE.md`落とし穴#16に記録) |
 
 ### 4.2 依存関係(`backend/build.gradle`)
 
@@ -110,41 +111,42 @@ Spring Boot 4はJackson 3(グループID `tools.jackson`。`jackson-annotations`
 
 ## 6. 更新する設計資料
 
-- [x] `.claude/06_adr/02_spring_boot_4_upgrade.md` — 本PRで新規作成(ADR、Status: Proposed。本PRマージ時にAcceptedへ更新)
-- [ ] `CLAUDE.md` — 技術スタック表の「Spring Boot 3.x」の更新に加え、「避けるべき落とし穴」#4
-      「`spring-data-dynamodb` を追加しない(Spring Boot 3非対応)」の文言もバージョン前提が
-      古くなるため実装PRで見直す(実装PRで完了後に反映。本Plan PRでは変更しない)
+- [x] `.claude/06_adr/02_spring_boot_4_upgrade.md` — Plan PR #104で新規作成、#104マージ時にAcceptedへ更新済み
+- [x] `.claude/06_adr/03_java25_bytecode_release_pin.md` — 実装PRで`options.release=21`を
+      解除できたため、Statusを`06_adr/04_java25_bytecode_release_pin_removed.md`への
+      `Superseded by`に更新
+- [x] `.claude/06_adr/04_java25_bytecode_release_pin_removed.md` — 実装PRで新規作成(上記の撤回を記録)
+- [x] `CLAUDE.md` — 技術スタック表を「Spring Boot 4.x」に更新。落とし穴#4の文言をバージョン非依存に
+      修正、落とし穴#16(release=21固定)を削除し、新たに判明したjunit-platform-launcherの
+      バージョン不整合について追記
 - [x] `.claude/01_development_docs/01_architecture_design.md` — #102(Java 25化)で「Spring Boot (Java 21)」→
       「Spring Boot (Java 25)」に更新済み。Spring Boot自体のバージョン番号は記載されていないため、
       本Issue(#103)での追加更新は不要と判明した
-- [ ] `.claude/03_library_docs/02_dynamodb_enhanced_client.md` — タイトル「DynamoDB × Spring Boot 3
-      実装パターン」のバージョン表記を実装PRで更新
-- [ ] `.claude/03_library_docs/04_react_router_patterns.md` — §5のSPAフォールバック実装が前提とする
-      「Spring Boot 3のPathPatternParserの制約」を実装PR着手時に再検証し、前提が変われば更新(§4.5参照)
+- [x] `.claude/03_library_docs/02_dynamodb_enhanced_client.md` — タイトルを「DynamoDB × Spring Boot 4
+      実装パターン」に更新
+- [x] `.claude/03_library_docs/04_react_router_patterns.md` — §5のPathPatternParser制約を
+      Spring Framework 7で再検証し、`**`はパターン末尾のみ許容という制約が変わっていないことを
+      確認した旨を追記(コード変更なし。§4.5参照)
 - [ ] `.claude/05_acceptance/01_acceptance_scope.md` — 対象外(§5参照)
 - [ ] `schema/openapi.yaml` — 対象外(API変更なし)
 - [ ] `.claude/01_development_docs/05_swiss_pairing_algorithm.md` — 対象外(仕様変更なし)
 
-> 上記のうちADR以外(CLAUDE.md・01_architecture_design.md・02_dynamodb_enhanced_client.md・
-> 04_react_router_patterns.md)の実際の書き換えは**実装PR**で行う(バージョン番号・制約の
-> 再検証結果は実装が完了して初めて確定するため)。本Plan PRではADRのみ新規作成する。
-
 ## 7. DoD(完了の定義)
 
-- [ ] `./gradlew check` が Java 25 / Spring Boot 4 / Gradle 9.6.1(#102で導入済み)の組み合わせで通る
-- [ ] `options.release = 21`(#102で導入、`CLAUDE.md`落とし穴#16、`06_adr/03_java25_bytecode_release_pin.md`)
-      を25に戻せるか検証する。戻せるなら削除し、`06_adr/03_java25_bytecode_release_pin.md`の
-      `Status`を撤回条件成立として`Superseded by`に更新し、`CLAUDE.md`落とし穴#16も削除する。
-      戻せない場合(制約が継続する場合)はADR 03の決定を維持し、変更しない
-- [ ] domain層のカバレッジ閾値(90%以上)を実装PRでも維持している
-- [ ] contractテスト・ArchUnitテストが全件グリーン
-- [ ] Jackson 2→3移行に伴うAPIレスポンスの挙動差分がないことをcontractテストで確認済み
-- [ ] Jackson 2→3の挙動差分がフロントエンドに影響しないことを、既存のE2Eクリティカルパス
-      またはフロントエンドのMSW/契約整合テストで確認済み
-- [ ] `jjwt-jackson` → `jjwt-gson` の差し替え後もJWT発行・検証が既存テストで確認済み
-- [ ] `CLAUDE.md`・`01_architecture_design.md`・`02_dynamodb_enhanced_client.md`・
-      `04_react_router_patterns.md`(該当する場合)のバージョン記載が実装PRで更新されている
-- [ ] ローカル実機で動作確認済み(`.claude/skills/verify`)
+- [x] `./gradlew check` が Java 25 / Spring Boot 4 / Gradle 9.6.1の組み合わせで通る(全206テストグリーン)
+- [x] `options.release = 21` を25に戻せることを確認し削除した。`06_adr/03_java25_bytecode_release_pin.md`の
+      `Status`を`06_adr/04_java25_bytecode_release_pin_removed.md`への`Superseded by`に更新し、
+      `CLAUDE.md`落とし穴#16も削除した
+- [x] domain層のカバレッジ閾値(90%以上)を実装PRでも維持している(`jacocoTestCoverageVerification`通過)
+- [x] contractテスト・ArchUnitテストが全件グリーン
+- [x] Jackson 2→3移行に伴うAPIレスポンスの挙動差分がないことをcontractテストで確認済み
+- [x] Jackson 2→3の挙動差分がフロントエンドに影響しないことを、既存のE2Eクリティカルパス
+      (Playwright、CP1〜CP7の全11件)で確認済み
+- [x] `jjwt-jackson` → `jjwt-gson` の差し替え後もJWT発行・検証が既存テストで確認済み(AuthApiTest全件グリーン)
+- [x] `CLAUDE.md`・`01_architecture_design.md`・`02_dynamodb_enhanced_client.md`・
+      `04_react_router_patterns.md`のバージョン記載が実装PRで更新されている
+- [x] ローカル実機で動作確認済み(`.claude/skills/verify`。DynamoDB Local + `bootRun --spring.profiles.active=local` +
+      Vite dev、Playwright E2E全11件グリーン)
 
 ## 8. リスク・未確定事項
 
@@ -157,11 +159,13 @@ Spring Boot 4はJackson 3(グループID `tools.jackson`。`jackson-annotations`
   移行を延期しBoot 3系に留まる。Issueをbacklogに戻し、次のマイナーバージョンで再挑戦する
 - **却下した代替**: Jackson 3対応を避けるため `spring.jackson.use-jackson2-defaults=true` で
   互換動作に留める案は、いずれ剥がす前提の暫定措置が増え「シンプルさ」に反するため却下(§4.3)
-- **`options.release = 21`固定の解除確認**: #102でSpring Boot 3.4.1のASM制約により導入した
-  この固定(`CLAUDE.md`落とし穴#16、決定の経緯は`06_adr/03_java25_bytecode_release_pin.md`)は、
-  Spring Framework 7がJava25のクラスファイル形式を読めるようになっていれば本Issueで削除できる
-  はずである。実装PR着手時に最初に確認すること(確認を怠ると、releaseだけ21のまま取り残され、
-  toolchainとreleaseの不一致が放置される)
+- **`options.release = 21`固定の解除確認(解消済み)**: 実装PRでSpring Framework 7がJava25の
+  クラスファイル形式を問題なく読めることを実測確認し、削除した(`06_adr/04_java25_bytecode_release_pin_removed.md`)
+- **想定外に発生した問題(実装PRで対応)**: `spring-boot-starter-test`4.0.7がバンドルする
+  `junit-platform-launcher`のバージョンが`junit-jupiter`(6.0.3)と噛み合わずNoSuchMethodErrorで
+  全テストエンジンが起動失敗した。通常の`dependencies{}`宣言・`resolutionStrategy.force`・
+  `dependencyManagement` DSLのいずれでも上書きされず、`resolutionStrategy.eachDependency`での
+  明示的な書き換えが必要だった(`CLAUDE.md`落とし穴#16に改題して記録)
 - 実装PRは1本にまとめる(スパイク調査は本Plan PRの技術設計セクションで完結させた。ユーザーの
   意向により、GitHubのStacked pull requestsは本Issueでは使用しない)
 - **中止条件に達した場合の切り戻し手順**: 実装ブランチをマージせずクローズし、

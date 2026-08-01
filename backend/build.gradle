@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'jacoco'
-    id 'org.springframework.boot' version '3.4.1'
+    id 'org.springframework.boot' version '4.0.7'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'com.diffplug.spotless' version '8.8.0'
     id 'info.solidsoft.pitest' version '1.19.0'
@@ -20,27 +20,36 @@ repositories {
     mavenCentral()
 }
 
-// コンパイル・テスト実行はJDK 25(toolchain)で行うが、生成するバイトコードはJava 21相当に
-// 留める(release)。Spring Boot 3.4.1(Spring Framework 6.2系)のクラスパススキャン(ASMベースの
-// SimpleMetadataReader)はJava 25のクラスファイル形式(major version 69)をまだ認識できず、
-// ClassFormatExceptionで全@SpringBootTestが起動失敗する(実測)。Spring Boot 4系への
-// 移行(#103, `06_adr/02_spring_boot_4_upgrade.md`)まではreleaseを21に固定する
-// (決定の経緯は `06_adr/03_java25_bytecode_release_pin.md`)。
-//
+// Spring Bootが内部的に管理するjunit-platform-launcherのバージョンが1.14.2のまま
+// junit-jupiter(6.0.3)側に追随しておらず、全テストエンジンがNoSuchMethodErrorで
+// 起動失敗する(実測)。通常のdependencies{}宣言・resolutionStrategy.force・
+// dependencyManagement DSLのいずれでも上書きされず、resolutionStrategy.eachDependency
+// による明示的な書き換えでのみ効果があった。
+configurations.all {
+    resolutionStrategy.eachDependency { details ->
+        if (details.requested.group == 'org.junit.platform'
+            && details.requested.name == 'junit-platform-launcher') {
+            details.useVersion('6.0.3')
+            details.because('junit-jupiter 6.0.3との組み合わせに必要(実測でNoSuchMethodError)')
+        }
+    }
+}
+
 // Spring Bootプラグインが自動付与する -parameters はVSCode(Eclipse JDT)のビルドに
 // 伝わらないため明示する(省略時、名前なし @PathVariable の解決が実行時に失敗する)
 tasks.withType(JavaCompile).configureEach {
-    options.release = 21
     options.compilerArgs << '-parameters'
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+    // Spring Boot 4のモジュール分割でartifact名が変わった(01_architecture_design.md、
+    // 06_adr/02_spring_boot_4_upgrade.md)
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
     // Google OAuth2ログイン(13_security_design.md §2。セッションJWTは自前のjjwtで発行)
-    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-client'
 
     // IPベースの簡易レート制限(13_security_design.md §5。共有トークンのブルートフォース対策)
     implementation 'com.bucket4j:bucket4j-core:8.10.1'
@@ -49,24 +58,32 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine:3.2.0'
 
     // DynamoDB (AWS SDK for Java v2 Enhanced Client)
-    // 注: spring-data-dynamodb(boostchicken)は Spring Boot 3 非対応のため使用しない
-    implementation platform('software.amazon.awssdk:bom:2.29.45')
+    implementation platform('software.amazon.awssdk:bom:2.42.26')
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
 
     // ULID生成(純Javaライブラリ。domain層での使用可)
     implementation 'com.github.f4b6a3:ulid-creator:5.2.3'
 
-    // JWT(運営者セッションCookie。Google OAuth2はPhase 5で追加)
-    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+    // JWT(運営者セッションCookie)。jjwt-jacksonはJackson 2依存でSpring Boot 4のJackson 3と
+    // 競合するため、GSON実装(jjwt-gson)に差し替える(06_adr/02_spring_boot_4_upgrade.md)
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.7'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.7'
+    runtimeOnly 'io.jsonwebtoken:jjwt-gson:0.12.7'
 
-    // 構造化ログ(JSON。06_error_handling_design.md §3)
-    implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
+    // 構造化ログ(JSON。06_error_handling_design.md §3)。9.0以降でJackson 3に対応
+    implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // Spring Boot 4のテスト基盤モジュール分割に伴い明示追加(06_adr/02_spring_boot_4_upgrade.md)。
+    // starterごとに対応するtest starterが用意されており、MockMvcは
+    // spring-boot-starter-webmvc-testが提供する
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    // TestRestTemplateはspring-boot-resttestclientが提供する。restclientへの実行時依存は
+    // 自動で付随しないため明示する(spring-boot#48588)
+    testImplementation 'org.springframework.boot:spring-boot-resttestclient'
+    testRuntimeOnly 'org.springframework.boot:spring-boot-restclient'
     testImplementation 'net.jqwik:jqwik:1.9.2'
-    testImplementation 'com.tngtech.archunit:archunit-junit5:1.3.0'
+    testImplementation 'com.tngtech.archunit:archunit-junit5:1.4.2'
     // contractテストのOpenAPIスキーマ検証(schema/openapi.yaml がAPI契約のSSoT)
     testImplementation 'com.atlassian.oai:swagger-request-validator-mockmvc:2.44.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

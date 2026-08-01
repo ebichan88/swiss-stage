@@ -3,8 +3,6 @@ package com.swiss_stage.unit.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.swiss_stage.domain.model.Match;
 import com.swiss_stage.domain.model.MatchResult;
 import com.swiss_stage.domain.model.Participant;
@@ -29,6 +27,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * マッチング・順位計算の回帰検知テスト(characterization test)。
@@ -52,8 +52,8 @@ class CharacterizationTest {
 
   private static final Path SNAPSHOT_DIR =
       Path.of("src/test/resources/characterization").toAbsolutePath();
-  private static final ObjectMapper MAPPER =
-      new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+  private static final JsonMapper MAPPER =
+      JsonMapper.builder().enable(SerializationFeature.INDENT_OUTPUT).build();
 
   @Test
   void 個人戦の固定シナリオが回帰していない() throws IOException {

@@ -6,19 +6,19 @@ import com.atlassian.oai.validator.report.LevelResolver;
 import com.atlassian.oai.validator.report.ValidationReport;
 import com.atlassian.oai.validator.whitelist.ValidationErrorsWhitelist;
 import com.atlassian.oai.validator.whitelist.rule.WhitelistRules;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swiss_stage.presentation.auth.JwtSessionSupport;
 import jakarta.servlet.http.Cookie;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.ResultActions;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 /** APIコントラクトテストの共通基盤。 リポジトリはインメモリ実装に差し替え、統一レスポンス・ステータスコード・認可を検証する。 */
 @SpringBootTest
@@ -54,7 +54,7 @@ public abstract class ApiContractTestSupport {
           .build();
 
   @Autowired protected MockMvc mockMvc;
-  @Autowired protected ObjectMapper objectMapper;
+  @Autowired protected JsonMapper objectMapper;
   @Autowired protected JwtSessionSupport jwtSessionSupport;
 
   /** 認証済みCookie(JWTを直接発行。test-loginエンドポイント自体のテストはAuthApiTest) */
