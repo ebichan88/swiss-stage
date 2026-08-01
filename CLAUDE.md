@@ -92,6 +92,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 14. `package.json` の依存を変更したら `pnpm install` で `pnpm-lock.yaml` を再生成しコミットに含める(CIの `pnpm/action-setup` は `packageManager` フィールドからバージョンを読むため、ローカルと同じpnpmバージョンで解決される)
 15. コントローラーの `@PathVariable`/`@RequestParam` 等は名前を必ず明示する(省略すると `-parameters` フラグ依存になり、VSCode(Eclipse JDT)ビルドで起動したときだけ実行時エラー。ArchUnitで強制済み)
 16. `spring-boot-starter-test` 4系がバンドルする `junit-platform-launcher` のバージョンが `junit-jupiter` と噛み合わないことがある(実測でNoSuchMethodError)。`backend/build.gradle` の `resolutionStrategy.eachDependency` で明示的に揃えている設定を外さない(決定の経緯は `06_adr/05_junit_platform_launcher_pin.md`)
+17. 外部のskillを `.claude/skills/` に入れる前に SKILL.md を通読し、前提スタックを確認する。**「どのルールを無視すべきか」を毎回確認しないと使えないものは採用しない**(逸脱が沈黙のうちに規約違反を生むため)。例: `baseline-ui` は Tailwind + Base UI/Radix + `motion/react` 前提で、`02_design_system/03_animation_system.md` のアニメーションライブラリ追加禁止と衝突するため不採用(`06_adr/06_design_system_direction.md`)
 
 ## プロジェクトドキュメントガイド
 

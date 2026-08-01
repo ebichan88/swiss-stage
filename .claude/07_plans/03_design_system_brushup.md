@@ -324,14 +324,22 @@ Prefix は `SHR`(共有)。既存最大 `SHR-AC-017` の次から採番する。
 
 本計画は挙動を変えないため、新規ケースは**改装で壊れやすい不変条件を機械検査に落とすもの**に限る。
 これは #112 のアクセシビリティ成果を回帰から守り、「うまくいかなければ切り戻す」判断を
-安全にするためのガードでもある。いずれもテーマトークンに対する純粋な検証で、
-レイアウト計測に依存しない(jsdom では実レイアウトを測れないため)。
+安全にするためのガードでもある。
+
+検証の性質は2種類に分かれる。**いずれもレイアウト計測に依存しない**
+(jsdom では実レイアウトを測れないため、タップ領域44px等は自動検査の対象にしない)。
+
+1. **テーマトークンそのものの検証**(SHR-AC-018 / 019)— `theme` オブジェクトの値を直接読む
+   純関数的なテスト。レンダリング不要
+2. **コンポーネントの描画内容の検証**(SHR-AC-020)— `SharedMatchCard` のマークアップに
+   記号が出ているかを Testing Library で確認する。色の値ではなく**記号の存在**を見るため、
+   パレットを変更しても壊れない
 
 | ID | P | 受け入れ基準 | 検証手段 |
 |---|---|---|---|
-| SHR-AC-018 | P1 | 共有ページ・結果入力ページの本文タイポグラフィ(body1)が16px以上である | Vitest |
-| SHR-AC-019 | P1 | テーマで定義した文字色と背景色の主要な組み合わせがWCAG AA(4.5:1)以上のコントラスト比を満たす | Vitest |
-| SHR-AC-020 | P1 | 共有ページの対局カードは勝敗を色だけでなく記号(○/●)で併記する | Vitest |
+| SHR-AC-018 | P1 | 共有ページ・結果入力ページの本文タイポグラフィ(body1)が16px以上である | theme.test(Vitest) |
+| SHR-AC-019 | P1 | テーマで定義した文字色と背景色の主要な組み合わせがWCAG AA(4.5:1)以上のコントラスト比を満たす | theme.test(Vitest) |
+| SHR-AC-020 | P1 | 共有ページの対局カードは勝敗を色だけでなく記号(○/●)で併記する | SharedPage.test(Vitest) |
 
 - SHR-AC-019 の「主要な組み合わせ」は最低限次を含む:
   `text.primary`/`background.default`、`text.primary`/`background.paper`、
@@ -351,6 +359,7 @@ Prefix は `SHR`(共有)。既存最大 `SHR-AC-017` の次から採番する。
 - [x] `.claude/06_adr/06_design_system_direction.md` — 方針転換のADR(このPR)
 - [x] `.claude/05_acceptance/01_acceptance_scope.md` — SHR-AC-018〜020 を Status=todo で追加(このPR)
 - [x] `.claude/skills/frontend-design/`(SKILL.md + LICENSE.txt)— skill追加(このPR。§4-4)
+- [x] `CLAUDE.md` — 「避けるべき落とし穴」17 に外部skillの採用条件を追記(このPR。ADR §2-4)
 - [ ] `.claude/02_design_system/01_design_principles.md` — **実装PR**。新パレット・タイポスケール・
       角丸/影の方針。`theme/index.ts` と同期させる
 - [ ] `.claude/02_design_system/00_basic_design.md` — **実装PR**。§4 の「運営者管理画面はMUI標準に
