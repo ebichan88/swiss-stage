@@ -5,9 +5,9 @@ import { paths } from '../routes';
 
 export function NotFoundPage() {
   return (
-    <Container maxWidth="sm">
+    <Container component="main" maxWidth="sm">
       <Box sx={{ py: 8, textAlign: 'center' }}>
-        <Typography variant="h2" gutterBottom>
+        <Typography variant="h2" component="h1" gutterBottom>
           ページが見つかりません
         </Typography>
         <Button component={Link} to={paths.top} variant="outlined" sx={{ mt: 2 }}>

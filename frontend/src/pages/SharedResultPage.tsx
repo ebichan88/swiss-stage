@@ -59,7 +59,7 @@ export function SharedResultPage() {
 
   if (round === null || match === null || match.player2 === null) {
     return (
-      <Container maxWidth="sm" sx={{ py: 4 }}>
+      <Container component="main" maxWidth="sm" sx={{ py: 4 }}>
         {backButton}
         <Typography variant="body1" sx={{ mt: 2 }}>
           対局が見つかりません。組み合わせを確認してください。
@@ -109,7 +109,7 @@ export function SharedResultPage() {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ py: 4 }}>
+    <Container component="main" maxWidth="sm" sx={{ py: 4 }}>
       {backButton}
       <Card variant="outlined" sx={{ mt: 2 }}>
         <CardContent>

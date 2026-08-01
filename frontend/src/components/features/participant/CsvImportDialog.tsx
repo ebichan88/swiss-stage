@@ -155,7 +155,9 @@ export function CsvImportDialog({ open, loading, error, onImport, onClose }: Csv
                 <TableHead>
                   <TableRow>
                     {preview.header.map((cell, i) => (
-                      <TableCell key={i}>{cell}</TableCell>
+                      <TableCell key={i} scope="col">
+                        {cell}
+                      </TableCell>
                     ))}
                   </TableRow>
                 </TableHead>

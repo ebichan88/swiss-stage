@@ -140,7 +140,7 @@ export function SharedPage() {
   if (isError) {
     if (error instanceof ApiError && error.code === 'INVALID_SHARE_TOKEN') {
       return (
-        <Container maxWidth="sm" sx={{ py: 8, textAlign: 'center' }}>
+        <Container component="main" maxWidth="sm" sx={{ py: 8, textAlign: 'center' }}>
           <Typography variant="h2" component="h1" gutterBottom>
             このURLは無効です
           </Typography>
@@ -184,7 +184,7 @@ function IndividualSharedPage({ token, data }: IndividualSharedPageProps) {
     currentRound.status !== 'CONFIRMED';
 
   return (
-    <Container maxWidth="md" sx={{ py: 3 }}>
+    <Container component="main" maxWidth="md" sx={{ py: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
         <Typography variant="h2" component="h1">
           {tournament.name}

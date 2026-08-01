@@ -63,7 +63,7 @@ export function SharedTeamResultPage() {
 
   if (round === null || match === null || match.team2 === null) {
     return (
-      <Container maxWidth="sm" sx={{ py: 4 }}>
+      <Container component="main" maxWidth="sm" sx={{ py: 4 }}>
         {backButton}
         <Typography variant="body1" sx={{ mt: 2 }}>
           対局が見つかりません。組み合わせを確認してください。
@@ -133,7 +133,7 @@ export function SharedTeamResultPage() {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ py: 4 }}>
+    <Container component="main" maxWidth="sm" sx={{ py: 4 }}>
       {backButton}
       <Card variant="outlined" sx={{ mt: 2 }}>
         <CardContent>

@@ -5,7 +5,7 @@ import { paths } from '../routes';
 
 export function TopPage() {
   return (
-    <Container maxWidth="sm">
+    <Container component="main" maxWidth="sm">
       <Box sx={{ py: 8, textAlign: 'center' }}>
         <Typography variant="h1" gutterBottom>
           Swiss Stage

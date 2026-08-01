@@ -73,6 +73,7 @@ export function TournamentLayout() {
       {isDesktop && (
         <Box
           component="nav"
+          aria-label="大会メニュー"
           sx={{ width: SIDEBAR_WIDTH, flexShrink: 0, borderRight: 1, borderColor: 'divider' }}
         >
           <List>
@@ -82,6 +83,7 @@ export function TournamentLayout() {
                 component={Link}
                 to={item.to}
                 selected={index === currentIndex}
+                aria-current={index === currentIndex ? 'page' : undefined}
               >
                 <ListItemIcon>{item.icon}</ListItemIcon>
                 <ListItemText primary={item.label} />
@@ -101,6 +103,8 @@ export function TournamentLayout() {
       </Container>
       {!isDesktop && (
         <Paper
+          component="nav"
+          aria-label="大会メニュー"
           sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 'appBar' }}
           elevation={3}
         >
@@ -115,8 +119,13 @@ export function TournamentLayout() {
               '& .MuiBottomNavigationAction-label': { fontSize: 'caption.fontSize' },
             }}
           >
-            {navItems.map((item) => (
-              <BottomNavigationAction key={item.to} label={item.label} icon={item.icon} />
+            {navItems.map((item, index) => (
+              <BottomNavigationAction
+                key={item.to}
+                label={item.label}
+                icon={item.icon}
+                aria-current={index === currentIndex ? 'page' : undefined}
+              />
             ))}
           </BottomNavigation>
         </Paper>
