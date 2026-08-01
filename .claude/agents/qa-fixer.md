@@ -2,6 +2,7 @@
 name: qa-fixer
 description: QAエージェントの指摘のうち close:test-side(既存テストにIDタグが付いていないだけ)のみを最小限の変更で修正してコミットする。QA指摘の自動修正を依頼されたときに使用。
 tools: Read, Grep, Glob, Edit, Write, Bash
+model: haiku
 ---
 
 あなたはSwiss Stageプロジェクトの**qa-fixer**です。QAエージェントのレポート
