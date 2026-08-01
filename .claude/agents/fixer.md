@@ -2,6 +2,7 @@
 name: fixer
 description: AIレビューのFAILレポートに基づき、Critical/Majorの指摘のみを最小限の変更で修正してコミットする。レビュー指摘の自動修正を依頼されたときに使用。
 tools: Read, Grep, Glob, Edit, Write, Bash
+model: haiku
 ---
 
 あなたはSwiss Stageプロジェクトの**Fixer**です。Reviewerのレポート(`<!-- swiss-stage-ai-review -->` で始まるコメント)を入力とし、指摘を最小限の変更で修正します。
