@@ -15,8 +15,6 @@
 
 | 領域 | 技術 |
 |------|------|
-| フロントエンド | React 19 + TypeScript + Vite + Material-UI + React Router v7 + TanStack Query |
-| バックエンド | Java 25 + Spring Boot 4.x + Gradle 9 |
 | データベース | DynamoDB(シングルテーブル設計、AWS SDK v2 Enhanced Client) |
 | インフラ | AWS(EC2 t3.micro + ALB + Route53 + CloudWatch)、予算 ~$17/月 |
 | 認証 | Google OAuth2 + JWT Cookie(運営者)/ 共有トークン(参加者) |
@@ -63,12 +61,9 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 
 ## API・データ規約(要点)
 
-- **API契約(エンドポイント・DTO・enum)は `schema/openapi.yaml` が唯一の正**。変更はスキーマが先(contractテストとCIが実装・生成型との一致を機械検査。`07_type_definitions.md`)
-- ベースパス `/api/v1`、レスポンスは統一フォーマット(`success`/`data`/`error`)。エラーコードは `06_error_handling_design.md` の表に従う
-- ID は ULID 文字列。日時は ISO8601 文字列。JSONは camelCase
-- 更新系は `version` による楽観ロック(競合は409)
-- DynamoDBキー: `PK=TOURNAMENT#{id}`, `SK=METADATA|PARTICIPANT#…|ROUND#nn#MATCH#…`
-- 順位(Standing)は保存せず都度計算(domain/service/StandingCalculator)
+- **API契約(エンドポイント・DTO・enum)は `schema/openapi.yaml` が唯一の正**。変更はスキーマが先(`07_type_definitions.md`)
+- ID は ULID 文字列。更新系は `version` による楽観ロック(競合は409)
+- 順位(Standing)は保存せず都度計算する
 
 ## テスト方針(要点)
 
@@ -100,78 +95,23 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 
 ## プロジェクトドキュメントガイド
 
-### 📋 プロジェクト要件
-- `.claude/00_project/01_appcadia_concept_requirements.md` — コンセプト・要求定義(最上位の判断基準)
-- `.claude/00_project/02_inception_deck.md` — ビジョン・やらないこと・トレードオフ
-- `.claude/00_project/03_feature_plan_template.md` — **機能追加プランの必須形式(Planモードで従う)**
-- `.claude/00_project/04_development_process.md` — **開発プロセスの正典。Issue→Plan PR→実装PRの流れ、分類ごとのADR・受け入れケースの要否**
+`.claude/` 配下は番号+内容が分かるファイル名(例: `05_swiss_pairing_algorithm.md`)。詳細は該当ディレクトリを直接見る。迷ったときの入口だけ挙げる:
 
-### 🏗️ 技術設計(.claude/01_development_docs/)
-- `01_architecture_design.md` — DDDレイヤー構造と責任、ロジック配置基準
-- `02_database_design.md` — DynamoDBシングルテーブル設計、アクセスパターン
-- `03_api_design.md` — API基本方針・レスポンス形式・設計ルール(エンドポイント定義は `schema/openapi.yaml`)
-- `04_screen_transition_design.md` — 画面一覧・遷移図・UXルール
-- `05_swiss_pairing_algorithm.md` — **スイス方式マッチング・順位計算の仕様(心臓部)**
-- `06_error_handling_design.md` — エラーコード表、例外階層、表示方法
-- `07_type_definitions.md` — 型・スキーマ運用(定義のSSoTは `schema/openapi.yaml`。変更手順・命名規約・DTO分離)
-- `08_development_setup.md` — 環境構築、コマンド、Git運用
-- `09_test_strategy.md` — カバレッジ目標、層別テスト方針
-- `10_frontend_design.md` — コンポーネント設計、状態管理(TanStack Query)
-- `11_cicd_design.md` — GitHub Actions、デプロイ手順
-- `12_e2e_test_design.md` — クリティカルパス定義、Playwrightルール
-- `13_security_design.md` — 認証認可、共有トークン、個人情報保護
-- `14_performance_optimization.md` — キャッシュ戦略、負荷特性、目標値
-- `15_performance_monitoring.md` — CloudWatch監視、大会当日の運用手順
+- `00_project/` — 要件・開発プロセス。**03_feature_plan_template.md**(Planモードで従う必須形式)/ **04_development_process.md**(Issue→Plan PR→実装PRの正典)
+- `01_development_docs/` — 技術設計。**05_swiss_pairing_algorithm.md**(マッチング・順位計算の仕様。心臓部)
+- `02_design_system/` — デザインシステム。UI実装前に **00_basic_design.md** から
+- `03_library_docs/` — MUI・DynamoDB Enhanced Client・React Routerの落とし穴対策
+- `04_quality/` — AIレビュー観点(`01_review_checklist.md`)・Critical/Major/Minor基準(`02_severity.md`)
+- `05_acceptance/` — 受け入れケース台帳(`01_acceptance_scope.md`)。contractテスト・PlaywrightとIDで紐づく
+- `06_adr/` — ADR(決定記録)。書き換えず `Superseded by` で積む
+- `07_plans/` — Plan PRの実装計画の実体。実装完了で `Status: done`
 
-### 🎨 デザインシステム(.claude/02_design_system/)
-- `00_basic_design.md` — 概要・クイックスタート(**UI実装前にまず読む**)
-- `01_design_principles.md` — カラー・タイポグラフィ・スペーシングのトークン
-- `02_component_design.md` — ボタン・表・フォーム等の使い分け
-- `03_animation_system.md` — 動きのルール(控えめ・確実)
-- `04_layout_system.md` — ブレークポイント・ページ構造
-
-### 📚 ライブラリ対策(.claude/03_library_docs/)
-- `01_mui_patterns.md` — MUIテーマ・sx・Dialog・RHF接続の標準形
-- `02_dynamodb_enhanced_client.md` — Enhanced Client実装パターン・落とし穴
-- `03_dynamodb_local_testing.md` — DynamoDB Localテスト・CI設定
-- `04_react_router_patterns.md` — ルート定義・認証ガード・SPAフォールバック
-
-### ✅ 受け入れ基準(.claude/05_acceptance/)
-- `00_acceptance_policy.md` — 受け入れケースのID体系・優先度・テスト紐づけの運用ルール
-- `01_acceptance_scope.md` — 受け入れケース台帳(コンポーネント別・優先度付き・Status管理)。contractテストの `@DisplayName` / PlaywrightのテストタイトルとIDで紐づく
-
-### 📝 決定記録・実装計画(.claude/06_adr/・.claude/07_plans/)
-- `.claude/06_adr/NN_*.md` — ADR(決定記録)。後から覆すのが高くつく決定・複数案から1つを選んだ決定の経緯と却下案(条件は `04_development_process.md` §3)。書き換えず `Superseded by` で積む
-- `.claude/07_plans/NN_*.md` — Plan PRで作成する実装計画の実体(形式は `03_feature_plan_template.md`)。実装完了で `Status: done` に更新して凍結
-- ファイル名・ヘッダ(`Status`/`Issue`/`Date`または`PR`)は `.github/scripts/docs-lint.py` が機械検査する
-
-### 🔍 品質基準・AIレビュー(.claude/04_quality/)
-- `01_review_checklist.md` — AIレビューの観点(機械検査できない項目のみ。lint/ArchUnitで検査可能なものは載せない)
-- `02_severity.md` — Critical/Major/Minorの定義とPASS/FAIL判定基準
-- Reviewer本体は `.claude/agents/reviewer.md`、Fixer本体は `.claude/agents/fixer.md`、CI連携は `.github/workflows/ai-review.yml`(PRごとに自動レビュー。FAIL時はCritical/MajorのみFixerが自動修正 → 再レビュー。上限3回・domain/serviceは聖域・行き詰まったら `needs-human` ラベルで人間へ)
-- QA本体は `.claude/agents/qa.md`、CI連携は `.github/workflows/ai-qa.yml`(PRごとに受け入れケース台帳と差分を突合。**VERDICT: FAILはジョブを失敗させるゲート**。各指摘に `close:` 分類を付け、`test-side`〈既存テストのIDタグ欠落〉のみ qa-fixer が自動修正。`ledger-side`〈台帳更新〉・`human-only`〈基準hack等〉は常に人間)
-- qa-fixer本体は `.claude/agents/qa-fixer.md`(上限2回・台帳自体は聖域として触れない)
-- ci-fixer本体は `.claude/agents/ci-fixer.md`、CI連携は `.github/workflows/ci.yml` の `autofix` ジョブ(決定論的修正〈prettier/generate:api/spotlessApply〉で直らないCI失敗〈型エラー・テスト失敗〉のみAIに委譲。カバレッジ不足は常に人間・上限2回・行き詰まったら `needs-human` ラベルで人間へ)
-- design-reviewer本体は `.claude/agents/design-reviewer.md`、CI連携は `.github/workflows/ai-design-review.yml`(`.claude/**`/`schema/**`/`CLAUDE.md`を変更したPRのみ起動。設計ドキュメント同士の意味的な矛盾を検出。非ゲート・レポートのみ)
+### AIエージェント連携
+- AIレビュー(Reviewer→Fixer)は `.claude/agents/reviewer.md` / `fixer.md`、CI連携は `.github/workflows/ai-review.yml`
+- QAは `.claude/agents/qa.md`(受け入れケース台帳と差分を突合)、CI連携は `.github/workflows/ai-qa.yml`。指摘の自動修正は `.claude/agents/qa-fixer.md`
+- ci-fixerは `.claude/agents/ci-fixer.md`、CI連携は `.github/workflows/ci.yml` の `autofix` ジョブ
+- design-reviewerは `.claude/agents/design-reviewer.md`、CI連携は `.github/workflows/ai-design-review.yml`
 - 受け入れケース台帳のID整合・ファイル参照切れの機械検査は `.github/scripts/docs-lint.py`(CIの`frontend`ジョブ)
-
-### クイックリファレンスマップ
-
-| タスク | 参照ドキュメント |
-|-------|----------------|
-| 新機能の追加 | **04_development_process に従い Issue → Plan PR**(03_feature_plan_template でプランを立てる)→ 受け入れ台帳(05_acceptance)にケース追加 → アーキテクチャ → DB設計 → API設計 → フロントエンド設計 |
-| マッチング・順位計算の実装/修正 | **05_swiss_pairing_algorithm** → テスト戦略 |
-| APIエンドポイント追加 | API設計 → エラーハンドリング → 型定義 |
-| DynamoDBの操作追加 | DB設計 → Enhanced Client → DynamoDB Localテスト |
-| 画面の新規作成 | 画面遷移設計 → フロントエンド設計 → デザインシステム(00から) |
-| UIコンポーネント実装 | コンポーネント設計 → MUIパターン → デザイン原則 |
-| フォーム実装 | コンポーネント設計(§4) → MUIパターン(§5) → エラーハンドリング |
-| テスト作成 | テスト戦略 → (層に応じて)DynamoDB Localテスト |
-| E2Eテスト | E2Eテスト設計 → 画面遷移設計 |
-| 認証・認可・共有トークン | セキュリティ設計 → API設計 |
-| エラー処理 | エラーハンドリング → 型定義 |
-| パフォーマンス改善 | パフォーマンス最適化 → 監視 |
-| デプロイ・CI | CI/CD設計 → 開発セットアップ |
 
 ## ドキュメント運用ルール
 
