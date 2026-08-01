@@ -1,6 +1,6 @@
 # 03. Java 25対応時のバイトコードrelease固定(Spring Boot 4移行までの暫定措置)
 
-- Status: Accepted
+- Status: Superseded by 04_java25_bytecode_release_pin_removed.md
 - Issue: #102
 - Date: 2026-08-01
 

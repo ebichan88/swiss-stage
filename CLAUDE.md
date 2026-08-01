@@ -16,7 +16,7 @@
 | 領域 | 技術 |
 |------|------|
 | フロントエンド | React 19 + TypeScript + Vite + Material-UI + React Router v7 + TanStack Query |
-| バックエンド | Java 25 + Spring Boot 3.x + Gradle 9 |
+| バックエンド | Java 25 + Spring Boot 4.x + Gradle 9 |
 | データベース | DynamoDB(シングルテーブル設計、AWS SDK v2 Enhanced Client) |
 | インフラ | AWS(EC2 t3.micro + ALB + Route53 + CloudWatch)、予算 ~$17/月 |
 | 認証 | Google OAuth2 + JWT Cookie(運営者)/ 共有トークン(参加者) |
@@ -82,7 +82,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 1. **マッチングの絶対制約を破らない**: 再戦禁止・BYE重複禁止(`05_swiss_pairing_algorithm.md`)
 2. **フロントで順位計算・マッチングをしない**(表示専用。計算はバックエンドのみ)
 3. domain層に Spring/AWS SDK を import しない
-4. `spring-data-dynamodb` を追加しない(Spring Boot 3非対応)
+4. `spring-data-dynamodb` を追加しない(boostchicken製、Spring Boot 3以降のいずれのバージョンにも対応していない)
 5. DynamoDB Local は `-sharedDb` 必須(ないと認証情報ごとにDBが分かれて「テーブルがない」事故)
 6. `@DynamoDbBean` はgetterにアノテーション。楽観ロックはEnhanced Client経由のみ有効
 7. MUI: `textTransform: 'none'` をテーマ設定、アイコンは個別import、色・余白のハードコード禁止
@@ -96,7 +96,7 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 13. 順序・優先度に意味のあるenumはordinal(宣言順)に依存しない。明示的な数値フィールド(`sortOrder` 等)で比較し、宣言順との整合をテストで検証する(例: `Rank`)
 14. `package.json` の依存を変更したら `pnpm install` で `pnpm-lock.yaml` を再生成しコミットに含める(CIの `pnpm/action-setup` は `packageManager` フィールドからバージョンを読むため、ローカルと同じpnpmバージョンで解決される)
 15. コントローラーの `@PathVariable`/`@RequestParam` 等は名前を必ず明示する(省略すると `-parameters` フラグ依存になり、VSCode(Eclipse JDT)ビルドで起動したときだけ実行時エラー。ArchUnitで強制済み)
-16. `backend/build.gradle` の `tasks.withType(JavaCompile) { options.release = 21 }` を外さない(Spring Boot 4系への移行(`06_adr/02_spring_boot_4_upgrade.md`)まで。決定の経緯は `06_adr/03_java25_bytecode_release_pin.md`)。Spring Boot 3.4.1のクラスパススキャン(ASMベースの`SimpleMetadataReader`)がJava 25のクラスファイル形式(major version 69)を認識できず、外すと全`@SpringBootTest`が`ClassFormatException`で起動失敗する(実測)。Spring Boot 4移行時にこの制約を解除できるか再検証すること
+16. `spring-boot-starter-test` 4系がバンドルする `junit-platform-launcher` のバージョンが `junit-jupiter` と噛み合わないことがある(実測でNoSuchMethodError)。`backend/build.gradle` の `resolutionStrategy.eachDependency` で明示的に揃えている設定を外さない(決定の経緯は `06_adr/05_junit_platform_launcher_pin.md`)
 
 ## プロジェクトドキュメントガイド
 

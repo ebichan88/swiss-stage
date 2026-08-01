@@ -57,7 +57,7 @@ Google Spreadsheet + GAS による試作で「スマホから対局結果を送�
 ## 5. 技術的な解決策の概要
 
 - フロントエンド: React 19 + TypeScript + Vite + Material-UI (SPA)
-- バックエンド: Java 25 + Spring Boot 3.x (REST API)
+- バックエンド: Java 25 + Spring Boot 4.x (REST API)
 - データベース: DynamoDB (シングルテーブル設計)
 - インフラ: AWS (EC2 + ALB + Route53 + CloudWatch)
 - 認証: Google OAuth2 (運営者) / 参照URLトークン (参加者)

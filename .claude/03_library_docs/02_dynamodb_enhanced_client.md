@@ -1,4 +1,4 @@
-# DynamoDB × Spring Boot 3 実装パターン(AWS SDK v2 Enhanced Client)
+# DynamoDB × Spring Boot 4 実装パターン(AWS SDK v2 Enhanced Client)
 
 ## 1. 依存関係
 

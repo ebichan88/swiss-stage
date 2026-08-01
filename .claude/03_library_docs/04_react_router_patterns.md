@@ -104,8 +104,10 @@ export const paths = {
 - **Spring Boot側で「`/api/**` 以外の未マッチパスは `index.html` を返す」フォールバックが必須**
 - 実装: `presentation/WebMvcConfig#addResourceHandlers`。`PathResourceResolver` を継承した
   フォールバックリゾルバで、存在しないパス(`api/` 以外)を `index.html` に解決する
-  (Spring Boot 3のPathPatternParserでは `/**/{path}` 形式のコントローラマッピングが使えないため、
-  リソースハンドラ方式を採用。デフォルトの静的マッピングは `spring.web.resources.add-mappings=false` で無効化)
+  (PathPatternParserでは `**` はパターン末尾でのみ許容され `/**/{path}` 形式のコントローラ
+  マッピングが使えないため、リソースハンドラ方式を採用。この制約はSpring Framework 7でも
+  変わらないことをSpring Boot 4移行時に再確認済み(#103)。デフォルトの静的マッピングは
+  `spring.web.resources.add-mappings=false` で無効化)
 - Cache-Control もここで設定: `/assets/**`(ハッシュ付き)= 1年 + immutable / それ以外 = no-cache
 - ルート `/` は `addViewControllers` で `forward:/index.html`
 - 契約テスト: `contract/SpaFallbackApiTest`(テスト用 index.html は `src/test/resources/static/`)
