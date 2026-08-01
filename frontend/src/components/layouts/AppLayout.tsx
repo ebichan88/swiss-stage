@@ -58,7 +58,9 @@ export function AppLayout() {
           </Button>
         </Toolbar>
       </AppBar>
-      <Outlet />
+      <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        <Outlet />
+      </Box>
     </Box>
   );
 }

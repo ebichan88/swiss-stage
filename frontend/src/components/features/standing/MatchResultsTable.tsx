@@ -56,36 +56,48 @@ export function MatchResultsTable({ rounds, standings }: MatchResultsTableProps)
           }}
         >
           <TableRow>
-            <TableCell rowSpan={2}>No.</TableCell>
-            <TableCell rowSpan={2}>氏名(所属)</TableCell>
-            <TableCell rowSpan={2}>段級位</TableCell>
+            <TableCell rowSpan={2} scope="col">
+              No.
+            </TableCell>
+            <TableCell rowSpan={2} scope="col">
+              氏名(所属)
+            </TableCell>
+            <TableCell rowSpan={2} scope="col">
+              段級位
+            </TableCell>
             {rounds.map((round) => (
-              <TableCell key={round.roundNumber} align="center" colSpan={2}>
+              <TableCell key={round.roundNumber} align="center" colSpan={2} scope="colgroup">
                 第{round.roundNumber}ラウンド
               </TableCell>
             ))}
-            <TableCell rowSpan={2} align="right">
+            <TableCell rowSpan={2} align="right" scope="col">
               勝点
             </TableCell>
-            <TableCell rowSpan={2} align="right">
+            <TableCell rowSpan={2} align="right" scope="col">
               <TableHeaderTooltip
                 label="SOS"
                 tooltip="Sum of Opponents' Scores：対戦相手の勝点を合計したもの"
               />
             </TableCell>
-            <TableCell rowSpan={2} align="right">
+            <TableCell rowSpan={2} align="right" scope="col">
               <TableHeaderTooltip
                 label="SOSOS"
                 tooltip="Sum of Opponents' SOS：対戦相手の SOS を合計したもの"
               />
             </TableCell>
-            <TableCell rowSpan={2}>順位</TableCell>
+            <TableCell rowSpan={2} scope="col">
+              順位
+            </TableCell>
           </TableRow>
           <TableRow>
             {rounds.map((round) => (
               <Fragment key={round.roundNumber}>
-                <TableCell align="center">相手</TableCell>
-                <TableCell align="center">結果</TableCell>
+                <TableCell align="center" scope="col">
+                  相手
+                </TableCell>
+                <TableCell align="center" scope="col">
+                  結果
+                </TableCell>
               </Fragment>
             ))}
           </TableRow>

@@ -165,7 +165,7 @@ export function TeamSharedPage({ token, data }: TeamSharedPageProps) {
     currentRound.status !== 'CONFIRMED';
 
   return (
-    <Container maxWidth="md" sx={{ py: 3 }}>
+    <Container component="main" maxWidth="md" sx={{ py: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
         <Typography variant="h2" component="h1">
           {tournament.name}

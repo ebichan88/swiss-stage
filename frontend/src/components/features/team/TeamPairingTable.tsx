@@ -95,11 +95,11 @@ export function TeamPairingTable({
           }}
         >
           <TableRow>
-            <TableCell>卓</TableCell>
-            <TableCell>チーム1</TableCell>
-            <TableCell>チーム2</TableCell>
-            <TableCell>結果</TableCell>
-            <TableCell>申告ステータス</TableCell>
+            <TableCell scope="col">卓</TableCell>
+            <TableCell scope="col">チーム1</TableCell>
+            <TableCell scope="col">チーム2</TableCell>
+            <TableCell scope="col">結果</TableCell>
+            <TableCell scope="col">申告ステータス</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

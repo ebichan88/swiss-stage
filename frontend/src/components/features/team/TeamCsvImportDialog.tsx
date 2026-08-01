@@ -162,7 +162,9 @@ export function TeamCsvImportDialog({
                 <TableHead>
                   <TableRow>
                     {preview.header.map((cell, i) => (
-                      <TableCell key={i}>{cell}</TableCell>
+                      <TableCell key={i} scope="col">
+                        {cell}
+                      </TableCell>
                     ))}
                   </TableRow>
                 </TableHead>

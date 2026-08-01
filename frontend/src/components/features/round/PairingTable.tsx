@@ -92,11 +92,11 @@ export function PairingTable({
           }}
         >
           <TableRow>
-            <TableCell>卓</TableCell>
-            <TableCell>対局者1</TableCell>
-            <TableCell>対局者2</TableCell>
-            <TableCell>結果</TableCell>
-            <TableCell>申告ステータス</TableCell>
+            <TableCell scope="col">卓</TableCell>
+            <TableCell scope="col">対局者1</TableCell>
+            <TableCell scope="col">対局者2</TableCell>
+            <TableCell scope="col">結果</TableCell>
+            <TableCell scope="col">申告ステータス</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

@@ -65,12 +65,16 @@ export function TeamTable({
           }}
         >
           <TableRow>
-            <TableCell>No.</TableCell>
-            <TableCell>チーム名</TableCell>
-            <TableCell>メンバー</TableCell>
-            {showGroup && <TableCell>グループ</TableCell>}
-            <TableCell>状態</TableCell>
-            {showActions && <TableCell align="right">操作</TableCell>}
+            <TableCell scope="col">No.</TableCell>
+            <TableCell scope="col">チーム名</TableCell>
+            <TableCell scope="col">メンバー</TableCell>
+            {showGroup && <TableCell scope="col">グループ</TableCell>}
+            <TableCell scope="col">状態</TableCell>
+            {showActions && (
+              <TableCell align="right" scope="col">
+                操作
+              </TableCell>
+            )}
           </TableRow>
         </TableHead>
         <TableBody>

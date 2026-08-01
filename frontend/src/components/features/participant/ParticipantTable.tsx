@@ -57,13 +57,19 @@ export function ParticipantTable({
           }}
         >
           <TableRow>
-            <TableCell>No.</TableCell>
-            <TableCell>氏名</TableCell>
-            <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>所属</TableCell>
-            <TableCell>棋力</TableCell>
-            {showGroup && <TableCell>グループ</TableCell>}
-            <TableCell>状態</TableCell>
-            {showActions && <TableCell align="right">操作</TableCell>}
+            <TableCell scope="col">No.</TableCell>
+            <TableCell scope="col">氏名</TableCell>
+            <TableCell scope="col" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+              所属
+            </TableCell>
+            <TableCell scope="col">棋力</TableCell>
+            {showGroup && <TableCell scope="col">グループ</TableCell>}
+            <TableCell scope="col">状態</TableCell>
+            {showActions && (
+              <TableCell align="right" scope="col">
+                操作
+              </TableCell>
+            )}
           </TableRow>
         </TableHead>
         <TableBody>
