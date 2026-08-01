@@ -1,8 +1,8 @@
 # 02. Spring Boot 4系(Spring Framework 7)への移行
 
-- Status: planned
+- Status: in_progress
 - Issue: #103
-- PR: -
+- PR: #107
 
 ---
 
