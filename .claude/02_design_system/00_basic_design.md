@@ -51,8 +51,9 @@
 3. **順位表**: 大人数でも見やすい表デザイン
 4. 運営者管理画面: 機能性優先でMUI標準に寄せてよい。共通レイアウト(`TournamentLayout`)の
    見出し帯・ナビゲーションと、個別画面内部(参加者管理表・組み合わせ表・設定フォーム・
-   CSVインポート等)にも意匠パターン(色・ヘッダー帯・アクセント線)を展開済み
-   (`.claude/07_plans/04_design_system_rollout.md`・`05_design_system_admin_internal.md`)。
+   CSVインポート等)にも意匠パターン(色・ヘッダー帯・アクセント線)を展開する計画である
+   (`.claude/07_plans/04_design_system_rollout.md`は展開済み、個別画面内部は
+   `05_design_system_admin_internal.md` に基づき実装PRで適用予定)。
    対象外は印刷用ページと `PairingTable`/`TeamPairingTable` の `MatchCard` の構造
    (卓番号タイル等。会場での即時可読性より情報密度・機能性を優先する判断を維持、
    `.claude/06_adr/08_design_system_admin_internal_scope.md`)。
