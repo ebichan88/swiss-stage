@@ -84,20 +84,31 @@ export function TournamentLayout() {
                 to={item.to}
                 selected={index === currentIndex}
                 aria-current={index === currentIndex ? 'page' : undefined}
+                sx={{
+                  borderLeft: 3,
+                  borderLeftColor: index === currentIndex ? 'primary.main' : 'transparent',
+                }}
               >
                 <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.label} />
+                <ListItemText
+                  primary={item.label}
+                  slotProps={{
+                    primary: { sx: { fontWeight: index === currentIndex ? 600 : 400 } },
+                  }}
+                />
               </ListItemButton>
             ))}
           </List>
         </Box>
       )}
       <Container maxWidth="lg" sx={{ py: 3, pb: isDesktop ? 3 : 12 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3, flexWrap: 'wrap' }}>
-          <Typography variant="h2" component="h1">
-            {tournament.name}
-          </Typography>
-          <StatusBadge status={tournament.status} />
+        <Box sx={{ bgcolor: 'primary.light', borderRadius: 3, px: 2.5, py: 2, mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+            <Typography variant="h2" component="h1">
+              {tournament.name}
+            </Typography>
+            <StatusBadge status={tournament.status} />
+          </Box>
         </Box>
         <Outlet context={tournament} />
       </Container>
@@ -117,6 +128,7 @@ export function TournamentLayout() {
               // 横スクロールなしで収まるよう、標準より詰めた余白にする
               '& .MuiBottomNavigationAction-root': { minWidth: 0, px: 0.5 },
               '& .MuiBottomNavigationAction-label': { fontSize: 'caption.fontSize' },
+              '& .Mui-selected': { color: 'primary.main' },
             }}
           >
             {navItems.map((item, index) => (

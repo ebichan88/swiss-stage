@@ -107,9 +107,14 @@ function RankRow({ standing, delayMs }: RankRowProps) {
         sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1.5 }}
       >
         <Avatar
-          sx={{ bgcolor: 'background.default', color: 'text.primary', width: 32, height: 32 }}
+          sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', width: 32, height: 32 }}
         >
-          <Typography variant="body2" component="span" data-testid="standing-rank">
+          <Typography
+            variant="body2"
+            component="span"
+            data-testid="standing-rank"
+            style={{ fontFeatureSettings: '"tnum"' }}
+          >
             {standing.rank}
           </Typography>
         </Avatar>

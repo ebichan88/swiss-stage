@@ -51,4 +51,26 @@ describe('RankingBoard', () => {
     expect(within(row).getByTestId('standing-sosos')).toHaveTextContent('24.5');
     expect(row).toHaveTextContent('SOSOS');
   });
+
+  it('RND-AC-015: 4位以降の順位バッジは等幅数字(tnum)で表示し、氏名・SOS/SOSOSとは別要素で区別する', () => {
+    renderWithProviders(
+      <RankingBoard
+        standings={[
+          standingOf({
+            rank: 4,
+            participant: summaryOf({ id: 'd', name: '検証 三郎' }),
+            sos: 12,
+            sosos: 30,
+          }),
+        ]}
+      />,
+    );
+
+    const row = screen.getByTestId('standing-row');
+    const rankEl = within(row).getByTestId('standing-rank');
+    expect(rankEl).toHaveAttribute('style', expect.stringContaining('font-feature-settings'));
+    // 順位バッジは氏名・SOS/SOSOSと別のtestid(=別要素)で視覚的に区別される
+    expect(rankEl).not.toBe(within(row).getByTestId('standing-sos'));
+    expect(rankEl.textContent).toBe('4');
+  });
 });

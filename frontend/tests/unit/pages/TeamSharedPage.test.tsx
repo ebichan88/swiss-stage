@@ -303,6 +303,48 @@ describe('TeamSharedPage', () => {
     expect(await screen.findByText('未入力')).toBeInTheDocument();
   });
 
+  it('SHR-AC-021: 対局カードは卓番号タイル等の意匠変更後も勝敗を色だけでなく記号で併記し、個人名を出さずチーム名のみで表示する', async () => {
+    server.use(
+      http.get(`/api/v1/shared/${TOKEN}`, () =>
+        HttpResponse.json(
+          apiSuccess(
+            sharedTournamentOf({
+              tournament: teamTournament,
+              rounds: null,
+              standings: null,
+              teamRounds: [
+                teamRoundOf({
+                  matches: [
+                    teamMatchOf({
+                      team1: teamSummaryOf({ id: 't1', name: 'Aチーム' }),
+                      team2: teamSummaryOf({ id: 't2', name: 'Bチーム' }),
+                      boardResults: [
+                        boardResultOf({
+                          boardPosition: 1,
+                          result: 'PLAYER1_WIN',
+                          team1ReportedResult: 'PLAYER1_WIN',
+                          team2ReportedResult: 'PLAYER1_WIN',
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+              teamStandings: [],
+            }),
+          ),
+        ),
+      ),
+    );
+
+    renderSharedPage();
+
+    expect(await screen.findByText('○ Aチーム')).toBeInTheDocument();
+    expect(screen.getByText('● Bチーム')).toBeInTheDocument();
+    // 個人名は出さない(メンバー氏名等の文字列が含まれない)
+    expect(screen.queryByText(/主将|副将/)).not.toBeInTheDocument();
+  });
+
   it('結果入力が許可されていればチーム対局の結果入力ページへのリンクを表示する', async () => {
     server.use(
       http.get(`/api/v1/shared/${TOKEN}`, () =>

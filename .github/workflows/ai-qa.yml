@@ -65,7 +65,7 @@ jobs:
           # ai-review.ymlのFixerがpushするとsynchronizeイベントのactorがclaude[bot]になり、
           # このワークフローも同じPRに対して再トリガーされる。claude[bot]のみ明示的に許可し、
           # 他リポジトリ由来のbot(Dependabot等)には書き込み権限付きの自動処理を許さない
-          allowed_bots: "claude"
+          allowed_bots: "claude,github-actions"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
@@ -255,7 +255,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          allowed_bots: "claude"
+          allowed_bots: "claude,github-actions"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
@@ -362,7 +362,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          allowed_bots: "claude"
+          allowed_bots: "claude,github-actions"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
