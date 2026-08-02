@@ -81,13 +81,43 @@ function SharedMatchCard({ token, match, multiGroup, canInput }: SharedMatchCard
   // 「結果入力」ボタンの表示条件と揃える(BYEはボタンが出ないため案内文でも触れない)
   const canReview = canInput && match.player2 !== null;
   return (
-    <Card variant="outlined">
+    <Card
+      variant="outlined"
+      sx={canReview ? { borderLeft: 3, borderLeftColor: 'primary.main' } : undefined}
+    >
       <CardContent
         sx={{ display: 'flex', alignItems: 'center', gap: 2, '&:last-child': { pb: 2 } }}
       >
-        <Typography variant="h3" component="span" sx={{ flexShrink: 0 }}>
-          {tableLabel(match, multiGroup)}卓
-        </Typography>
+        <Box sx={{ flexShrink: 0, textAlign: 'center' }}>
+          <Box
+            sx={{
+              minWidth: 40,
+              minHeight: 40,
+              px: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '20px',
+              bgcolor: 'primary.main',
+            }}
+          >
+            <Typography
+              variant="h3"
+              component="span"
+              sx={{
+                color: 'primary.contrastText',
+                lineHeight: 1,
+                fontFeatureSettings: '"tnum"',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {tableLabel(match, multiGroup)}
+            </Typography>
+          </Box>
+          <Typography variant="caption" color="text.secondary" component="div" sx={{ mt: 0.25 }}>
+            卓
+          </Typography>
+        </Box>
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography variant="body1">
             {playerLabel(match.player1, resultMark(match, 'player1'))}
@@ -185,22 +215,24 @@ function IndividualSharedPage({ token, data }: IndividualSharedPageProps) {
 
   return (
     <Container component="main" maxWidth="md" sx={{ py: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-        <Typography variant="h2" component="h1">
-          {tournament.name}
-        </Typography>
-        <StatusBadge status={tournament.status} />
+      <Box sx={{ bgcolor: 'primary.light', borderRadius: 3, px: 2.5, py: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+          <Typography variant="h2" component="h1">
+            {tournament.name}
+          </Typography>
+          <StatusBadge status={tournament.status} />
+        </Box>
+        {tournament.currentRound > 0 && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            第{tournament.currentRound}ラウンド / 全{tournament.totalRounds}ラウンド
+          </Typography>
+        )}
       </Box>
-      {tournament.currentRound > 0 && (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          第{tournament.currentRound}ラウンド / 全{tournament.totalRounds}ラウンド
-        </Typography>
-      )}
 
       <Tabs
         value={tab}
         onChange={(_event, newTab: 'pairings' | 'standings' | 'matchResults') => setTab(newTab)}
-        sx={{ mt: 2, mb: 3, borderBottom: 1, borderColor: 'divider' }}
+        sx={{ mt: 3, mb: 3, borderBottom: 1, borderColor: 'divider' }}
         variant="fullWidth"
       >
         <Tab label="組み合わせ" value="pairings" />

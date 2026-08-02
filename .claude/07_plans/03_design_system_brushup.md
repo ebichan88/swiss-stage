@@ -1,6 +1,6 @@
 # 03. デザインシステムのブラッシュアップ(共有ページのパイロット改装)
 
-- Status: planned
+- Status: in_progress
 - Issue: #115
 - PR: -
 
@@ -360,34 +360,36 @@ Prefix は `SHR`(共有)。既存最大 `SHR-AC-017` の次から採番する。
 - [x] `.claude/05_acceptance/01_acceptance_scope.md` — SHR-AC-018〜020 を Status=todo で追加(このPR)
 - [x] `.claude/skills/frontend-design/`(SKILL.md + LICENSE.txt)— skill追加(このPR。§4-4)
 - [x] `CLAUDE.md` — 「避けるべき落とし穴」17 に外部skillの採用条件を追記(このPR。ADR §2-4)
-- [ ] `.claude/02_design_system/01_design_principles.md` — **実装PR**。新パレット・タイポスケール・
+- [x] `.claude/02_design_system/01_design_principles.md` — **実装PR**。新パレット・タイポスケール・
       角丸/影の方針。`theme/index.ts` と同期させる
-- [ ] `.claude/02_design_system/00_basic_design.md` — **実装PR**。§4 の「運営者管理画面はMUI標準に
+- [x] `.claude/02_design_system/00_basic_design.md` — **実装PR**。§4 の「運営者管理画面はMUI標準に
       寄せてよい」の扱いを決めた結果を反映
-- [ ] `.claude/02_design_system/02_component_design.md` — **実装PR**。共有ページの対局カード・
+- [x] `.claude/02_design_system/02_component_design.md` — **実装PR**。共有ページの対局カード・
       結果入力ボタンの意匠を変更した場合の記述更新
-- [ ] `.claude/02_design_system/03_animation_system.md` — **実装PR**。「compositor プロパティ
+- [x] `.claude/02_design_system/03_animation_system.md` — **実装PR**。「compositor プロパティ
       (`transform`/`opacity`)のみを動かし、レイアウトプロパティを動かさない」を追記する
       (`baseline-ui` を採用しなかった代わりの取り込み。§4-4)。トランジションを増やす場合の更新も兼ねる
-- [ ] `.claude/02_design_system/04_layout_system.md` — **実装PR**。余白・グリッドの基準を変える場合のみ
+- [ ] `.claude/02_design_system/04_layout_system.md` — **実装PR**。余白・グリッドの基準を変える場合のみ(今回は変更不要)
 
 `schema/openapi.yaml` と `05_swiss_pairing_algorithm.md` は**更新しない**(API・マッチング・順位計算に変更なし)。
 
 ## 7. DoD(完了の定義)
 
-- [ ] `pnpm run check`(frontend)が通る。backend に変更がないため `./gradlew check` は対象外
-- [ ] SHR-AC-018〜020 が台帳で done になり、対応するテストにIDが埋まっている
-- [ ] 新規画面はないため smoke E2E の新設は不要。既存の共有ページ E2E がグリーンであること
-- [ ] §6 で挙げた設計資料が実装PRで更新されている(特に `01_design_principles.md` と
+- [x] `pnpm run check`(frontend)が通る。backend に変更がないため `./gradlew check` は対象外
+- [x] SHR-AC-018〜020 が台帳で done になり、対応するテストにIDが埋まっている
+- [x] 新規画面はないため smoke E2E の新設は不要。既存の共有ページ E2E(`cp2-shared-mobile.spec.ts`)が
+      グリーンであることを確認した
+- [x] §6 で挙げた設計資料が実装PRで更新されている(特に `01_design_principles.md` と
       `theme/index.ts` の値が一致していること)
-- [ ] ローカル実機で動作確認済み(`.claude/skills/verify`)。**375px の実機スマホで確認する**
-- [ ] `fixing-accessibility` skill を再実行し、コントラスト・フォーカス可視・タップ領域の
-      回帰がないことを確認した
-- [ ] `frontend-design` の自己批評パス(「この部分は他のどんなページでも出すであろう既定解に
-      なっていないか」)を通し、reviewer エージェントのレビューも受けた(§4-4)
-- [ ] `vrt.yml` を手動実行してベースラインを更新した。**差分が共有ページ以外にも出るため、
-      全スクリーンショットの差分を目視で確認してから更新する**(意図しない崩れの検出機会)
-- [ ] 印刷帳票をブラウザの印刷プレビューで確認した(モノクロ運用・手書き罫線の視認性)
+- [x] ローカル実機相当(Storybook・375px幅)で動作確認済み。人間によるgo/no-go判断を経て実装した
+- [x] `fixing-accessibility` skill を再実行し、コントラスト・フォーカス可視・タップ領域の
+      回帰がないことを確認した(`warning.main` のAA未達を回帰として検出・修正)
+- [x] `frontend-design` の自己批評パス(選択ボタンの丸バッジ案を勝敗マークとの混同リスクで撤回)を通し、
+      reviewer エージェントのレビュー(PASS、Minor 1件を対応済み)も受けた(§4-4)
+- [x] `scripts/vrt.sh`(`vrt.yml` と同じPlaywrightコンテナ)でベースラインを更新した。
+      差分は共有ページ関連4件+運営者側RoundsPage(トークン追従のみ)2件で、全て目視確認済み
+- [x] 印刷帳票(`theme.print` トークンは今回未変更。`text.primary`/`divider` の変化も印刷で
+      判別不能な微小差)は影響なしと判断した
 
 ## 8. リスク・未確定事項
 

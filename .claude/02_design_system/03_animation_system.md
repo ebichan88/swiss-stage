@@ -7,6 +7,10 @@
 - 大会運営ツールであり、演出よりも操作の確実性・速度を優先する
 - アニメーションは「状態が変わったことを伝える」目的のみに使う
 - `prefers-reduced-motion` を尊重する(MUIのデフォルトに従う)
+- アニメーションは **compositorプロパティ(`transform`/`opacity`)のみ**を動かし、レイアウトプロパティ
+  (`width`/`height`/`top`/`left`等)は動かさない(レイアウト再計算による処理落ち・カクつきを防ぐ)。
+  `baseline-ui` skill(不採用。`.claude/06_adr/06_design_system_direction.md`)の指摘のうちスタック非依存で
+  唯一増分だった1件をここに直接取り込んだもの
 
 ---
 
