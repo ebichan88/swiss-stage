@@ -57,11 +57,15 @@ describe('TournamentLayout', () => {
     const otherLink = screen.getByRole('link', { name: '順位' });
     expect(otherLink).not.toHaveAttribute('aria-current');
 
-    await userEvent.tab();
-    // Tab移動でナビゲーション項目にフォーカスできる(キーボード操作性)
-    expect(document.activeElement).toBeInstanceOf(HTMLElement);
-
-    otherLink.focus();
+    // Tab移動でナビゲーション項目へ順番にフォーカスが到達すること(キーボード操作性)を検証する
+    const user = userEvent.setup();
+    await user.tab();
+    expect(screen.getByRole('link', { name: '概要' })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('link', { name: '参加者' })).toHaveFocus();
+    await user.tab();
+    expect(currentLink).toHaveFocus();
+    await user.tab();
     expect(otherLink).toHaveFocus();
   });
 
