@@ -48,6 +48,16 @@ describe('theme', () => {
       ['error.main / background.paper', palette.error.main, palette.background.paper],
       ['success.main / background.paper', palette.success.main, palette.background.paper],
       ['warning.main / background.paper', palette.warning.main, palette.background.paper],
+      [
+        'text.primary / primary.light(共有ページのヘッダー帯)',
+        palette.text.primary,
+        palette.primary.light,
+      ],
+      [
+        'text.secondary / primary.light(共有ページのヘッダー帯)',
+        palette.text.secondary,
+        palette.primary.light,
+      ],
     ];
 
     for (const [label, fg, bg] of pairs) {
