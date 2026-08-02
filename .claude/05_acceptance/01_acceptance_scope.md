@@ -42,6 +42,7 @@
 | TRN-AC-014 | P2 | 開催日の変更と未設定化の同時指定・日付形式不正はいずれも400 VALIDATION_ERRORになる | done | TournamentApiTest |
 | TRN-AC-015 | P2 | 大会カードで開催日を表示し、未設定なら開催日を表示しない | done | TournamentCard.test(Vitest) |
 | TRN-AC-016 | P2 | 大会作成で開催日を送信でき、設定で開催日を空にするとclearEventDateで送信する | done | TournamentCreatePage.test, SettingsPage.test(Vitest) |
+| TRN-AC-017 | P1 | 運営者管理画面の共通レイアウト(TournamentLayout)は見出し帯・ナビゲーションの意匠変更後も、サイドバー(md以上)・下部タブ(md未満)の両方で、現在のページに対応するナビゲーション項目に`aria-current="page"`が設定され、キーボードのみでフォーカス移動できる | todo | TournamentLayout.test(Vitest、新規。両ブレークポイントを検証) |
 
 ## PTC: 参加者
 
@@ -99,6 +100,7 @@
 | RND-AC-012 | P1 | 片方のみ申告・申告不一致で結果が未確定の対局が残っているとラウンド確定はブロックされる。運営者が結果を確定すれば確定できる | done | RoundApiTest |
 | RND-AC-013 | P2 | 管理画面の順位と対戦結果は別メニュー(別画面)で表示される | done | RankingBoard.test, MatchResultsTable.test(Vitest) |
 | RND-AC-014 | P1 | 管理画面の順位表はラウンド1が確定するまで表示されない(未確定時は全員同率rank=1になり表示が崩れるため) | done | cp1-tournament-flow(E2E) |
+| RND-AC-015 | P1 | RankingBoard/TeamRankingBoardの4位以降バッジは意匠変更後も順位数字を等幅表示(tnum)し、氏名・SOS/SOSOSと視覚的に区別できる | todo | RankingBoard.test, TeamRankingBoard.test(Vitest) |
 
 ## TEAM: 団体戦
 
@@ -153,6 +155,7 @@
 | SHR-AC-018 | P1 | 共有ページ・結果入力ページの本文タイポグラフィ(body1)が16px以上である | done | theme.test(Vitest) |
 | SHR-AC-019 | P1 | テーマで定義した文字色と背景色の主要な組み合わせがWCAG AA(4.5:1)以上のコントラスト比を満たす | done | theme.test(Vitest) |
 | SHR-AC-020 | P1 | 共有ページの対局カードは勝敗を色だけでなく記号(○/●)で併記する | done | SharedPage.test(Vitest) |
+| SHR-AC-021 | P1 | 団体戦の共有ページ(TeamSharedPage)の対局カードは、卓番号タイル等の意匠変更後も勝敗を色だけでなく記号で併記し、個人名を出さずチーム名のみで表示する | todo | TeamSharedPage.test(Vitest) |
 
 ## SPA: SPA配信
 
