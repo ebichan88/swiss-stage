@@ -62,10 +62,12 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Fixerの修正pushはclaude[bot]自身の識別で行われ、それが発火するsynchronize
           # イベントのactorもclaude[bot]になる。デフォルトではbotがトリガーしたワークフロー
-          # 実行を拒否するため、claude[bot]のみ明示的に許可する(このジョブ自体がそのbotの
-          # pushで再起動される前提)。"*"は他リポジトリ由来のbot(Dependabot等)にも書き込み
-          # 権限付きの自動処理を許してしまうため使わない(claude-code-actionのdocs/security.md)
-          allowed_bots: "claude"
+          # 実行を拒否するため、claude[bot]を明示的に許可する(このジョブ自体がそのbotの
+          # pushで再起動される前提)。github-actions[bot]はVRT(vrt.yml)のベースライン画像更新
+          # コミット用(`git config user.name "github-actions[bot]"`)。"*"は他リポジトリ由来の
+          # bot(Dependabot等)にも書き込み権限付きの自動処理を許してしまうため使わない
+          # (claude-code-actionのdocs/security.md)
+          allowed_bots: "claude,github-actions"
           # 原因判明: Reviewerがレビューをサブエージェントにバックグラウンド委譲して即座に
           # ターンを終えており、ジョブ終了とともにそのエージェントが強制終了されるため
           # レポートが投稿されていなかった(promptの委譲禁止 + disallowedTools で対処)。
@@ -279,7 +281,7 @@ jobs:
         # 絞っているため、このステップに限りpermission-modeでask確認自体を無効化する
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          allowed_bots: "claude"
+          allowed_bots: "claude,github-actions"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
@@ -354,7 +356,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          allowed_bots: "claude"
+          allowed_bots: "claude,github-actions"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
