@@ -40,4 +40,25 @@ describe('TeamRankingBoard', () => {
     expect(within(row).getByTestId('team-standing-sosos')).toHaveTextContent('24.5');
     expect(row).toHaveTextContent('SOSOS');
   });
+
+  it('RND-AC-015: 4位以降の順位バッジは等幅数字(tnum)で表示し、チーム名・SOS/SOSOSとは別要素で区別する', () => {
+    renderWithProviders(
+      <TeamRankingBoard
+        standings={[
+          teamStandingOf({
+            rank: 4,
+            team: teamSummaryOf({ id: 'd', name: 'Dチーム' }),
+            sos: 12,
+            sosos: 30,
+          }),
+        ]}
+      />,
+    );
+
+    const row = screen.getByTestId('team-standing-row');
+    const rankEl = within(row).getByTestId('team-standing-rank');
+    expect(rankEl).toHaveAttribute('style', expect.stringContaining('font-feature-settings'));
+    expect(rankEl).not.toBe(within(row).getByTestId('team-standing-sos'));
+    expect(rankEl.textContent).toBe('4');
+  });
 });

@@ -52,6 +52,15 @@ function manyStandings(count: number) {
 }
 
 export const handlersFor = {
+  /** TournamentLayout(共通レイアウト)自体はuseTournament(id)で個別に大会情報を取得する */
+  tournamentDetail: {
+    filled: (overrides: Parameters<typeof tournamentOf>[0] = {}) => [
+      http.get(`${API}/tournaments/:id`, () =>
+        HttpResponse.json(apiSuccess(tournamentOf({ status: 'IN_PROGRESS', ...overrides }))),
+      ),
+    ],
+  },
+
   tournamentList: {
     filled: () => [
       http.get(`${API}/tournaments`, () =>

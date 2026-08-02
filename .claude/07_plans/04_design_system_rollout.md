@@ -1,6 +1,6 @@
 # 04. デザインシステム改装を他画面へ展開する
 
-- Status: planned
+- Status: done
 - Issue: #119
 - PR: -
 
