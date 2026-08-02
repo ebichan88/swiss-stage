@@ -26,6 +26,29 @@
 **マージをブロックするのは `ci.yml` / `guard.yml` のみ**で、`e2e.yml` / `vrt.yml` は
 所要時間と安定性の実績を見てから required check への昇格を判断する(§2.8)。
 
+```mermaid
+flowchart TD
+    PR["PR作成・更新"] --> CI["ci.yml<br/>単体・統合テスト+ビルド<br/>(必須ゲート)"]
+    PR --> E2E["e2e.yml<br/>クリティカルパスE2E<br/>(当面 非必須)"]
+    PR --> VRT["vrt.yml<br/>Visual Regression Test<br/>(UI関連pathsのみ・非ブロッキング)"]
+    PR --> REVIEW["ai-review.yml<br/>AIコードレビュー・自動修正<br/>(Critical/Majorがゲート・§2.5)"]
+    PR --> QA["ai-qa.yml<br/>受け入れケース台帳との突合<br/>(VERDICT: FAILがゲート・§2.9)"]
+    PR --> DESIGN["ai-design-review.yml<br/>設計ドキュメント間の整合性<br/>(.claude/**・schema/**変更時のみ・非ゲート・§2.10)"]
+    PR --> PLAN["ai-plan-review.yml<br/>Plan PRの計画の抜け検出<br/>(07_plans/**・06_adr/**変更時のみ・非ゲート・§2.11)"]
+
+    CI -->|"失敗"| AUTOFIX["ci.ymlのautofixジョブ<br/>決定論的修正 or ci-fixer(§2.7)"]
+    REVIEW -->|"FAIL"| FIXER["fixer<br/>Critical/Majorのみ修正(§2.5)"]
+    QA -->|"FAIL"| QAFIXER["qa-fixer<br/>close:test-sideのみ修正(§2.9)"]
+
+    AUTOFIX -.->|"[ci-fix]コミット"| GUARD["guard.yml<br/>テスト弱体化ガード(§2.6)"]
+    FIXER -.->|"[ai-fix]コミット"| GUARD
+    QAFIXER -.->|"[qa-fix]コミット"| GUARD
+```
+
+上記のうち `ci.yml` / `guard.yml` はマージをブロックする実線経路。`ai-review.yml` / `ai-qa.yml`
+から伸びる自動修正(`fixer` / `qa-fixer` / autofix)は、いずれも `guard.yml` の検査対象になる
+(破線)。詳細な分岐条件は各節の図を参照。
+
 ### `vrt.yml` の運用
 
 - `workflow_dispatch` の入力 `update_snapshots`(boolean)で「比較のみ」と「ベースライン更新」を切り替える
@@ -113,14 +136,18 @@ jobs:
 
 PRごとに `anthropics/claude-code-action@v1` でAIレビューを実行し、1ラン内で「レビュー → ゲート → 修正 → 再レビュー」を完結させる。
 
-```text
-PR(open/push) → Reviewer(sticky comment更新, VERDICT: PASS/FAIL)
-  PASS    → 終了(マージ判断は人間)
-  FAIL    → ゲート判定(bash・決定的)
-              ├ 起動可 → Fixer(Critical/Majorのみ修正 → 検証 → レポート投稿 → push)→ 再レビュー
-              └ 起動不可 → needs-humanラベル + 理由コメント
-  UNKNOWN → ├ ワークフロー変更PR → needs-humanラベル + 説明コメント(CIは落とさない)
-            └ それ以外           → needs-humanラベル + **CI失敗**(レビュー未実施を素通りさせない)
+```mermaid
+flowchart TD
+    A["PR(open/push)"] --> B["Reviewer実行<br/>(sticky comment更新)"]
+    B --> C{"VERDICT"}
+    C -->|"PASS"| D["終了(マージ判断は人間)"]
+    C -->|"FAIL"| E{"ゲート判定<br/>(bash・決定的)"}
+    E -->|"起動可"| F["Fixer<br/>Critical/Majorのみ修正 → 検証 → レポート投稿 → push"]
+    F --> B
+    E -->|"起動不可"| G["needs-humanラベル + 理由コメント"]
+    C -->|"UNKNOWN"| H{"ワークフロー変更PRか"}
+    H -->|"はい"| I["needs-humanラベル + 説明コメント<br/>(CIは落とさない)"]
+    H -->|"いいえ"| J["needs-humanラベル + CI失敗<br/>(レビュー未実施を素通りさせない)"]
 ```
 
 - **役割定義**: Reviewer = `.claude/agents/reviewer.md` / Fixer = `.claude/agents/fixer.md`。品質基準は `.claude/04_quality/`
@@ -246,6 +273,22 @@ CI失敗のうち**コマンド一発で決定論的に直るもの**だけを�
 | Spotless | `./gradlew spotlessApply` | **autofix**(決定論的・AI不使用) |
 | 型エラー・テスト失敗 | 判断が必要 | **ci-fixer**(`.claude/agents/ci-fixer.md`) |
 | カバレッジ不足(`jacocoTestCoverageVerification`) | **意図的に自動化しない** | 常に人間 |
+
+```mermaid
+flowchart TD
+    A["CI失敗(frontend/backend)"] --> B{"決定論的に直る失敗か"}
+    B -->|"prettier"| C1["pnpm run format"]
+    B -->|"生成型の鮮度チェック"| C2["pnpm run generate:api"]
+    B -->|"Spotless"| C3["./gradlew spotlessApply"]
+    B -->|"カバレッジ不足"| N["常に人間<br/>(自動修正しない)"]
+    B -->|"型エラー・テスト失敗など判断が必要"| D["ci-fixer起動"]
+    C1 --> E["[ci-fix]コミット"]
+    C2 --> E
+    C3 --> E
+    D -->|"FIXED"| E
+    D -->|"DISPUTED/SKIPPED/FAILED"| G["needs-humanラベル"]
+    E --> R["CI再実行"]
+```
 
 > カバレッジ不足をAIに埋めさせると「アサーションの薄いテストを量産して閾値を通す」= 基準hackそのものに
 > なるため、**この項目だけは常に人間**に回す。ワークフロー側でログから
@@ -386,15 +429,20 @@ gh workflow run vrt.yml -f update_snapshots=true --ref <branch>
 ジョブそのものを失敗させる**ようにした(PR画面が赤くなることで解決する。Slack等の追加通知は
 不要)。
 
-```text
-PR(open/push) → QA(sticky comment更新, VERDICT: PASS/FAIL)
-  PASS    → ジョブ成功
-  FAIL    → ゲート判定(bash・決定的)
-              ├ 全指摘が close:test-side → qa-fixer(IDタグの追記のみ → 検証 → レポート投稿 → push)→ 再突合
-              └ close:ledger-side/human-only を含む → needs-humanラベル + 理由コメント
-  UNKNOWN → ├ ai-qa.yml自体を変更したPR → needs-humanラベル + 説明コメント(CIは落とさない)
-            └ それ以外                  → needs-humanラベル + **CI失敗**(fail-closed。§2.5と同じ原則)
-ジョブの最終合否: その時点の最新sticky commentのVERDICTがFAILならexit 1
+```mermaid
+flowchart TD
+    A["PR(open/push)"] --> B["QA実行<br/>(sticky comment更新)"]
+    B --> C{"VERDICT"}
+    C -->|"PASS"| D["ジョブ成功"]
+    C -->|"FAIL"| E{"ゲート判定<br/>(bash・決定的)"}
+    E -->|"全指摘がclose:test-side"| F["qa-fixer<br/>IDタグの追記のみ → 検証 → レポート投稿 → push"]
+    F --> B
+    E -->|"close:ledger-side/human-onlyを含む"| G["needs-humanラベル + 理由コメント"]
+    C -->|"UNKNOWN"| H{"ai-qa.yml自体を変更したPRか"}
+    H -->|"はい"| I["needs-humanラベル + 説明コメント<br/>(CIは落とさない)"]
+    H -->|"いいえ"| J["needs-humanラベル + CI失敗<br/>(fail-closed。§2.5と同じ原則)"]
+    D --> K["ジョブの最終合否 =<br/>最新sticky commentのVERDICT"]
+    G --> K
 ```
 
 ### QAをそのままFixerに繋がない理由(維持している設計判断)
