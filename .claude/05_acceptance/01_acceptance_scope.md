@@ -43,6 +43,7 @@
 | TRN-AC-015 | P2 | 大会カードで開催日を表示し、未設定なら開催日を表示しない | done | TournamentCard.test(Vitest) |
 | TRN-AC-016 | P2 | 大会作成で開催日を送信でき、設定で開催日を空にするとclearEventDateで送信する | done | TournamentCreatePage.test, SettingsPage.test(Vitest) |
 | TRN-AC-017 | P1 | 運営者管理画面の共通レイアウト(TournamentLayout)は見出し帯・ナビゲーションの意匠変更後も、サイドバー(md以上)・下部タブ(md未満)の両方で、現在のページに対応するナビゲーション項目に`aria-current="page"`が設定され、キーボードのみでフォーカス移動できる | done | TournamentLayout.test(Vitest、新規。両ブレークポイントを検証) |
+| TRN-AC-018 | P2 | 運営者向け組み合わせ表(PairingTable/TeamPairingTable)は意匠変更後も、スマホ表示の卓番号を共有ページの卓番号タイル(丸み・アクセントカラー地の装飾)ではなくプレーンなテキストのまま表示する(会場での即時可読性より情報密度・機能性を優先する現行判断の回帰防止) | todo | PairingTable.test, TeamPairingTable.test(Vitest) |
 
 ## PTC: 参加者
 

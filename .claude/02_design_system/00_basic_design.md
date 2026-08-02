@@ -49,7 +49,11 @@
 1. **共有ページ(スマホ)**: 参加者全員が使う。最優先で磨く
 2. **結果入力**: 押し間違い防止が最重要(確認ステップ必須)
 3. **順位表**: 大人数でも見やすい表デザイン
-4. 運営者管理画面: 機能性優先でMUI標準に寄せてよい。ただし共通レイアウト(`TournamentLayout`)の
-   見出し帯・ナビゲーションは意匠展開の対象(`.claude/07_plans/04_design_system_rollout.md`)。
-   個別画面内部(参加者管理表・`PairingTable`・設定フォーム等)は対象外のまま。
+4. 運営者管理画面: 機能性優先でMUI標準に寄せてよい。共通レイアウト(`TournamentLayout`)の
+   見出し帯・ナビゲーションと、個別画面内部(参加者管理表・組み合わせ表・設定フォーム・
+   CSVインポート等)にも意匠パターン(色・ヘッダー帯・アクセント線)を展開済み
+   (`.claude/07_plans/04_design_system_rollout.md`・`05_design_system_admin_internal.md`)。
+   対象外は印刷用ページと `PairingTable`/`TeamPairingTable` の `MatchCard` の構造
+   (卓番号タイル等。会場での即時可読性より情報密度・機能性を優先する判断を維持、
+   `.claude/06_adr/08_design_system_admin_internal_scope.md`)。
    デザイントークン刷新は全画面に自動追従する。`02_component_design.md`「共有ページの意匠」参照

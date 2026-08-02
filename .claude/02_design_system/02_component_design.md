@@ -89,8 +89,9 @@
   幅が伸びる前提でよく、正円である必要はない。高さは `minHeight`(固定`height`にしない)+
   `whiteSpace: nowrap` とし、長いグループ名でも折り返してタイルの縦寸法を崩さないようにする。
   タイル下に「卓」の `caption` を添えてラベルを補う。団体戦版はチーム名のみ表示し個人名は出さない
-  - PairingTable(運営者向け)の `MatchCard` はこの意匠を適用しない(`00_basic_design.md`§4の
-    「運営者管理画面: 機能性優先でMUI標準に寄せてよい」を維持する場合)
+  - PairingTable/TeamPairingTable(運営者向け)の `MatchCard` はこの意匠を適用しない。
+    会場での即時可読性より情報密度・機能性を優先する運営者管理画面の判断を維持するため
+    (`00_basic_design.md`§4、`.claude/06_adr/08_design_system_admin_internal_scope.md`)
 - **アクションアクセント**: 結果入力が可能なカードは左端に3px幅の `primary.main` アクセント線を付ける。
   色だけに頼らず「結果入力」ボタン自体が主たる合図であるため、アクセント線は補助にとどめる。
   `TournamentLayout` のサイドバー選択項目・下部タブ選択項目にも同じアクセント色(左罫線/選択色)を適用し、
@@ -108,6 +109,16 @@
 - 列: No.・氏名・所属(スマホでは非表示)・棋力・(複数グループ大会のみ)グループ・状態・操作
 - ヘッダー行・データ行のゼブラストライプは対戦結果表と共通(`primary.main` 背景+白文字のヘッダー、`background.paper`/`background.default` の交互ストライプ)
 - 棄権者の行はストライプに加えて `opacity: 0.55` で半透明表示
+
+### 個別admin画面内部の展開(2026-08、`.claude/07_plans/05_design_system_admin_internal.md`)
+
+参加者管理(`ParticipantTable`/`ParticipantFormDialog`/`CsvImportDialog`/`GroupManagerDialog`)・
+チーム管理(`TeamTable`/`TeamFormDialog`/`TeamMemberFormDialog`/`TeamMemberManagerDialog`/
+`TeamCsvImportDialog`)・組み合わせ表(`PairingTable`/`TeamPairingTable`)・大会概要
+(`TournamentOverviewPage`)・大会設定(`SettingsPage`)に、上記の意匠トークン
+(ヘッダー帯・アクセント線・ゼブラストライプ)を適用した。印刷用ページと
+`PairingTable`/`TeamPairingTable` の `MatchCard`(卓番号のタイル化)は対象外のまま
+(`00_basic_design.md`§4、`06_adr/08_design_system_admin_internal_scope.md`)。
 
 ### ステータス表示(StatusBadge)
 
