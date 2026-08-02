@@ -129,6 +129,10 @@ Issue #119・PR #121(`.claude/07_plans/04_design_system_rollout.md`)で、共有
    - 既存ストーリー(ParticipantsPage.stories.tsx 等)に加え、未作成のページ
      (TeamsPage/RoundsPage/TeamRoundsPage/TournamentOverviewPage/SettingsPage)の
      ストーリーを探索前に追加する
+   - ダイアログ(ParticipantFormDialog/CsvImportDialog/GroupManagerDialog/TeamFormDialog/
+     TeamMemberFormDialog/TeamMemberManagerDialog/TeamCsvImportDialog)は§3-3で改装対象と
+     しているため、ページstoryにダイアログを開いた状態のバリアント(またはダイアログ単体の
+     story)を追加し、③の実機相当確認にダイアログの意匠も含める
     ↓
 ③ 実機相当(Storybookのモバイル/デスクトップ両ビューポート)で確認 → 対象範囲まとめてgo/no-goを人間が判断
     ↓ go
@@ -202,13 +206,27 @@ no-goの場合は②に戻る。対象範囲の一部にのみ問題がある場
 ### 3-6. 4状態・レスポンシブ・大量データ
 
 いずれも**現行の挙動を維持する**。改装で失わないことを確認する対象として明示する。
+画面ごとに現行の状態設計が異なるため、まとめず画面ごとに書く。
+
+**参加者管理・チーム管理・組み合わせ表(ParticipantsPage/TeamsPage/RoundsPage/TeamRoundsPage)**
 
 | 状態 | 表示(現行・維持) |
 |---|---|
 | 通常 | 各画面の現行レイアウト(トークンのみ変更) |
-| 空(0件) | `EmptyState`(参加者0人・チーム0件等。既存メッセージ・導線を維持) |
+| 空(0件) | `EmptyState`(参加者0人・チーム0件・対局0件等。既存メッセージ・導線を維持) |
 | ローディング | `LoadingState`/`FullPageSpinner`(既存) |
 | エラー | `ErrorState`(再試行導線。既存) |
+
+**大会概要(TournamentOverviewPage)・大会設定(SettingsPage)**
+
+| 状態 | 表示(現行・維持) |
+|---|---|
+| 通常 | 各画面の現行レイアウト(トークンのみ変更) |
+| 空(0件) | **該当なし**。どちらも大会1件の情報(概要のサマリー・設定フォーム)を表示するのみで、
+  0件で空になる一覧要素がない |
+| ローディング・エラー | **該当なし**。`TournamentLayout` が大会情報取得を解決した後にのみ
+  `Outlet` 配下として描画されるため、両画面自体はローディング・エラー状態を持たない
+  (`TournamentLayout` 側の `FullPageSpinner`/`ErrorState` で解決済み) |
 
 - **レスポンシブ**: 参加者管理表・組み合わせ表は既存のブレークポイント(`sm`/`md`)での
   表→カード切替・列非表示を維持する
@@ -255,17 +273,25 @@ no-goの場合は②に戻る。対象範囲の一部にのみ問題がある場
 | ID | P | 受け入れ基準 | 検証手段 |
 |---|---|---|---|
 | TRN-AC-018 | P2 | 運営者向け組み合わせ表(PairingTable/TeamPairingTable)は意匠変更後も、スマホ表示の卓番号を共有ページの卓番号タイル(丸み・アクセントカラー地の装飾)ではなくプレーンなテキストのまま表示する(会場での即時可読性より情報密度・機能性を優先する現行判断の回帰防止) | PairingTable.test, TeamPairingTable.test(Vitest) |
+| PTC-AC-013 | P1 | 参加者一覧表(ParticipantTable)にゼブラストライプを適用した後も、棄権者(status=WITHDRAWN)の行は半透明表示(opacity)と`PersonOffIcon`の両方で他の行と区別できる | ParticipantTable.test(Vitest、新規) |
+| TRN-AC-019 | P2 | 個別admin画面のフォーム(ParticipantFormDialog/TeamFormDialog/SettingsPage)は意匠変更後も、入力エラー時に`helperText`のエラーメッセージが表示され、エラーの入力欄に`aria-describedby`で関連付けられる | ParticipantFormDialog.test, SettingsPage.test(Vitest、新規) |
 
 - 優先度は `00_acceptance_policy.md` §4 の定義に従う。判定フローは `02_severity.md`。
-  **P2**: 破られても情報が読めなくなる・操作できなくなるわけではなく、意図した意匠の
+  **TRN-AC-018はP2**: 破られても情報が読めなくなる・操作できなくなるわけではなく、意図した意匠の
   範囲を超えて構造を変えてしまう「見た目の一貫性方針の逸脱」に留まるため(≒Minor寄りのP2)。
   Issue #122 自体の優先度もP2であることと整合させた
+- **PTC-AC-013はP1**: 棄権者を通常の参加者と誤認すると、組み合わせ生成やCSV出力の対象判断を
+  運営者が誤る可能性があり、仕様違反・ユーザー影響のあるバグ(≒Major)に当たるため
+- **TRN-AC-019はP2**: MUIの標準機能(`TextField`の`error`/`helperText`)による既存の担保であり
+  今回の改装(配色・余白の微調整)がロジック自体に触れる可能性は低いが、機械検査による
+  回帰防止のためP2として追加する
 
 ## 6. 更新する設計資料
 
 - [ ] `.claude/07_plans/05_design_system_admin_internal.md` — 本計画(このPR)
 - [ ] `.claude/06_adr/08_design_system_admin_internal_scope.md` — 対象範囲・PR分割・go/no-go単位のADR(このPR)
-- [ ] `.claude/05_acceptance/01_acceptance_scope.md` — TRN-AC-018 を Status=todo で追加(このPR)
+- [ ] `.claude/05_acceptance/01_acceptance_scope.md` — TRN-AC-018・PTC-AC-013・TRN-AC-019 を
+      Status=todo で追加(このPR)
 - [ ] `.claude/02_design_system/00_basic_design.md` — §4の「個別画面内部は対象外」を、
       「印刷用ページと`PairingTable`/`TeamPairingTable`の`MatchCard`構造(卓番号タイル)のみ
       対象外」に縮小する記述に更新(このPR)
@@ -281,7 +307,7 @@ no-goの場合は②に戻る。対象範囲の一部にのみ問題がある場
 ## 7. DoD(完了の定義)
 
 - [ ] `pnpm run check`(frontend)が通る。backendに変更がないため `./gradlew check` は対象外
-- [ ] TRN-AC-018 が台帳でdoneになり、対応するテストにIDが埋まっている
+- [ ] TRN-AC-018・PTC-AC-013・TRN-AC-019 が台帳でdoneになり、対応するテストにIDが埋まっている
 - [ ] 新規画面はないためsmoke E2Eの新設は不要。既存のクリティカルパスE2E
       (参加者登録・組み合わせ生成・結果入力を含むフロー)がグリーンであることを確認する
 - [ ] §6で挙げた設計資料が実装PRで更新されている
@@ -296,6 +322,8 @@ no-goの場合は②に戻る。対象範囲の一部にのみ問題がある場
 | リスク | 対応 |
 |---|---|
 | **`PairingTable`/`TeamPairingTable` の改装がトークンのみに留まらず、卓番号タイルまで適用してしまう** | TRN-AC-018で機械検査を追加。§3-5の「構造を変えない」を実装PRのレビュー観点に明記した |
+| **`ParticipantTable`のゼブラストライプ追加で棄権者の半透明表示が視覚的に埋もれる・実装時に脱落する** | PTC-AC-013で機械検査を追加し、`ParticipantsPage.stories.tsx`に棄権者を含むフィクスチャを用意する |
+| **フォームの`helperText`/`aria-describedby`によるエラー表示が配色変更で壊れる** | TRN-AC-019で機械検査を追加した |
 | **`TournamentOverviewPage` で `TournamentLayout` の見出し帯と二重のヘッダー帯ができる** | §3-5で「二重のヘッダー帯を避ける」ことを明記し、探索段階(②)で実機相当の見た目を確認する |
 | **対象コンポーネント数が多く(参加者管理・チーム管理・組み合わせ表・設定の4領域)、単一go/no-goでの見落としリスクが展開計画より高い** | 探索段階でのStorybook確認を領域ごとに区切って行い(ゲート自体は単一のまま)、reviewerエージェントのレビューで領域横断の一貫性を確認する |
 | **単一go/no-goで一部の画面にのみ問題が見つかった場合の切り戻し** | `06_adr/08_design_system_admin_internal_scope.md` §4の撤回条件(コミット単位の部分revert)に従う |

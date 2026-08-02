@@ -110,15 +110,16 @@
 - ヘッダー行・データ行のゼブラストライプは対戦結果表と共通(`primary.main` 背景+白文字のヘッダー、`background.paper`/`background.default` の交互ストライプ)
 - 棄権者の行はストライプに加えて `opacity: 0.55` で半透明表示
 
-### 個別admin画面内部の展開計画(2026-08、`.claude/07_plans/05_design_system_admin_internal.md`)
+### 個別admin画面内部の展開計画(`.claude/07_plans/05_design_system_admin_internal.md`、実装未着手)
 
 参加者管理(`ParticipantTable`/`ParticipantFormDialog`/`CsvImportDialog`/`GroupManagerDialog`)・
 チーム管理(`TeamTable`/`TeamFormDialog`/`TeamMemberFormDialog`/`TeamMemberManagerDialog`/
 `TeamCsvImportDialog`)・組み合わせ表(`PairingTable`/`TeamPairingTable`)・大会概要
 (`TournamentOverviewPage`)・大会設定(`SettingsPage`)に、上記の意匠トークン
-(ヘッダー帯・アクセント線・ゼブラストライプ)を実装PRで適用予定。印刷用ページと
-`PairingTable`/`TeamPairingTable` の `MatchCard`(卓番号のタイル化)は対象外の予定
-(`00_basic_design.md`§4、`06_adr/08_design_system_admin_internal_scope.md`)。
+(ヘッダー帯・アクセント線・ゼブラストライプ)を適用することを計画している(実装PRで適用予定)。
+印刷用ページと `PairingTable`/`TeamPairingTable` の `MatchCard`(卓番号のタイル化)は
+対象外のまま維持する計画(`00_basic_design.md`§4、`06_adr/08_design_system_admin_internal_scope.md`)。
+断定的な記述(適用済み)への更新は実装PRで行う。
 
 ### ステータス表示(StatusBadge)
 

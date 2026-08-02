@@ -44,6 +44,7 @@
 | TRN-AC-016 | P2 | 大会作成で開催日を送信でき、設定で開催日を空にするとclearEventDateで送信する | done | TournamentCreatePage.test, SettingsPage.test(Vitest) |
 | TRN-AC-017 | P1 | 運営者管理画面の共通レイアウト(TournamentLayout)は見出し帯・ナビゲーションの意匠変更後も、サイドバー(md以上)・下部タブ(md未満)の両方で、現在のページに対応するナビゲーション項目に`aria-current="page"`が設定され、キーボードのみでフォーカス移動できる | done | TournamentLayout.test(Vitest、新規。両ブレークポイントを検証) |
 | TRN-AC-018 | P2 | 運営者向け組み合わせ表(PairingTable/TeamPairingTable)は意匠変更後も、スマホ表示の卓番号を共有ページの卓番号タイル(丸み・アクセントカラー地の装飾)ではなくプレーンなテキストのまま表示する(会場での即時可読性より情報密度・機能性を優先する現行判断の回帰防止) | todo | PairingTable.test, TeamPairingTable.test(Vitest) |
+| TRN-AC-019 | P2 | 個別admin画面のフォーム(ParticipantFormDialog/TeamFormDialog/SettingsPage)は意匠変更後も、入力エラー時にhelperTextのエラーメッセージが表示され、エラーの入力欄にaria-describedbyで関連付けられる | todo | ParticipantFormDialog.test, SettingsPage.test(Vitest) |
 
 ## PTC: 参加者
 
@@ -61,6 +62,7 @@
 | PTC-AC-010 | P1 | 参加者一覧CSVダウンロードはCSVインポートと同じ列構成(氏名,所属,段級位,グループ)をUTF-8 BOM付きで返す | done | ParticipantApiTest |
 | PTC-AC-011 | P2 | 参加者が0件のときのCSVダウンロードはヘッダー行のみになりテンプレートとして使える | done | ParticipantApiTest |
 | PTC-AC-012 | P1 | CSVダウンロードは大会の状態(PREPARING/IN_PROGRESS/FINISHED)を問わず利用できる | done | ParticipantApiTest |
+| PTC-AC-013 | P1 | 参加者一覧表(ParticipantTable)にゼブラストライプを適用した後も、棄権者(status=WITHDRAWN)の行は半透明表示(opacity)とPersonOffIconの両方で他の行と区別できる | todo | ParticipantTable.test(Vitest) |
 
 ## GRP: グループ
 
