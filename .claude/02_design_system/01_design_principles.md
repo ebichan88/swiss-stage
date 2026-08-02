@@ -85,7 +85,7 @@
 
 | 項目 | 値 |
 |------|----|
-| 角丸 | 8px(カード・ボタン共通)。`borderRadius: 2`(theme単位)。例外: 共有ページのヘッダー帯(24px = `borderRadius: 3`)・卓番号タイル(20px、正円に近い丸みのため固定px値)。詳細は `02_component_design.md`「共有ページの意匠」参照 |
+| 角丸 | 8px(カード・ボタン共通)。`borderRadius: 2`(theme単位)。例外: 共有ページのヘッダー帯(24px = `borderRadius: 3`)・卓番号タイル(20px、正円に近い丸みのため固定px値)。詳細は `02_component_design.md`「共有ページの意匠」参照。運営者管理画面(`TournamentLayout`)の見出し行への同トークン適用は `07_plans/04_design_system_rollout.md` で計画中 |
 | 影 | elevation 0〜2 のみ使用(フラット寄り)。ダイアログのみ8 |
 | 罫線 | 1px solid divider |
 | ダークモード | MVPでは対応しない(テーマ分岐を書かない) |

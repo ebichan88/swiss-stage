@@ -42,7 +42,7 @@
 | TRN-AC-014 | P2 | 開催日の変更と未設定化の同時指定・日付形式不正はいずれも400 VALIDATION_ERRORになる | done | TournamentApiTest |
 | TRN-AC-015 | P2 | 大会カードで開催日を表示し、未設定なら開催日を表示しない | done | TournamentCard.test(Vitest) |
 | TRN-AC-016 | P2 | 大会作成で開催日を送信でき、設定で開催日を空にするとclearEventDateで送信する | done | TournamentCreatePage.test, SettingsPage.test(Vitest) |
-| TRN-AC-017 | P1 | 運営者管理画面の共通レイアウト(TournamentLayout)は見出し帯・ナビゲーションの意匠変更後も、現在のページに対応するナビゲーション項目に`aria-current="page"`が設定され、キーボードのみでフォーカス移動できる | todo | TournamentLayout.test(Vitest、新規) |
+| TRN-AC-017 | P1 | 運営者管理画面の共通レイアウト(TournamentLayout)は見出し帯・ナビゲーションの意匠変更後も、サイドバー(md以上)・下部タブ(md未満)の両方で、現在のページに対応するナビゲーション項目に`aria-current="page"`が設定され、キーボードのみでフォーカス移動できる | todo | TournamentLayout.test(Vitest、新規。両ブレークポイントを検証) |
 
 ## PTC: 参加者
 

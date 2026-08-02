@@ -60,6 +60,9 @@ Issue #115・PR #118 で共有ページ(個人戦)をパイロットとして改
   確認ダイアログが出て、申告すると組み合わせタブへ戻る(個人戦と同じ2段階フロー)
 - 参加者が 団体戦の申告済み対局を再度開くと 誰が何を申告したかが表示される(現行維持)
 - 参加者が 団体戦の申告不一致のボードがある対局を開くと 警告が表示される(現行維持)
+- 参加者が 団体戦の無効・失効した共有URLを開くと 個人戦と同じ「このURLは無効です」が表示される
+  (現行維持。ヘッダー帯・タイル等の意匠変更はこの画面には及ばない)
+- 参加者が 団体戦で結果入力が締め切られた対局を開くと 締切の案内が表示され入力できない(現行維持)
 - 運営者が スマホで大会管理画面(S07ラウンド管理等)を開くと 下部タブのナビゲーションで
   画面を移動でき、タップ領域・現在地表示は変わらない
 
@@ -70,6 +73,9 @@ Issue #115・PR #118 で共有ページ(個人戦)をパイロットとして改
 - 個別admin画面の内部(参加者管理表・`PairingTable`・CSVインポート・設定フォーム)は
   意匠変更の対象外(`06_adr/07_design_system_rollout_scope.md`)。誤って構造を変えないこと自体が
   回帰対象になる
+- 団体戦の無効トークン・締切後の経路(上記2件)は、パイロットが個人戦版で明示的にシナリオ列挙した
+  ものと同じ扱いとして、展開後も一字一句そのまま成立していることを回帰対象に含めた
+  (`03_design_system_brushup.md` §2 と同じ観点)
 
 ## 3. UI仕様
 
@@ -248,6 +254,7 @@ Box(flex)
 | 状態 | 表示(現行・維持) |
 |---|---|
 | 通常 | サイドバー(md以上)/下部タブ(md未満) |
+| 空(0件) | **該当なし**。見出し帯(大会名+状態バッジ)とナビゲーション(6項目固定)は大会情報取得後は常に内容を持ち、0件で空になる要素がない(ナビゲーション項目数は競技形式で変わらない、`04_screen_transition_design.md` §4)。`Outlet` 配下(各画面本体)の空状態は個別画面の担当で、本計画の対象外(§3-5(c)「構造を変えない」) |
 | ローディング | FullPageSpinner(大会情報取得中) |
 | エラー | ErrorState(再試行ボタン付き) |
 
@@ -295,7 +302,7 @@ Box(flex)
 |---|---|---|---|
 | SHR-AC-021 | P1 | 団体戦の共有ページ(TeamSharedPage)の対局カードは、卓番号タイル等の意匠変更後も勝敗を色だけでなく記号で併記し、個人名を出さずチーム名のみで表示する(SHR-AC-020の団体戦版・個人名非表示の回帰防止を兼ねる) | TeamSharedPage.test(Vitest) |
 | RND-AC-015 | P1 | RankingBoard/TeamRankingBoardの4位以降バッジは意匠変更後も順位数字を等幅表示(tnum)し、氏名・SOS/SOSOSと視覚的に区別できる | RankingBoard.test, TeamRankingBoard.test(Vitest) |
-| TRN-AC-017 | P1 | 運営者管理画面の共通レイアウト(TournamentLayout)は見出し帯・ナビゲーションの意匠変更後も、現在のページに対応するナビゲーション項目に`aria-current="page"`が設定され、キーボードのみでフォーカス移動できる | TournamentLayout.test(Vitest、新規) |
+| TRN-AC-017 | P1 | 運営者管理画面の共通レイアウト(TournamentLayout)は見出し帯・ナビゲーションの意匠変更後も、サイドバー(md以上)・下部タブ(md未満)の**両方**で、現在のページに対応するナビゲーション項目に`aria-current="page"`が設定され、キーボードのみでフォーカス移動できる | TournamentLayout.test(Vitest、新規。両ブレークポイントを検証) |
 
 - 優先度は `00_acceptance_policy.md` §4 の定義に従う。判定フローは `02_severity.md`。
   **3件ともP1**: いずれも破られると「利用者が情報を読めない・読み違える」「操作できない」状態になり、
@@ -311,10 +318,12 @@ Box(flex)
 - [ ] `.claude/05_acceptance/01_acceptance_scope.md` — SHR-AC-021・RND-AC-015・TRN-AC-017 を Status=todo で追加(このPR)
 - [ ] `.claude/02_design_system/00_basic_design.md` — §4の「運営者管理画面: 構造・コンポーネント改装は
       対象外」を、共通レイアウト(TournamentLayout)に限定して撤回する記述に更新(このPR)
-- [ ] `.claude/02_design_system/02_component_design.md` — **実装PR**。「共有ページの意匠」節を
-      団体戦・RankingBoard/MatchResultsTable・TournamentLayoutの展開内容で更新する
-- [ ] `.claude/02_design_system/01_design_principles.md` — **実装PR**。新しい角丸例外・トークンの
-      組み合わせが発生した場合のみ更新(新トークンの追加自体は想定していない)
+- [ ] `.claude/02_design_system/02_component_design.md` — 「共有ページの意匠」のヘッダー帯説明に
+      TournamentLayoutへの適用計画への参照を追記(このPR。矛盾防止の暫定注記)。適用後の断定的な
+      記述への更新は**実装PR**で行う
+- [ ] `.claude/02_design_system/01_design_principles.md` — 角丸の表にTournamentLayoutへの
+      同トークン適用計画への参照を追記(このPR。矛盾防止の暫定注記)。既存トークン(ヘッダー帯24px)の
+      再利用のため新しい値の追加はない。適用後の断定的な記述への更新は**実装PR**で行う
 
 `schema/openapi.yaml` と `05_swiss_pairing_algorithm.md` は**更新しない**(API・マッチング・順位計算に変更なし)。
 
