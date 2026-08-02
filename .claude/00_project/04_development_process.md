@@ -10,29 +10,32 @@
 
 ## 1. 全体フロー
 
-```text
-人間: 要件・課題を書く
-  │
-  ▼  /issue
-AI: Issue作成(分類テンプレート・優先度ラベル)   ← 着手時期未定ならここで止める
-  │
-  ▼  /plan <Issue番号>
-AI: 不明点を質問 → Plan PR(コード0行)
-      .claude/06_adr/NN_<slug>.md      (§3の条件に当たる場合)
-      .claude/07_plans/NN_<slug>.md    (計画。形式は `03_feature_plan_template.md`)
-      `01_acceptance_scope.md`         (受け入れケースを Status=todo で追加)
-      schema/openapi.yaml・設計ドキュメント (必要なら)
-  │
-  ▼  CI: docs-lint → ai-design-review → ai-plan-review(いずれも非ゲート)
-人間: Plan PR を Approve してマージ              ← Plan PRの承認はここ(人間が要件どおりの計画かを判断する最初のゲート)
-  │
-  ▼  /pr
-AI: 実装PR(`Closes #N`)→ reviewer / qa / fixer / ci-fixer が回る(`11_cicd_design.md`)
-```
-
 Issue 1件に対して Plan PR 1本と実装PR 1本以上がぶら下がる。**進捗の管理単位は Issue** である。
 
 **人間がやること**は3つに限る: 要件を書く / 質問に答える / Plan PR と実装PR を Approve する。
+
+> **`/pr` の位置づけ**: `/pr` は「現在の作業ツリーの変更からPRを作成する」コマンドであり、実装そのものを
+> 行うコマンドではない。Plan PR承認後、人間がAIに実装を依頼し(スラッシュコマンド化していない)、
+> コード変更ができた状態で `/pr` を叩いてPRへ packaging する、という順序になる。
+
+```mermaid
+flowchart TD
+    A["人間: 要件・課題を書く"] -->|"/issue"| B["AI: Issue作成<br/>(分類テンプレート・優先度ラベル)"]
+    B -.->|"着手時期未定"| Z["ここで停止(backlog)"]
+    B -->|"/plan &lt;Issue番号&gt;"| C["AI: 不明点を質問 → Plan PR(コード0行)"]
+    C --> C1["ADR<br/>(§3の条件に当たる場合)"]
+    C --> C2["07_plans/NN_slug.md<br/>(計画)"]
+    C --> C3["01_acceptance_scope.md<br/>(受け入れケースをStatus=todoで追加)"]
+    C --> C4["schema/openapi.yaml・設計ドキュメント<br/>(必要なら)"]
+    C1 --> D["CI: docs-lint → ai-design-review → ai-plan-review<br/>(いずれも非ゲート)"]
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    D --> E["人間: Plan PR を Approve してマージ<br/>(要件どおりの計画かを判断する最初のゲート)"]
+    E --> H["人間: 実装を依頼 → AI: 計画に基づき実装<br/>(コード変更)"]
+    H -->|"/pr"| F["AI: 実装PR作成(Closes #N)"]
+    F --> G["reviewer / qa / fixer / ci-fixer が回る"]
+```
 
 ---
 
@@ -49,6 +52,31 @@ Issue 1件に対して Plan PR 1本と実装PR 1本以上がぶら下がる。**
 
 - 「Plan PR 不要」の種別でも、実装が想定より大きくなった時点で Plan PR に切り替えてよい。
 - 受け入れケースの追加・変更・廃止の判断は**人間のみ**が行う(`00_acceptance_policy.md` §7)。AIは案を出すところまで。
+
+### 受け入れケースとは
+
+`.claude/05_acceptance/01_acceptance_scope.md`(受け入れケース台帳)に1行1ケースで積む、
+「どの受け入れ基準があり、どこまで実装済みか」の台帳。**仕様書ではない**(基準の一文とID・状態のみを持ち、
+仕様の詳細は設計ドキュメントを参照する)。
+
+- **ID体系**: `<コンポーネントPrefix>-AC-<3桁連番>`(例: `TRN-AC-003`)。コンポーネントはcontractテストクラス単位
+- **Status**: `todo`(定義済み・未着手)→ `in_progress`(実装PRが開いている)→ `done`(受け入れテストが存在しCIで通っている)
+- **優先度**: `02_severity.md` のCritical/Major/Minorに対応する P0/P1/P2(`00_acceptance_policy.md` §4)
+- Plan PRで `todo` として追加 → 実装PRで対応するテストに `@DisplayName` 等でIDを埋め込み `done` に更新、が基本の流れ(詳細は§6のトレーサビリティの鎖)
+- 台帳とテストの双方向の突合は `docs-lint.py`(機械検査)と `ai-qa.yml`(AIによる意味的な突合)の二段構え
+
+```mermaid
+flowchart TD
+    S["Issueの種別を判定"] --> BUG["バグ修正<br/>(bug.yml)"]
+    S --> CHORE["リファクタ・保守<br/>(chore.yml)"]
+    S --> FEAT["機能追加・挙動変更<br/>(feature.yml)"]
+    S --> ARCH["アーキテクチャ・技術選定<br/>(chore.ymlで「はい」を選択)"]
+
+    BUG --> BUG_R["Plan PR: 不要(実装PRに同梱)<br/>ADR: ×<br/>設計ドキュメント: 実装と乖離していれば<br/>受け入れケース: 再発防止を1件追加"]
+    CHORE --> CHORE_R["Plan PR: 不要<br/>ADR: ×<br/>設計ドキュメント: ×<br/>受け入れケース: ×"]
+    FEAT --> FEAT_R["Plan PR: 必須<br/>ADR: §3の条件に当たれば<br/>設計ドキュメント: ○<br/>受け入れケース: ○"]
+    ARCH --> ARCH_R["Plan PR: 必須<br/>ADR: 必須<br/>設計ドキュメント: ○<br/>受け入れケース: —"]
+```
 
 ---
 
@@ -145,15 +173,17 @@ Status と PR の更新は `/pr` が実装PRの中で行う。`done` になっ�
 
 ## 6. トレーサビリティの鎖
 
-```text
-Issue #N ──▶ Plan PR (本文に `Refs #N`) ──▶ 実装PR (本文に `Closes #N`)
-                    │                              │
-                    └─▶ 受け入れケースID ───────────┴─▶ テスト(@DisplayName / test名)
-                            (Status=todo)              (Status=done)
-```
-
 右端2つの突合は `docs-lint.py` が双方向で機械検査している(`00_acceptance_policy.md` §6)。
 左側の Issue ↔ PR は GitHub の参照機能に任せる(`Closes` で Issue が自動クローズされる)。
+
+```mermaid
+graph LR
+    Issue["Issue #N"] -->|"Plan PR本文にRefs #N"| PlanPR["Plan PR"]
+    PlanPR -->|"実装PR本文にCloses #N"| ImplPR["実装PR"]
+    PlanPR --> AC["受け入れケースID<br/>(Status=todo)"]
+    AC -->|"docs-lint.pyが双方向で機械検査"| Test["テスト<br/>(@DisplayName / test名)<br/>(Status=done)"]
+    ImplPR --> Test
+```
 
 ---
 
