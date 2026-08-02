@@ -1,6 +1,6 @@
 # 06. デザインシステムを「MUI標準に寄せる」方針から独自トークンの作り込みへ転換する
 
-- Status: Proposed
+- Status: Accepted
 - Issue: #115
 - Date: 2026-08-02
 

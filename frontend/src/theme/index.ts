@@ -51,14 +51,14 @@ declare module '@mui/material/styles' {
 export const theme = createTheme({
   palette: {
     primary: { main: '#1B5E43', dark: '#0F3D2A', light: '#E8F2ED' },
-    secondary: { main: '#8D6E3F' },
+    secondary: { main: '#8A6530' },
     success: { main: '#2E7D32' },
     error: { main: '#C62828' },
-    warning: { main: '#EF6C00' },
+    warning: { main: '#B34F00' },
     info: { main: '#1565C0' },
-    text: { primary: '#1A1A1A', secondary: '#5F6368' },
-    background: { default: '#FAFAF7', paper: '#FFFFFF' },
-    divider: '#E0E0DC',
+    text: { primary: '#231F1B', secondary: '#6B655C' },
+    background: { default: '#F7F3EC', paper: '#FFFDF9' },
+    divider: '#DDD4C4',
     rank: {
       gold: { main: '#F5C542', background: '#FBE8A6' },
       silver: { main: '#9AA0A6', background: '#E4E5E7' },
@@ -96,6 +96,11 @@ export const theme = createTheme({
       // (TournamentLayoutのタイトル等)の左位置がページごとにズレるのを防ぐ
       styleOverrides: {
         html: { scrollbarGutter: 'stable' },
+      },
+    },
+    MuiTabs: {
+      styleOverrides: {
+        indicator: { height: 3, borderRadius: 1.5 },
       },
     },
   },

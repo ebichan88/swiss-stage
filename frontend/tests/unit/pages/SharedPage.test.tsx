@@ -288,4 +288,34 @@ describe('SharedPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'このURLは無効です' })).toBeInTheDocument();
   });
+
+  it('SHR-AC-020: 対局カードは勝敗を色だけでなく記号(○/●)で併記する', async () => {
+    server.use(
+      http.get(`/api/v1/shared/${TOKEN}`, () =>
+        HttpResponse.json(
+          apiSuccess(
+            sharedTournamentOf({
+              rounds: [
+                roundOf({
+                  status: 'PLAYING',
+                  matches: [
+                    matchOf({
+                      result: 'PLAYER1_WIN',
+                      player1ReportedResult: 'PLAYER1_WIN',
+                      player2ReportedResult: 'PLAYER1_WIN',
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ),
+        ),
+      ),
+    );
+
+    renderSharedPage();
+
+    expect(await screen.findByText('○ 架空 太郎(テスト囲碁会)')).toBeInTheDocument();
+    expect(screen.getByText('● 仮名 花子')).toBeInTheDocument();
+  });
 });
