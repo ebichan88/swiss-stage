@@ -82,8 +82,12 @@ jobs:
       - name: Commit updated baselines
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.update_snapshots }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # containerジョブでの実行時にリポジトリの所有者判定(dubious ownership)で
+          # ローカルconfig書き込み(`git config user.name`)が失敗することがあるため、
+          # safe.directoryを明示し、identityは--globalで設定する
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add tests/vrt/__screenshots__/
           if git diff --cached --quiet; then
             echo "ベースラインに変更はありません"
