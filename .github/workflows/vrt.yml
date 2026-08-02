@@ -103,6 +103,11 @@ jobs:
     permissions:
       pull-requests: write
     steps:
+      # gh pr comment はリポジトリを git remote から自動判定するため、checkout していないと
+      # 「fatal: not a git repository」で失敗する(vrtジョブはPlaywrightコンテナ内の別ジョブのため
+      # ここではファイルを使わないが、gh CLIの実行にはリポジトリコンテキストが必要)
+      - uses: actions/checkout@v4
+
       - name: ベースライン更新の導線をPRに案内
         env:
           GH_TOKEN: ${{ github.token }}
