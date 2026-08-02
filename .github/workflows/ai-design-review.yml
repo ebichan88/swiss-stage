@@ -37,6 +37,11 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: "claude,github-actions"
+          # #105調査: show_full_outputはターンごとのtool_use/tool_result(どのBash呼び出しが
+          # 拒否されたか)を残すための一時的な診断用。ai-review.ymlの同種インシデントの前例
+          # (同コメント参照)に倣う。下記のコマンド連結禁止の指示で再発しなくなったことを
+          # 数回分確認できたら外してよい
+          show_full_output: true
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
@@ -48,9 +53,15 @@ jobs:
 
             レポートの投稿(1PRにつき1コメントを更新し続けるsticky方式):
             1. レポートを一時ファイル(例: /tmp/design-review-report.md)に書き出す
-            2. `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --paginate --jq '.[] | select(.body | startswith("<!-- swiss-stage-ai-design-review -->")) | .id'` で既存コメントを探す
-            3. 見つかったら `gh api --method PATCH repos/${{ github.repository }}/issues/comments/<ID> -F body=@/tmp/design-review-report.md` で更新する
+            2. `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --paginate --jq '.[] | select(.body | startswith("<!-- swiss-stage-ai-design-review -->")) | .id'` を**単独のBash呼び出し**として実行し、既存コメントのIDを確認する
+            3. 見つかったら、そのIDをあなた自身が読み取って直接埋め込んだ `gh api --method PATCH repos/${{ github.repository }}/issues/comments/<ID> -F body=@/tmp/design-review-report.md` を**別の単独のBash呼び出し**として実行して更新する
             4. 見つからなければ `gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/design-review-report.md` で新規投稿する
+
+            **重要**: 手順2と3を`&&`・`;`・`$(...)`等でコマンド連結しないでください。
+            許可されたBashツールのパターン(`Bash(gh api:*)`)はコマンド文字列の先頭一致で
+            判定されるため、連結すると文字列が`gh api`で始まらなくなり実行が拒否され、
+            レポートが投稿・更新されずに終わります。各コマンドは独立したBashツール呼び出しに
+            分けてください。
 
             レポートはPRコメントとしてのみ投稿してください。結果をメッセージ本文に出力しないでください。
             **重要**: サブエージェント(Agent / Task ツール)に委譲しないでください。
