@@ -18,3 +18,8 @@ sticky comment更新不具合の修正)が実際に2回目以降のpushでコメ
 2. `ai-plan-review.yml` / `ai-design-review.yml` が起動し、sticky commentが新規投稿される
 3. 追記コミットをpushする(2回目のpush)
 4. 同じsticky commentの `updated_at` が更新されていることを確認する
+
+## 2回目push
+
+このコミットが2回目のpushにあたる。ここまで来てsticky commentの `updated_at` が
+1回目の投稿時刻から進んでいれば修正成功、変化していなければ再発。
