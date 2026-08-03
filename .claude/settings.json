@@ -19,7 +19,7 @@
             "Bash(gh pr create *)",
             "Bash(gh run *)",
             "Bash(gh api repos/*/issues/*/comments*)",
-            "Bash(gh api --method PATCH *)",
+            "Bash(gh api --method PATCH repos/*/issues/comments/*)",
             "Bash(pnpm run *)",
             "Bash(pnpm install)",
             "Bash(pnpm add *)",

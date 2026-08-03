@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, sys, re
+import fnmatch, json, sys, re
 from pathlib import Path
 
 def _load_permissions(settings_file):
@@ -39,6 +39,11 @@ UNSAFE_SHELL_PATTERN = re.compile(r'[><`]|\$\(')
 
 def matches(pattern, wildcard, command):
     command = command.strip()
+    if "*" in pattern:
+        # 文字列途中に`*`を埋め込んだパターン(例: `repos/*/issues/comments/*`)。
+        # 末尾スペース+`*`規約(wildcard=True)は extract() で既にトリム済みの
+        # ためここには残らない。fnmatchでコマンド全体を対象にglob解釈する。
+        return fnmatch.fnmatchcase(command, pattern)
     if wildcard:
         return command == pattern or command.startswith(pattern + " ")
     return command == pattern
