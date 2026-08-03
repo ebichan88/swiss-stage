@@ -35,8 +35,12 @@
         ],
         "ask": [
             "Bash(gh pr merge *)",
-            "Bash(gh api --method *)",
-            "Bash(gh api -X *)"
+            "Bash(gh api --method POST *)",
+            "Bash(gh api --method PUT *)",
+            "Bash(gh api --method DELETE *)",
+            "Bash(gh api -X POST *)",
+            "Bash(gh api -X PUT *)",
+            "Bash(gh api -X DELETE *)"
         ],
         "deny": [
             "Read(./.env)",
