@@ -8,6 +8,9 @@ name: E2E
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review]
+    # 純ドキュメントPR(挙動が変わらない)はスキップ。ai-qa.ymlと同じ基準
+    paths-ignore:
+      - '**.md'
   workflow_dispatch:
 
 # 同一PRで連続pushされたら古い実行をキャンセルして最新だけ残す(E2Eは重いため)

@@ -1,6 +1,9 @@
 name: CI
 on:
   pull_request:
+    # 純ドキュメントPR(挙動が変わらない)はスキップ。ai-qa.ymlと同じ基準
+    paths-ignore:
+      - '**.md'
   push:
     branches: [main]
   # AI Fixerの修正コミットがイベントを発火しない場合に ai-review.yml から起動する
