@@ -12,7 +12,7 @@
 
 | ワークフロー | トリガー | 目的 |
 |---|---|---|
-| `ci.yml` | `pull_request`(**.mdのみのPRを除く) / `push`(main) | 単体・統合テスト、ビルド(PRごと必須。§2)+ 失敗時の決定論的な自動修正(§2.7) |
+| `ci.yml` | `pull_request` / `push`(main) | 単体・統合テスト、ビルド(PRごと必須。§2)+ 失敗時の決定論的な自動修正(§2.7)。**.mdのみのPRでもdocs-lintのため常に起動 |
 | `e2e.yml` | `pull_request`(**.mdのみのPRを除く) / `workflow_dispatch` | クリティカルパスのE2E(Playwright)。PRごとに自動実行(当面は非required。§2.8) |
 | `vrt.yml` | `pull_request`(UI関連pathsのみ) / `workflow_dispatch` | StorybookページのVisual Regression Test。**非ブロッキング**。ベースライン更新は`workflow_dispatch`のみ(§2.8) |
 | `ai-review.yml` | `pull_request`(**.mdのみのPRを除く) | AIコードレビュー・自動修正(Critical/Majorのみ。§2.5) |
@@ -22,10 +22,15 @@
 | `ai-design-review.yml` | `pull_request`(`.claude/**`/`schema/**`/`CLAUDE.md`のみ) | 設計ドキュメント間の整合性(非ゲート・レポートのみ。§2.10) |
 | `ai-plan-review.yml` | `pull_request`(`.claude/07_plans/**`/`.claude/06_adr/**`のみ) | Plan PRの計画の抜け(異常系・境界・4状態・受け入れケース)を検出(非ゲート・レポートのみ。§2.11) |
 
-`ci.yml` / `e2e.yml` / `ai-review.yml` / `ai-qa.yml` / `guard.yml` は、変更が `**.md`
+`e2e.yml` / `ai-review.yml` / `ai-qa.yml` / `guard.yml` は、変更が `**.md`
 (ドキュメントファイル)のみのPR(例: Plan PR)では起動しない(`paths-ignore`)。`.claude/`
 配下はほぼ全て `.md` のため、この基準で「利用者から見た挙動を変えない純ドキュメント変更」を
 実質的にカバーできる。コードを1つでも含むPRでは従来通り全ワークフローが起動する。
+
+`ci.yml` だけは例外で `paths-ignore` を付けない。`frontend` ジョブが無条件で実行する
+`docs-lint`(受け入れケース台帳のID整合・ファイル参照切れの機械検査、L64以降のYAML参照)は
+`.md` のみのPR(Plan PR等)でこそ検出対象があるため、ドキュメントのみの変更でも常に起動させる
+(AI Design Reviewで指摘・修正: D1 plan-pr-docs-lint-skipped-by-paths-ignore)。
 
 全ワークフローがPRごとに自動実行される(`vrt.yml` はUI関連のpathsに限る)。ただし
 **マージをブロックするのは `ci.yml` / `guard.yml` のみ**で、`e2e.yml` / `vrt.yml` は
