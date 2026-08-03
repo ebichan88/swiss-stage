@@ -12,6 +12,9 @@ name: Test Weakening Guard
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review]
+    # 純ドキュメントPR(挙動が変わらない)はスキップ。ai-qa.ymlと同じ基準
+    paths-ignore:
+      - '**.md'
 
 concurrency:
   group: guard-${{ github.event.pull_request.number }}

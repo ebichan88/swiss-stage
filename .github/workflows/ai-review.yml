@@ -4,6 +4,9 @@ on:
   pull_request:
     # unlabeled: needs-humanラベルを外した際に自動レビューを再開するため
     types: [opened, synchronize, ready_for_review, unlabeled]
+    # 純ドキュメントPR(挙動が変わらない)はスキップ。ai-qa.ymlと同じ基準
+    paths-ignore:
+      - '**.md'
 
 # 同一PRで連続pushされたら古い実行をキャンセルして最新だけ実行する。
 # Fixerのpushがsynchronizeイベントを発火する環境では、実行中のランは

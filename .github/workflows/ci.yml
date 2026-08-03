@@ -1,6 +1,9 @@
 name: CI
 on:
   pull_request:
+    # paths-ignoreを付けない: frontendジョブのdocs-lint(受け入れケース台帳の
+    # ID整合・ファイル参照切れ検査)がmdのみのPR(Plan PR等)でこそ必要なため、
+    # ドキュメントのみの変更でも常に起動させる(AI Design Reviewで指摘・修正: D1)
   push:
     branches: [main]
   # AI Fixerの修正コミットがイベントを発火しない場合に ai-review.yml から起動する
