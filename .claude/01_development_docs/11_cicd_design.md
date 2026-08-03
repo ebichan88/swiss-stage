@@ -167,7 +167,8 @@ flowchart TD
   - 過去に `Fixed: <slug>` 済みの指摘が再指摘された(修正が無効)
   - レポートの形式崩れ(指摘を抽出できない)
   - レポートが存在しない(`UNKNOWN`)。この場合はCIも失敗させる
-- **needs-human ラベル**: 付いている間は自動ループ停止。人間が対応してラベルを外すと再開
+- **needs-human ラベル**: 付いている間は自動ループ停止。人間が対応してラベルを外すと再開。
+  「対応」の実体(指摘を読んで妥当と判断した後の実際の修正)は §2.12 を参照
 - **Fixerのpush**: pushがpull_requestイベントを発火しない環境向けに、同一ラン内でCI手動起動(`workflow_dispatch`)と再レビューを行う。発火する環境ではconcurrencyで新しいランに引き継がれる
 - **マージ判断は常に人間**。PASSは「人間レビューの前処理完了」の意味
 
@@ -472,6 +473,7 @@ flowchart TD
 | 不足提案 | `human-only` | ❌ 人間(VERDICTに影響しないためゲート対象外) |
 
 1件でも `close: test-side` 以外が混ざっていれば、qa-fixerは起動せず `needs-human` にする。
+`ledger-side`/`human-only` を人間が「妥当」と判断した後の対応は §2.12 を参照。
 
 ### 設計上の要点
 
@@ -530,6 +532,39 @@ design-reviewerと同時に起動する。
   台帳整合(QA)・機械検査済み項目(ADR/プランのヘッダ・命名規約はdocs-lint)は指摘しない。
   `01_review_checklist.md` と同じ発想で、plan-reviewer自身の定義内に「禁止」節として明記している
 - **sticky comment**: `<!-- swiss-stage-ai-plan-review -->`
+
+非ゲートのため自動修正の経路が最初から無い。指摘への対応は §2.12 を参照。
+
+---
+
+## 2.12 指摘をセッションで直接修正する(`/apply-review`)
+
+`ai-review.yml`(§2.5)・`ai-qa.yml`(§2.9)はfixer/qa-fixerの対象外になった指摘を
+`needs-human` ラベルで止め、`ai-plan-review.yml`(§2.11)は最初から自動修正の経路を持たない
+(非ゲート・レポートのみ)。いずれの場合も、「人間がPRコメントを読んで指摘は妥当だと
+判断した」あとに実際の修正へつなげる手段は、このドキュメントが扱う3ワークフローの
+どこにも属さない(**CIの外**、対話セッション側の話)。これまではPRコメントの内容を
+手でコピペしてセッションに貼るしかなかった。
+
+`.claude/commands/apply-review.md`(`/apply-review <PR番号> [指摘ID...]`)が、3種の
+sticky comment(`<!-- swiss-stage-ai-review -->` / `-ai-qa-` / `-ai-plan-review-`)を
+読み取り、`fixer.md`/`qa-fixer.md` と同じ4分類(FIXED/DISPUTED/SKIPPED/FAILED)・
+聖域定義でその場で修正する。指摘ID省略時は、Critical/Major・`close: test-side`・
+plan-reviewerの「抜け」を一括で対象にできる。
+
+CI版のfixer/qa-fixerとの違い:
+
+| | CI版(fixer/qa-fixer) | `/apply-review` |
+|---|---|---|
+| 起動条件 | 機械的なゲート判定(聖域・パス等) | 人間が指摘を読んで妥当と判断した後、明示的に呼ぶ |
+| 権限 | `bypassPermissions` | セッション通常の権限確認に従う |
+| 修正方針が一意に決まらない指摘 | 一律SKIPPED/DISPUTEDに倒す(無人実行のため質問できない) | ユーザーに質問してから進める |
+| plan-reviewerの指摘 | 対応する自動修正が存在しない | 対応する |
+| push | 自動(修正後の再レビューまで同一ラン内) | しない(コミットまで。pushは人間が確認してから) |
+
+聖域(`domain/service` 配下・`schema/`・`.claude/01_development_docs/05_swiss_pairing_algorithm.md`・
+受け入れケース台帳・基準hack検出・テスト弱体化)は変わらず自動修正しない。詳細な判定基準は
+`.claude/commands/apply-review.md` を正とする(ここでは再記述しない)。
 
 ---
 
