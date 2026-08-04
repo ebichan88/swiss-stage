@@ -48,7 +48,9 @@ Plan PR・実装PRをApproveする、の3つに絞る方針を掲げているが
 - **トリガー**: `schedule`(週次。案: `cron: '0 21 * * 1'` = 毎週月曜21:00 UTC/日本時間火曜6:00。
   `mutation.yml` の月曜3:00 UTCと時間帯をずらす)+ `workflow_dispatch`(手動テスト用)
 - **権限**: `contents: write`(ブランチ作成・push)/ `pull-requests: write`(Plan PR作成)/
-  `issues: write`(コメント・ラベル操作)
+  `issues: write`(コメント・ラベル操作)/ `id-token: write`(claude-code-actionのOIDCトークン
+  交換に必須。既存の`ai-review.yml`/`ai-qa.yml`/`ai-design-review.yml`/`ai-plan-review.yml`
+  すべてに存在する権限で、本ワークフローも同じ認証方式を使うため必要)
 - **concurrency**: `group: scheduled-planner` / `cancel-in-progress: false`
   (手動実行とscheduleが重なっても後続を待たせる。実行中のものを取り消して二重選定しない)
 - **選定ステップ(bash・決定的)**: `ai-review.yml` の「Fixerゲート判定」と同じ思想で、
@@ -74,6 +76,10 @@ Plan PR・実装PRをApproveする、の3つに絞る方針を掲げているが
   正規表現でPR本文を検索する。Plan PR本文は `/plan` のテンプレート(`.claude/commands/plan.md`
   手順8)により常に `Refs #<N>` で始まるため通常は表記ゆれが起きないが、判定を厳密な完全一致に
   すると人間が手で作った例外的なPlan PRを誤検知(見逃し)しうるため、緩めに倒す。
+  **ただし番号側は完全一致にする**: `Refs #(\d+)` で数値を抽出し、対象Issue番号と文字列として
+  完全一致するものだけをヒットとする(単純な部分一致にすると、Issue #14 の選定時に無関係な
+  Issue #145 向けのPlan PR本文「Refs #145」に部分一致し、Issue #14 が永久に選定対象から
+  外れる事故になりうるため)。
 
 - **ブランチ命名規約**: `feature/plan-auto-<issue番号>-<slug>`。人間の `/plan` が使う
   `feature/plan-<slug>` と衝突しないよう `auto` を挟み、かつIssue番号を含めることで
@@ -161,6 +167,12 @@ BLOCKEDだけは人間の回答を待つ必要があるため付けたままに�
       作られないことを確認する
 - [ ] アーキテクチャ・技術選定を含まない `type:chore` のIssueに誤って `auto-plan:P2` を
       付けても NOT_APPLICABLE でPlan PRが作られないことを確認する
+- [ ] アーキテクチャ・技術選定を**含む** `type:chore` のIssueに `auto-plan:P*` を付けると
+      PLANNEDとなり、ADR(`.claude/06_adr/`)を含むPlan PRが作成されることを確認する
+      (NOT_APPLICABLE境界の反対側)
+- [ ] Issue #14 のような番号に対し、無関係な Issue #145 向けのPlan PR(本文「Refs #145」)が
+      存在していても誤って「既にPlan PRあり」と判定されない(番号の完全一致)ことを確認する
+- [ ] `refs #12`(小文字)のような表記ゆれのPlan PR本文でも重複起票防止が機能することを確認する
 - [ ] 既にPlan PR(open)が存在するIssueに `auto-plan:P*` が付いていても、選定ステップで
       スキップされ次点のIssueが選定されることを確認する(重複起票防止)
 - [ ] 既にPlan PR(**merged**)が存在するIssueに `auto-plan:P*` が付いていても、選定ステップで
@@ -216,3 +228,15 @@ BLOCKEDだけは人間の回答を待つ必要があるため付けたままに�
   としても他要因のラベルを誤って解除する実害はない。将来、他の自動化がIssueに
   `needs-human` を付けるようになった場合は、`scheduled-planner.yml` 側で無条件に外して
   よいか再検討が必要(現時点ではスコープ外の留意事項として記録するに留める)
+- **ADR/プランの連番衝突**: 決定済み(許容する)。ADR・プランのファイル名は「既存の最大値+1」で
+  採番する(`04_development_process.md` §4・§5)ため、scheduled plannerが週次でPlan PR
+  (場合によりADRも)を作成している最中に、別のIssueへ人間が並行して手動 `/plan` を実行すると、
+  両者が同じ「次の連番」を計算し同一番号のファイルを異なるPRで作ってしまう可能性がある。この
+  場合 `ci.yml` の docs-lint(連番規約検査・必須ゲート)が重複をCI失敗として機械的に検出する
+  ため、後からマージする側は連番を振り直してpushし直すだけで済み、正確性上の実害(異なる決定が
+  同じ番号で共存してしまう等)はない。発生頻度も低いため、採番方式の見直し(例:
+  Issue番号を連番の一部に含める等)は行わず、docs-lintによる検出とリベースで十分と判断する
+- **`backlog`ラベルの扱い**: PLANNED完了時に外すのは `auto-plan:P*`(・付いていれば
+  `needs-human`)のみで、`backlog`(対応時期未定)には触れない。人間向けの既存`/plan`も
+  `backlog`を操作しないため挙動を合わせている。Plan PR作成後も対応時期の見直し(backlogのまま
+  でよいか)は人間がApprove時に判断する
