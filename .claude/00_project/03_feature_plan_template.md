@@ -76,11 +76,18 @@ Plan PRでは、このテンプレートに沿って書いたファイルを `.c
 
 ## 4. 技術設計
 
+このプラン(`07_plans/NN_<slug>.md`)自体に技術設計を文章で書く。**`.claude/01_development_docs/**`
+配下の設計ドキュメント本体はPlan PRでは更新しない**(実装PRで、実装コードと同じPRで更新する。
+`04_development_process.md` §2。決定を書く場所をプラン1箇所に定め、プランと設計ドキュメントが
+ずれて次のレビュー往復を生む事故を防ぐため)。
+
 - **レイヤーごとの変更点**: domain / application / presentation / infrastructure(`01_architecture_design.md` のロジック配置基準に従う)
-- **API変更**: あれば **`schema/openapi.yaml` を先に更新**(API契約のSSoT)。エンドポイント・DTO・エラーコード
-- **データモデル**: DynamoDBのキー・アクセスパターンの追加(`02_database_design.md`)
+- **API変更**: あれば **`schema/openapi.yaml` を計画と同じPRで先に更新する**(API契約のSSoTで、
+  Plan PRの対象に含まれる唯一の設計成果物)。エンドポイント・DTO・エラーコード
+- **データモデル**: DynamoDBのキー・アクセスパターンの追加方針を文章で書く(`02_database_design.md` への反映は実装PR)
 - **フロントエンド**: 追加するページ / features / ui コンポーネント、hooks と queryKey
-- **マッチング・順位計算に触れる場合**: **先に `05_swiss_pairing_algorithm.md` を更新する**(絶対制約の再戦禁止・BYE重複禁止を弱めないこと)
+- **マッチング・順位計算に触れる場合**: 変更方針を文章で書く(絶対制約の再戦禁止・BYE重複禁止を
+  弱めないこと)。`05_swiss_pairing_algorithm.md` への反映は実装PRで、実装コードより先に行う
 
 ## 5. 受け入れケース
 
@@ -98,22 +105,31 @@ Plan PRでは、このテンプレートに沿って書いたファイルを `.c
 - 優先度は `.claude/04_quality/02_severity.md` の判定フローに従う(P0=大会当日に運営が止まる/結果が狂う/情報漏れ)
 - API契約に変化がなくUI表示のみのケースは、Vitest単体テストを検証手段にしてよい
 
-## 6. 更新する設計資料
+## 6. 更新する資料
+
+### Plan PRで更新するもの
 
 更新対象のファイルを**事前に列挙する**。プラン承認 = この範囲の更新の承認。
 
 - [ ] `.claude/05_acceptance/01_acceptance_scope.md` — ケース追加(ほぼ常に対象)
 - [ ] `.claude/06_adr/NN_<slug>.md` — ADRを書く条件(`04_development_process.md` §3)に当たる場合
 - [ ] `schema/openapi.yaml` — API変更がある場合(実装より先)
-- [ ] `.claude/01_development_docs/05_swiss_pairing_algorithm.md` — マッチング・順位計算の仕様変更(実装より先)
+
+### 実装PRで更新が必要な設計ドキュメント(今は更新しない・実装時の申し送り)
+
+- [ ] `.claude/01_development_docs/05_swiss_pairing_algorithm.md` — マッチング・順位計算の仕様変更がある場合(実装コードより先に更新する)
 - [ ] その他(`02_database_design.md` / `04_screen_transition_design.md` / `06_error_handling_design.md` / `02_component_design.md` …)
 
 ## 7. DoD(完了の定義)
 
+**DoDは主要シナリオが動くことを確認する完了条件であり、境界値・条件の組み合わせを網羅する
+テスト設計ではない**(それは §5 受け入れケースと `09_test_strategy.md` §2.5 の責務)。
+§5を「該当なし」とした場合の受け皿としてDoDに項目を積み増さないこと。
+
 - [ ] `pnpm run check`(frontend)/ `./gradlew check`(backend)が通る
 - [ ] 受け入れケースが台帳で done になり、対応するテストにIDが埋まっている
 - [ ] **新規画面には最低1本のsmoke E2E**(表示できる + 主要導線を1回通す)、または既存クリティカルパスへの検証追加がある
-- [ ] §6 で挙げた設計資料が同じPRで更新されている
+- [ ] §6「実装PRで更新が必要な設計ドキュメント」が実装PRで更新されている
 - [ ] ローカル実機で動作確認済み(`.claude/skills/verify`)
 - [ ] 大きめのUI変更(新規画面・レイアウト変更)の場合、`vrt.yml` を手動実行してベースラインを更新した(`09_test_strategy.md`)
 
