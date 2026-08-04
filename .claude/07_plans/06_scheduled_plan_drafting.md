@@ -149,6 +149,11 @@ BLOCKEDだけは人間の回答を待つ必要があるため付けたままに�
       選定 → Plan PR作成 までが実際に動くことを確認する
 - [ ] 不明点があるテスト用Issueで BLOCKED(質問コメント + `needs-human`)になることを確認し、
       人間が返信した後の次回実行で再開して PLANNED になることを確認する
+- [ ] BLOCKEDのまま人間からの返信がない状態で次回実行すると、最新コメントがsticky comment
+      自身のままなので再度skipされ(`needs-human`は付いたまま)、次点の優先度のIssueが
+      選定されることを確認する(返信ありと対になる境界の確認)
+- [ ] 同一Issueに `auto-plan:P0` と `auto-plan:P2` が同時に付いている場合、`P0` として
+      選定されることを確認する(複数ラベル付与時の組み合わせの検証)
 - [ ] `type:bug` のIssueに誤って `auto-plan:P2` を付けても NOT_APPLICABLE でPlan PRが
       作られないことを確認する
 - [ ] アーキテクチャ・技術選定を含まない `type:chore` のIssueに誤って `auto-plan:P2` を
@@ -195,3 +200,10 @@ BLOCKEDだけは人間の回答を待つ必要があるため付けたままに�
 - **BLOCKED再発時のコメント運用**: 決定済み。1回目・2回目以降の質問いずれも新規コメントは
   作らず、同一の `<!-- swiss-stage-ai-planner-question -->` sticky commentを更新(PATCH)し
   続ける(他の全エージェントと同じsticky comment運用パターン)
+- **`needs-human`ラベルをIssue単位で使う初のケース**: これまで `needs-human` は
+  reviewer/fixer/qa/qa-fixer/ci-fixer(`11_cicd_design.md` §2.5等)によりPR単位でのみ運用
+  されてきたが、本プランはIssue単位で同じラベルを使う。現時点でIssueに `needs-human` を
+  付ける自動化は `scheduled-planner.yml` のみのため、PLANNED完了時に「付いていれば外す」
+  としても他要因のラベルを誤って解除する実害はない。将来、他の自動化がIssueに
+  `needs-human` を付けるようになった場合は、`scheduled-planner.yml` 側で無条件に外して
+  よいか再検討が必要(現時点ではスコープ外の留意事項として記録するに留める)
