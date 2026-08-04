@@ -588,7 +588,7 @@ flowchart TD
     D -->|"PLANNED"| E["/planと同じ手順でPlan PR作成<br/>auto-plan:P*・needs-humanを外す"]
     D -->|"BLOCKED"| F["質問をsticky commentで投稿<br/>needs-humanを付けて終了"]
     D -->|"NOT_APPLICABLE"| G["Plan PR不要な種別だった<br/>その旨をコメントしauto-plan:P*を外す"]
-    D -->|"FAILED"| H["変更を破棄しneeds-humanを付ける"]
+    D -->|"FAILED"| H["変更を破棄しauto-plan:P*を外し<br/>needs-humanを付ける(要人間対応)"]
 ```
 
 - **選定はAIに委ねずbashで行う**(`ai-review.yml`のFixerゲート判定と同じ思想)。優先度

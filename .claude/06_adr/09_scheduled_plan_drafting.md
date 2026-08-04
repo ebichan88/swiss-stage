@@ -41,12 +41,19 @@ Issueのうち、優先度が最も高く・同じ優先度なら最も古いも
 - **重複起票の防止**: 既にそのIssueを参照する Plan PR(`Refs #N` を本文に含む、open または
   merged)が存在する場合は選定対象から除外する
 - **処理件数**: 1回の実行につき1件のみ(§3案Dを参照)
-- **完了後のラベル操作**: 4分類(`.claude/07_plans/06_scheduled_plan_drafting.md` §4.3)の
-  うち **BLOCKED以外(Plan PRを作成できた/そもそもPlan PR不要だった/検証に失敗した)は
-  必ず対象Issueから `auto-plan:P*` ラベル(付いていれば `needs-human` も)を外す**。
-  再選定を防ぐための状態遷移として扱う。BLOCKEDのみ、人間の回答を待つため付けたままにする
-  (外さないと選定ステップの除外条件だけでは弾けず、同じIssueが次回も最優先で選ばれ続け、
-  他のbacklog Issueの着手を妨げてしまうため)
+- **完了後のラベル操作**: 4分類(`.claude/07_plans/06_scheduled_plan_drafting.md` §4.3)ごとに
+  `auto-plan:P*` は**必ず**外す(再選定を防ぐための状態遷移。外さないと選定ステップの除外条件
+  だけでは弾けず、同じIssueが次回も最優先で選ばれ続け、他のbacklog Issueの着手を妨げてしまう)。
+  一方 `needs-human` の扱いは分類によって異なる:
+  - **PLANNED**: `auto-plan:P*` を外す。`needs-human` が付いていれば(過去にBLOCKEDだった場合)
+    それも外す
+  - **NOT_APPLICABLE**: `auto-plan:P*` を外す。`needs-human` は通常付いていないが、念のため
+    付いていれば外す
+  - **FAILED**: `auto-plan:P*` を外す。ただし **`needs-human` は付ける**(または維持する)。
+    検証に失敗した原因は人間が確認すべきであり、`needs-human` まで外すと「何も起きなかった」
+    ように見えてしまうため
+  - **BLOCKED**: `auto-plan:P*` は外さない(人間の回答を待って再選定させる必要があるため)。
+    `needs-human` を付ける
 - **スコープ**: Plan PRドラフトの自動作成までであり、実装PRの自動作成・Plan PR/実装PRの
   自動マージは対象外(承認ゲートは人間に残す)
 
