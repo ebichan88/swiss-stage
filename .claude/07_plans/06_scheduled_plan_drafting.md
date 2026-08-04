@@ -57,7 +57,10 @@ Plan PR・実装PRをApproveする、の3つに絞る方針を掲げているが
   ```text
   for P in P0 P1 P2:
     for issue in (auto-plan:P<P> ラベル付きのopen issue、createdAt昇順):
-      - 既にそのIssueを参照するPlan PR(本文に "Refs #<N>"、open または merged)があれば skip
+      - 既にそのIssueを参照するPlan PR(本文に "Refs #<N>"、open・merged・closed(未マージ)の
+        いずれでも)があれば skip。**closed(未マージ)の場合は追加で**、その旨をIssueに
+        コメントして needs-human を付ける(却下された可能性が高いため可視化する。再指摘は
+        冪等でよい。再挑戦には人間が auto-plan:P* を外して付け直す必要がある)
       - needs-human が付いており、かつ最新コメントが
         <!-- swiss-stage-ai-planner-question --> 自身(＝未回答)であれば skip
       - リモートに feature/plan-auto-<N>-* ブランチが既に存在すれば
@@ -162,6 +165,9 @@ BLOCKEDだけは人間の回答を待つ必要があるため付けたままに�
       スキップされ次点のIssueが選定されることを確認する(重複起票防止)
 - [ ] 既にPlan PR(**merged**)が存在するIssueに `auto-plan:P*` が付いていても、選定ステップで
       スキップされ次点のIssueが選定されることを確認する(重複起票防止・merged側)
+- [ ] 既にPlan PR(**closed・未マージ**)が存在するIssueに `auto-plan:P*` が付いている場合、
+      選定ステップでスキップされ次点のIssueが選定されること、かつその旨のコメントと
+      `needs-human` が付くことを確認する(重複起票防止・closed側)
 - [ ] `auto-plan:P1` の方が `auto-plan:P0` より古いIssueであっても、`auto-plan:P0` のIssueが
       先に選定されることを確認する(優先度順の検証)
 - [ ] 同じ `auto-plan:P<N>` を持つ複数Issueがある場合、作成日時が最も古いものが選定される
