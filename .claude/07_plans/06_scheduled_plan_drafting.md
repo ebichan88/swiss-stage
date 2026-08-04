@@ -82,7 +82,7 @@ Plan PR・実装PRをApproveする、の3つに絞る方針を掲げているが
 
 | 分類 | 内容 | 事後処理 |
 |---|---|---|
-| **PLANNED** | Issue本文・コメント全体から計画作成に十分な情報が揃っている(最初から、または過去の質問への回答により) | `/plan` と同じ手順(分類判定→ADR要否→計画作成→受け入れケース→docs-lint→ブランチ→Plan PR作成→Issueコメント)を実行し、`auto-plan:P*`(・付いていれば`needs-human`)を外す |
+| **PLANNED** | Issue本文・コメント全体から計画作成に十分な情報が揃っている(最初から、または過去の質問への回答により) | `/plan` と同じ手順(分類判定→ADR要否→計画作成→受け入れケース→docs-lint→ブランチ→Plan PR作成→Issueコメント)を実行し、`auto-plan:P*`(・付いていれば`needs-human`)を外す。**Issue本文の進捗チェックリスト「Plan PR」項目も自動でチェックする**(`/plan`手順9は人間に確認するが、`planner`は無人実行のため`auto-plan:P*`の付与自体を事前同意とみなし自動編集する。`06_adr/09_scheduled_plan_drafting.md`§2参照) |
 | **BLOCKED** | 不明点があり、AskUserQuestion相当の質問(最大3問)が必要 | `<!-- swiss-stage-ai-planner-question -->` sticky commentで質問を投稿し `needs-human` を付けて終了 |
 | **NOT_APPLICABLE** | 選定されたIssueの種別(`type:bug`、またはアーキテクチャ・技術選定を含まない`type:chore`)が`04_development_process.md` §2のトリガー表でそもそもPlan PR不要と判定される(誤ってラベルが付いた場合の安全弁) | その旨をIssueにコメントし `auto-plan:P*` を外す(Plan PRは作らない) |
 | **FAILED** | docs-lint等の検証を通せなかった | 変更を破棄し、その旨をIssueにコメントして `needs-human` を付ける。**`auto-plan:P*` も外す**(PLANNED/NOT_APPLICABLEと同じくラベルを外して選定対象から除く。外さないと選定ステップの除外条件(4.2)に当たらず、同じIssueが次回も最優先で選ばれ続け、他のbacklog Issueが永久に処理されなくなるため) |
@@ -164,3 +164,11 @@ BLOCKEDだけは人間の回答を待つ必要があるため付けたままに�
   しなかった痕跡」とみなして `needs-human` を付けてskipする(自動削除・自動再作成はしない。
   §4.3「途中失敗時の扱い」参照)。人間がブランチを確認・削除し `needs-human` を外せば、
   次回実行時に再度候補になる
+- **人間の手動`/plan`との競合**: 決定済み(許容する)。scheduled plannerが処理中のIssueに
+  人間が同じタイミングで手動 `/plan` を実行する競合は、重複起票防止の仕組みが「実行完了後の
+  痕跡」しか検出できないため理論上は防げない。発生確率が低く、最悪でもPlan PRが2本並行して
+  開くだけでデータ破壊等の実害はないため、追加のロック機構は設けない
+  (`06_adr/09_scheduled_plan_drafting.md` §2)
+- **BLOCKED再発時のコメント運用**: 決定済み。1回目・2回目以降の質問いずれも新規コメントは
+  作らず、同一の `<!-- swiss-stage-ai-planner-question -->` sticky commentを更新(PATCH)し
+  続ける(他の全エージェントと同じsticky comment運用パターン)

@@ -583,6 +583,7 @@ CI版のfixer/qa-fixerとの違い:
 flowchart TD
     A["週次schedule起動"] --> B["選定ステップ(bash・決定的)<br/>auto-plan:P0→P1→P2の順、同順位は最古"]
     B -->|"対象なし"| Z["no-op終了"]
+    B -->|"feature/plan-auto-&lt;N&gt;-*が既に存在<br/>(前回実行が完走しなかった痕跡)"| I["needs-humanを付けてskip<br/>(自動削除・再作成はしない)"]
     B -->|"対象Issue #N決定"| C["plannerエージェント起動<br/>(Issue本文+コメント全体を読む)"]
     C --> D{"分類"}
     D -->|"PLANNED"| E["/planと同じ手順でPlan PR作成<br/>auto-plan:P*・needs-humanを外す"]
@@ -594,12 +595,26 @@ flowchart TD
 - **選定はAIに委ねずbashで行う**(`ai-review.yml`のFixerゲート判定と同じ思想)。優先度
   (`auto-plan:P0`→`P1`→`P2`)→同一優先度内はIssue作成日時の古い順。既にそのIssueを参照する
   Plan PR(本文に`Refs #N`、open/merged問わず)がある場合は選定対象から除外する
+- **途中失敗(ジョブタイムアウト・インフラ障害等)の検知**: `planner`が4分類のいずれにも
+  到達できずジョブが強制終了すると、ラベル操作もコメント投稿も行われない。ブランチ名を
+  `feature/plan-auto-<issue番号>-<slug>` に固定し、選定ステップで同名ブランチ
+  (`feature/plan-auto-<N>-*`)が既に存在する場合は「前回実行が完走しなかった痕跡」とみなして
+  `needs-human` を付けてskipする(自動削除・自動再作成はしない。
+  `06_adr/09_scheduled_plan_drafting.md` §2参照)
 - **無人実行時のAskUserQuestion代替**: `planner`はAskUserQuestionを使わず、不明点があれば
   `<!-- swiss-stage-ai-planner-question -->` sticky commentで質問し `needs-human` を付けて
   終了する(BLOCKED)。次回実行時、対象Issueの最新コメントがこのsticky comment自身のままなら
   「未回答」として再度スキップし、次点の優先度のIssueへ処理を進める。人間が通常のコメントで
   返信すれば、Issue全体を毎回読み直す設計により自動的に「回答あり」として計画作成を再開する。
-  **人間はコマンドを叩く必要はなく、Issueにコメントを返すだけでよい**
+  **人間はコマンドを叩く必要はなく、Issueにコメントを返すだけでよい**。BLOCKEDから再開した後、
+  再び不明点が生じて2回目以降の質問を投稿する場合も新規コメントは作らず、同一のsticky comment
+  を更新(PATCH)し続ける
+- **PLANNED完了時、Issue本文の進捗チェックリスト「Plan PR」項目も`planner`が自動でチェックする**
+  (人間向け`/plan`は確認を挟むが、`planner`は無人実行のため`auto-plan:P*`の付与を事前同意と
+  みなす。`06_adr/09_scheduled_plan_drafting.md` §2参照)
+- **人間の手動`/plan`との競合は許容する**: scheduled planner処理中に人間が同じIssueへ手動で
+  `/plan`を実行する競合は、発生確率が低くPlan PRが2本並行して開く程度の実害しかないため、
+  追加のロック機構は設けない
 - **`auto-plan:P0/P1/P2`は既存の`priority:P0/P1/P2`(重大度・`02_severity.md`)とは別軸**。
   「定期実装に回してよいか」は人間がIssueへ手動で付与するオプトインの意思表示であり、
   重大度と機械的に連動させない(`06_adr/09_scheduled_plan_drafting.md` §3案C)
