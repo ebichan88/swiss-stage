@@ -21,6 +21,7 @@
 | `mutation.yml` | `workflow_dispatch` / 週次schedule | Mutation Testing(PITest、domain層限定。`09_test_strategy.md` §2.6) |
 | `ai-design-review.yml` | `pull_request`(`.claude/**`/`schema/**`/`CLAUDE.md`のみ) | 設計ドキュメント間の整合性(非ゲート・レポートのみ。§2.10) |
 | `ai-plan-review.yml` | `pull_request`(`.claude/07_plans/**`/`.claude/06_adr/**`のみ) | Plan PRの計画の抜け(異常系・境界・4状態・受け入れケース)を検出(非ゲート・レポートのみ。§2.11) |
+| `scheduled-planner.yml` | 週次`schedule` / `workflow_dispatch` / `issue_comment` | `auto-plan:P0/P1/P2`ラベル付きIssueを1件選び、無人実行版`/plan`でPlan PRドラフトを自動作成(§2.13) |
 
 `e2e.yml` / `ai-review.yml` / `ai-qa.yml` / `guard.yml` は、変更が `**.md`
 (ドキュメントファイル)のみのPR(例: Plan PR)では起動しない(`paths-ignore`)。`.claude/`
@@ -565,6 +566,79 @@ CI版のfixer/qa-fixerとの違い:
 聖域(`domain/service` 配下・`schema/`・`.claude/01_development_docs/05_swiss_pairing_algorithm.md`・
 受け入れケース台帳・基準hack検出・テスト弱体化)は変わらず自動修正しない。詳細な判定基準は
 `.claude/commands/apply-review.md` を正とする(ここでは再記述しない)。
+
+---
+
+## 2.13 backlogの定期的なPlan PRドラフト自動作成(`.github/workflows/scheduled-planner.yml`)
+
+§2.1〜§2.12はいずれもPR作成後(下流)の自動化だが、そもそも**Plan PRを人間が能動的に
+`/plan <issue番号>` を実行しないと作れない**という上流側の隙間が残っていた。特に `backlog`
+ラベルの付いたIssueは着手時期が人間の記憶に依存する。`scheduled-planner.yml` は
+`auto-plan:P0/P1/P2` ラベル(このワークフロー専用。オプトイン)が付いたIssueを週次で拾い、
+無人実行版の `/plan`(`planner`エージェント、`.claude/agents/planner.md`)でPlan PRのドラフトを
+自動作成する。決定の経緯・却下案は `.claude/06_adr/09_scheduled_plan_drafting.md`、
+計画の詳細は `.claude/07_plans/06_scheduled_plan_drafting.md` を参照。
+
+```mermaid
+flowchart TD
+    A["週次schedule起動"] --> B["選定ステップ(シェルスクリプト・決定的)<br/>auto-plan:P0→P1→P2の順、同順位は最古"]
+    A2["issue_comment(即時再開用)<br/>needs-human+auto-plan:P*が同時に付くIssueへの新規コメント"] --> B2["優先度スキャンは行わず<br/>コメントされたIssueをそのままTARGETに"]
+    B2 --> C
+    B -->|"対象なし"| Z["no-op終了"]
+    B -->|"feature/plan-auto-&lt;N&gt;-*が既に存在<br/>(前回実行が完走しなかった痕跡)"| I["needs-humanを付けてskip<br/>(自動削除・再作成はしない)"]
+    B -->|"対象Issue #N決定"| C["plannerエージェント起動<br/>(Issue本文+コメント全体を読む)"]
+    C --> D{"分類"}
+    D -->|"PLANNED"| E["/planと同じ手順でPlan PR作成<br/>auto-plan:P*・needs-humanを外す"]
+    D -->|"BLOCKED"| F["質問をsticky commentで投稿<br/>needs-humanを付けて終了"]
+    D -->|"NOT_APPLICABLE"| G["Plan PR不要な種別だった<br/>その旨をコメントしauto-plan:P*を外す"]
+    D -->|"FAILED"| H["変更を破棄しauto-plan:P*を外し<br/>needs-humanを付ける(要人間対応)"]
+```
+
+- **選定はAIに委ねずシェルスクリプトで機械的に行う**(`ai-review.yml`のFixerゲート判定と同じ思想)。優先度
+  (`auto-plan:P0`→`P1`→`P2`)→同一優先度内はIssue作成日時の古い順。既にそのIssueを参照する
+  Plan PR(本文に`Refs #N`、open・merged・**closed(未マージ)**のいずれでも)がある場合は
+  選定対象から除外する。**closed(未マージ)の場合は追加で**、一度自動作成したPlan PRを
+  人間が却下した可能性が高いためその旨をIssueにコメントし `needs-human` を付ける(無言で
+  除外し続けない)。再挑戦するには人間が `auto-plan:P*` を一旦外して付け直す
+- **途中失敗(ジョブタイムアウト・インフラ障害等)の検知**: `planner`が4分類のいずれにも
+  到達できずジョブが強制終了すると、ラベル操作もコメント投稿も行われない。ブランチ名を
+  `feature/plan-auto-<issue番号>-<slug>` に固定し、選定ステップで同名ブランチ
+  (`feature/plan-auto-<N>-*`)が既に存在する場合は「前回実行が完走しなかった痕跡」とみなして
+  `needs-human` を付けてskipする(自動削除・自動再作成はしない。
+  `06_adr/09_scheduled_plan_drafting.md` §2参照)
+- **無人実行時のAskUserQuestion代替**: `planner`はAskUserQuestionを使わず、不明点があれば
+  `<!-- swiss-stage-ai-planner-question -->` sticky commentで質問し `needs-human` を付けて
+  終了する(BLOCKED)。次回実行時、対象Issueの最新コメントがこのsticky comment自身のままなら
+  「未回答」として再度スキップし、次点の優先度のIssueへ処理を進める。人間が通常のコメントで
+  返信すれば、Issue全体を毎回読み直す設計により自動的に「回答あり」として計画作成を再開する。
+  **人間はコマンドを叩く必要はなく、Issueにコメントを返すだけでよい**。BLOCKEDから再開した後、
+  再び不明点が生じて2回目以降の質問を投稿する場合も新規コメントは作らず、同一のsticky comment
+  を更新(PATCH)し続ける
+- **BLOCKED返信への即時反応(`issue_comment`トリガー)**: 週次scheduleだけだと返信から最大
+  1週間近く再開が遅れテンポが悪いため、`issue_comment: types: [created]` もトリガーに加える。
+  コメントされたIssueに `needs-human` と `auto-plan:P0/P1/P2` が同時に付いている場合のみ、
+  優先度スキャンを経ずそのIssueを直接処理対象にする。`planner`自身のsticky comment更新は
+  PATCH(編集)であり`issue_comment.created`を発火させないため自己トリガーにはならない。
+  週次scheduleと同じ`concurrency`グループを使うため同時実行の心配もない
+  (`06_adr/09_scheduled_plan_drafting.md` §2・§3案E)
+- **PLANNED完了時、Issue本文の進捗チェックリスト「Plan PR」項目も`planner`が自動でチェックする**
+  (人間向け`/plan`は確認を挟むが、`planner`は無人実行のため`auto-plan:P*`の付与を事前同意と
+  みなす。`06_adr/09_scheduled_plan_drafting.md` §2参照)
+- **人間の手動`/plan`との競合は許容する**: scheduled planner処理中に人間が同じIssueへ手動で
+  `/plan`を実行する競合は、発生確率が低くPlan PRが2本並行して開く程度の実害しかないため、
+  追加のロック機構は設けない
+- **`auto-plan:P0/P1/P2`は既存の`priority:P0/P1/P2`(重大度・`02_severity.md`)とは別軸**。
+  「定期実装に回してよいか」は人間がIssueへ手動で付与するオプトインの意思表示であり、
+  重大度と機械的に連動させない(`06_adr/09_scheduled_plan_drafting.md` §3案C)
+- **処理件数は1回の実行につき1件のみ**。Plan PRの承認・マージが律速であり、複数のPlan PRが
+  同時に積み上がるとレビューキューが溢れるため(同ADR §3案D)
+- **スコープ**: Plan PRドラフトの自動作成まで。実装PRの自動作成、Plan PR/実装PRの自動マージは
+  対象外(承認ゲートは常に人間)
+- **委譲の禁止**: 他の全エージェントと同じく `--disallowedTools "Task,Agent"` を指定する
+  (§2.5「委譲の禁止」と同じ理由)
+- **claude.ai側のスケジュール機能(routine)ではなくGitHub Actionsを選んだ理由**: 既存の
+  reviewer/fixer/qa/qa-fixer/ci-fixer/design-reviewer/plan-reviewerと認証・権限モデルを
+  統一するため(同ADR §3案A)
 
 ---
 

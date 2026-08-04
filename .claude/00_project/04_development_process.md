@@ -13,6 +13,10 @@
 Issue 1件に対して Plan PR 1本と実装PR 1本以上がぶら下がる。**進捗の管理単位は Issue** である。
 
 **人間がやること**は3つに限る: 要件を書く / 質問に答える / Plan PR と実装PR を Approve する。
+(backlogのIssueについて「着手を思い出す」作業自体もAIに委ねたい場合は、追加で
+`auto-plan:P0/P1/P2` ラベルを付与できる。これは3点の代わりに増える必須の作業ではなく、
+「質問に答える」の一形態(Issueへのラベル付与)としてのオプトインであり、付与しなければ
+従来どおり人間が `/plan` を実行する起点になる。詳細は §7、`11_cicd_design.md` §2.13)
 
 > **`/pr` の位置づけ**: `/pr` は「現在の作業ツリーの変更からPRを作成する」コマンドであり、実装そのものを
 > 行うコマンドではない。Plan PR承認後、人間がAIに実装を依頼し(スラッシュコマンド化していない)、
@@ -22,6 +26,7 @@ Issue 1件に対して Plan PR 1本と実装PR 1本以上がぶら下がる。**
 flowchart TD
     A["人間: 要件・課題を書く"] -->|"/issue"| B["AI: Issue作成<br/>(分類テンプレート・優先度ラベル)"]
     B -.->|"着手時期未定"| Z["ここで停止(backlog)"]
+    B -.->|"auto-plan:P0/P1/P2 付与 + 週次schedule<br/>(backlog経由か問わない。11_cicd_design.md §2.13)"| C
     B -->|"/plan &lt;Issue番号&gt;"| C["AI: 不明点を質問 → Plan PR(コード0行)"]
     C --> C1["ADR<br/>(§3の条件に当たる場合)"]
     C --> C2["07_plans/NN_slug.md<br/>(計画)"]
@@ -199,6 +204,16 @@ gh label create "priority:P0"   --color b60205 --description "大会当日に運
 gh label create "priority:P1"   --color fbca04 --description "仕様違反・ユーザー影響のあるバグ" --force
 gh label create "priority:P2"   --color ededed --description "品質・一貫性の問題" --force
 gh label create "backlog"       --color 5319e7 --description "課題は記録済み・着手時期は未定" --force
+```
+
+`auto-plan:*` は「重大度」ではなく「定期実装(自動Plan PRドラフト化)に回してよいか」を表す
+オプトインラベルで、人間が対象Issueへ手動で付与する(`priority:*` とは別軸。
+`11_cicd_design.md` §2.13、`.claude/06_adr/09_scheduled_plan_drafting.md` §3案C)。
+
+```bash
+gh label create "auto-plan:P0"  --color 1d76db --description "定期実装(自動Plan PRドラフト化)の最優先対象" --force
+gh label create "auto-plan:P1"  --color ffab40 --description "定期実装(自動Plan PRドラフト化)の対象" --force
+gh label create "auto-plan:P2"  --color c2e0c6 --description "定期実装(自動Plan PRドラフト化)の対象(低優先)" --force
 ```
 
 `type:*` は Issue テンプレートが自動付与する。`priority:*` と `backlog` は
