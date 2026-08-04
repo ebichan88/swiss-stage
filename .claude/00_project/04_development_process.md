@@ -212,7 +212,7 @@ gh label create "backlog"       --color 5319e7 --description "課題は記録済
 
 ```bash
 gh label create "auto-plan:P0"  --color 1d76db --description "定期実装(自動Plan PRドラフト化)の最優先対象" --force
-gh label create "auto-plan:P1"  --color 5319e7 --description "定期実装(自動Plan PRドラフト化)の対象" --force
+gh label create "auto-plan:P1"  --color ffab40 --description "定期実装(自動Plan PRドラフト化)の対象" --force
 gh label create "auto-plan:P2"  --color c2e0c6 --description "定期実装(自動Plan PRドラフト化)の対象(低優先)" --force
 ```
 

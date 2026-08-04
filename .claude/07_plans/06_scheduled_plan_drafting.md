@@ -155,7 +155,8 @@ BLOCKEDだけは人間の回答を待つ必要があるため付けたままに�
 - [ ] `python3 .github/scripts/docs-lint.py` が通る
 - [ ] `auto-plan:P0/P1/P2` を持つopen issueが0件の状態で実行し、no-opで正常終了することを確認する
 - [ ] `workflow_dispatch` で手動実行し、`auto-plan:P2` を付けたテスト用Issueに対して
-      選定 → Plan PR作成 までが実際に動くことを確認する
+      選定 → Plan PR作成 までが実際に動くことを確認する。あわせてPLANNED完了後、対象Issue
+      本文の進捗チェックリスト「Plan PR」項目が自動でチェックされていることを確認する
 - [ ] 不明点があるテスト用Issueで BLOCKED(質問コメント + `needs-human`)になることを確認し、
       人間が返信した後の次回実行で再開して PLANNED になることを確認する
 - [ ] BLOCKEDのまま人間からの返信がない状態で次回実行すると、最新コメントがsticky comment
@@ -184,7 +185,8 @@ BLOCKEDだけは人間の回答を待つ必要があるため付けたままに�
       先に選定されることを確認する(優先度順の検証)
 - [ ] 同じ `auto-plan:P<N>` を持つ複数Issueがある場合、作成日時が最も古いものが選定される
       ことを確認する(同一優先度内のタイブレークの検証)
-- [ ] FAILEDになったIssueの `auto-plan:P*` が外れ、次回実行で再選定されない(＝他のIssueの
+- [ ] FAILEDになったIssueの `auto-plan:P*` が外れ、`needs-human` が付与される(既に付いて
+      いれば維持される)ことを確認する。あわせて次回実行で再選定されない(＝他のIssueの
       着手を妨げない)ことを確認する
 - [ ] `feature/plan-auto-<N>-*` ブランチが残った状態(途中失敗を模擬)で実行し、選定ステップが
       そのIssueをskipして `needs-human` を付け、次点のIssueへ進むことを確認する
@@ -240,3 +242,9 @@ BLOCKEDだけは人間の回答を待つ必要があるため付けたままに�
   `needs-human`)のみで、`backlog`(対応時期未定)には触れない。人間向けの既存`/plan`も
   `backlog`を操作しないため挙動を合わせている。Plan PR作成後も対応時期の見直し(backlogのまま
   でよいか)は人間がApprove時に判断する
+- **BLOCKED再開判定が拾うコメントの範囲**: 「最新コメントがsticky comment自身か」でのみ
+  判定するため、理論上は人間以外(将来の別の自動化)がsticky comment更新以外の形でIssueに
+  新規コメントを追加した場合も「回答あり」と誤検出しうる。現時点でIssueにコメントを投稿する
+  自動化は `scheduled-planner.yml`(sticky commentの更新のみ)しかなく、実質的にコメントの
+  追加主体は人間のみのため許容する。将来Issueにコメントする別の自動化(bot等)を追加する場合は、
+  この誤検出リスクを再検討すること
