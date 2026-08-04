@@ -79,7 +79,12 @@ Plan PR・実装PRをApproveする、の3つに絞る方針を掲げているが
 | **PLANNED** | Issue本文・コメント全体から計画作成に十分な情報が揃っている(最初から、または過去の質問への回答により) | `/plan` と同じ手順(分類判定→ADR要否→計画作成→受け入れケース→docs-lint→ブランチ→Plan PR作成→Issueコメント)を実行し、`auto-plan:P*`(・付いていれば`needs-human`)を外す |
 | **BLOCKED** | 不明点があり、AskUserQuestion相当の質問(最大3問)が必要 | `<!-- swiss-stage-ai-planner-question -->` sticky commentで質問を投稿し `needs-human` を付けて終了 |
 | **NOT_APPLICABLE** | 選定されたIssueの種別(`type:bug`、またはアーキテクチャ・技術選定を含まない`type:chore`)が`04_development_process.md` §2のトリガー表でそもそもPlan PR不要と判定される(誤ってラベルが付いた場合の安全弁) | その旨をIssueにコメントし `auto-plan:P*` を外す(Plan PRは作らない) |
-| **FAILED** | docs-lint等の検証を通せなかった | 変更を破棄し、その旨をIssueにコメントして `needs-human` を付ける |
+| **FAILED** | docs-lint等の検証を通せなかった | 変更を破棄し、その旨をIssueにコメントして `needs-human` を付ける。**`auto-plan:P*` も外す**(PLANNED/NOT_APPLICABLEと同じくラベルを外して選定対象から除く。外さないと選定ステップの除外条件(4.2)に当たらず、同じIssueが次回も最優先で選ばれ続け、他のbacklog Issueが永久に処理されなくなるため) |
+
+4分類のうち **BLOCKED以外(PLANNED/NOT_APPLICABLE/FAILED)は必ず `auto-plan:P*` を外して終了する**。
+BLOCKEDだけは人間の回答を待つ必要があるため付けたままにする。この対称性が崩れると、選定ステップ
+(4.2)の除外条件(「`needs-human` 付きかつ最新コメントが質問自身」)だけでは弾けない状態が生まれ、
+特定のIssueが毎回選定され続けて他のIssueの着手を止めてしまう。
 
 `/plan` コマンド自体の判断ロジック(ADR要否判定・分類判定・受け入れケースの洗い出し等)は
 変更しない。`planner` は「不明点の確認手段をAskUserQuestionからIssueコメントの往復に置き換えた、
@@ -102,9 +107,9 @@ Plan PR・実装PRをApproveする、の3つに絞る方針を掲げているが
 
 - [x] `.claude/06_adr/09_scheduled_plan_drafting.md`(このPRで新規作成)
 - [x] `.claude/07_plans/06_scheduled_plan_drafting.md`(このファイル)
-- [ ] `.claude/00_project/04_development_process.md`(§1 フローチャートに自動経路を追記・
+- [x] `.claude/00_project/04_development_process.md`(§1 フローチャートに自動経路を追記・
       §7 に `auto-plan:P0/P1/P2` の作成コマンドを追記)
-- [ ] `.claude/01_development_docs/11_cicd_design.md`(§1.5 ワークフロー一覧に追記・
+- [x] `.claude/01_development_docs/11_cicd_design.md`(§1.5 ワークフロー一覧に追記・
       新設 §2.13 で設計を記述)
 - [ ] `.claude/agents/planner.md`(実装PRで新規作成。このPRには含めない)
 - [ ] `.github/workflows/scheduled-planner.yml`(実装PRで新規作成。このPRには含めない)
@@ -118,6 +123,12 @@ Plan PR・実装PRをApproveする、の3つに絞る方針を掲げているが
       人間が返信した後の次回実行で再開して PLANNED になることを確認する
 - [ ] `type:bug` のIssueに誤って `auto-plan:P2` を付けても NOT_APPLICABLE でPlan PRが
       作られないことを確認する
+- [ ] 既にPlan PR(open)が存在するIssueに `auto-plan:P*` が付いていても、選定ステップで
+      スキップされ次点のIssueが選定されることを確認する(重複起票防止)
+- [ ] `auto-plan:P1` の方が `auto-plan:P0` より古いIssueであっても、`auto-plan:P0` のIssueが
+      先に選定されることを確認する(優先度順の検証)
+- [ ] FAILEDになったIssueの `auto-plan:P*` が外れ、次回実行で再選定されない(＝他のIssueの
+      着手を妨げない)ことを確認する
 - [ ] 実装PRで `.claude/agents/planner.md` / `.github/workflows/scheduled-planner.yml` が
       追加され、この計画の §6 チェックボックスがすべて埋まる
 

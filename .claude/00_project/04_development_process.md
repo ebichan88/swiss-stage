@@ -22,7 +22,7 @@ Issue 1件に対して Plan PR 1本と実装PR 1本以上がぶら下がる。**
 flowchart TD
     A["人間: 要件・課題を書く"] -->|"/issue"| B["AI: Issue作成<br/>(分類テンプレート・優先度ラベル)"]
     B -.->|"着手時期未定"| Z["ここで停止(backlog)"]
-    Z -.->|"auto-plan:P0/P1/P2 + 週次schedule<br/>(11_cicd_design.md §2.13)"| C
+    B -.->|"auto-plan:P0/P1/P2 付与 + 週次schedule<br/>(backlog経由か問わない。11_cicd_design.md §2.13)"| C
     B -->|"/plan &lt;Issue番号&gt;"| C["AI: 不明点を質問 → Plan PR(コード0行)"]
     C --> C1["ADR<br/>(§3の条件に当たる場合)"]
     C --> C2["07_plans/NN_slug.md<br/>(計画)"]
