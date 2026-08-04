@@ -594,7 +594,10 @@ flowchart TD
 
 - **選定はAIに委ねずbashで行う**(`ai-review.yml`のFixerゲート判定と同じ思想)。優先度
   (`auto-plan:P0`→`P1`→`P2`)→同一優先度内はIssue作成日時の古い順。既にそのIssueを参照する
-  Plan PR(本文に`Refs #N`、open/merged問わず)がある場合は選定対象から除外する
+  Plan PR(本文に`Refs #N`、open・merged・**closed(未マージ)**のいずれでも)がある場合は
+  選定対象から除外する。**closed(未マージ)の場合は追加で**、一度自動作成したPlan PRを
+  人間が却下した可能性が高いためその旨をIssueにコメントし `needs-human` を付ける(無言で
+  除外し続けない)。再挑戦するには人間が `auto-plan:P*` を一旦外して付け直す
 - **途中失敗(ジョブタイムアウト・インフラ障害等)の検知**: `planner`が4分類のいずれにも
   到達できずジョブが強制終了すると、ラベル操作もコメント投稿も行われない。ブランチ名を
   `feature/plan-auto-<issue番号>-<slug>` に固定し、選定ステップで同名ブランチ
