@@ -45,8 +45,10 @@ Plan PR・実装PRをApproveする、の3つに絞る方針を掲げているが
 既存の `ai-review.yml` 等と同じ `anthropics/claude-code-action@v1` +
 `CLAUDE_CODE_OAUTH_TOKEN` を使う(却下案は ADR §3 案A)。
 
-- **トリガー**: `schedule`(週次。案: `cron: '0 21 * * 1'` = 毎週月曜21:00 UTC/日本時間火曜6:00。
-  `mutation.yml` の月曜3:00 UTCと時間帯をずらす)+ `workflow_dispatch`(手動テスト用)
+- **トリガー**: `schedule`(週次。`cron: '0 21 * * 5'` = 毎週金曜21:00 UTC/日本時間土曜6:00。
+  平日より利用状況に余裕がある期間であり、かつ土曜であれば人間がPlan PRをレビューする時間を
+  確保しやすいことから週末の頭を選んだ。`mutation.yml`(月曜3:00 UTC)とも日・時刻ともに
+  重ならない)+ `workflow_dispatch`(手動テスト用)+ `issue_comment`(即時再開用。後述)
 - **権限**: `contents: write`(ブランチ作成・push)/ `pull-requests: write`(Plan PR作成)/
   `issues: write`(コメント・ラベル操作)/ `id-token: write`(claude-code-actionのOIDCトークン
   交換に必須。既存の`ai-review.yml`/`ai-qa.yml`/`ai-design-review.yml`/`ai-plan-review.yml`
@@ -54,7 +56,7 @@ Plan PR・実装PRをApproveする、の3つに絞る方針を掲げているが
 - **concurrency**: `group: scheduled-planner` / `cancel-in-progress: false`
   (手動実行とscheduleが重なっても後続を待たせる。実行中のものを取り消して二重選定しない)
 - **選定ステップ(bash・決定的)**: `ai-review.yml` の「Fixerゲート判定」と同じ思想で、
-  対象Issue番号の決定はAIに委ねずbashで行う。
+  対象Issue番号の決定はAIに委ねず、シェルスクリプトで機械的に行う。
 
   ```text
   for P in P0 P1 P2:
@@ -81,6 +83,21 @@ Plan PR・実装PRをApproveする、の3つに絞る方針を掲げているが
   Issue #145 向けのPlan PR本文「Refs #145」に部分一致し、Issue #14 が永久に選定対象から
   外れる事故になりうるため)。
 
+- **`issue_comment`トリガーによる即時再開**: BLOCKEDへの人間の返信を週次scheduleまで待たずに
+  反映するため、`issue_comment: types: [created]` もトリガーに加える。job条件(`if:`)で、
+  コメントされたIssueに `needs-human` と `auto-plan:P0/P1/P2` のいずれかが**同時に**付いている
+  場合のみこの即時再開パスを有効にする(それ以外のコメント・Issueでは何もしない)。この場合、
+  優先度スキャンによる選定は行わず、コメントされたIssue番号をそのまま `TARGET` とし、上記の
+  除外チェック(既存Plan PRの有無・ブランチ存在)だけを行ってから `planner` を起動する。
+  - **自己トリガーにはならない**: `planner` が質問を更新する操作は既存sticky commentの
+    PATCH(編集)であり、これは `issue_comment.edited` を発火させるが `.created` は発火しない。
+    `types: [created]` に絞っているため、`planner`自身の更新が再度自分を呼び出すことはない
+  - **週次scheduleとの並行実行はない**: 同じ `concurrency: group: scheduled-planner` を使う
+    ため、コメント起点の実行とschedule起点の実行が同時に走ることはなく、後着は待たされるだけ
+  - **頻度を上げる案は採らない**: schedule自体を毎日実行にする代替案も考えられるが、
+    バッチ選定(週次でレビューキューを溢れさせない供給ペース)とBLOCKED返信への反応速度は
+    別の要求であり、頻度を上げても後者の体感速度改善には限界がある(最悪ほぼ1日待つ)上、
+    前者の目的を弱めてしまう。両立できる `issue_comment` トリガーの追加を選んだ
 - **ブランチ命名規約**: `feature/plan-auto-<issue番号>-<slug>`。人間の `/plan` が使う
   `feature/plan-<slug>` と衝突しないよう `auto` を挟み、かつIssue番号を含めることで
   選定ステップが「同じIssueに対する前回の残骸」を機械的に検出できるようにする
@@ -159,6 +176,10 @@ BLOCKEDだけは人間の回答を待つ必要があるため付けたままに�
       本文の進捗チェックリスト「Plan PR」項目が自動でチェックされていることを確認する
 - [ ] 不明点があるテスト用Issueで BLOCKED(質問コメント + `needs-human`)になることを確認し、
       人間が返信した後の次回実行で再開して PLANNED になることを確認する
+- [ ] BLOCKED(`needs-human`+`auto-plan:P*`が付いた)テスト用Issueに人間が返信すると、
+      週次scheduleを待たずに`issue_comment`トリガーで即時に再処理され、PLANNEDになることを
+      確認する(即時再開の直接検証)。あわせて、これらのラベルが付いていないIssueへの
+      コメントでは何も起きないことも確認する
 - [ ] BLOCKEDのまま人間からの返信がない状態で次回実行すると、最新コメントがsticky comment
       自身のままなので再度skipされ(`needs-human`は付いたまま)、次点の優先度のIssueが
       選定されることを確認する(返信ありと対になる境界の確認)
@@ -212,8 +233,9 @@ BLOCKEDだけは人間の回答を待つ必要があるため付けたままに�
   パターンの単純な流用であり、技術的な新規性は低い。新規性があるのは「BLOCKEDでの再開判定」
   という利用のされ方のみのため、独立したスパイクではなく実装PR本体の中で(§7 DoDの手動テスト
   として)重点確認すれば十分と判断した
-- **週次cronの具体的な時刻**: 実装PR時点でCI混雑状況を見て調整してよい(この計画では
-  「他のscheduleワークフローと時間帯をずらす」方針のみ固定する)
+- **週次cronの具体的な時刻**: 決定済み。毎週金曜21:00 UTC(日本時間土曜6:00)。平日より
+  利用状況に余裕がある期間であり、かつ土曜であれば人間がPlan PRをレビューする時間を
+  確保しやすいことから選んだ(`mutation.yml` の月曜3:00 UTCとも重ならない)
 - **人手による誤ラベル**: `auto-plan:P*` を人間が誤って複数個(P0とP2など)同時に付けた場合の
   優先度は「最も高いもの」を採用する(実装PR側でこの解釈を明記する)
 - **途中失敗(ジョブタイムアウト・インフラ障害)からの復旧**: 決定済み。§4.2の選定ステップに

@@ -33,6 +33,13 @@ Issueのうち、優先度が最も高く・同じ優先度なら最も古いも
   何かコマンドを叩く必要はない**。BLOCKEDから再開した後、再び不明点が生じて2回目以降の質問を
   投稿する場合も、新規コメントは作らず**同一のsticky commentを更新(PATCH)し続ける**
   (reviewer/qa/plan-reviewer等、他の全エージェントと同じsticky comment運用パターン)
+- **BLOCKED返信への即時反応**: 週次scheduleだけだと、人間が返信してから最大1週間近く再開が
+  遅れテンポが悪い。`scheduled-planner.yml` に `issue_comment: types: [created]` も
+  トリガーとして追加し、コメントされたIssueに `needs-human` と `auto-plan:P0/P1/P2` が
+  同時に付いている場合のみ、優先度スキャンを経ずそのIssueを直接 `TARGET` として即時に
+  再処理する。`planner`自身のsticky comment更新はPATCH(編集)であり`issue_comment.created`
+  を発火させないため自己トリガーにはならない。週次scheduleと同じ `concurrency` グループを
+  使うため同時実行の心配もない(§3案Eも参照)
 - **対象Issueの選定基準**: `auto-plan:P0/P1/P2` のいずれかを持つことを一次条件とする。
   `backlog` ラベルの有無は問わない(対応時期と定期実装への投入は別軸のため。§3案Cを参照)。
   ただし選定後、`04_development_process.md` §2 のトリガー表で該当Issueの種別が
@@ -122,6 +129,15 @@ Anthropic側でホストされる永続的なcronで、GitHub Actionsとは独�
 既にPlan PR(open/merged)が存在する場合は、**その回の処理を止めるのではなく**そのIssueだけを
 スキップし、次点の候補を通常どおり選定する(`.claude/07_plans/06_scheduled_plan_drafting.md`
 §4.2 選定ステップの疑似コードを参照)。
+
+### 案E: BLOCKED再開の体感速度改善のため、週次scheduleの頻度を上げる(例: 毎日実行)
+
+週次だと人間の返信から最大1週間近く再開が遅れる問題への対策として、schedule自体を毎日実行に
+変更する案も考えられる。しかし、この自動化がバッチ選定(週次で1件のペースを保ち、Plan PRの
+レビューキューを溢れさせない。§3案D)を必要としている一方、BLOCKED再開の即時性は本来それとは
+別の要求である。頻度を上げても最悪ほぼ1日待つことになり体感速度の改善には限界がある上、
+週1件ペースという供給側の設計目的を弱めてしまう。両方の要求を両立できる
+`issue_comment` トリガーの追加(§2「BLOCKED返信への即時反応」)を採用し、この案は不採用とした。
 
 ## 4. 結果
 

@@ -21,7 +21,7 @@
 | `mutation.yml` | `workflow_dispatch` / 週次schedule | Mutation Testing(PITest、domain層限定。`09_test_strategy.md` §2.6) |
 | `ai-design-review.yml` | `pull_request`(`.claude/**`/`schema/**`/`CLAUDE.md`のみ) | 設計ドキュメント間の整合性(非ゲート・レポートのみ。§2.10) |
 | `ai-plan-review.yml` | `pull_request`(`.claude/07_plans/**`/`.claude/06_adr/**`のみ) | Plan PRの計画の抜け(異常系・境界・4状態・受け入れケース)を検出(非ゲート・レポートのみ。§2.11) |
-| `scheduled-planner.yml` | 週次`schedule` / `workflow_dispatch` | `auto-plan:P0/P1/P2`ラベル付きIssueを1件選び、無人実行版`/plan`でPlan PRドラフトを自動作成(§2.13) |
+| `scheduled-planner.yml` | 週次`schedule` / `workflow_dispatch` / `issue_comment` | `auto-plan:P0/P1/P2`ラベル付きIssueを1件選び、無人実行版`/plan`でPlan PRドラフトを自動作成(§2.13) |
 
 `e2e.yml` / `ai-review.yml` / `ai-qa.yml` / `guard.yml` は、変更が `**.md`
 (ドキュメントファイル)のみのPR(例: Plan PR)では起動しない(`paths-ignore`)。`.claude/`
@@ -581,7 +581,9 @@ CI版のfixer/qa-fixerとの違い:
 
 ```mermaid
 flowchart TD
-    A["週次schedule起動"] --> B["選定ステップ(bash・決定的)<br/>auto-plan:P0→P1→P2の順、同順位は最古"]
+    A["週次schedule起動"] --> B["選定ステップ(シェルスクリプト・決定的)<br/>auto-plan:P0→P1→P2の順、同順位は最古"]
+    A2["issue_comment(即時再開用)<br/>needs-human+auto-plan:P*が同時に付くIssueへの新規コメント"] --> B2["優先度スキャンは行わず<br/>コメントされたIssueをそのままTARGETに"]
+    B2 --> C
     B -->|"対象なし"| Z["no-op終了"]
     B -->|"feature/plan-auto-&lt;N&gt;-*が既に存在<br/>(前回実行が完走しなかった痕跡)"| I["needs-humanを付けてskip<br/>(自動削除・再作成はしない)"]
     B -->|"対象Issue #N決定"| C["plannerエージェント起動<br/>(Issue本文+コメント全体を読む)"]
@@ -592,7 +594,7 @@ flowchart TD
     D -->|"FAILED"| H["変更を破棄しauto-plan:P*を外し<br/>needs-humanを付ける(要人間対応)"]
 ```
 
-- **選定はAIに委ねずbashで行う**(`ai-review.yml`のFixerゲート判定と同じ思想)。優先度
+- **選定はAIに委ねずシェルスクリプトで機械的に行う**(`ai-review.yml`のFixerゲート判定と同じ思想)。優先度
   (`auto-plan:P0`→`P1`→`P2`)→同一優先度内はIssue作成日時の古い順。既にそのIssueを参照する
   Plan PR(本文に`Refs #N`、open・merged・**closed(未マージ)**のいずれでも)がある場合は
   選定対象から除外する。**closed(未マージ)の場合は追加で**、一度自動作成したPlan PRを
@@ -612,6 +614,13 @@ flowchart TD
   **人間はコマンドを叩く必要はなく、Issueにコメントを返すだけでよい**。BLOCKEDから再開した後、
   再び不明点が生じて2回目以降の質問を投稿する場合も新規コメントは作らず、同一のsticky comment
   を更新(PATCH)し続ける
+- **BLOCKED返信への即時反応(`issue_comment`トリガー)**: 週次scheduleだけだと返信から最大
+  1週間近く再開が遅れテンポが悪いため、`issue_comment: types: [created]` もトリガーに加える。
+  コメントされたIssueに `needs-human` と `auto-plan:P0/P1/P2` が同時に付いている場合のみ、
+  優先度スキャンを経ずそのIssueを直接処理対象にする。`planner`自身のsticky comment更新は
+  PATCH(編集)であり`issue_comment.created`を発火させないため自己トリガーにはならない。
+  週次scheduleと同じ`concurrency`グループを使うため同時実行の心配もない
+  (`06_adr/09_scheduled_plan_drafting.md` §2・§3案E)
 - **PLANNED完了時、Issue本文の進捗チェックリスト「Plan PR」項目も`planner`が自動でチェックする**
   (人間向け`/plan`は確認を挟むが、`planner`は無人実行のため`auto-plan:P*`の付与を事前同意と
   みなす。`06_adr/09_scheduled_plan_drafting.md` §2参照)
