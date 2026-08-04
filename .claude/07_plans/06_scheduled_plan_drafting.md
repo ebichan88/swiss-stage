@@ -162,12 +162,21 @@ BLOCKEDだけは人間の回答を待つ必要があるため付けたままに�
 - [ ] BLOCKEDのまま人間からの返信がない状態で次回実行すると、最新コメントがsticky comment
       自身のままなので再度skipされ(`needs-human`は付いたまま)、次点の優先度のIssueが
       選定されることを確認する(返信ありと対になる境界の確認)
+- [ ] BLOCKED→人間の返信→再選定されたテスト用Issueで、再び別の不明点が生じた場合、
+      新規コメントではなく同一の `<!-- swiss-stage-ai-planner-question -->` sticky comment
+      がPATCH更新されることを確認する(2巡目のBLOCKED)
+- [ ] `auto-plan:P*` を持つ有効な対象Issueが2件以上ある状態で1回実行すると、Plan PRが
+      1本だけ作成され、2件目のIssueは(ラベルが付いたまま)次回実行まで未処理で残ることを
+      確認する(1回1件のみ処理の直接検証)
 - [ ] 同一Issueに `auto-plan:P0` と `auto-plan:P2` が同時に付いている場合、`P0` として
       選定されることを確認する(複数ラベル付与時の組み合わせの検証)
 - [ ] `type:bug` のIssueに誤って `auto-plan:P2` を付けても NOT_APPLICABLE でPlan PRが
       作られないことを確認する
 - [ ] アーキテクチャ・技術選定を含まない `type:chore` のIssueに誤って `auto-plan:P2` を
       付けても NOT_APPLICABLE でPlan PRが作られないことを確認する
+- [ ] BLOCKEDで一度スキップされた(`needs-human`が付いた)テスト用Issueが、人間の返信後の
+      再選定でNOT_APPLICABLEと判定された場合、`auto-plan:P*` に加えて `needs-human` も
+      外れることを確認する
 - [ ] アーキテクチャ・技術選定を**含む** `type:chore` のIssueに `auto-plan:P*` を付けると
       PLANNEDとなり、ADR(`.claude/06_adr/`)を含むPlan PRが作成されることを確認する
       (NOT_APPLICABLE境界の反対側)
