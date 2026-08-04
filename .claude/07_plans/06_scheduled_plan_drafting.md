@@ -67,6 +67,11 @@ Plan PR・実装PRをApproveする、の3つに絞る方針を掲げているが
   対象なしなら何もせず正常終了(no-op)
   ```
 
+  `"Refs #<N>"` の一致判定は大文字小文字を区別しない(`refs #12` 等の表記ゆれも許容する)
+  正規表現でPR本文を検索する。Plan PR本文は `/plan` のテンプレート(`.claude/commands/plan.md`
+  手順8)により常に `Refs #<N>` で始まるため通常は表記ゆれが起きないが、判定を厳密な完全一致に
+  すると人間が手で作った例外的なPlan PRを誤検知(見逃し)しうるため、緩めに倒す。
+
 - **ブランチ命名規約**: `feature/plan-auto-<issue番号>-<slug>`。人間の `/plan` が使う
   `feature/plan-<slug>` と衝突しないよう `auto` を挟み、かつIssue番号を含めることで
   選定ステップが「同じIssueに対する前回の残骸」を機械的に検出できるようにする
@@ -146,10 +151,16 @@ BLOCKEDだけは人間の回答を待つ必要があるため付けたままに�
       人間が返信した後の次回実行で再開して PLANNED になることを確認する
 - [ ] `type:bug` のIssueに誤って `auto-plan:P2` を付けても NOT_APPLICABLE でPlan PRが
       作られないことを確認する
+- [ ] アーキテクチャ・技術選定を含まない `type:chore` のIssueに誤って `auto-plan:P2` を
+      付けても NOT_APPLICABLE でPlan PRが作られないことを確認する
 - [ ] 既にPlan PR(open)が存在するIssueに `auto-plan:P*` が付いていても、選定ステップで
       スキップされ次点のIssueが選定されることを確認する(重複起票防止)
+- [ ] 既にPlan PR(**merged**)が存在するIssueに `auto-plan:P*` が付いていても、選定ステップで
+      スキップされ次点のIssueが選定されることを確認する(重複起票防止・merged側)
 - [ ] `auto-plan:P1` の方が `auto-plan:P0` より古いIssueであっても、`auto-plan:P0` のIssueが
       先に選定されることを確認する(優先度順の検証)
+- [ ] 同じ `auto-plan:P<N>` を持つ複数Issueがある場合、作成日時が最も古いものが選定される
+      ことを確認する(同一優先度内のタイブレークの検証)
 - [ ] FAILEDになったIssueの `auto-plan:P*` が外れ、次回実行で再選定されない(＝他のIssueの
       着手を妨げない)ことを確認する
 - [ ] `feature/plan-auto-<N>-*` ブランチが残った状態(途中失敗を模擬)で実行し、選定ステップが
