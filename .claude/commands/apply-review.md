@@ -56,7 +56,7 @@ gh api "repos/<owner/repo>/issues/<PR番号>/comments" --paginate \
   広げるため)
   - AI Review: `## Critical` `## Major` の全指摘(`## Minor` は対象外。直したい場合はIDを指定する)
   - AI QA: 「## 台帳整合・対応検証・基準hack」のうち **`close: test-side` の指摘のみ**
-  - AI Plan Review: 「## 抜け」の全指摘
+  - AI Plan Review: 「## 抜け」の `### 要対応` の全指摘(`### 任意` は対象外。直したい場合はIDを指定する)
 
 ## 5. 聖域(自動修正しない。指定モードでIDを明示されても同じ)
 
@@ -88,7 +88,15 @@ gh api "repos/<owner/repo>/issues/<PR番号>/comments" --paginate \
 CI版のfixer/qa-fixerは無人実行のため質問できず一律SKIPPEDやDISPUTEDに倒すしかないが、この
 コマンドは対話セッションなのでその制約がない。
 
-## 7. 検証
+## 7. 波及確認
+
+`.claude/01_development_docs/**` / `CLAUDE.md` / `.claude/06_adr/**` 等の設計ドキュメントを
+修正した場合、修正した決定のキーワード(用語・数値・エラーコード名等)で `grep -r` し、同じ決定に
+言及している他のドキュメントが追随できているか確認する。ずれていれば同じコミットで揃える
+(部分修正が新しい矛盾を生む事故を防ぐため。`.claude/agents/design-reviewer.md` が次のレビューで
+見る観点でもある)。コード(`frontend/`/`backend/`)のみの修正であれば、このステップは不要。
+
+## 8. 検証
 
 変更したファイルに応じて実行し、失敗したら修正するかFAILEDに倒す:
 
@@ -98,17 +106,17 @@ CI版のfixer/qa-fixerは無人実行のため質問できず一律SKIPPEDやDIS
   `python3 .github/scripts/docs-lint.py`
 - 上記以外のドキュメントのみの変更なら検証不要
 
-## 8. コミット
+## 9. コミット
 
 - 対象とした指摘をまとめて1コミットでよい(CI版と違い自動修正ループの回数管理が無いため
   `[ai-fix]`/`[qa-fix]` プレフィックスは不要)
 - subject: `<prefix>: <日本語の要約>`(prefixは `/pr` と同じ規約: `fix:` `docs:` `chore:` 等)
 - body に対応した指摘を `Applied: <slug>` 形式で1行ずつ列挙する
 - 末尾に `Co-Authored-By: Claude <noreply@anthropic.com>`
-- **pushはしない**。9節で報告した後、必要ならユーザーに確認してから `git push` する
+- **pushはしない**。10節で報告した後、必要ならユーザーに確認してから `git push` する
   (pushするとこのPRのCIが再起動し、AIレビュー/QAが再度回る)
 
-## 9. 報告
+## 10. 報告
 
 `.claude/agents/fixer.md` の出力形式に準じた表をチャット上に出す(PRコメントへの投稿はしない。
 投稿は既存のreviewer/qa/plan-reviewer/fixer/qa-fixerの役割のまま変えない):

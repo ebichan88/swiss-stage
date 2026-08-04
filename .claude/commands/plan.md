@@ -39,9 +39,13 @@ AskUserQuestion で**最大3問**にまとめて確認する。優先すべき�
 - `04_development_process.md` §3 のADR条件に1つでも当てはまる場合は、`.claude/06_adr/NN_<slug>.md`
   を同じ連番規約で作成する(ADR用の連番は `.claude/06_adr/` 内で独立してカウントする)。
   ヘッダは `Status: Proposed`(Plan PR レビュー中のため。マージ後に `/pr` が `Accepted` へ更新する)
-  / `Issue: #$ARGUMENTS` / `Date: <今日の日付>`
-- API変更があれば `schema/openapi.yaml` を、マッチング・順位計算の仕様変更があれば
-  `05_swiss_pairing_algorithm.md` を、その他該当する設計ドキュメントを計画と同じPRで更新する
+  / `Issue: #$ARGUMENTS` / `Date: <今日の日付>`。ADR §2「決定」は仕様を再記述せず「何を決めたか」を
+  数行に留め、詳細は同じPRのプランを参照させる(`04_development_process.md` §4)
+- API変更があれば `schema/openapi.yaml` を計画と同じPRで更新する。**`.claude/01_development_docs/**`
+  配下の設計ドキュメント(`05_swiss_pairing_algorithm.md` 等)は Plan PR では更新しない**。
+  マッチング・順位計算の仕様変更やデータモデルの変更方針は計画の「4. 技術設計」に文章で書き、
+  実際のドキュメント更新は実装PRで、実装コードと同じPRで行う(`04_development_process.md` §2。
+  決定のSSoTを1箇所に保ち、Plan PRと設計ドキュメントの二重記述によるズレを防ぐため)
 
 ## 5. 受け入れケースの追加
 
