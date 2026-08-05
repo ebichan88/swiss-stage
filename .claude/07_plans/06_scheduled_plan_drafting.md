@@ -2,7 +2,7 @@
 
 - Status: in_progress
 - Issue: #145
-- PR: #146(Plan PR) / このPR(実装PR)
+- PR: #146(Plan PR) / #150(実装PR)
 
 ## 1. 背景・目的
 
