@@ -121,7 +121,7 @@ function TournamentOverviewView({
 
   return (
     <Stack spacing={4}>
-      <Card variant="outlined">
+      <Card variant="outlined" sx={{ borderTop: 3, borderTopColor: 'primary.main' }}>
         <CardContent>
           <Grid container spacing={2}>
             {items.map((item) => (
@@ -138,7 +138,7 @@ function TournamentOverviewView({
         </CardContent>
       </Card>
 
-      <Card variant="outlined">
+      <Card variant="outlined" sx={{ borderTop: 3, borderTopColor: 'primary.main' }}>
         <CardContent>
           <Typography variant="h3" component="h2" gutterBottom>
             帳票印刷

@@ -39,6 +39,16 @@ function manyParticipants(count: number) {
   );
 }
 
+function manyTeams(count: number) {
+  return Array.from({ length: count }, (_, i) =>
+    teamOf({
+      id: `01TESTTEAM${String(i + 1).padStart(16, '0')}`,
+      name: `チーム ${i + 1}`,
+      entryOrder: i + 1,
+    }),
+  );
+}
+
 function manyStandings(count: number) {
   return Array.from({ length: count }, (_, i) =>
     standingOf({
@@ -207,6 +217,45 @@ export const handlersFor = {
     /** 大会開始済みだが組み合わせ未生成 */
     notGenerated: () => [
       http.get(`${API}/tournaments/:id/rounds`, () => HttpResponse.json(apiSuccess([]))),
+      http.get(`${API}/tournaments/:id/groups`, () => HttpResponse.json(apiSuccess([groupOf()]))),
+    ],
+  },
+
+  teams: {
+    filled: () => [
+      http.get(`${API}/tournaments/:id/teams`, () => HttpResponse.json(apiSuccess(manyTeams(8)))),
+      http.get(`${API}/tournaments/:id/groups`, () => HttpResponse.json(apiSuccess([groupOf()]))),
+    ],
+    empty: () => [
+      http.get(`${API}/tournaments/:id/teams`, () => HttpResponse.json(apiSuccess([]))),
+      http.get(`${API}/tournaments/:id/groups`, () => HttpResponse.json(apiSuccess([groupOf()]))),
+    ],
+  },
+
+  teamRounds: {
+    filled: () => [
+      http.get(`${API}/tournaments/:id/team-rounds`, () =>
+        HttpResponse.json(
+          apiSuccess([
+            teamRoundOf({
+              roundNumber: 1,
+              status: 'PLAYING',
+              matches: [
+                teamMatchOf({
+                  id: 'm1',
+                  team1: teamOf({ id: 't1', name: 'Aチーム' }),
+                  team2: teamOf({ id: 't2', name: 'Bチーム' }),
+                }),
+              ],
+            }),
+          ]),
+        ),
+      ),
+      http.get(`${API}/tournaments/:id/groups`, () => HttpResponse.json(apiSuccess([groupOf()]))),
+    ],
+    /** 大会開始済みだが組み合わせ未生成 */
+    notGenerated: () => [
+      http.get(`${API}/tournaments/:id/team-rounds`, () => HttpResponse.json(apiSuccess([]))),
       http.get(`${API}/tournaments/:id/groups`, () => HttpResponse.json(apiSuccess([groupOf()]))),
     ],
   },

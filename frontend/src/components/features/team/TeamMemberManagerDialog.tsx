@@ -134,7 +134,9 @@ export function TeamMemberManagerDialog({
   return (
     <>
       <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-        <DialogTitle>{team ? `${team.name}のメンバー` : 'メンバー'}</DialogTitle>
+        <DialogTitle sx={{ borderLeft: 4, borderColor: 'primary.main', fontWeight: 600 }}>
+          {team ? `${team.name}のメンバー` : 'メンバー'}
+        </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             主将〜のポジションは全員分の登録が必須です(大会開始前まで)。個人名は対局結果には表示されません。

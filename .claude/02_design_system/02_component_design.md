@@ -108,18 +108,23 @@
 
 - 列: No.・氏名・所属(スマホでは非表示)・棋力・(複数グループ大会のみ)グループ・状態・操作
 - ヘッダー行・データ行のゼブラストライプは対戦結果表と共通(`primary.main` 背景+白文字のヘッダー、`background.paper`/`background.default` の交互ストライプ)
-- 棄権者の行はストライプに加えて `opacity: 0.55` で半透明表示
+- 棄権者の行はストライプに加えて `opacity: 0.55` で半透明表示し、状態列の「棄権」Chipに
+  `PersonOffIcon` を添える(色だけに頼らない。PTC-AC-013)
 
-### 個別admin画面内部の展開計画(`.claude/07_plans/05_design_system_admin_internal.md`、実装未着手)
+### 個別admin画面内部の展開(`.claude/07_plans/05_design_system_admin_internal.md`)
 
 参加者管理(`ParticipantTable`/`ParticipantFormDialog`/`CsvImportDialog`/`GroupManagerDialog`)・
 チーム管理(`TeamTable`/`TeamFormDialog`/`TeamMemberFormDialog`/`TeamMemberManagerDialog`/
-`TeamCsvImportDialog`)・組み合わせ表(`PairingTable`/`TeamPairingTable`)・大会概要
-(`TournamentOverviewPage`)・大会設定(`SettingsPage`)に、上記の意匠トークン
-(ヘッダー帯・アクセント線・ゼブラストライプ)を適用することを計画している(実装PRで適用予定)。
-印刷用ページと `PairingTable`/`TeamPairingTable` の `MatchCard`(卓番号のタイル化)は
-対象外のまま維持する計画(`00_basic_design.md`§4、`06_adr/08_design_system_admin_internal_scope.md`)。
-断定的な記述(適用済み)への更新は実装PRで行う。
+`TeamCsvImportDialog`)・組み合わせ表見出し(`RoundsPage`/`TeamRoundsPage`)・大会概要
+(`TournamentOverviewPage`)・大会設定(`SettingsPage`)に、上記の意匠トークンを適用済み。
+`ParticipantTable`/`TeamTable` は既存のヘッダー帯・ゼブラストライプに加え、棄権者の行を
+`PersonOffIcon` 付きの「棄権」Chipで示す(半透明表示と併用、色だけに頼らない)。各ページの
+サブ見出し(「参加者(N名)」等)・ダイアログの `DialogTitle` には左端3pxの `primary.main`
+アクセント線を付け、`TournamentOverviewPage`/`SettingsPage` のカードには上端3pxの
+`primary.main` アクセント線(危険な操作カードは `error.main`)を付けた。いずれも
+`TournamentLayout` の見出し帯と二重にならないよう、既存トークンの微調整に留めている。
+`PairingTable`/`TeamPairingTable` の `MatchCard`(卓番号のタイル化)と印刷用ページは
+対象外のまま維持している(`00_basic_design.md`§4、`06_adr/08_design_system_admin_internal_scope.md`)。
 
 ### ステータス表示(StatusBadge)
 

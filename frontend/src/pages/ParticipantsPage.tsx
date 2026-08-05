@@ -170,7 +170,11 @@ function IndividualParticipantsPage() {
           flexWrap: 'wrap',
         }}
       >
-        <Typography variant="h3" component="h2">
+        <Typography
+          variant="h3"
+          component="h2"
+          sx={{ borderLeft: 4, borderColor: 'primary.main', pl: 1.5 }}
+        >
           参加者
           {participants && ` (${participants.length}名)`}
         </Typography>

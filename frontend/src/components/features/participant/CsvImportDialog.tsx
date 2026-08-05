@@ -91,7 +91,9 @@ export function CsvImportDialog({ open, loading, error, onImport, onClose }: Csv
       fullWidth
       slotProps={{ transition: { onExited: resetState } }}
     >
-      <DialogTitle>参加者をCSVでインポート</DialogTitle>
+      <DialogTitle sx={{ borderLeft: 4, borderColor: 'primary.main', fontWeight: 600 }}>
+        参加者をCSVでインポート
+      </DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" gutterBottom>
           ヘッダー行(氏名,所属,段級位)が必要です。グループ分けする場合は4列目に「グループ」列

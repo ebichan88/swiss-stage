@@ -1,12 +1,50 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PairingTable } from '../../../src/components/features/round/PairingTable';
 import { groupOf, matchOf, summaryOf } from '../../fixtures';
 import { renderWithProviders } from '../../testUtils';
 
+/** `theme.breakpoints.down('sm')` の一致/不一致を固定するmatchMediaモック */
+function mockMatchMedia(matchesMobile: boolean) {
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches: query.includes('max-width') ? matchesMobile : !matchesMobile,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
+}
+
 describe('PairingTable', () => {
+  const originalMatchMedia = window.matchMedia;
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.matchMedia = originalMatchMedia;
+  });
+
+  it('TRN-AC-018: スマホ表示の卓番号は共有ページの卓番号タイル(「卓」キャプション付き)ではなく、プレーンなテキストのまま表示する', () => {
+    mockMatchMedia(true);
+    renderWithProviders(
+      <PairingTable
+        matches={[matchOf({ id: 'm1', tableNumber: 3 })]}
+        editable
+        multiGroup={false}
+        savingMatchId={null}
+        onInputResult={() => {}}
+      />,
+    );
+
+    expect(screen.getByText('3')).toBeInTheDocument();
+    // 共有ページの卓番号タイルは数字の下に「卓」キャプションを添える。管理画面はプレーンテキストのまま
+    expect(screen.queryByText('卓')).not.toBeInTheDocument();
+  });
+
   it('卓番号と対局者を表示し、勝敗入力済みは○/●が付く', () => {
     renderWithProviders(
       <PairingTable

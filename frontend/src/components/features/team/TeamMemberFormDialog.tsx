@@ -60,7 +60,9 @@ export function TeamMemberFormDialog({
       fullWidth
       slotProps={{ transition: { onExited: () => reset() } }}
     >
-      <DialogTitle>{member ? 'メンバーを編集' : 'メンバーを追加'}</DialogTitle>
+      <DialogTitle sx={{ borderLeft: 4, borderColor: 'primary.main', fontWeight: 600 }}>
+        {member ? 'メンバーを編集' : 'メンバーを追加'}
+      </DialogTitle>
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>

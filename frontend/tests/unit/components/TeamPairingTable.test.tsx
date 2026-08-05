@@ -1,11 +1,48 @@
 import { screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TeamPairingTable } from '../../../src/components/features/team/TeamPairingTable';
 import { boardResultOf, groupOf, teamMatchOf, teamSummaryOf } from '../../fixtures';
 import { renderWithProviders } from '../../testUtils';
 
+/** `theme.breakpoints.down('sm')` の一致/不一致を固定するmatchMediaモック */
+function mockMatchMedia(matchesMobile: boolean) {
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches: query.includes('max-width') ? matchesMobile : !matchesMobile,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
+}
+
 describe('TeamPairingTable', () => {
+  const originalMatchMedia = window.matchMedia;
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.matchMedia = originalMatchMedia;
+  });
+
+  it('TRN-AC-018: スマホ表示の卓番号は共有ページの卓番号タイル(「卓」キャプション付き)ではなく、プレーンなテキストのまま表示する', () => {
+    mockMatchMedia(true);
+    renderWithProviders(
+      <TeamPairingTable
+        matches={[teamMatchOf({ id: 'm1', tableNumber: 3 })]}
+        editable
+        multiGroup={false}
+        savingMatchId={null}
+        onInputResult={() => {}}
+      />,
+    );
+
+    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.queryByText('卓')).not.toBeInTheDocument();
+  });
+
   it('卓番号とチーム名を表示し、全ボード決着済みの対局は○/●が付く(個人名は含めない)', () => {
     const teamA = teamSummaryOf({ id: 't1', name: 'Aチーム' });
     const teamB = teamSummaryOf({ id: 't2', name: 'Bチーム' });

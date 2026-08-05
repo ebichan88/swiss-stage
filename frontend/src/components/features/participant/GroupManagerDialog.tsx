@@ -123,7 +123,9 @@ export function GroupManagerDialog({
   return (
     <>
       <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-        <DialogTitle>グループ管理</DialogTitle>
+        <DialogTitle sx={{ borderLeft: 4, borderColor: 'primary.main', fontWeight: 600 }}>
+          グループ管理
+        </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             棋力帯ごとにグループ分けする場合は「A」に続けて、強い帯から順に(B→C→…)作成してください。

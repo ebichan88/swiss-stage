@@ -195,7 +195,11 @@ export function TeamRoundsPage() {
       {selectedRound && (
         <Box sx={{ mt: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, flexWrap: 'wrap' }}>
-            <Typography variant="h3" component="h2">
+            <Typography
+              variant="h3"
+              component="h2"
+              sx={{ borderLeft: 4, borderColor: 'primary.main', pl: 1.5 }}
+            >
               第{selectedRound.roundNumber}ラウンド
             </Typography>
             <RoundStatusBadge status={selectedRound.status} />

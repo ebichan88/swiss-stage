@@ -56,4 +56,17 @@ describe('SettingsPage', () => {
     await waitFor(() => expect(captured.body?.eventDate).toBe('2026-09-01'));
     expect(captured.body?.clearEventDate).toBeUndefined();
   });
+
+  it('TRN-AC-019: 大会名を空にして保存するとhelperTextのエラーメッセージが表示され、入力欄にaria-describedbyで関連付けられる', async () => {
+    renderSettings(tournamentOf({ id: '01TESTTOURNAMENT0000000001' }));
+
+    const nameInput = screen.getByRole('textbox', { name: /大会名/ });
+    fireEvent.change(nameInput, { target: { value: '' } });
+    await userEvent.click(screen.getByRole('button', { name: '保存する' }));
+
+    const errorMessage = await screen.findByText('大会名は必須です');
+    const describedBy = nameInput.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    expect(errorMessage.id).toBe(describedBy);
+  });
 });
