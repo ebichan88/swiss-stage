@@ -95,9 +95,9 @@ export function TeamCsvImportDialog({
       onClose={loading ? undefined : onClose}
       maxWidth="sm"
       fullWidth
-      slotProps={{ transition: { onExited: resetState } }}
+      slotProps={{ transition: { onExited: resetState }, paper: { sx: { overflow: 'hidden' } } }}
     >
-      <DialogTitle sx={{ borderLeft: 4, borderColor: 'primary.main', fontWeight: 600 }}>
+      <DialogTitle sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', fontWeight: 600 }}>
         チーム+メンバーをCSVでインポート
       </DialogTitle>
       <DialogContent>

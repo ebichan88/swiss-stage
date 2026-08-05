@@ -58,9 +58,12 @@ export function TeamMemberFormDialog({
       onClose={loading ? undefined : onClose}
       maxWidth="xs"
       fullWidth
-      slotProps={{ transition: { onExited: () => reset() } }}
+      slotProps={{
+        transition: { onExited: () => reset() },
+        paper: { sx: { overflow: 'hidden' } },
+      }}
     >
-      <DialogTitle sx={{ borderLeft: 4, borderColor: 'primary.main', fontWeight: 600 }}>
+      <DialogTitle sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', fontWeight: 600 }}>
         {member ? 'メンバーを編集' : 'メンバーを追加'}
       </DialogTitle>
       <form onSubmit={handleSubmit(onSubmit)} noValidate>

@@ -261,7 +261,7 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card variant="outlined" sx={{ borderColor: 'error.main', borderTop: 3 }}>
+      <Card variant="outlined" sx={{ border: 2, borderColor: 'error.main' }}>
         <CardContent>
           <Typography variant="h3" component="h2" gutterBottom color="error">
             危険な操作

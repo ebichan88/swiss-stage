@@ -128,7 +128,7 @@ export function TeamMatchResultControl({
                   },
                 },
               }}
-              sx={{ minWidth: 180 }}
+              sx={{ minWidth: 180, bgcolor: 'background.paper' }}
             >
               <MenuItem value="NONE" disabled>
                 未入力
@@ -196,7 +196,7 @@ export function TeamBoardResultField({
             },
           },
         }}
-        sx={{ minWidth: 180 }}
+        sx={{ minWidth: 180, bgcolor: 'background.paper' }}
       >
         <MenuItem value="NONE" disabled>
           未入力

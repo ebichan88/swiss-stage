@@ -98,7 +98,7 @@ export function MatchResultControl({
               SelectDisplayProps: { 'aria-label': `卓${tableLabel(match, multiGroup)}の結果` },
             },
           }}
-          sx={{ minWidth: 180 }}
+          sx={{ minWidth: 180, bgcolor: 'background.paper' }}
         >
           <MenuItem value="NONE" disabled>
             未入力

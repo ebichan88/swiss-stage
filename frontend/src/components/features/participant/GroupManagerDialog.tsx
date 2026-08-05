@@ -122,8 +122,16 @@ export function GroupManagerDialog({
 
   return (
     <>
-      <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ borderLeft: 4, borderColor: 'primary.main', fontWeight: 600 }}>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth="xs"
+        fullWidth
+        slotProps={{ paper: { sx: { overflow: 'hidden' } } }}
+      >
+        <DialogTitle
+          sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', fontWeight: 600 }}
+        >
           グループ管理
         </DialogTitle>
         <DialogContent>

@@ -166,7 +166,7 @@ export function TeamsPage() {
           チーム
           {teams && ` (${teams.length}チーム)`}
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', ml: 'auto' }}>
           <Button
             variant="outlined"
             startIcon={<PrintIcon />}

@@ -178,7 +178,7 @@ function IndividualParticipantsPage() {
           参加者
           {participants && ` (${participants.length}名)`}
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', ml: 'auto' }}>
           <Button
             variant="outlined"
             startIcon={<PrintIcon />}
