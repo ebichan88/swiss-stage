@@ -1,8 +1,8 @@
 # 06. backlogの定期的なPlan PRドラフト自動作成
 
-- Status: planned
+- Status: in_progress
 - Issue: #145
-- PR: -
+- PR: #146(Plan PR) / #150(実装PR)
 
 ## 1. 背景・目的
 
@@ -171,8 +171,8 @@ BLOCKEDだけは人間の回答を待つ必要があるため付けたままに�
       §7 に `auto-plan:P0/P1/P2` の作成コマンドを追記)
 - [x] `.claude/01_development_docs/11_cicd_design.md`(§1.5 ワークフロー一覧に追記・
       新設 §2.13 で設計を記述)
-- [ ] `.claude/agents/planner.md`(実装PRで新規作成。このPRには含めない)
-- [ ] `.github/workflows/scheduled-planner.yml`(実装PRで新規作成。このPRには含めない)
+- [x] `.claude/agents/planner.md`(このPRで新規作成)
+- [x] `.github/workflows/scheduled-planner.yml`(このPRで新規作成)
 
 ## 7. DoD(完了の定義)
 

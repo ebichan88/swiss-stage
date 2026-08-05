@@ -1,0 +1,183 @@
+name: Scheduled Planner
+
+# backlogのIssueは「着手を思い出す」作業が人間の記憶に依存していた隙間を埋める。
+# `auto-plan:P0/P1/P2` ラベル(オプトイン)が付いたIssueを週次で1件拾い、無人実行版`/plan`
+# (`.claude/agents/planner.md`)でPlan PRドラフトを自動作成する。
+# 設計: .claude/01_development_docs/11_cicd_design.md §2.13
+# 経緯・却下案: .claude/06_adr/09_scheduled_plan_drafting.md
+# 計画: .claude/07_plans/06_scheduled_plan_drafting.md
+
+on:
+  schedule:
+    # 毎週金曜21:00 UTC(日本時間土曜6:00)
+    - cron: '0 21 * * 5'
+  workflow_dispatch:
+  # BLOCKED(needs-human + auto-plan:P*)への人間の返信を週次scheduleを待たず即時反映するため
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: scheduled-planner
+  cancel-in-progress: false
+
+permissions:
+  contents: write # ブランチ作成・push
+  pull-requests: write # Plan PR作成
+  issues: write # コメント・ラベル操作
+  id-token: write # claude-code-actionのOIDCトークン交換に必須
+
+jobs:
+  plan:
+    # issue_commentトリガーは、コメントされたIssueにneeds-humanとauto-plan:P0/P1/P2が
+    # 同時に付いている場合のみ即時再開パスとして扱う。それ以外のコメント・Issueでは何もしない
+    # (plannerのsticky comment更新はPATCH=issue_comment.editedのため、この条件では自己トリガーにならない)
+    if: >-
+      github.event_name != 'issue_comment' ||
+      (
+        !github.event.issue.pull_request &&
+        contains(github.event.issue.labels.*.name, 'needs-human') &&
+        (
+          contains(github.event.issue.labels.*.name, 'auto-plan:P0') ||
+          contains(github.event.issue.labels.*.name, 'auto-plan:P1') ||
+          contains(github.event.issue.labels.*.name, 'auto-plan:P2')
+        )
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 対象Issueの選定
+        id: select
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          COMMENT_ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+
+          MARKER='<!-- swiss-stage-ai-planner-question -->'
+
+          # Refs #<N> の重複起票判定に使うため、全PR(open/closed/merged)の本文を一括取得する
+          ALL_PRS_JSON=$(gh pr list --repo "$REPO" --state all --json number,body,state --limit 1000)
+
+          # 戻り値: "open_or_merged" / "closed" / "none"
+          ref_pr_state() {
+            local n="$1"
+            echo "$ALL_PRS_JSON" | jq -r --arg n "$n" '
+              [.[] | select(.body != null) | select(.body | test("refs #" + $n + "([^0-9]|$)"; "i")) | .state]
+              | if any(. == "OPEN" or . == "MERGED") then "open_or_merged"
+                elif length > 0 then "closed"
+                else "none" end'
+          }
+
+          # 対象として採用できれば0、除外すれば1を返す(除外時はコメント・ラベル操作も行う)
+          is_excluded() {
+            local n="$1"
+            local ref
+            ref=$(ref_pr_state "$n")
+
+            if [ "$ref" = "open_or_merged" ]; then
+              return 1
+            fi
+            if [ "$ref" = "closed" ]; then
+              echo "既にこのIssueを参照するPlan PRが作成され、クローズ(未マージ)されています。自動処理の対象から除外します。再挑戦するには \`auto-plan:P*\` ラベルを一旦外して付け直してください。" \
+                | gh issue comment "$n" --repo "$REPO" --body-file -
+              gh issue edit "$n" --repo "$REPO" --add-label needs-human
+              return 1
+            fi
+
+            if gh issue view "$n" --repo "$REPO" --json labels --jq '.labels[].name' | grep -qx needs-human; then
+              # --paginateはページごとに--jqを適用するため、'last'をそのまま使うと
+              # 「各ページの最後のコメント」が複数行返り、全体の最後のコメントを取り違える。
+              # IDだけ(1コメント1行・改行を含まない)を全ページ分ストリームで取得し、
+              # 出力全体の最後の行(=全コメント中で最新のID)を取ってから本文を1件取得し直す
+              LATEST_ID=$(gh api "repos/$REPO/issues/$n/comments" --paginate --jq '.[].id' | tail -n1)
+              if [ -n "$LATEST_ID" ]; then
+                LATEST=$(gh api "repos/$REPO/issues/comments/$LATEST_ID" --jq '.body // ""')
+                if printf '%s' "$LATEST" | grep -qF "$MARKER"; then
+                  return 1
+                fi
+              fi
+            fi
+
+            if [ -n "$(git ls-remote --heads origin "feature/plan-auto-${n}-*")" ]; then
+              echo "前回の自動実行が完走しなかった痕跡(\`feature/plan-auto-${n}-*\` ブランチ)が残っています。自動処理の対象から除外します。原因を確認し、問題なければブランチを削除すると再度対象になります。" \
+                | gh issue comment "$n" --repo "$REPO" --body-file -
+              gh issue edit "$n" --repo "$REPO" --add-label needs-human
+              return 1
+            fi
+
+            return 0
+          }
+
+          TARGET=""
+
+          if [ "$EVENT_NAME" = "issue_comment" ]; then
+            if is_excluded "$COMMENT_ISSUE"; then
+              :
+            else
+              TARGET="$COMMENT_ISSUE"
+            fi
+          else
+            for P in P0 P1 P2; do
+              if [ -n "$TARGET" ]; then break; fi
+              ISSUES=$(gh issue list --repo "$REPO" --label "auto-plan:$P" --state open --json number,createdAt \
+                --jq 'sort_by(.createdAt) | .[].number')
+              for N in $ISSUES; do
+                if ! is_excluded "$N"; then
+                  TARGET="$N"
+                  break
+                fi
+              done
+            done
+          fi
+
+          if [ -n "$TARGET" ]; then
+            echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+            echo "対象Issue: #$TARGET"
+          else
+            echo "target=" >> "$GITHUB_OUTPUT"
+            echo "対象Issueなし。no-op終了"
+          fi
+
+      - name: needs-humanラベルを用意
+        if: steps.select.outputs.target != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create needs-human --color B60205 \
+            --description "自動処理の対象外。人間の判断が必要(外すと自動処理を再開)" --force
+
+      - name: planner起動
+        if: steps.select.outputs.target != ''
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "claude,github-actions"
+          show_full_output: true
+          prompt: |
+            REPO: ${{ github.repository }}
+            TARGET ISSUE: #${{ steps.select.outputs.target }}
+
+            あなたはこのリポジトリのplannerです。
+            `.claude/agents/planner.md` を読み、その指示に厳密に従って
+            Issue #${{ steps.select.outputs.target }} に対してPlan PRドラフトの自動作成
+            (または不明点の質問投稿・NOT_APPLICABLE・FAILEDの各対応)を行ってください。
+
+            前提:
+            - カレントディレクトリは `main` ブランチのcheckout(`fetch-depth: 0`)です
+            - このIssueは既に選定ステップの重複起票チェック・残骸ブランチチェックを通過済みです
+
+            **重要**: サブエージェント(Agent / Task ツール)に委譲しないでください。
+            このジョブはあなたのターンが終わると同時に終了するため、バックグラウンドで
+            起動したエージェントは分類(PLANNED/BLOCKED/NOT_APPLICABLE/FAILED)のいずれにも
+            到達する前に強制終了され、ラベル操作もコメント投稿も行われません。
+            必ずあなた自身がこのターン内で作業を完了し、4分類のいずれかで終えてください。
+          claude_args: |
+            --allowedTools "Read,Grep,Glob,Write,Edit,Bash(git:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh issue edit:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh api:*),Bash(gh label create:*),Bash(python3 .github/scripts/docs-lint.py)"
+            --disallowedTools "Task,Agent"
+            --permission-mode bypassPermissions
