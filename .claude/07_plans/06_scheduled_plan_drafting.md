@@ -106,6 +106,13 @@ Plan PR・実装PRをApproveする、の3つに絞る方針を掲げているが
   `--disallowedTools "Task,Agent"` でサブエージェントへの委譲を禁止する
   (`11_cicd_design.md` §2.5「委譲の禁止」と同じ理由。ジョブ終了と同時に委譲先が強制終了され
   何も完了しない事故を防ぐ)
+- **permission-mode**: `planner` はブランチ作成・push・`gh pr create` を無人実行で行うため、
+  `ai-review.yml` のFixerステップと同じ理由(`main` の `.claude/settings.json` は
+  git push が ask 設定だが、CIは無人実行のため ask は常に拒否扱いになり push が黙って失敗する)
+  で `--allowedTools` による許可範囲の限定とセットで `--permission-mode bypassPermissions`
+  を付ける。実装PRでこれを付け忘れると、選定・BLOCKED判定までは動くのにPlan PR作成の
+  直前(ブランチpush)だけが無言で失敗し、§4.2の「ブランチ存在チェックによる途中失敗検知」
+  経由でしか気づけない事故になる
 
 ### 4.3 `planner` エージェントの分類(`.claude/agents/planner.md`、実装PRで新規作成)
 
@@ -254,6 +261,11 @@ BLOCKEDだけは人間の回答を待つ必要があるため付けたままに�
 - **BLOCKED再発時のコメント運用**: 決定済み。1回目・2回目以降の質問いずれも新規コメントは
   作らず、同一の `<!-- swiss-stage-ai-planner-question -->` sticky commentを更新(PATCH)し
   続ける(他の全エージェントと同じsticky comment運用パターン)
+- **git push時のpermission-mode「ask」**: 決定済み(§4.2に追記)。`main` の
+  `.claude/settings.json` はgit pushがask設定のため、無人実行では常に拒否扱いになり
+  黙って失敗する(`ai-review.yml` のFixerステップで実際に発生・対処済みの事故と同種)。
+  `scheduled-planner.yml` でも `--permission-mode bypassPermissions` を付けることで対処する。
+  AskUserQuestion相当の不明点確認(BLOCKED分類)とは別レイヤーの問題であり、混同しないこと
 - **`needs-human`ラベルをIssue単位で使う初のケース**: これまで `needs-human` は
   reviewer/fixer/qa/qa-fixer/ci-fixer(`11_cicd_design.md` §2.5等)によりPR単位でのみ運用
   されてきたが、本プランはIssue単位で同じラベルを使う。現時点でIssueに `needs-human` を
