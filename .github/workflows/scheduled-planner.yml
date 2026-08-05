@@ -91,9 +91,16 @@ jobs:
             fi
 
             if gh issue view "$n" --repo "$REPO" --json labels --jq '.labels[].name' | grep -qx needs-human; then
-              LATEST=$(gh api "repos/$REPO/issues/$n/comments" --paginate --jq 'last | .body // ""')
-              if printf '%s' "$LATEST" | grep -qF "$MARKER"; then
-                return 1
+              # --paginateはページごとに--jqを適用するため、'last'をそのまま使うと
+              # 「各ページの最後のコメント」が複数行返り、全体の最後のコメントを取り違える。
+              # IDだけ(1コメント1行・改行を含まない)を全ページ分ストリームで取得し、
+              # 出力全体の最後の行(=全コメント中で最新のID)を取ってから本文を1件取得し直す
+              LATEST_ID=$(gh api "repos/$REPO/issues/$n/comments" --paginate --jq '.[].id' | tail -n1)
+              if [ -n "$LATEST_ID" ]; then
+                LATEST=$(gh api "repos/$REPO/issues/comments/$LATEST_ID" --jq '.body // ""')
+                if printf '%s' "$LATEST" | grep -qF "$MARKER"; then
+                  return 1
+                fi
               fi
             fi
 
