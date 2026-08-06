@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+# git status && git diff のような複合コマンドを | && & ; \n で分解し、全ステージが
+# settings.json の permissions.allow パターンにマッチ(かつ deny 不一致・危険な
+# シェル構文なし)なら permissionDecision: "allow" を返して権限プロンプトをスキップ
+# させる仕組み。Claude Codeの標準の許可マッチングは複合コマンド全体を1パターンと
+# 比較するため、個別には許可済みのコマンドを&&で繋いだだけでも毎回プロンプトが
+# 出てしまう——それを避けるためのフック。
 import json, sys, re
 from pathlib import Path
 
