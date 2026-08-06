@@ -122,7 +122,7 @@ export function SettingsPage() {
 
   return (
     <Stack spacing={4} sx={{ maxWidth: 600 }}>
-      <Card variant="outlined">
+      <Card variant="outlined" sx={{ borderTop: 3, borderTopColor: 'primary.main' }}>
         <CardContent>
           <Typography variant="h3" component="h2" gutterBottom>
             基本設定
@@ -208,7 +208,7 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card variant="outlined">
+      <Card variant="outlined" sx={{ borderTop: 3, borderTopColor: 'primary.main' }}>
         <CardContent>
           <Typography variant="h3" component="h2" gutterBottom>
             共有URL
@@ -261,7 +261,7 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card variant="outlined" sx={{ borderColor: 'error.main' }}>
+      <Card variant="outlined" sx={{ border: 2, borderColor: 'error.main' }}>
         <CardContent>
           <Typography variant="h3" component="h2" gutterBottom color="error">
             危険な操作

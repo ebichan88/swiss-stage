@@ -128,7 +128,7 @@ export function TeamTable({
                 )}
                 <TableCell>
                   {withdrawn ? (
-                    <Chip label="棄権" size="small" variant="outlined" />
+                    <Chip icon={<PersonOffIcon />} label="棄権" size="small" variant="outlined" />
                   ) : (
                     <Chip label="参加中" size="small" color="success" variant="outlined" />
                   )}

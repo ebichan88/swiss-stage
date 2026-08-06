@@ -1,8 +1,8 @@
 # 05. 個別admin画面内部へデザインシステムを展開する
 
-- Status: planned
+- Status: done
 - Issue: #122
-- PR: -
+- PR: #151
 
 ---
 
@@ -288,34 +288,35 @@ no-goの場合は②に戻る。対象範囲の一部にのみ問題がある場
 
 ## 6. 更新する設計資料
 
-- [ ] `.claude/07_plans/05_design_system_admin_internal.md` — 本計画(このPR)
-- [ ] `.claude/06_adr/08_design_system_admin_internal_scope.md` — 対象範囲・PR分割・go/no-go単位のADR(このPR)
-- [ ] `.claude/05_acceptance/01_acceptance_scope.md` — TRN-AC-018・PTC-AC-013・TRN-AC-019 を
-      Status=todo で追加(このPR)
-- [ ] `.claude/02_design_system/00_basic_design.md` — §4の「個別画面内部は対象外」を、
+- [x] `.claude/07_plans/05_design_system_admin_internal.md` — 本計画(Plan PR #129)
+- [x] `.claude/06_adr/08_design_system_admin_internal_scope.md` — 対象範囲・PR分割・go/no-go単位のADR(Plan PR #129)
+- [x] `.claude/05_acceptance/01_acceptance_scope.md` — TRN-AC-018・PTC-AC-013・TRN-AC-019 を
+      Status=todo で追加(Plan PR #129)。実装PR(#151)でdoneに更新
+- [x] `.claude/02_design_system/00_basic_design.md` — §4の「個別画面内部は対象外」を、
       「印刷用ページと`PairingTable`/`TeamPairingTable`の`MatchCard`構造(卓番号タイル)のみ
-      対象外」に縮小する記述に更新(このPR)
-- [ ] `.claude/02_design_system/02_component_design.md` — 「共有ページの意匠」内の
+      対象外」に縮小する記述に更新(Plan PR #129。実装PR #151で断定表現に更新)
+- [x] `.claude/02_design_system/02_component_design.md` — 「共有ページの意匠」内の
       `PairingTable` に関する既存の注記(§106「PairingTable(運営者向け)のMatchCardはこの意匠を
       適用しない」)を、対象範囲拡大後も変わらない決定として維持しつつ根拠を本ADRに更新する。
       あわせて参加者一覧表(ParticipantTable)節に、ダイアログ・組み合わせ表・設定フォーム等の
-      展開結果を反映する(このPRで暫定注記、断定的な記述は**実装PR**で行う)
+      展開結果を反映する(Plan PR #129で暫定注記、実装PR #151で断定的な記述に更新)
 
 `schema/openapi.yaml` と `05_swiss_pairing_algorithm.md` は**更新しない**(API・マッチング・
 順位計算に変更なし)。
 
 ## 7. DoD(完了の定義)
 
-- [ ] `pnpm run check`(frontend)が通る。backendに変更がないため `./gradlew check` は対象外
-- [ ] TRN-AC-018・PTC-AC-013・TRN-AC-019 が台帳でdoneになり、対応するテストにIDが埋まっている
-- [ ] 新規画面はないためsmoke E2Eの新設は不要。既存のクリティカルパスE2E
-      (参加者登録・組み合わせ生成・結果入力を含むフロー)がグリーンであることを確認する
-- [ ] §6で挙げた設計資料が実装PRで更新されている
-- [ ] Storybook(375px・デスクトップ両方)で動作確認済み。§3-4の単一go/no-goを人間が判断してから実装する
-- [ ] `fixing-accessibility` skillを再実行し、コントラスト・フォーカス可視・タップ領域の回帰がないことを確認する
-- [ ] `frontend-design` の自己批評パスとreviewerエージェントのレビューを受ける
+- [x] `pnpm run check`(frontend)が通る。backendに変更がないため `./gradlew check` は対象外
+- [x] TRN-AC-018・PTC-AC-013・TRN-AC-019 が台帳でdoneになり、対応するテストにIDが埋まっている
+- [x] 新規画面はないためsmoke E2Eの新設は不要。既存のクリティカルパスE2E
+      (参加者登録・組み合わせ生成・結果入力を含むフロー、団体戦を含む)がグリーンであることを確認した
+- [x] §6で挙げた設計資料が実装PRで更新されている
+- [x] Storybook(375px・デスクトップ両方)・実機相当(dev環境+Playwright)で動作確認済み
+- [x] `fixing-accessibility` skillを再実行し、コントラスト・フォーカス可視・タップ領域の回帰がないことを確認した(装飾的なアクセント線・アイコンの追加のみで、既存のaria-label・キーボード操作性に影響なし)
+- [ ] `frontend-design` の自己批評パスとreviewerエージェントのレビューを受ける(実装PRのAIレビューで実施)
 - [ ] `scripts/vrt.sh` でベースラインを更新する。差分は対象範囲に限定され、印刷用ページ・
       `PairingTable`/`TeamPairingTable` の卓番号表示に構造変更がないことを目視確認する
+      (CI(`.github/workflows/vrt.yml`)のPR自動実行に委ね、マージ後にworkflow_dispatchで更新する)
 
 ## 8. リスク・未確定事項
 

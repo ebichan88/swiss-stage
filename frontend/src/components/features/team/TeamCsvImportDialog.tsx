@@ -95,9 +95,11 @@ export function TeamCsvImportDialog({
       onClose={loading ? undefined : onClose}
       maxWidth="sm"
       fullWidth
-      slotProps={{ transition: { onExited: resetState } }}
+      slotProps={{ transition: { onExited: resetState }, paper: { sx: { overflow: 'hidden' } } }}
     >
-      <DialogTitle>チーム+メンバーをCSVでインポート</DialogTitle>
+      <DialogTitle sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', fontWeight: 600 }}>
+        チーム+メンバーをCSVでインポート
+      </DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" gutterBottom>
           ヘッダー行(チーム名,氏名,段級位,ポジション)が必要です。連続する同一チーム名の行が1チームに

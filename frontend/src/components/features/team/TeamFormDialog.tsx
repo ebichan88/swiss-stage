@@ -52,9 +52,14 @@ export function TeamFormDialog({
       onClose={loading ? undefined : onClose}
       maxWidth="xs"
       fullWidth
-      slotProps={{ transition: { onExited: () => reset() } }}
+      slotProps={{
+        transition: { onExited: () => reset() },
+        paper: { sx: { overflow: 'hidden' } },
+      }}
     >
-      <DialogTitle>{team ? 'チームを編集' : 'チームを追加'}</DialogTitle>
+      <DialogTitle sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', fontWeight: 600 }}>
+        {team ? 'チームを編集' : 'チームを追加'}
+      </DialogTitle>
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>

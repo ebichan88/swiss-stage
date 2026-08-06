@@ -60,9 +60,14 @@ export function ParticipantFormDialog({
       onClose={loading ? undefined : onClose}
       maxWidth="xs"
       fullWidth
-      slotProps={{ transition: { onExited: () => reset() } }}
+      slotProps={{
+        transition: { onExited: () => reset() },
+        paper: { sx: { overflow: 'hidden' } },
+      }}
     >
-      <DialogTitle>{participant ? '参加者を編集' : '参加者を追加'}</DialogTitle>
+      <DialogTitle sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', fontWeight: 600 }}>
+        {participant ? '参加者を編集' : '参加者を追加'}
+      </DialogTitle>
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
