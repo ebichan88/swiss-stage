@@ -133,6 +133,7 @@
 | TEAM-AC-022 | P1 | チーム一覧CSVダウンロードはCSVインポートと同じ列構成(チーム名,氏名,段級位,ポジション,グループ)をメンバー1人につき1行、UTF-8 BOM付きで返す | done | TeamApiTest |
 | TEAM-AC-023 | P2 | チームが0件のときのCSVダウンロードはヘッダー行のみになりテンプレートとして使える | done | TeamApiTest |
 | TEAM-AC-024 | P1 | CSVダウンロードは大会の状態を問わず利用でき、メンバーが1人もいないチームは行として出力されない | done | TeamApiTest |
+| TEAM-AC-025 | P1 | チーム一覧表(TeamTable)にゼブラストライプを適用した後も、棄権者(status=WITHDRAWN)の行は半透明表示(opacity)とPersonOffIconの両方で他の行と区別できる | done | TeamTable.test(Vitest) |
 
 ## SHR: 共有(トークン)
 

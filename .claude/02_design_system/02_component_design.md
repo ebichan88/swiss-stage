@@ -109,7 +109,7 @@
 - 列: No.・氏名・所属(スマホでは非表示)・棋力・(複数グループ大会のみ)グループ・状態・操作
 - ヘッダー行・データ行のゼブラストライプは対戦結果表と共通(`primary.main` 背景+白文字のヘッダー、`background.paper`/`background.default` の交互ストライプ)
 - 棄権者の行はストライプに加えて `opacity: 0.55` で半透明表示し、状態列の「棄権」Chipに
-  `PersonOffIcon` を添える(色だけに頼らない。PTC-AC-013)
+  `PersonOffIcon` を添える(色だけに頼らない。PTC-AC-013。団体戦の`TeamTable`も同じ表示でTEAM-AC-025)
 
 ### 個別admin画面内部の展開(`.claude/07_plans/05_design_system_admin_internal.md`)
 
@@ -119,10 +119,13 @@
 (`TournamentOverviewPage`)・大会設定(`SettingsPage`)に、上記の意匠トークンを適用済み。
 `ParticipantTable`/`TeamTable` は既存のヘッダー帯・ゼブラストライプに加え、棄権者の行を
 `PersonOffIcon` 付きの「棄権」Chipで示す(半透明表示と併用、色だけに頼らない)。各ページの
-サブ見出し(「参加者(N名)」等)・ダイアログの `DialogTitle` には左端3pxの `primary.main`
-アクセント線を付け、`TournamentOverviewPage`/`SettingsPage` のカードには上端3pxの
-`primary.main` アクセント線(危険な操作カードは `error.main`)を付けた。いずれも
-`TournamentLayout` の見出し帯と二重にならないよう、既存トークンの微調整に留めている。
+サブ見出し(「参加者(N名)」等)には左端4pxの `primary.main` アクセント線を付けた。
+ダイアログの `DialogTitle` は `primary.main` のベタ塗り背景+白文字(`primary.contrastText`)
+にし(Paperの角丸から色がはみ出さないよう `overflow: hidden` でクリップする)、
+`TournamentOverviewPage`/`SettingsPage` のカードには上端3pxの `primary.main` アクセント線
+(危険な操作カードは全辺2pxの `error.main` 枠)を付けた。組み合わせ表の「結果」セレクトボックスは
+ゼブラストライプの行によって塗りが変わって見えないよう `background.paper` を明示指定した。
+いずれも `TournamentLayout` の見出し帯と二重にならないよう、既存トークンの微調整に留めている。
 `PairingTable`/`TeamPairingTable` の `MatchCard`(卓番号のタイル化)と印刷用ページは
 対象外のまま維持している(`00_basic_design.md`§4、`06_adr/08_design_system_admin_internal_scope.md`)。
 
