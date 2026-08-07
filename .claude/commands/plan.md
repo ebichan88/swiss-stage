@@ -64,7 +64,7 @@ AskUserQuestion で**最大3問**にまとめて確認する。優先すべき�
 
 - `main` から `feature/plan-<slug>` ブランチを作成する
 - メッセージ形式: `docs: <日本語の要約>(Plan PR)` + 空行 + 本文
-- 末尾に `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` を付ける
+- 末尾に `Co-Authored-By: Claude <noreply@anthropic.com>` を付ける
 - **コミット前チェック(`pnpm run check` / `./gradlew check`)は不要**(コード変更を含まないため)
 
 ## 8. プッシュとPR作成
