@@ -39,7 +39,7 @@ allowed-tools: Bash(git *), Bash(gh *), Bash(./gradlew *), Bash(pnpm *), Read, G
 ## 5. コミット
 
 - メッセージ形式: `<prefix>: <日本語の要約>`(1行目)+ 空行 + 必要なら本文(日本語)
-- 末尾に必ず付ける: `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`
+- 末尾に必ず付ける: `Co-Authored-By: Claude <noreply@anthropic.com>`
 - 関連する変更は1コミットにまとめる。無関係な変更が混ざっていたらユーザーに確認する
 
 ## 6. プッシュとPR作成
