@@ -64,4 +64,20 @@ describe('theme', () => {
       expect(contrastRatio(fg, bg), `${label}: ${fg} vs ${bg}`).toBeGreaterThanOrEqual(4.5);
     }
   });
+
+  it('TRN-AC-024: TextField(outlined variant)の既定背景色がbackground.paperになる', () => {
+    const styleOverrides = theme.components?.MuiOutlinedInput?.styleOverrides as {
+      root?: { backgroundColor?: string };
+    };
+    expect(styleOverrides.root?.backgroundColor).toBe(theme.palette.background.paper);
+  });
+
+  it('TRN-AC-025: outlinedボタンの既定背景色がbackground.paperになり、containedボタンの配色は変更されない', () => {
+    const styleOverrides = theme.components?.MuiButton?.styleOverrides as {
+      root?: { backgroundColor?: string };
+      outlined?: { backgroundColor?: string };
+    };
+    expect(styleOverrides.outlined?.backgroundColor).toBe(theme.palette.background.paper);
+    expect(styleOverrides.root?.backgroundColor).toBeUndefined();
+  });
 });

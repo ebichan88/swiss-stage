@@ -31,7 +31,7 @@
 | text.primary | `#231F1B`(墨) | 本文。和紙(background.default)に対し14.8:1 |
 | text.secondary | `#6B655C`(墨鼠) | 補足テキスト。和紙に対し5.2:1 |
 | background.default | `#F7F3EC`(生成・きぬ) | ページ背景。和紙を連想させる温白 |
-| background.paper | `#FFFDF9`(生成紙) | カード・表。純白ではなく紙の白 |
+| background.paper | `#FFFDF9`(生成紙) | カード・表。純白ではなく紙の白。`TextField`/`Select`(outlined variant)・`Button variant="outlined"`の既定背景色にも使う(テーマの`MuiOutlinedInput`/`MuiButton`の`styleOverrides`。`theme/index.ts`)。ページ背景(`background.default`)のみでは入力欄・outlinedボタンの境界が視認しづらいための採用 |
 | divider | `#DDD4C4`(墨線) | 罫線。木目・畳表に近い暖色の罫線 |
 
 以前の値(`#1A1A1A` / `#5F6368` / `#FAFAF7` / `#FFFFFF` / `#E0E0DC`)は冷色寄りで、

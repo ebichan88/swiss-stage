@@ -89,6 +89,12 @@ export const theme = createTheme({
       defaultProps: { disableElevation: true },
       styleOverrides: {
         root: { textTransform: 'none' },
+        outlined: { backgroundColor: '#FFFDF9' },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: { backgroundColor: '#FFFDF9' },
       },
     },
     MuiCssBaseline: {

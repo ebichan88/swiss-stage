@@ -1,8 +1,8 @@
 # 08. フォーム部品(TextField・Select・outlinedボタン)の背景色を白系に変更する
 
-- Status: planned
+- Status: done
 - Issue: #158
-- PR: -
+- PR: #159(Plan PR) / #160(実装PR)
 
 ---
 
@@ -127,11 +127,11 @@
 
 ### 実装PRで更新が必要な設計ドキュメント(今は更新しない・実装時の申し送り)
 
-- [ ] `.claude/02_design_system/01_design_principles.md` — カラーパレット表の`background.paper`の
-      用途欄に「フォーム部品(TextField/Select/outlinedボタン)の既定背景」を追記する
-- [ ] `.claude/02_design_system/02_component_design.md` — §1ボタン表の「セカンダリ」行に背景色の
+- [x] `.claude/02_design_system/01_design_principles.md` — カラーパレット表の`background.paper`の
+      用途欄に「フォーム部品(TextField/Select/outlinedボタン)の既定背景」を追記した
+- [x] `.claude/02_design_system/02_component_design.md` — §1ボタン表の「セカンダリ」行に背景色の
       既定を明記し、§3内の「組み合わせ表の結果セレクトは`background.paper`を明示指定した」という
-      記述を、個別指定ではなくテーマ既定になった旨に更新する
+      記述を、個別指定ではなくテーマ既定になった旨に更新した
 
 ## 7. DoD(完了の定義)
 
