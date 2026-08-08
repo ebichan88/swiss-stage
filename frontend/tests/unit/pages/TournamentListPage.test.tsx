@@ -138,6 +138,24 @@ describe('TournamentListPage', () => {
     expect(screen.queryByText('Summer Go Cup')).not.toBeInTheDocument();
   });
 
+  it('TRN-AC-027: 状態フィルタで「すべて」が選択されているとき、セレクトボックスが空白にならず「すべて」と表示される', async () => {
+    setUpFilterTest();
+    const user = userEvent.setup();
+    renderWithProviders(<TournamentListPage />);
+
+    await screen.findByText('Summer Go Cup');
+    const statusFilter = screen.getByRole('combobox', { name: '状態で絞り込み' });
+    expect(statusFilter).toHaveTextContent('すべて');
+
+    await user.click(statusFilter);
+    await user.click(screen.getByRole('option', { name: '開催中' }));
+    expect(statusFilter).toHaveTextContent('開催中');
+
+    await user.click(statusFilter);
+    await user.click(screen.getByRole('option', { name: 'すべて' }));
+    expect(statusFilter).toHaveTextContent('すべて');
+  });
+
   it('TRN-AC-023: 検索・フィルタの結果が0件のとき専用の空状態が表示され、「検索条件をクリア」で元の一覧に戻る', async () => {
     setUpFilterTest();
     const user = userEvent.setup();
