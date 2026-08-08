@@ -65,7 +65,19 @@ flowchart TD
 - `workflow_dispatch` の入力 `update_snapshots`(boolean)で「比較のみ」と「ベースライン更新」を切り替える
 - **ベースライン更新は `workflow_dispatch` のときだけ**。PRトリガーでは絶対に更新しない
   (更新されると「差分を検知せず素通り」する事故になるため、`github.event_name` を条件に明示している)
-- **ベースライン更新は必ずこのワークフロー経由で行う**(ローカルではPRに含めるベースラインを生成しない。`09_test_strategy.md`)。更新時はコンテナ内でコミット・pushする(`permissions: contents: write`)
+- **ベースライン更新は必ずこのワークフロー経由で行う**(ローカルではPRに含めるベースラインを生成しない。`09_test_strategy.md`)。更新時はコンテナ内でコミット・pushする
+- pushは `AUTOFIX_TOKEN`(人間名義のPAT)を使う。`GITHUB_TOKEN` でpushすると
+  §2.7の2問題(後続の`pull_request`実行が`action_required`で止まる/actorが`github-actions[bot]`
+  になりAIレビューがブロックされる)がそのまま発生する(実測で確認済み)。`AUTOFIX_TOKEN`未設定時は
+  push自体を行わずジョブを失敗させる(セットアップ手順は§2.7参照)
+- `AUTOFIX_TOKEN` はcheckout時点では使わず、「Commit updated baselines」ステップでpushする直前に
+  `git remote set-url` でリモートURLへ埋め込むだけにとどめる。このジョブは通常のPR比較実行時に
+  PRの依存関係(`pnpm install`)とPR変更後のフロントエンドコード(Playwright/Storybook実行)を
+  そのまま動かすため、書き込み権限を持つPATをチェックアウト時点から持たせると、依存関係経由の
+  コード実行で窃取された場合にリポジトリへの書き込み権限が露出する(`ci.yml`のautofixジョブが
+  CI失敗後のみ起動する専用ジョブとして分離されているのと異なり、`vrt.yml`は毎PR実行のジョブと
+  ベースライン更新を同じジョブで扱うため、資格情報の持たせ方でリスクを避ける)。`permissions:`
+  は`contents: read`のみで、pushはこの埋め込みURL経由(GITHUB_TOKENの権限とは無関係)で行う
 - 実行対象はローカル確認用の `frontend/scripts/vrt.sh` と同じPlaywright公式コンテナイメージを使う(フォントレンダリング差分を避けるため)
 
 ---

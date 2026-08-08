@@ -28,8 +28,8 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write # ベースライン画像の更新コミットをpushするため(workflow_dispatch時のみ)
-  pull-requests: write # 差分検出時にベースライン更新の導線をPRコメントで案内するため
+  contents: read # checkoutの読み取りのみ。push権限はGITHUB_TOKENに持たせず、Commitステップで
+                 # AUTOFIX_TOKEN(人間名義PAT)をpush時だけリモートURLに埋め込んで使う(下記参照)
 
 jobs:
   vrt:
@@ -44,9 +44,27 @@ jobs:
       run:
         working-directory: frontend
     steps:
+      # 書き込み権限を持つAUTOFIX_TOKENはここでは使わない。このジョブは通常のPR比較実行を含み、
+      # 直後に `pnpm install` でPRの package.json/pnpm-lock.yaml を、Playwrightで
+      # PR変更後のフロントエンドコードを実行する(=信頼境界の低い処理)。書き込みPATを
+      # チェックアウト時点から持たせると、依存関係経由のコード実行(postinstall等)で
+      # 窃取された場合にリポジトリへの書き込み権限が露出する。pushが必要な経路
+      # (workflow_dispatch && update_snapshots)でも、資格情報は「Commit updated baselines」
+      # ステップでpush直前にだけ与える
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
+
+      - name: AUTOFIX_TOKEN未設定を検知(ベースライン更新時のみ)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.update_snapshots }}
+        run: |
+          if [ -z "${AUTOFIX_TOKEN}" ]; then
+            echo "::error::AUTOFIX_TOKEN が未設定です。GITHUB_TOKEN でのpushは後続PRチェックが action_required で" \
+                 "止まる既知の問題があるため行いません。セットアップ手順は 11_cicd_design.md §2.7 を参照してください。"
+            exit 1
+          fi
+        env:
+          AUTOFIX_TOKEN: ${{ secrets.AUTOFIX_TOKEN }}
 
       - uses: pnpm/action-setup@v4
         with:
@@ -81,6 +99,8 @@ jobs:
 
       - name: Commit updated baselines
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.update_snapshots }}
+        env:
+          AUTOFIX_TOKEN: ${{ secrets.AUTOFIX_TOKEN }}
         run: |
           # containerジョブでの実行時にリポジトリの所有者判定(dubious ownership)で
           # ローカルconfig書き込み(`git config user.name`)が失敗することがあるため、
@@ -93,6 +113,12 @@ jobs:
             echo "ベースラインに変更はありません"
           else
             git commit -m "chore: VRTベースライン画像を更新"
+            # AUTOFIX_TOKEN(人間名義のPAT)はpush直前だけリモートURLに埋め込む。GITHUB_TOKENで
+            # pushすると(1)後続のpull_request実行がaction_requiredで手動承認待ちになり、
+            # (2)actorがgithub-actions[bot]になりallowed_botsに弾かれてAIレビュー・QAがハード
+            # 失敗する既知の問題があるため(11_cicd_design.md §2.7)。値はGitHub Actionsが
+            # ログ上で自動マスクする
+            git remote set-url origin "https://x-access-token:${AUTOFIX_TOKEN}@github.com/${{ github.repository }}.git"
             git push origin HEAD:${{ github.ref_name }}
           fi
 
