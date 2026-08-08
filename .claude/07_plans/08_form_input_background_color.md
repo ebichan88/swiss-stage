@@ -1,8 +1,8 @@
 # 08. フォーム部品(TextField・Select・outlinedボタン)の背景色を白系に変更する
 
-- Status: in_progress
+- Status: done
 - Issue: #158
-- PR: #159(Plan PR)
+- PR: #159(Plan PR) / #160(実装PR)
 
 ---
 
