@@ -49,6 +49,9 @@
 | TRN-AC-021 | P2 | 状態(準備中/開催中/終了)フィルタで、選択した状態の大会だけが表示される | done | TournamentListPage.test(Vitest) |
 | TRN-AC-022 | P2 | 大会名検索と状態フィルタを同時に指定すると、両方を満たす大会だけが表示される(AND) | done | TournamentListPage.test(Vitest) |
 | TRN-AC-023 | P2 | 検索・フィルタの結果が0件のとき専用の空状態が表示され、「検索条件をクリア」で元の一覧に戻る | done | TournamentListPage.test(Vitest) |
+| TRN-AC-024 | P2 | `TextField`(`select`・`date`・`number`を含むoutlined variant全般)の背景色がテーマの`background.paper`(#FFFDF9)になる | todo | Vitest |
+| TRN-AC-025 | P2 | `Button variant="outlined"`(色指定に依らない)の背景色がテーマの`background.paper`になり、`variant="contained"`の配色(`primary.main`)は変更されない(回帰防止) | todo | Vitest |
+| TRN-AC-026 | P2 | 組み合わせ表の結果セレクト(`MatchResultControl`/`TeamMatchResultControl`)は、個別sx指定をテーマ既定への統合に置き換えた後もゼブラストライプの行に埋もれず表示され、結果選択・送信の既存動作に影響がない(回帰防止) | todo | Vitest |
 
 ## PTC: 参加者
 
