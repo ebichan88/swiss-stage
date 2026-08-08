@@ -74,20 +74,22 @@ jobs:
                 else "none" end'
           }
 
-          # 対象として採用できれば0、除外すれば1を返す(除外時はコメント・ラベル操作も行う)
+          # 除外すれば0(true)、対象として採用できれば1(false)を返す(関数名どおりの真偽値。
+          # 呼び出し側は `if ! is_excluded` / `if is_excluded ... else ...` で使うため、この極性が必須)
+          # 除外時はコメント・ラベル操作も行う
           is_excluded() {
             local n="$1"
             local ref
             ref=$(ref_pr_state "$n")
 
             if [ "$ref" = "open_or_merged" ]; then
-              return 1
+              return 0
             fi
             if [ "$ref" = "closed" ]; then
               echo "既にこのIssueを参照するPlan PRが作成され、クローズ(未マージ)されています。自動処理の対象から除外します。再挑戦するには \`auto-plan:P*\` ラベルを一旦外して付け直してください。" \
                 | gh issue comment "$n" --repo "$REPO" --body-file -
               gh issue edit "$n" --repo "$REPO" --add-label needs-human
-              return 1
+              return 0
             fi
 
             if gh issue view "$n" --repo "$REPO" --json labels --jq '.labels[].name' | grep -qx needs-human; then
@@ -99,7 +101,7 @@ jobs:
               if [ -n "$LATEST_ID" ]; then
                 LATEST=$(gh api "repos/$REPO/issues/comments/$LATEST_ID" --jq '.body // ""')
                 if printf '%s' "$LATEST" | grep -qF "$MARKER"; then
-                  return 1
+                  return 0
                 fi
               fi
             fi
@@ -108,10 +110,10 @@ jobs:
               echo "前回の自動実行が完走しなかった痕跡(\`feature/plan-auto-${n}-*\` ブランチ)が残っています。自動処理の対象から除外します。原因を確認し、問題なければブランチを削除すると再度対象になります。" \
                 | gh issue comment "$n" --repo "$REPO" --body-file -
               gh issue edit "$n" --repo "$REPO" --add-label needs-human
-              return 1
+              return 0
             fi
 
-            return 0
+            return 1
           }
 
           TARGET=""
