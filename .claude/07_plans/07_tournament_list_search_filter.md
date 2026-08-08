@@ -1,8 +1,8 @@
 # 07. 大会一覧に検索・フィルタを追加する
 
-- Status: done
+- Status: in_progress
 - Issue: #125
-- PR: #155(Plan PR) / このPR(実装PR)
+- PR: #155(Plan PR) / #156(実装PR)
 
 ---
 
