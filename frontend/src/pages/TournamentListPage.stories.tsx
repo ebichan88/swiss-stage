@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { userEvent, within } from 'storybook/test';
 
 import { handlersFor } from '../../tests/msw/handlers';
 import { TournamentListPage } from './TournamentListPage';
@@ -26,5 +27,17 @@ export const Default: Story = {
 export const Empty: Story = {
   parameters: {
     msw: { handlers: handlersFor.tournamentList.empty() },
+  },
+};
+
+/** 検索・フィルタの結果が0件の状態(TRN-AC-023: 専用EmptyStateと「検索条件をクリア」導線) */
+export const FilteredEmpty: Story = {
+  parameters: {
+    msw: { handlers: handlersFor.tournamentList.filled() },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const searchField = await canvas.findByRole('textbox', { name: '大会名で検索' });
+    await userEvent.type(searchField, '該当なし');
   },
 };

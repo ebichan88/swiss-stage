@@ -111,6 +111,19 @@
 - 棄権者の行はストライプに加えて `opacity: 0.55` で半透明表示し、状態列の「棄権」Chipに
   `PersonOffIcon` を添える(色だけに頼らない。PTC-AC-013。団体戦の`TeamTable`も同じ表示でTEAM-AC-025)
 
+### 検索・フィルタツールバー(TournamentSearchToolbar)
+
+- 一覧画面の絞り込みは、検索`TextField`(`InputAdornment`に`SearchIcon`、`placeholder`をラベル代わりに
+  する。フォームの入力欄と異なり送信対象のデータではなく即時反映の表示フィルタのため、`4. フォーム`の
+  「ラベルは必ず表示」は適用しない)+ 状態`TextField select`(`slotProps.select.SelectDisplayProps`で
+  `aria-label`を明示、`TeamTable`のグループ選択と同じパターン)の組み合わせで構成する
+- レイアウトは`Stack`(`direction={{ xs: 'column', sm: 'row' }}`)で、モバイルは縦積み・デスクトップは
+  横並びにして検索欄を広めに確保する
+- 絞り込み結果0件時は専用の`EmptyState`(「条件に一致する大会がありません」+「検索条件をクリア」)を出す
+  (`07_plans/07_tournament_list_search_filter.md`)
+- 対象データが1件も無い・ローディング中・エラー時はツールバー自体を表示しない(絞り込む対象が無い状態で
+  操作可能に見せない)
+
 ### 個別admin画面内部の展開(`.claude/07_plans/05_design_system_admin_internal.md`)
 
 参加者管理(`ParticipantTable`/`ParticipantFormDialog`/`CsvImportDialog`/`GroupManagerDialog`)・
