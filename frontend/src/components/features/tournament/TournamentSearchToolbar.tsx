@@ -42,6 +42,7 @@ export function TournamentSearchToolbar({
         onChange={(e) => onStatusFilterChange(e.target.value as TournamentStatus | '')}
         slotProps={{
           select: {
+            displayEmpty: true,
             SelectDisplayProps: { 'aria-label': '状態で絞り込み' },
           },
         }}
