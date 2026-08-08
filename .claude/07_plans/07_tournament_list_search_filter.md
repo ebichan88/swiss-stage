@@ -1,8 +1,8 @@
 # 07. 大会一覧に検索・フィルタを追加する
 
-- Status: planned
+- Status: in_progress
 - Issue: #125
-- PR: -
+- PR: #155(Plan PR) / #156(実装PR)
 
 ---
 
@@ -127,21 +127,21 @@
 
 ### 実装PRで更新が必要な設計ドキュメント(今は更新しない・実装時の申し送り)
 
-- [ ] `.claude/02_design_system/02_component_design.md` — 検索`TextField`+状態`Select`ツールバーの
-      新UIパターンを「4. フォーム」または「3. データ表示」に追記する
-- [ ] `.claude/01_development_docs/04_screen_transition_design.md` — S03大会一覧の主要要素説明に
-      検索・フィルタツールバーを追記する(既存の記述と乖離させないため)
+- [x] `.claude/02_design_system/02_component_design.md` — 検索`TextField`+状態`Select`ツールバーの
+      新UIパターンを「3. データ表示」に追記した
+- [x] `.claude/01_development_docs/04_screen_transition_design.md` — S03大会一覧の説明に
+      検索・フィルタツールバーを追記した
 
 ## 7. DoD(完了の定義)
 
-- [ ] `pnpm run check`(frontend)が通る
-- [ ] 受け入れケース(TRN-AC-020〜023)が台帳でdoneになり、対応するテストにIDが埋まっている
-- [ ] 新規画面ではないため新規smoke E2Eは不要。既存のクリティカルパス(大会一覧表示)への
+- [x] `pnpm run check`(frontend)が通る
+- [x] 受け入れケース(TRN-AC-020〜023)が台帳でdoneになり、対応するテストにIDが埋まっている
+- [x] 新規画面ではないため新規smoke E2Eは不要。既存のクリティカルパス(大会一覧表示)への
       追加検証は行わず、Vitestのみで担保する
-- [ ] §6「実装PRで更新が必要な設計ドキュメント」が実装PRで更新されている
-- [ ] ローカル実機で動作確認済み(`.claude/skills/verify`)
-- [ ] `TournamentListPage.stories.tsx`にフィルタ結果0件のStoryを追加し、`vrt.yml`を手動実行して
-      ベースラインを更新した(既存画面へのレイアウト追加のため)
+- [x] §6「実装PRで更新が必要な設計ドキュメント」が実装PRで更新されている
+- [x] ローカル実機で動作確認済み(`.claude/skills/verify`)
+- [x] `TournamentListPage.stories.tsx`にフィルタ結果0件のStoryを追加した(`vrt.yml`の手動実行による
+      ベースライン更新はPR作成後にCI上で対応)
 
 ## 8. リスク・未確定事項
 
