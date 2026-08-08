@@ -79,6 +79,7 @@ jobs:
             local n="$1"
             local ref
             ref=$(ref_pr_state "$n")
+            echo "DEBUG is_excluded n=$n ref=[$ref]" >&2
 
             if [ "$ref" = "open_or_merged" ]; then
               return 1
@@ -104,6 +105,7 @@ jobs:
               fi
             fi
 
+            echo "DEBUG branch_check=[$(git ls-remote --heads origin "feature/plan-auto-${n}-*")]" >&2
             if [ -n "$(git ls-remote --heads origin "feature/plan-auto-${n}-*")" ]; then
               echo "前回の自動実行が完走しなかった痕跡(\`feature/plan-auto-${n}-*\` ブランチ)が残っています。自動処理の対象から除外します。原因を確認し、問題なければブランチを削除すると再度対象になります。" \
                 | gh issue comment "$n" --repo "$REPO" --body-file -
@@ -127,6 +129,7 @@ jobs:
               if [ -n "$TARGET" ]; then break; fi
               ISSUES=$(gh issue list --repo "$REPO" --label "auto-plan:$P" --state open --json number,createdAt \
                 --jq 'sort_by(.createdAt) | .[].number')
+              echo "DEBUG P=$P ISSUES=[$ISSUES] gh_version=$(gh --version | head -1)" >&2
               for N in $ISSUES; do
                 if ! is_excluded "$N"; then
                   TARGET="$N"
