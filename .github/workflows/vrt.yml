@@ -54,6 +54,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
+          # actions/checkoutはデフォルトでGITHUB_TOKEN用の認証情報をgit設定
+          # (http.extraheader)に永続化する。これを残したまま「Commit updated
+          # baselines」でgit remote set-urlによりAUTOFIX_TOKENへ切り替えても、
+          # extraheaderの認証情報が優先されてしまいpushがGITHUB_TOKEN(contents:
+          # read)で行われ403になる(実例: PR #157適用後に発生、AUTOFIX_TOKEN自体は
+          # 有効なのにgithub-actions[bot]としてpushが拒否された)。GITHUB_TOKENの
+          # 資格情報を最初から残さないことで、pushに使われる認証情報をAUTOFIX_TOKEN
+          # だけに限定する。
+          persist-credentials: false
 
       - name: AUTOFIX_TOKEN未設定を検知(ベースライン更新時のみ)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.update_snapshots }}

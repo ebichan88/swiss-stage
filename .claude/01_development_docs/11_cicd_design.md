@@ -78,6 +78,12 @@ flowchart TD
   CI失敗後のみ起動する専用ジョブとして分離されているのと異なり、`vrt.yml`は毎PR実行のジョブと
   ベースライン更新を同じジョブで扱うため、資格情報の持たせ方でリスクを避ける)。`permissions:`
   は`contents: read`のみで、pushはこの埋め込みURL経由(GITHUB_TOKENの権限とは無関係)で行う
+- `actions/checkout` には `persist-credentials: false` を必ず指定する。デフォルトでは
+  `GITHUB_TOKEN` 用の認証情報がgit設定(`http.extraheader`)に永続化され、これが残ったまま
+  だと後続の `git remote set-url` による `AUTOFIX_TOKEN` への切り替えが効かず、
+  `http.extraheader` 側の認証情報(`GITHUB_TOKEN`、`contents: read`)でpushが実行されて
+  403になる(`AUTOFIX_TOKEN`自体が有効でも起きる。実例: `contents: write`→`contents: read`
+  への変更後に発覚)
 - 実行対象はローカル確認用の `frontend/scripts/vrt.sh` と同じPlaywright公式コンテナイメージを使う(フォントレンダリング差分を避けるため)
 
 ---
