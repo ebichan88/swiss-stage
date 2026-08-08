@@ -129,7 +129,6 @@ jobs:
               if [ -n "$TARGET" ]; then break; fi
               ISSUES=$(gh issue list --repo "$REPO" --label "auto-plan:$P" --state open --json number,createdAt \
                 --jq 'sort_by(.createdAt) | .[].number')
-              echo "DEBUG P=$P ISSUES=[$ISSUES] gh_version=$(gh --version | head -1)" >&2
               for N in $ISSUES; do
                 if ! is_excluded "$N"; then
                   TARGET="$N"
@@ -148,7 +147,7 @@ jobs:
           fi
 
       - name: needs-humanラベルを用意
-        if: false && steps.select.outputs.target != ''
+        if: steps.select.outputs.target != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -156,7 +155,7 @@ jobs:
             --description "自動処理の対象外。人間の判断が必要(外すと自動処理を再開)" --force
 
       - name: planner起動
-        if: false && steps.select.outputs.target != ''
+        if: steps.select.outputs.target != ''
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
