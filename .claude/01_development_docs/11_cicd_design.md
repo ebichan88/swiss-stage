@@ -65,7 +65,12 @@ flowchart TD
 - `workflow_dispatch` の入力 `update_snapshots`(boolean)で「比較のみ」と「ベースライン更新」を切り替える
 - **ベースライン更新は `workflow_dispatch` のときだけ**。PRトリガーでは絶対に更新しない
   (更新されると「差分を検知せず素通り」する事故になるため、`github.event_name` を条件に明示している)
-- **ベースライン更新は必ずこのワークフロー経由で行う**(ローカルではPRに含めるベースラインを生成しない。`09_test_strategy.md`)。更新時はコンテナ内でコミット・pushする(`permissions: contents: write`)
+- **ベースライン更新は必ずこのワークフロー経由で行う**(ローカルではPRに含めるベースラインを生成しない。`09_test_strategy.md`)。更新時はコンテナ内でコミット・pushする
+- pushは `AUTOFIX_TOKEN`(人間名義のPAT)を使う。`GITHUB_TOKEN` でpushすると
+  §2.7の2問題(後続の`pull_request`実行が`action_required`で止まる/actorが`github-actions[bot]`
+  になりAIレビューがブロックされる)がそのまま発生する(実測で確認済み)。`AUTOFIX_TOKEN`未設定時は
+  push自体を行わずジョブを失敗させる(セットアップ手順は§2.7参照。`permissions: contents: write`は
+  未設定時のフォールバック用)
 - 実行対象はローカル確認用の `frontend/scripts/vrt.sh` と同じPlaywright公式コンテナイメージを使う(フォントレンダリング差分を避けるため)
 
 ---

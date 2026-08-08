@@ -28,7 +28,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write # ベースライン画像の更新コミットをpushするため(workflow_dispatch時のみ)
+  contents: write # ベースライン画像の更新コミットをpushするため(AUTOFIX_TOKEN未設定時のフォールバック用。workflow_dispatch時のみ)
   pull-requests: write # 差分検出時にベースライン更新の導線をPRコメントで案内するため
 
 jobs:
@@ -47,6 +47,23 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
+          # AUTOFIX_TOKEN(人間名義のPAT)でpushする。GITHUB_TOKENでpushすると
+          # (1) 後続のpull_request実行が action_required で手動承認待ちになり、
+          # (2) actorが github-actions[bot] になるため allowed_bots に弾かれて
+          # AIレビュー・QAがハード失敗する。実測で確認済み(ci.ymlのautofixジョブと同じ理由、11_cicd_design.md §2.7)
+          token: ${{ secrets.AUTOFIX_TOKEN || github.token }}
+          persist-credentials: true
+
+      - name: AUTOFIX_TOKEN未設定を検知(ベースライン更新時のみ)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.update_snapshots }}
+        run: |
+          if [ -z "${AUTOFIX_TOKEN}" ]; then
+            echo "::error::AUTOFIX_TOKEN が未設定です。GITHUB_TOKEN でのpushは後続PRチェックが action_required で" \
+                 "止まる既知の問題があるため行いません。セットアップ手順は 11_cicd_design.md §2.7 を参照してください。"
+            exit 1
+          fi
+        env:
+          AUTOFIX_TOKEN: ${{ secrets.AUTOFIX_TOKEN }}
 
       - uses: pnpm/action-setup@v4
         with:
@@ -93,6 +110,8 @@ jobs:
             echo "ベースラインに変更はありません"
           else
             git commit -m "chore: VRTベースライン画像を更新"
+            # checkoutでAUTOFIX_TOKEN(persist-credentials)を使っているため、この push で
+            # pull_requestイベントが通常どおり発火し、明示的なCI再起動(承認)は不要になる
             git push origin HEAD:${{ github.ref_name }}
           fi
 
