@@ -45,6 +45,10 @@
 | TRN-AC-017 | P1 | 運営者管理画面の共通レイアウト(TournamentLayout)は見出し帯・ナビゲーションの意匠変更後も、サイドバー(md以上)・下部タブ(md未満)の両方で、現在のページに対応するナビゲーション項目に`aria-current="page"`が設定され、キーボードのみでフォーカス移動できる | done | TournamentLayout.test(Vitest、新規。両ブレークポイントを検証) |
 | TRN-AC-018 | P2 | 運営者向け組み合わせ表(PairingTable/TeamPairingTable)は意匠変更後も、スマホ表示の卓番号を共有ページの卓番号タイル(丸み・アクセントカラー地の装飾)ではなくプレーンなテキストのまま表示する(会場での即時可読性より情報密度・機能性を優先する現行判断の回帰防止) | done | PairingTable.test, TeamPairingTable.test(Vitest) |
 | TRN-AC-019 | P2 | 個別admin画面のフォーム(ParticipantFormDialog/TeamFormDialog/SettingsPage)は意匠変更後も、入力エラー時にhelperTextのエラーメッセージが表示され、エラーの入力欄にaria-describedbyで関連付けられる | done | ParticipantFormDialog.test, TeamFormDialog.test, SettingsPage.test(Vitest) |
+| TRN-AC-020 | P2 | 大会名の部分一致検索(大文字小文字を区別しない)で、一致する大会だけが表示される | todo | TournamentListPage.test(Vitest、予定) |
+| TRN-AC-021 | P2 | 状態(準備中/開催中/終了)フィルタで、選択した状態の大会だけが表示される | todo | TournamentListPage.test(Vitest、予定) |
+| TRN-AC-022 | P2 | 大会名検索と状態フィルタを同時に指定すると、両方を満たす大会だけが表示される(AND) | todo | TournamentListPage.test(Vitest、予定) |
+| TRN-AC-023 | P2 | 検索・フィルタの結果が0件のとき専用の空状態が表示され、「検索条件をクリア」で元の一覧に戻る | todo | TournamentListPage.test(Vitest、予定) |
 
 ## PTC: 参加者
 
