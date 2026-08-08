@@ -10,7 +10,7 @@
 | 種類 | MUI設定 | 用途 | 1画面あたり |
 |------|---------|------|------------|
 | プライマリ | `variant="contained" color="primary"` | 画面の主要アクション(保存・生成・確定) | 1つまで |
-| セカンダリ | `variant="outlined"` | 補助アクション(キャンセル・戻る) | 制限なし |
+| セカンダリ | `variant="outlined"` | 補助アクション(キャンセル・戻る)。背景色は既定で`background.paper`(テーマの`styleOverrides`、`01_design_principles.md`) | 制限なし |
 | テキスト | `variant="text"` | 低優先度(詳細を見る等) | 制限なし |
 | 破壊的 | `variant="contained" color="error"` | 削除・トークン再発行 | 必ずConfirmDialogとセット |
 
@@ -137,7 +137,8 @@
 にし(Paperの角丸から色がはみ出さないよう `overflow: hidden` でクリップする)、
 `TournamentOverviewPage`/`SettingsPage` のカードには上端3pxの `primary.main` アクセント線
 (危険な操作カードは全辺2pxの `error.main` 枠)を付けた。組み合わせ表の「結果」セレクトボックスは
-ゼブラストライプの行によって塗りが変わって見えないよう `background.paper` を明示指定した。
+ゼブラストライプの行によって塗りが変わって見えないよう `background.paper` を背景色にしている
+(現在はテーマの`MuiOutlinedInput`の既定値になったため、コンポーネント側の個別`sx`指定は無い)。
 いずれも `TournamentLayout` の見出し帯と二重にならないよう、既存トークンの微調整に留めている。
 `PairingTable`/`TeamPairingTable` の `MatchCard`(卓番号のタイル化)と印刷用ページは
 対象外のまま維持している(`00_basic_design.md`§4、`06_adr/08_design_system_admin_internal_scope.md`)。

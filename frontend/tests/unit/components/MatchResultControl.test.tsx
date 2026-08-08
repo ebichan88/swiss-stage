@@ -1,5 +1,6 @@
 import { screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 
 import { MatchResultControl } from '../../../src/components/features/round/MatchResultControl';
 import { matchOf, summaryOf } from '../../fixtures';
@@ -86,5 +87,24 @@ describe('MatchResultControl', () => {
     );
 
     expect(screen.queryByText(/の申告:/)).not.toBeInTheDocument();
+  });
+
+  it('TRN-AC-026: 結果セレクトの背景色をテーマ既定に統合した後も、結果を選ぶとonInputが呼ばれる', async () => {
+    const user = userEvent.setup();
+    const onInput = vi.fn();
+    renderWithProviders(
+      <MatchResultControl
+        match={matchOf({ player1, player2 })}
+        editable
+        multiGroup={false}
+        saving={false}
+        onInput={onInput}
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    await user.click(screen.getByRole('option', { name: '○ 仮名 花子 の勝ち' }));
+
+    expect(onInput).toHaveBeenCalledWith('PLAYER2_WIN');
   });
 });
