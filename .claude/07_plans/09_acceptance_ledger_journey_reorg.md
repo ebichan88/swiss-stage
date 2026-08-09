@@ -1,8 +1,8 @@
 # 09. 受け入れケース台帳のユーザージャーニー軸再編と作成基準の明文化
 
-- Status: planned
+- Status: in_progress
 - Issue: #165
-- PR: -
+- PR: #167
 
 ## 1. 背景・目的
 
