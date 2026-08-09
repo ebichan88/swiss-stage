@@ -60,6 +60,9 @@
 - MUI `Table` ベース。列: No.・氏名(所属)・段級位・(ラウンドごとに相手・結果)・勝点・SOS・SOSOS・順位
 - ヘッダー行は `primary.main` 背景+白文字(コントラスト強調)
 - データ行は `background.paper`/`background.default` を交互に敷くゼブラストライプ
+- テーブル全体を `Paper`(`variant="outlined"`)で囲み、`divider`色1pxの外枠線+`shape.borderRadius`(8px)の
+  角丸を付ける。ページ背景(`background.default`)と偶数行の背景色が同化し表の境界が分かりにくかったための対応
+  (全データ表で共通: `PairingTable`/`ParticipantTable`/`TeamTable`/`TeamPairingTable`/`TeamMatchResultsTable`も同じ)
 - 結果の○は `success.main`、●は `error.main` で色分け(△は無色)。記号自体も必ず表示し、色だけに頼らない
 - 相手列は氏名の代わりにNo.(entryOrder)を表示し、Tooltipで氏名(所属)を補足する
 - 共有ページ(対戦結果タブ)と管理画面(対戦結果メニュー、順位メニューとは別画面)で共用

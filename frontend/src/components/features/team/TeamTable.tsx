@@ -6,6 +6,7 @@ import {
   Chip,
   IconButton,
   MenuItem,
+  Paper,
   Table,
   TableBody,
   TableCell,
@@ -56,7 +57,7 @@ export function TeamTable({
   const reserveCount = (team: Team) => team.members.filter((m) => m.boardPosition === null).length;
 
   return (
-    <TableContainer sx={{ overflowX: 'auto' }}>
+    <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
       <Table size="small">
         <TableHead
           sx={{

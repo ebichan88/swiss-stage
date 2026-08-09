@@ -53,6 +53,7 @@
 | TRN-AC-025 | P2 | `Button variant="outlined"`(色指定に依らない)の背景色がテーマの`background.paper`になり、`variant="contained"`の配色(`primary.main`)は変更されない(回帰防止) | done | theme.test(Vitest) |
 | TRN-AC-026 | P2 | 組み合わせ表の結果セレクト(`MatchResultControl`/`TeamMatchResultControl`)は、個別sx指定をテーマ既定への統合に置き換えた後もゼブラストライプの行に埋もれず表示され、結果選択・送信の既存動作に影響がない(回帰防止) | done | MatchResultControl.test, TeamMatchResultControl.test(Vitest) |
 | TRN-AC-027 | P2 | 大会一覧の状態フィルタで「すべて」が選択されているとき(初期表示・他の状態から選び直した場合の両方)、セレクトボックスが空白にならず「すべて」と表示される(回帰防止) | done | TournamentListPage.test(Vitest) |
+| TRN-AC-028 | P2 | データ表(対戦結果表/組み合わせ表/参加者一覧表/チーム版)は`divider`色の外枠線+角丸のPaperで囲まれ、ページ背景と偶数行の背景色が同化しても表の境界が視認できる(回帰防止) | done | MatchResultsTable.test, ParticipantTable.test, PairingTable.test, TeamTable.test, TeamPairingTable.test, TeamMatchResultsTable.test(Vitest) |
 
 ## PTC: 参加者
 

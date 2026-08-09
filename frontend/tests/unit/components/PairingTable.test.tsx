@@ -73,6 +73,21 @@ describe('PairingTable', () => {
     expect(within(rows[2]).getByText('不戦勝')).toBeInTheDocument();
   });
 
+  it('TRN-AC-028: テーブルをoutlined枠線+角丸のPaperで囲む(ページ背景と偶数行の背景色が同化する境界不明瞭の回帰防止)', () => {
+    renderWithProviders(
+      <PairingTable
+        matches={[matchOf({ id: 'm1', tableNumber: 1 })]}
+        editable
+        multiGroup={false}
+        savingMatchId={null}
+        onInputResult={() => {}}
+      />,
+    );
+
+    const paper = screen.getByRole('table').closest('.MuiPaper-root');
+    expect(paper).toHaveClass('MuiPaper-outlined');
+  });
+
   it('グループ大会の卓番号は「A-1」形式で表示する', () => {
     renderWithProviders(
       <PairingTable

@@ -35,6 +35,24 @@ describe('ParticipantTable', () => {
     expect(within(activeRow).queryByTestId('PersonOffIcon')).not.toBeInTheDocument();
   });
 
+  it('TRN-AC-028: テーブルをoutlined枠線+角丸のPaperで囲む(ページ背景と偶数行の背景色が同化する境界不明瞭の回帰防止)', () => {
+    renderWithProviders(
+      <ParticipantTable
+        participants={[participantOf({ id: 'p1', name: '架空 太郎' })]}
+        groups={[]}
+        canEdit={false}
+        canWithdraw={false}
+        onEdit={() => {}}
+        onWithdraw={() => {}}
+        onDelete={() => {}}
+        onChangeGroup={() => {}}
+      />,
+    );
+
+    const paper = screen.getByRole('table').closest('.MuiPaper-root');
+    expect(paper).toHaveClass('MuiPaper-outlined');
+  });
+
   it('編集可の場合、氏名を編集・削除できる操作列が表示される', async () => {
     const onEdit = vi.fn();
     renderWithProviders(

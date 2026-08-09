@@ -3,6 +3,7 @@ import {
   Card,
   CardContent,
   Chip,
+  Paper,
   Stack,
   Table,
   TableBody,
@@ -86,7 +87,7 @@ export function TeamPairingTable({
   }
 
   return (
-    <TableContainer sx={{ overflowX: 'auto' }}>
+    <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
       <Table size="small">
         <TableHead
           sx={{
