@@ -52,7 +52,7 @@ describe('RankingBoard', () => {
     expect(row).toHaveTextContent('SOSOS');
   });
 
-  it('RND-AC-015: 4位以降の順位バッジは等幅数字(tnum)で表示し、氏名・SOS/SOSOSとは別要素で区別する', () => {
+  it('4位以降の順位バッジは等幅数字(tnum)で表示し、氏名・SOS/SOSOSとは別要素で区別する(回帰防止)', () => {
     renderWithProviders(
       <RankingBoard
         standings={[

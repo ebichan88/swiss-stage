@@ -65,14 +65,14 @@ describe('theme', () => {
     }
   });
 
-  it('TRN-AC-024: TextField(outlined variant)の既定背景色がbackground.paperになる', () => {
+  it('TextField(outlined variant)の既定背景色がbackground.paperになる(回帰防止)', () => {
     const styleOverrides = theme.components?.MuiOutlinedInput?.styleOverrides as {
       root?: { backgroundColor?: string };
     };
     expect(styleOverrides.root?.backgroundColor).toBe(theme.palette.background.paper);
   });
 
-  it('TRN-AC-025: outlinedボタンの既定背景色がbackground.paperになり、containedボタンの配色は変更されない', () => {
+  it('outlinedボタンの既定背景色がbackground.paperになり、containedボタンの配色は変更されない(回帰防止)', () => {
     const styleOverrides = theme.components?.MuiButton?.styleOverrides as {
       root?: { backgroundColor?: string };
       outlined?: { backgroundColor?: string };

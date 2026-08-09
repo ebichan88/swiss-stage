@@ -125,7 +125,7 @@ describe('TeamMatchResultControl', () => {
     expect(screen.getByText('不戦勝')).toBeInTheDocument();
   });
 
-  it('TRN-AC-026: 結果セレクトの背景色をテーマ既定に統合した後も、結果を選ぶとonInputが呼ばれる', async () => {
+  it('結果セレクトの背景色をテーマ既定に統合した後も、結果を選ぶとonInputが呼ばれる(回帰防止)', async () => {
     const user = userEvent.setup();
     const onInput = vi.fn();
     renderWithProviders(

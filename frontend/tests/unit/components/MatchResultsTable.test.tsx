@@ -41,7 +41,7 @@ describe('MatchResultsTable', () => {
     expect(rows[3]).toHaveTextContent('●');
   });
 
-  it('TRN-AC-028: テーブルをoutlined枠線+角丸のPaperで囲む(ページ背景と偶数行の背景色が同化する境界不明瞭の回帰防止)', () => {
+  it('テーブルをoutlined枠線+角丸のPaperで囲む(ページ背景と偶数行の背景色が同化する境界不明瞭の回帰防止)', () => {
     const taro = summaryOf({ id: 'p1', entryOrder: 1 });
     renderWithProviders(
       <MatchResultsTable rounds={[]} standings={[standingOf({ participant: taro })]} />,

@@ -27,7 +27,7 @@ describe('TeamPairingTable', () => {
     window.matchMedia = originalMatchMedia;
   });
 
-  it('TRN-AC-018: スマホ表示の卓番号は共有ページの卓番号タイル(「卓」キャプション付き)ではなく、プレーンなテキストのまま表示する', () => {
+  it('スマホ表示の卓番号は共有ページの卓番号タイル(「卓」キャプション付き)ではなく、プレーンなテキストのまま表示する(回帰防止)', () => {
     mockMatchMedia(true);
     renderWithProviders(
       <TeamPairingTable
@@ -43,7 +43,7 @@ describe('TeamPairingTable', () => {
     expect(screen.queryByText('卓')).not.toBeInTheDocument();
   });
 
-  it('TRN-AC-028: テーブルをoutlined枠線+角丸のPaperで囲む(ページ背景と偶数行の背景色が同化する境界不明瞭の回帰防止)', () => {
+  it('テーブルをoutlined枠線+角丸のPaperで囲む(ページ背景と偶数行の背景色が同化する境界不明瞭の回帰防止)', () => {
     renderWithProviders(
       <TeamPairingTable
         matches={[teamMatchOf({ id: 'm1', tableNumber: 1 })]}

@@ -35,7 +35,7 @@ describe('ParticipantTable', () => {
     expect(within(activeRow).queryByTestId('PersonOffIcon')).not.toBeInTheDocument();
   });
 
-  it('TRN-AC-028: テーブルをoutlined枠線+角丸のPaperで囲む(ページ背景と偶数行の背景色が同化する境界不明瞭の回帰防止)', () => {
+  it('テーブルをoutlined枠線+角丸のPaperで囲む(ページ背景と偶数行の背景色が同化する境界不明瞭の回帰防止)', () => {
     renderWithProviders(
       <ParticipantTable
         participants={[participantOf({ id: 'p1', name: '架空 太郎' })]}
