@@ -7,3 +7,5 @@
 # Pythonキャッシュ(.claude/hooks/ 配下のスクリプト用)
 __pycache__/
 *.pyc
+
+temp/
