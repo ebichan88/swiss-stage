@@ -12,7 +12,7 @@ import {
 import { renderWithProviders } from '../../testUtils';
 
 describe('TeamMatchResultsTable', () => {
-  it('TRN-AC-028: テーブルをoutlined枠線+角丸のPaperで囲む(ページ背景と偶数行の背景色が同化する境界不明瞭の回帰防止)', () => {
+  it('テーブルをoutlined枠線+角丸のPaperで囲む(ページ背景と偶数行の背景色が同化する境界不明瞭の回帰防止)', () => {
     const teamA = teamSummaryOf({ id: 't1', name: 'Aチーム', entryOrder: 1 });
     renderWithProviders(
       <TeamMatchResultsTable rounds={[]} standings={[teamStandingOf({ team: teamA })]} />,

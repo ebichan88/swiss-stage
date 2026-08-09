@@ -1,6 +1,6 @@
 # 10. 受け入れケース台帳をユーザージャーニー軸で再編し、作成基準を明文化する
 
-- Status: Proposed
+- Status: Accepted
 - Issue: #165
 - Date: 2026-08-09
 

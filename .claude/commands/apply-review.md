@@ -1,11 +1,12 @@
 ---
-description: PRのAIレビュー/QA/Plan Reviewの指摘のうち妥当だと判断したものを、このセッションで直接修正する
+description: PRのAIレビュー/QA/Plan Review/Design Reviewの指摘のうち妥当だと判断したものを、このセッションで直接修正する
 argument-hint: "[PR番号] [指摘ID...]"
 allowed-tools: Bash(gh pr view:*), Bash(gh pr list:*), Bash(gh api:*), Bash(gh repo view:*), Bash(git *), Bash(./gradlew *), Bash(pnpm *), Bash(python3 .github/scripts/docs-lint.py), Read, Grep, Glob, Edit, Write
 ---
 
-PRに投稿されたAIレビュー(`ai-review.yml`)・AI QA(`ai-qa.yml`)・AI Plan Review(`ai-plan-review.yml`)
-の指摘のうち、人間が読んで妥当だと判断したものを、このセッションが直接修正します。
+PRに投稿されたAIレビュー(`ai-review.yml`)・AI QA(`ai-qa.yml`)・AI Plan Review(`ai-plan-review.yml`)・
+AI Design Review(`ai-design-review.yml`)の指摘のうち、人間が読んで妥当だと判断したものを、
+このセッションが直接修正します。
 ユーザーからの入力: $ARGUMENTS
 
 **位置づけ**: CIの `fixer`/`qa-fixer`(`.claude/agents/fixer.md`/`qa-fixer.md`)は無人実行のため
@@ -36,7 +37,7 @@ PRに投稿されたAIレビュー(`ai-review.yml`)・AI QA(`ai-qa.yml`)・AI Pl
 ## 3. レポートの取得
 
 対象リポジトリは `gh repo view --json nameWithOwner -q .nameWithOwner` で取得する。
-以下3種のsticky commentを、存在するものだけ取得する(例: Plan PRでなければ
+以下4種のsticky commentを、存在するものだけ取得する(例: Plan PRでなければ
 `swiss-stage-ai-plan-review` のコメントは無いので無視してよい):
 
 ```bash
@@ -44,19 +45,22 @@ gh api "repos/<owner/repo>/issues/<PR番号>/comments" --paginate \
   --jq '[.[] | select(.body | startswith("<!-- swiss-stage-ai-review -->"))] | (last // {}) | .body // ""'
 ```
 
-同様に `swiss-stage-ai-qa`、`swiss-stage-ai-plan-review` のマーカーでも取得する。
+同様に `swiss-stage-ai-qa`、`swiss-stage-ai-plan-review`、`swiss-stage-ai-design-review` の
+マーカーでも取得する。
 
 ## 4. 対象指摘の抽出
 
-各レポートの形式は `.claude/agents/reviewer.md` / `qa.md` / `plan-reviewer.md` の出力形式を参照。
+各レポートの形式は `.claude/agents/reviewer.md` / `qa.md` / `plan-reviewer.md` / `design-reviewer.md`
+の出力形式を参照。
 
-- **指定モード**: 3レポートを横断して、指定された指摘IDを持つ指摘だけを抜き出す。見つからない
+- **指定モード**: 4レポートを横断して、指定された指摘IDを持つ指摘だけを抜き出す。見つからない
   IDはその旨を報告する
 - **一括モード**: 以下のみを対象にする(絞る理由は5節と同じく、判断が要らない範囲を安全に
   広げるため)
   - AI Review: `## Critical` `## Major` の全指摘(`## Minor` は対象外。直したい場合はIDを指定する)
   - AI QA: 「## 台帳整合・対応検証・基準hack」のうち **`close: test-side` の指摘のみ**
   - AI Plan Review: 「## 抜け」の `### 要対応` の全指摘(`### 任意` は対象外。直したい場合はIDを指定する)
+  - AI Design Review: 「## 指摘」の `### 要対応` の全指摘(`### 任意` は対象外。直したい場合はIDを指定する)
 
 ## 5. 聖域(自動修正しない。指定モードでIDを明示されても同じ)
 

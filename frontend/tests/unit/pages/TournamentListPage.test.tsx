@@ -138,7 +138,7 @@ describe('TournamentListPage', () => {
     expect(screen.queryByText('Summer Go Cup')).not.toBeInTheDocument();
   });
 
-  it('TRN-AC-027: 状態フィルタで「すべて」が選択されているとき、セレクトボックスが空白にならず「すべて」と表示される', async () => {
+  it('TRN-AC-021: 状態フィルタで「すべて」が選択されているとき、セレクトボックスが空白にならず「すべて」と表示される', async () => {
     setUpFilterTest();
     const user = userEvent.setup();
     renderWithProviders(<TournamentListPage />);

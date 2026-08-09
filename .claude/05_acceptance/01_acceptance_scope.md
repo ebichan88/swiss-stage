@@ -3,6 +3,22 @@
 運用ルール・ID体系・優先度の定義は `00_acceptance_policy.md` を参照。
 各ケースは一文のみ。仕様の詳細は設計ドキュメント(特に `05_swiss_pairing_algorithm.md` / `03_api_design.md` / `13_security_design.md`)が正。
 
+## このシステムのユーザージャーニー
+
+各ジャーニーは受け入れケース台帳全体の入口。詳細な受け入れ基準は各Prefixの節、
+一気通貫の検証は対応するE2E(CP)を参照する。
+
+| ジャーニー | 誰が・何をする | E2E(一気通貫) | 主なPrefix |
+|---|---|---|---|
+| 大会運営 | 運営者が大会を作り、参加者を集め、ラウンドを回して順位を出す | CP1(E2E-AC-001, 002) | TRN, PTC, RND |
+| 結果申告 | 参加者がスマホの共有ページで自分の対局結果を申告する | CP2(E2E-AC-003) | SHR |
+| グループ運営 | 運営者が参加者をグループに分けて並行運営する | CP5(E2E-AC-006) | GRP |
+| 団体戦 | 運営者・参加者が団体戦(3/5チーム制)を運営する | CP6(E2E-AC-007, 008) | TEAM |
+| 紙帳票 | 運営者がスマホを持たない参加者向けに紙の帳票で運営する | CP7(E2E-AC-009) | PRT |
+
+CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独立したジャーニーではなく
+「大会運営」の中の特に重要なルールとして扱う。AUTH・SPA は全ジャーニー横断の前提。
+
 ## やらないこと(out-of-scope)
 
 以下は受け入れケースを作らない(QAエージェントは不足として提案しない)。出典: `.claude/00_project/02_inception_deck.md` §3、`03_api_design.md` §4。
@@ -42,18 +58,12 @@
 | TRN-AC-014 | P2 | 開催日の変更と未設定化の同時指定・日付形式不正はいずれも400 VALIDATION_ERRORになる | done | TournamentApiTest |
 | TRN-AC-015 | P2 | 大会カードで開催日を表示し、未設定なら開催日を表示しない | done | TournamentCard.test(Vitest) |
 | TRN-AC-016 | P2 | 大会作成で開催日を送信でき、設定で開催日を空にするとclearEventDateで送信する | done | TournamentCreatePage.test, SettingsPage.test(Vitest) |
-| TRN-AC-017 | P1 | 運営者管理画面の共通レイアウト(TournamentLayout)は見出し帯・ナビゲーションの意匠変更後も、サイドバー(md以上)・下部タブ(md未満)の両方で、現在のページに対応するナビゲーション項目に`aria-current="page"`が設定され、キーボードのみでフォーカス移動できる | done | TournamentLayout.test(Vitest、新規。両ブレークポイントを検証) |
-| TRN-AC-018 | P2 | 運営者向け組み合わせ表(PairingTable/TeamPairingTable)は意匠変更後も、スマホ表示の卓番号を共有ページの卓番号タイル(丸み・アクセントカラー地の装飾)ではなくプレーンなテキストのまま表示する(会場での即時可読性より情報密度・機能性を優先する現行判断の回帰防止) | done | PairingTable.test, TeamPairingTable.test(Vitest) |
-| TRN-AC-019 | P2 | 個別admin画面のフォーム(ParticipantFormDialog/TeamFormDialog/SettingsPage)は意匠変更後も、入力エラー時にhelperTextのエラーメッセージが表示され、エラーの入力欄にaria-describedbyで関連付けられる | done | ParticipantFormDialog.test, TeamFormDialog.test, SettingsPage.test(Vitest) |
+| TRN-AC-017 | P1 | 運営者管理画面の共通ナビゲーションは、現在表示中のページが視覚的にもスクリーンリーダーでも分かり、キーボードのみでフォーカス移動できる | done | TournamentLayout.test(Vitest) |
+| TRN-AC-019 | P2 | 運営者管理画面のフォームは、入力エラー時にエラーメッセージが表示され、どの入力欄のエラーかが分かる | done | ParticipantFormDialog.test, TeamFormDialog.test, SettingsPage.test(Vitest) |
 | TRN-AC-020 | P2 | 大会名の部分一致検索(大文字小文字を区別しない)で、一致する大会だけが表示される | done | TournamentListPage.test(Vitest) |
-| TRN-AC-021 | P2 | 状態(準備中/開催中/終了)フィルタで、選択した状態の大会だけが表示される | done | TournamentListPage.test(Vitest) |
+| TRN-AC-021 | P2 | 状態(すべて/準備中/開催中/終了)フィルタで、選択した状態の大会だけが表示される。「すべて」は初期表示時・他の状態から選び直した場合のいずれでも空白にならず選択状態として表示される | done | TournamentListPage.test(Vitest) |
 | TRN-AC-022 | P2 | 大会名検索と状態フィルタを同時に指定すると、両方を満たす大会だけが表示される(AND) | done | TournamentListPage.test(Vitest) |
 | TRN-AC-023 | P2 | 検索・フィルタの結果が0件のとき専用の空状態が表示され、「検索条件をクリア」で元の一覧に戻る | done | TournamentListPage.test(Vitest) |
-| TRN-AC-024 | P2 | `TextField`(`select`・`date`・`number`を含むoutlined variant全般)の背景色がテーマの`background.paper`(#FFFDF9)になる | done | theme.test(Vitest) |
-| TRN-AC-025 | P2 | `Button variant="outlined"`(色指定に依らない)の背景色がテーマの`background.paper`になり、`variant="contained"`の配色(`primary.main`)は変更されない(回帰防止) | done | theme.test(Vitest) |
-| TRN-AC-026 | P2 | 組み合わせ表の結果セレクト(`MatchResultControl`/`TeamMatchResultControl`)は、個別sx指定をテーマ既定への統合に置き換えた後もゼブラストライプの行に埋もれず表示され、結果選択・送信の既存動作に影響がない(回帰防止) | done | MatchResultControl.test, TeamMatchResultControl.test(Vitest) |
-| TRN-AC-027 | P2 | 大会一覧の状態フィルタで「すべて」が選択されているとき(初期表示・他の状態から選び直した場合の両方)、セレクトボックスが空白にならず「すべて」と表示される(回帰防止) | done | TournamentListPage.test(Vitest) |
-| TRN-AC-028 | P2 | データ表(対戦結果表/組み合わせ表/参加者一覧表/チーム版)は`divider`色の外枠線+角丸のPaperで囲まれ、ページ背景と偶数行の背景色が同化しても表の境界が視認できる(回帰防止) | done | MatchResultsTable.test, ParticipantTable.test, PairingTable.test, TeamTable.test, TeamPairingTable.test, TeamMatchResultsTable.test(Vitest) |
 
 ## PTC: 参加者
 
@@ -71,7 +81,7 @@
 | PTC-AC-010 | P1 | 参加者一覧CSVダウンロードはCSVインポートと同じ列構成(氏名,所属,段級位,グループ)をUTF-8 BOM付きで返す | done | ParticipantApiTest |
 | PTC-AC-011 | P2 | 参加者が0件のときのCSVダウンロードはヘッダー行のみになりテンプレートとして使える | done | ParticipantApiTest |
 | PTC-AC-012 | P1 | CSVダウンロードは大会の状態(PREPARING/IN_PROGRESS/FINISHED)を問わず利用できる | done | ParticipantApiTest |
-| PTC-AC-013 | P1 | 参加者一覧表(ParticipantTable)にゼブラストライプを適用した後も、棄権者(status=WITHDRAWN)の行は半透明表示(opacity)とPersonOffIconの両方で他の行と区別できる | done | ParticipantTable.test(Vitest) |
+| PTC-AC-013 | P1 | 参加者一覧で棄権者(status=WITHDRAWN)の行が他の参加者と一目で区別できる(色の違いのみに依存しない) | done | ParticipantTable.test(Vitest) |
 
 ## GRP: グループ
 
@@ -112,7 +122,6 @@
 | RND-AC-012 | P1 | 片方のみ申告・申告不一致で結果が未確定の対局が残っているとラウンド確定はブロックされる。運営者が結果を確定すれば確定できる | done | RoundApiTest |
 | RND-AC-013 | P2 | 管理画面の順位と対戦結果は別メニュー(別画面)で表示される | done | RankingBoard.test, MatchResultsTable.test(Vitest) |
 | RND-AC-014 | P1 | 管理画面の順位表はラウンド1が確定するまで表示されない(未確定時は全員同率rank=1になり表示が崩れるため) | done | cp1-tournament-flow(E2E) |
-| RND-AC-015 | P1 | RankingBoard/TeamRankingBoardの4位以降バッジは意匠変更後も順位数字を等幅表示(tnum)し、氏名・SOS/SOSOSと視覚的に区別できる | done | RankingBoard.test, TeamRankingBoard.test(Vitest) |
 
 ## TEAM: 団体戦
 
@@ -142,7 +151,7 @@
 | TEAM-AC-022 | P1 | チーム一覧CSVダウンロードはCSVインポートと同じ列構成(チーム名,氏名,段級位,ポジション,グループ)をメンバー1人につき1行、UTF-8 BOM付きで返す | done | TeamApiTest |
 | TEAM-AC-023 | P2 | チームが0件のときのCSVダウンロードはヘッダー行のみになりテンプレートとして使える | done | TeamApiTest |
 | TEAM-AC-024 | P1 | CSVダウンロードは大会の状態を問わず利用でき、メンバーが1人もいないチームは行として出力されない | done | TeamApiTest |
-| TEAM-AC-025 | P1 | チーム一覧表(TeamTable)にゼブラストライプを適用した後も、棄権者(status=WITHDRAWN)の行は半透明表示(opacity)とPersonOffIconの両方で他の行と区別できる | done | TeamTable.test(Vitest) |
+| TEAM-AC-025 | P1 | チーム一覧で棄権者(status=WITHDRAWN)の行が他のチームと一目で区別できる(色の違いのみに依存しない) | done | TeamTable.test(Vitest) |
 
 ## SHR: 共有(トークン)
 
@@ -168,7 +177,7 @@
 | SHR-AC-018 | P1 | 共有ページ・結果入力ページの本文タイポグラフィ(body1)が16px以上である | done | theme.test(Vitest) |
 | SHR-AC-019 | P1 | テーマで定義した文字色と背景色の主要な組み合わせがWCAG AA(4.5:1)以上のコントラスト比を満たす | done | theme.test(Vitest) |
 | SHR-AC-020 | P1 | 共有ページの対局カードは勝敗を色だけでなく記号(○/●)で併記する | done | SharedPage.test(Vitest) |
-| SHR-AC-021 | P1 | 団体戦の共有ページ(TeamSharedPage)の対局カードは、卓番号タイル等の意匠変更後も勝敗を色だけでなく記号で併記し、個人名を出さずチーム名のみで表示する | done | TeamSharedPage.test(Vitest) |
+| SHR-AC-021 | P1 | 団体戦の共有ページの対局カードは勝敗を色だけでなく記号でも表示し、個人名を出さずチーム名のみで表示する | done | TeamSharedPage.test(Vitest) |
 
 ## SPA: SPA配信
 
