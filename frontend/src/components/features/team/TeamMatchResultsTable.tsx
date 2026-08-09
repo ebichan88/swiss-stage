@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import {
+  Paper,
   Table,
   TableBody,
   TableCell,
@@ -39,7 +40,7 @@ function markColor(mark: string | null): string | undefined {
 export function TeamMatchResultsTable({ rounds, standings }: TeamMatchResultsTableProps) {
   const rows = buildTeamMatchResultsTableRows(rounds, standings);
   return (
-    <TableContainer sx={{ overflowX: 'auto' }}>
+    <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
       <Table size="small">
         <TableHead
           sx={{

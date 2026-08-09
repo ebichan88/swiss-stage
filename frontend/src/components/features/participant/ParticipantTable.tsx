@@ -5,6 +5,7 @@ import {
   Chip,
   IconButton,
   MenuItem,
+  Paper,
   Table,
   TableBody,
   TableCell,
@@ -48,7 +49,7 @@ export function ParticipantTable({
   const showGroup = groups.length > 1;
   const groupName = (groupId: string) => groups.find((g) => g.id === groupId)?.name ?? '';
   return (
-    <TableContainer sx={{ overflowX: 'auto' }}>
+    <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
       <Table size="small">
         <TableHead
           sx={{

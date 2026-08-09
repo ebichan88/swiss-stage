@@ -41,6 +41,16 @@ describe('MatchResultsTable', () => {
     expect(rows[3]).toHaveTextContent('●');
   });
 
+  it('TRN-AC-028: テーブルをoutlined枠線+角丸のPaperで囲む(ページ背景と偶数行の背景色が同化する境界不明瞭の回帰防止)', () => {
+    const taro = summaryOf({ id: 'p1', entryOrder: 1 });
+    renderWithProviders(
+      <MatchResultsTable rounds={[]} standings={[standingOf({ participant: taro })]} />,
+    );
+
+    const paper = screen.getByRole('table').closest('.MuiPaper-root');
+    expect(paper).toHaveClass('MuiPaper-outlined');
+  });
+
   it('不戦勝(BYE)は「不戦勝」と表示する', () => {
     const taro = summaryOf({ id: 'p1', entryOrder: 1 });
     const rounds = [

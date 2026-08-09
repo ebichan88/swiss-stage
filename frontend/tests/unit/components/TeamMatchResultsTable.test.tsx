@@ -12,6 +12,16 @@ import {
 import { renderWithProviders } from '../../testUtils';
 
 describe('TeamMatchResultsTable', () => {
+  it('TRN-AC-028: テーブルをoutlined枠線+角丸のPaperで囲む(ページ背景と偶数行の背景色が同化する境界不明瞭の回帰防止)', () => {
+    const teamA = teamSummaryOf({ id: 't1', name: 'Aチーム', entryOrder: 1 });
+    renderWithProviders(
+      <TeamMatchResultsTable rounds={[]} standings={[teamStandingOf({ team: teamA })]} />,
+    );
+
+    const paper = screen.getByRole('table').closest('.MuiPaper-root');
+    expect(paper).toHaveClass('MuiPaper-outlined');
+  });
+
   it('No.・チーム名・ラウンドごとの相手番号と結果・勝点・順位を表示する(個人名は含めない)', () => {
     const teamA = teamSummaryOf({ id: 't1', name: 'Aチーム', entryOrder: 1 });
     const teamB = teamSummaryOf({ id: 't2', name: 'Bチーム', entryOrder: 2 });

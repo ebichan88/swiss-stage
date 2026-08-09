@@ -43,6 +43,21 @@ describe('TeamPairingTable', () => {
     expect(screen.queryByText('卓')).not.toBeInTheDocument();
   });
 
+  it('TRN-AC-028: テーブルをoutlined枠線+角丸のPaperで囲む(ページ背景と偶数行の背景色が同化する境界不明瞭の回帰防止)', () => {
+    renderWithProviders(
+      <TeamPairingTable
+        matches={[teamMatchOf({ id: 'm1', tableNumber: 1 })]}
+        editable
+        multiGroup={false}
+        savingMatchId={null}
+        onInputResult={() => {}}
+      />,
+    );
+
+    const paper = screen.getByRole('table').closest('.MuiPaper-root');
+    expect(paper).toHaveClass('MuiPaper-outlined');
+  });
+
   it('卓番号とチーム名を表示し、全ボード決着済みの対局は○/●が付く(個人名は含めない)', () => {
     const teamA = teamSummaryOf({ id: 't1', name: 'Aチーム' });
     const teamB = teamSummaryOf({ id: 't2', name: 'Bチーム' });

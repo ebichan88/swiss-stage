@@ -37,6 +37,26 @@ describe('TeamTable', () => {
     expect(within(activeRow).queryByTestId('PersonOffIcon')).not.toBeInTheDocument();
   });
 
+  it('TRN-AC-028: テーブルをoutlined枠線+角丸のPaperで囲む(ページ背景と偶数行の背景色が同化する境界不明瞭の回帰防止)', () => {
+    renderWithProviders(
+      <TeamTable
+        teams={[teamOf({ id: 't1', name: 'Aチーム' })]}
+        teamSize={3}
+        groups={[]}
+        canEdit={false}
+        canWithdraw={false}
+        onEdit={() => {}}
+        onManageMembers={() => {}}
+        onWithdraw={() => {}}
+        onDelete={() => {}}
+        onChangeGroup={() => {}}
+      />,
+    );
+
+    const paper = screen.getByRole('table').closest('.MuiPaper-root');
+    expect(paper).toHaveClass('MuiPaper-outlined');
+  });
+
   it('編集可の場合、チーム名を編集・削除できる操作列が表示される', () => {
     const onEdit = vi.fn();
     renderWithProviders(

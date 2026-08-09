@@ -2,6 +2,7 @@ import {
   Box,
   Card,
   CardContent,
+  Paper,
   Stack,
   Table,
   TableBody,
@@ -83,7 +84,7 @@ export function PairingTable({
   }
 
   return (
-    <TableContainer sx={{ overflowX: 'auto' }}>
+    <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
       <Table size="small">
         <TableHead
           sx={{
