@@ -42,7 +42,7 @@
 | eventDate | `2026-08-15` / 属性なし | 開催日(YYYY-MM-DD)。任意。帳票印刷のヘッダーに使う。既存アイテムは属性なし=未設定扱い |
 | totalRounds | `5` | |
 | status | `PREPARING` / `IN_PROGRESS` / `FINISHED` | |
-| visibility | `PRIVATE` / `TOKEN` / `PUBLIC` | 公開範囲 |
+| visibility | `PRIVATE` / `TOKEN` | 公開範囲 |
 | shareToken | `a1b2c3...` | GSI2PK に `SHARE#{token}` を設定 |
 | resultInputEnabled | `true` / `false` | 共有トークン経由の結果入力を許可するか(既定false。属性なし=false) |
 | ownerSub | `google-oauth2|1234` | GSI1PK に `USER#{sub}` を設定 |

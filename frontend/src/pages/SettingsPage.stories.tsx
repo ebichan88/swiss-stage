@@ -23,7 +23,7 @@ export const Default: Story = {};
 export const ShareUrlIssued: Story = {
   parameters: {
     tournament: tournamentOf({
-      visibility: 'PUBLIC',
+      visibility: 'TOKEN',
       shareToken: '01TESTSHARETOKEN00000000000',
     }),
   },

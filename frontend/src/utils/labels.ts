@@ -47,7 +47,6 @@ export const tournamentStatusLabels: Record<TournamentStatus, string> = {
 export const visibilityLabels: Record<Visibility, string> = {
   PRIVATE: '非公開(運営者のみ)',
   TOKEN: '共有URLを知っている人のみ',
-  PUBLIC: '公開',
 };
 
 export const participantStatusLabels: Record<ParticipantStatus, string> = {

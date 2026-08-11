@@ -30,7 +30,6 @@ export type Visibility = Schemas['Visibility'];
 export const Visibility = {
   PRIVATE: 'PRIVATE',
   TOKEN: 'TOKEN',
-  PUBLIC: 'PUBLIC',
 } as const satisfies { [K in Visibility]: K };
 
 export type ParticipantStatus = Schemas['ParticipantStatus'];
