@@ -694,7 +694,7 @@ export interface components {
         /** @enum {string} */
         TournamentStatus: "PREPARING" | "IN_PROGRESS" | "FINISHED";
         /** @enum {string} */
-        Visibility: "PRIVATE" | "TOKEN" | "PUBLIC";
+        Visibility: "PRIVATE" | "TOKEN";
         /** @enum {string} */
         ParticipantStatus: "ACTIVE" | "WITHDRAWN";
         /** @enum {string} */
