@@ -83,7 +83,7 @@ UIレイアウトの判断を伴うコード生成を無人ループに含める
 - コミットメッセージ: `docs: <日本語の要約>(Plan PR)` + 空行 + 本文、末尾に
   `Co-Authored-By: Claude <noreply@anthropic.com>`
 - `git push -u origin feature/plan-auto-<TARGET>-<slug>`
-- `gh pr create` でPR作成。本文は `/plan` 手順8のテンプレートと同じだが、末尾に以下の一文を
+- `gh pr create` でPR作成。本文は `/plan` 手順9のテンプレートと同じだが、末尾に以下の一文を
   追加する(人間が読んだときに出自を判別できるようにする):
 
   ```markdown

@@ -120,8 +120,8 @@ Plan PRに `.stories.tsx` を含めても、レビュアーがUIを見るには�
   `Upload diff on failure`(`if: failure()`)ステップは変更しなくても、新規ストーリーの実際の
   スクリーンショット(`<id>-actual.png`)はartifactに含まれる。新規に追加する検出ステップ
   (`if: failure() && github.event_name == 'pull_request'`)で、`storybook-static/index.json` の
-  全ストーリーIDと `tests/vrt/__screenshots__/desktop/` の既存ファイルを突き合わせ、ベースラインが
-  無いIDの一覧をjob outputとして `notify` ジョブに渡す。
+  全ストーリーIDと `tests/vrt/__screenshots__/{desktop,mobile}/` 両方の既存ファイルを突き合わせ、
+  いずれかにベースラインが無いIDの一覧をjob outputとして `notify` ジョブに渡す。
 - **`notify` ジョブ**: 既存の失敗時コメント(sticky comment)に、新規ストーリーの一覧が空でない場合は
   「新規ストーリーの参考スクリーンショット(デグレではありません)」という節を追記し、Artifacts
   (`vrt-results`)内の `<id>-actual.png` を参照するよう案内する。既存ストーリーの差分検知(デグレの

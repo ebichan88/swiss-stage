@@ -1,13 +1,14 @@
 ---
-description: Issueから実装計画を立て、コード0行のPlan PRを作成する(承認はPRのマージで行う)
+description: Issueから実装計画を立て、原則コード0行のPlan PRを作成する(承認はPRのマージで行う)
 argument-hint: "<Issue番号>"
 allowed-tools: Bash(gh issue view:*), Bash(gh issue comment:*), Bash(git *), Bash(gh pr create:*), Bash(gh pr view:*), Bash(python3 .github/scripts/docs-lint.py), Read, Grep, Glob, Write, Edit
 ---
 
 Issue #$ARGUMENTS から実装計画を立て、Plan PR を作成してください。
 
-`.claude/00_project/04_development_process.md` の「/plan」段階です。**このコマンドではコードを
-1行も書かない**。以下の手順に従うこと。
+`.claude/00_project/04_development_process.md` の「/plan」段階です。**このコマンドでは原則コードを
+1行も書かない**(新規画面・大きなレイアウト変更時は対象画面の `.stories.tsx` のみ例外。手順5、
+`04_development_process.md` §5.1)。以下の手順に従うこと。
 
 ## 1. Issueを読む
 
