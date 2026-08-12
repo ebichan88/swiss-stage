@@ -80,7 +80,11 @@ UI仕様(§3の観点で計画済み)確定後、対象画面が新規画面、�
 - `main` から `feature/plan-<slug>` ブランチを作成する
 - メッセージ形式: `docs: <日本語の要約>(Plan PR)` + 空行 + 本文
 - 末尾に `Co-Authored-By: Claude <noreply@anthropic.com>` を付ける
-- **コミット前チェック(`pnpm run check` / `./gradlew check`)は不要**(コード変更を含まないため)
+- **コミット前チェック(`pnpm run check` / `./gradlew check`)は、対象画面の `.stories.tsx` を
+  含まない限り不要**(コード変更を含まないため)。手順5の例外で `.stories.tsx` を含む場合は、
+  最低限 `pnpm run lint` / `pnpm run type-check` を実行する(フルの `pnpm run check` を実行
+  してもよい)。`ci.yml` のfrontendジョブがPlan PRブランチでも自動実行される(`04_development_process.md`
+  §5.1)ため必須ではないが、ローカルで先に検知した方が手戻りが小さい
 
 ## 9. プッシュとPR作成
 
