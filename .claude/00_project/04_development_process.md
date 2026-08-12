@@ -27,7 +27,7 @@ flowchart TD
     A["人間: 要件・課題を書く"] -->|"/issue"| B["AI: Issue作成<br/>(分類テンプレート・優先度ラベル)"]
     B -.->|"着手時期未定"| Z["ここで停止(backlog)"]
     B -.->|"auto-plan:P0/P1/P2 付与 + 週次schedule<br/>(backlog経由か問わない。11_cicd_design.md §2.13)"| C
-    B -->|"/plan &lt;Issue番号&gt;"| C["AI: 不明点を質問 → Plan PR(コード0行)"]
+    B -->|"/plan &lt;Issue番号&gt;"| C["AI: 不明点を質問 → Plan PR(原則コード0行)"]
     C --> C1["ADR<br/>(§3の条件に当たる場合)"]
     C --> C2["07_plans/NN_slug.md<br/>(計画)"]
     C --> C3["01_acceptance_scope.md<br/>(受け入れケースをStatus=todoで追加)"]
@@ -220,7 +220,9 @@ Status と PR の更新は `/pr` が実装PRの中で行う。`done` になっ�
   ジョブ: lint/type-check/build)・`vrt.yml` が自動的に実行される。新規ストーリーはVRTの初回実行
   でベースライン欠如により失敗するが、`vrt.yml` は非ブロッキング運用のため実害はない。新規
   ストーリーのスクリーンショットは `vrt.yml` のartifactからレビュアーが確認できる
-  (`09_test_strategy.md` §Storybook参照)。
+  (`09_test_strategy.md` §Storybook参照)。`ai-review.yml`・`ai-qa.yml` は `feature/plan-*`
+  ブランチを対象外にしているため発火しない(Plan PRのレビューは `ai-design-review.yml`・
+  `ai-plan-review.yml` が担う)。
 
 決定の経緯・却下案は `.claude/06_adr/11_story_first_agreement.md` を参照。
 
