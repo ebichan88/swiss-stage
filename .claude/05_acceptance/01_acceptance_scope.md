@@ -37,6 +37,10 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | AUTH-AC-003 | P0 | /auth/login はGoogleのOAuth2認可フローへリダイレクトする | done | AuthApiTest |
 | AUTH-AC-004 | P1 | logoutでセッションCookieが失効する | done | AuthApiTest |
 | AUTH-AC-005 | P0 | 改ざん・不正なセッションCookieは未認証として扱う | done | AuthApiTest |
+| AUTH-AC-006 | P2 | TopPageに大会運営の主要な特徴(スイス方式マッチング・結果集計/順位表示の自動化・参加者ログイン不要)が表示される | todo | TopPage.test(Vitest) |
+| AUTH-AC-007 | P2 | LoginPageでOAuth認可失敗時(`?error=oauth`)にエラーメッセージが表示され、再度Googleログインを試せる | todo | LoginPage.test(Vitest) |
+| AUTH-AC-008 | P2 | 開発ビルドのみLoginPageに開発用ログインボタンが表示され、本番ビルドでは表示されない | todo | LoginPage.test(Vitest) |
+| AUTH-AC-009 | P2 | 認証済みユーザーが `/` または `/login` に直接アクセスすると大会一覧へリダイレクトされる | todo | LoginPage.test, TopPage.test(Vitest) |
 
 ## TRN: 大会
 
