@@ -15,8 +15,8 @@
 | `ci.yml` | `pull_request` / `push`(main) | 単体・統合テスト、ビルド(PRごと必須。§2)+ 失敗時の決定論的な自動修正(§2.7)。**.mdのみのPRでもdocs-lintのため常に起動 |
 | `e2e.yml` | `pull_request`(**.mdのみのPRを除く) / `workflow_dispatch` | クリティカルパスのE2E(Playwright)。PRごとに自動実行(当面は非required。§2.8) |
 | `vrt.yml` | `pull_request`(UI関連pathsのみ) / `workflow_dispatch` | StorybookページのVisual Regression Test。**非ブロッキング**。ベースライン更新は`workflow_dispatch`のみ(§2.8) |
-| `ai-review.yml` | `pull_request`(**.mdのみのPRを除く) | AIコードレビュー・自動修正(Critical/Majorのみ。§2.5) |
-| `ai-qa.yml` | `pull_request`(**.mdのみのPRを除く) | 受け入れケース台帳との突合。**VERDICT: FAILはゲート**(§2.9) |
+| `ai-review.yml` | `pull_request`(**.mdのみのPRを除く。`feature/plan-*`ブランチも除く) | AIコードレビュー・自動修正(Critical/Majorのみ。§2.5) |
+| `ai-qa.yml` | `pull_request`(**.mdのみのPRを除く。`feature/plan-*`ブランチも除く) | 受け入れケース台帳との突合。**VERDICT: FAILはゲート**(§2.9) |
 | `guard.yml` | `pull_request`(**.mdのみのPRを除く) | テスト弱体化ガード。AI自動修正の安全装置(§2.6) |
 | `mutation.yml` | `workflow_dispatch` / 週次schedule | Mutation Testing(PITest、domain層限定。`09_test_strategy.md` §2.6) |
 | `ai-design-review.yml` | `pull_request`(`.claude/**`/`schema/**`/`CLAUDE.md`のみ) | 設計ドキュメント間の整合性(非ゲート・レポートのみ。§2.10) |
@@ -27,6 +27,18 @@
 (ドキュメントファイル)のみのPR(例: Plan PR)では起動しない(`paths-ignore`)。`.claude/`
 配下はほぼ全て `.md` のため、この基準で「利用者から見た挙動を変えない純ドキュメント変更」を
 実質的にカバーできる。コードを1つでも含むPRでは従来通り全ワークフローが起動する。
+
+**例外**: Plan PRの「コード0行」原則には、新規画面・大きなレイアウト変更を含む場合に対象画面の
+`.stories.tsx` のみを許可する例外がある(`04_development_process.md` §5.1)。この場合Plan PRに
+コード(`.stories.tsx`)が含まれ`paths-ignore`だけでは弾けなくなるため、`ai-review.yml` /
+`ai-qa.yml` はジョブ条件に `!startsWith(github.head_ref, 'feature/plan-')` を追加し、Plan PR
+のブランチ命名規約(`feature/plan-*`)でスキップする。Plan PRのレビューは
+`ai-design-review.yml` / `ai-plan-review.yml`(いずれも非ゲート)が担うため、`ai-qa.yml` の
+「VERDICT: FAILはゲート」がPlan PR(受け入れケースが`Status: todo`のまま実装が無い状態)を
+誤ってFAIL判定する事故を避ける狙いもある(`07_plans/10_story_first_agreement.md` §4.9)。
+`e2e.yml` / `guard.yml` はPlan PRブランチを除外していないが、これらは `frontend/src/**` 等の
+実装コードや `.stories.tsx` に対するテスト実行が目的であり、プレースホルダー実装であっても
+壊れていないことを確認できる方が安全側に倒れるため、対象は変えていない。
 
 `ci.yml` だけは例外で `paths-ignore` を付けない。`frontend` ジョブが無条件で実行する
 `docs-lint`(受け入れケース台帳のID整合・ファイル参照切れの機械検査、L64以降のYAML参照)は

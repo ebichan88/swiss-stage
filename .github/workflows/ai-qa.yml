@@ -40,8 +40,10 @@ permissions:
 jobs:
   qa:
     # needs-humanラベル付きPRはAI自動処理を停止する(ai-review.ymlと同じ規約)。
-    # unlabeledイベントはneeds-human以外のラベル除去では発火させない
-    if: ${{ !github.event.pull_request.draft && !contains(github.event.pull_request.labels.*.name, 'needs-human') && (github.event.action != 'unlabeled' || github.event.label.name == 'needs-human') }}
+    # unlabeledイベントはneeds-human以外のラベル除去では発火させない。
+    # Plan PR(`feature/plan-*`ブランチ)は対象外(ai-review.ymlと同じ理由。受け入れケースが
+    # Status=todoのまま実装が無いPlan PRをQAが誤ってFAIL判定しCIを赤くする事故を防ぐ)
+    if: ${{ !github.event.pull_request.draft && !startsWith(github.head_ref, 'feature/plan-') && !contains(github.event.pull_request.labels.*.name, 'needs-human') && (github.event.action != 'unlabeled' || github.event.label.name == 'needs-human') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:

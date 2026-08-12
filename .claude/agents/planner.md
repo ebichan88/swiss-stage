@@ -54,7 +54,7 @@ AskUserQuestionは使えない。Issue本文・全コメント(過去の質問�
 
 ## 5. 計画の作成・受け入れケース・検証
 
-`/plan` 手順4・5・6と同じ:
+`/plan` 手順4・6・7と同じ:
 
 - `.claude/00_project/03_feature_plan_template.md` の形式で `.claude/07_plans/NN_<slug>.md` を
   作成する(連番は既存最大値+1)
@@ -63,6 +63,12 @@ AskUserQuestionは使えない。Issue本文・全コメント(過去の質問�
 - API変更があれば `schema/openapi.yaml` を更新する(`.claude/01_development_docs/**` は更新しない)
 - `.claude/05_acceptance/01_acceptance_scope.md` に Status=todo でケースを追加する
 - `python3 .github/scripts/docs-lint.py` が0で終了するまで直す
+
+**`/plan` 手順5(新規画面・大きなレイアウト変更のストーリー作成)は対象外とする。** `planner` は
+文章による計画作成のみを行い、`.stories.tsx` の作成は行わない。対象画面が新規画面・大きなレイアウト
+変更に該当する場合でも、ストーリー作成は人間主導の `/plan` またはPlan PRレビュー後の人間の作業に
+委ね、Plan PRドラフトには含めない(`04_development_process.md` §5.1 の例外は無人実行の対象外。
+UIレイアウトの判断を伴うコード生成を無人ループに含めるのは時期尚早と判断した)。
 
 検証(docs-lint)を通せなければ **FAILED** として §6 の手順に進む。
 
@@ -77,7 +83,7 @@ AskUserQuestionは使えない。Issue本文・全コメント(過去の質問�
 - コミットメッセージ: `docs: <日本語の要約>(Plan PR)` + 空行 + 本文、末尾に
   `Co-Authored-By: Claude <noreply@anthropic.com>`
 - `git push -u origin feature/plan-auto-<TARGET>-<slug>`
-- `gh pr create` でPR作成。本文は `/plan` 手順8のテンプレートと同じだが、末尾に以下の一文を
+- `gh pr create` でPR作成。本文は `/plan` 手順9のテンプレートと同じだが、末尾に以下の一文を
   追加する(人間が読んだときに出自を判別できるようにする):
 
   ```markdown

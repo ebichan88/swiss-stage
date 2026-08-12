@@ -48,8 +48,10 @@ design-reviewerは「設計ドキュメント同士の意味的な矛盾」、QA
 
 # 禁止(指摘してはいけないもの)
 
-- コード品質・実装の是非(Reviewer `.claude/agents/reviewer.md` の責務。このエージェントが
-  レビューする時点でPlan PRにコードは含まれない想定)
+- コード品質・実装の是非(Reviewer `.claude/agents/reviewer.md` の責務。Plan PRには対象画面の
+  `.stories.tsx` が例外的に含まれる場合があるが(`04_development_process.md` §5.1)、その場合も
+  コード品質・実装の是非はレビュー対象外とする。`ai-review.yml` は `feature/plan-*` ブランチを
+  対象外にしており、そもそもReviewerはPlan PRで起動しない)
 - ドキュメント間の意味的な矛盾(design-reviewer `.claude/agents/design-reviewer.md` の責務。
   **同じPRで design-reviewer も起動するため、責務を混同しない**)
 - 台帳と実装の突合(QA `.claude/agents/qa.md` の責務)

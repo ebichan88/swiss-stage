@@ -1,8 +1,8 @@
 # 10. 新規画面ストーリー先行作成をPlan PRの例外として実行可能にする
 
-- Status: planned
+- Status: in_progress
 - Issue: #170
-- PR: -
+- PR: #172
 
 ## 1. 背景・目的
 
@@ -113,23 +113,42 @@ Plan PRに `.stories.tsx` を含めても、レビュアーがUIを見るには�
 起動する必要があり、「実機を起動せずに確認・合意する」という本来の目的を満たしにくい。既存の
 `vrt.yml` を拡張し、レビュアーがPR上のリンクからスクリーンショットを確認できるようにする。
 
-- **対象**: 対応するVRTベースライン画像(`frontend/tests/vrt/__screenshots__/`)がまだ存在しない
-  新規ストーリー。既存ストーリーへの変更(ベースラインが既にある)は対象外で、従来どおりVRTの
-  差分検知(§4.7・`09_test_strategy.md` §4)に任せる。
-- **`vrt` ジョブ**: 既存の `Run VRT(既存ベースラインと比較)` ステップ実行後、新規ストーリー由来の
-  スクリーンショット(ベースラインが無く `toHaveScreenshot` が生成した `-actual.png` 等)を、既存の
-  `Upload diff on failure` ステップと同様に `actions/upload-artifact@v4` でartifact化する。現状は
-  `if: failure()` のみだが、新規ストーリーが存在する場合は成功/失敗にかかわらずartifactを作る条件に
-  拡張する。「新規ストーリーかどうか」の判定(diffログ・ファイル名パターン等)は実装PRで詰める。
-- **`notify` ジョブ**: 既存の失敗時コメント(sticky comment)に加えて、新規ストーリーのartifactが
-  存在する場合は「新規ストーリーのスクリーンショットをArtifactsからダウンロードできます」という案内
-  文と実行ログURLをコメントに追記する。VRT自体が失敗(既存ストーリーの差分検知)した場合と、新規
-  ストーリーの初回スクリーンショット案内は、コメント内で区別して書く(前者は「デグレの可能性」、
-  後者は「レビュー用の参考画像」であり性質が異なるため)。
+- **対象**: 対応するVRTベースライン画像(`frontend/tests/vrt/__screenshots__/{desktop,mobile}/<id>.png`。
+  `id` はStorybookのストーリーID)がまだ存在しない新規ストーリー。既存ストーリーへの変更(ベースライン
+  が既にある)は対象外で、従来どおりVRTの差分検知(§4.7・`09_test_strategy.md` §4)に任せる。
+- **判定方法**: `toHaveScreenshot` はベースライン未存在の場合に必ず失敗する仕様のため、既存の
+  `Upload diff on failure`(`if: failure()`)ステップは変更しなくても、新規ストーリーの実際の
+  スクリーンショット(`<id>-actual.png`)はartifactに含まれる。新規に追加する検出ステップ
+  (`if: failure() && github.event_name == 'pull_request'`)で、`storybook-static/index.json` の
+  全ストーリーIDと `tests/vrt/__screenshots__/{desktop,mobile}/` 両方の既存ファイルを突き合わせ、
+  いずれかにベースラインが無いIDの一覧をjob outputとして `notify` ジョブに渡す。
+- **`notify` ジョブ**: 既存の失敗時コメント(sticky comment)に、新規ストーリーの一覧が空でない場合は
+  「新規ストーリーの参考スクリーンショット(デグレではありません)」という節を追記し、Artifacts
+  (`vrt-results`)内の `<id>-actual.png` を参照するよう案内する。既存ストーリーの差分検知(デグレの
+  可能性)の案内とは別の見出しで区別する。
 - **非ブロッキング**: この仕組みはレビューの利便性向上が目的であり、Plan PR・実装PRのマージ可否には
   影響しない(§2 決定の「順序の強制はPlan PR承認のみに委ねる」という方針と整合)。
 - 却下した代替案(画像のPRブランチへの直接コミット、外部ホスティングへのプレビューデプロイ)は
   `.claude/06_adr/11_story_first_agreement.md` §3 を参照。
+
+### 4.9 `ai-review.yml` / `ai-qa.yml` をPlan PRブランチで発火させない(実装時に判明した波及)
+
+`ai-review.yml`・`ai-qa.yml` はいずれも `paths-ignore: ['**.md']` のみで、純ドキュメントPR(`.md`
+のみの変更)をスキップしている。これまでPlan PRは常に `.md` ファイルのみを変更していたため
+実質的にこの2つのワークフローは発火しなかったが、本プランの例外(対象画面の `.stories.tsx` を
+Plan PRに含める)により、Plan PRに非mdファイルが混ざるケースが生まれる。paths-ignoreは素通り
+するため、そのままでは以下の事故が起きる:
+
+- `ai-qa.yml` は VERDICT: FAIL で **ジョブを失敗させる**(非ゲートではない)仕様。Plan PRで追加
+  した受け入れケースは `Status: todo`(未実装)のままであり、QAが「対応するテストが無い」と
+  誤ってFAIL判定し、実装が何もないPlan PRのCIを赤くしてしまう。
+- `ai-review.yml` はコードレビュー・Fixer自動修正ループを回す設計だが、Plan PRのレビューは
+  `ai-design-review.yml`・`ai-plan-review.yml`(いずれも非ゲート)が担う設計になっており、
+  二重に(かつ異なる基準で)動いてしまう。
+
+**対応**: `ai-review.yml`・`ai-qa.yml` のジョブ条件(`if:`)に
+`!startsWith(github.head_ref, 'feature/plan-')` を追加し、Plan PRのブランチ命名規約
+(`04_development_process.md` §5、`commands/plan.md`)でPlan PRを判別してスキップする。
 
 ## 5. 受け入れケース
 
@@ -149,14 +168,18 @@ Plan PRとADRが必須だが受け入れケースは対象外(「—」)。本�
 
 ### 実装PRで更新が必要な設計ドキュメント(今は更新しない・実装時の申し送り)
 
-- [ ] `.claude/00_project/04_development_process.md` — §4.1
-- [ ] `.claude/00_project/03_feature_plan_template.md` — §4.2
-- [ ] `.claude/01_development_docs/10_frontend_design.md` §7 — §4.3
-- [ ] `.claude/01_development_docs/09_test_strategy.md`(Storybook節) — §4.4
-- [ ] `.claude/commands/plan.md` — §4.5
-- [ ] `.claude/commands/pr.md` — §4.6
-- [ ] `.github/workflows/vrt.yml` — §4.8(設計ドキュメントではないが、Plan PRでは変更せず実装PRで
+- [x] `.claude/00_project/04_development_process.md` — §4.1(§5.1として新設)
+- [x] `.claude/00_project/03_feature_plan_template.md` — §4.2
+- [x] `.claude/01_development_docs/10_frontend_design.md` §7 — §4.3
+- [x] `.claude/01_development_docs/09_test_strategy.md`(Storybook節) — §4.4
+- [x] `.claude/commands/plan.md` — §4.5(新設ステップとして追加、以降のステップ番号を繰り下げ)
+- [x] `.claude/commands/pr.md` — §4.6
+- [x] `.github/workflows/vrt.yml` — §4.8(設計ドキュメントではないが、Plan PRでは変更せず実装PRで
       更新する対象という点は他の項目と同じ)
+- [x] `CLAUDE.md`「避けるべき落とし穴」— ADRの根拠(条件3)との整合のため項目18として追加
+- [x] `.github/workflows/ai-review.yml` / `.github/workflows/ai-qa.yml` — §4.9(実装時に判明した波及。
+      Plan PRブランチでの誤発火を防ぐ)
+- [x] `.claude/04_quality/01_review_checklist.md` — Plan PRとReviewerの関係の記述を§4.9の内容に合わせて更新
 
 ## 7. DoD(完了の定義)
 
@@ -178,7 +201,7 @@ Plan PRとADRが必須だが受け入れケースは対象外(「—」)。本�
 - プレースホルダー実装 → 実装PRでの実import置き換え、という二度書きの手間が実際の運用で許容できるかは
   未検証。負担が大きいと分かった場合はADRの撤回条件に従い案B・案Cへの切り替えを再検討する。
 - 「Plan PRはコード0行」という説明のシンプルさが、例外規定の追加によりやや複雑化する。CLAUDE.mdの
-  「避けるべき落とし穴」への追記が必要かは実装PR時点で判断する。
+  「避けるべき落とし穴」に項目18として追記した。
 - 新規ストーリーがVRT初回実行で毎回失敗する(非ブロッキングだが)ノイズが、運用開始後に見過ごされ
   やすくなるリスクがある。実装PRの `09_test_strategy.md` への注記(§4.4)で軽減を図るが、実運用の
   様子を見て通知方法の見直しが必要になる可能性がある。

@@ -1,6 +1,6 @@
 # 11. 新規画面ストーリー先行作成をPlan PRの例外として認める
 
-- Status: Proposed
+- Status: Accepted
 - Issue: #170
 - Date: 2026-08-12
 
