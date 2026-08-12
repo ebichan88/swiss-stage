@@ -43,6 +43,8 @@ jobs:
     defaults:
       run:
         working-directory: frontend
+    outputs:
+      new_stories: ${{ steps.detect-new-stories.outputs.new_stories }}
     steps:
       # 書き込み権限を持つAUTOFIX_TOKENはここでは使わない。このジョブは通常のPR比較実行を含み、
       # 直後に `pnpm install` でPRの package.json/pnpm-lock.yaml を、Playwrightで
@@ -97,6 +99,30 @@ jobs:
       - name: Run VRT(ベースライン更新)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.update_snapshots }}
         run: pnpm exec playwright test --config=playwright-vrt.config.ts --update-snapshots
+
+      # ベースラインが存在しない新規ストーリー(Plan PRの `.stories.tsx` 追加を含む)は、
+      # toHaveScreenshot が初回実行時に必ず失敗する仕様のため、下の「Upload diff on failure」で
+      # 実際のスクリーンショット(*-actual.png)がartifactに含まれる。ここではPRコメント用に
+      # 「新規ストーリー(デグレではない)」を機械的に判定する。スナップショットファイル名は
+      # playwright-vrt.config.ts の snapshotPathTemplate(`__screenshots__/{projectName}/{arg}.png`、
+      # {arg}はstories.spec.tsが渡すストーリーID)に対応する
+      - name: 新規ストーリー(ベースライン未確定)を検出
+        id: detect-new-stories
+        if: ${{ failure() && github.event_name == 'pull_request' }}
+        run: |
+          NEW_STORIES=""
+          while IFS= read -r id; do
+            [ -n "$id" ] || continue
+            if [ ! -f "tests/vrt/__screenshots__/desktop/${id}.png" ]; then
+              NEW_STORIES="${NEW_STORIES}${id}, "
+            fi
+          done < <(node -e "
+            const idx = require('./storybook-static/index.json');
+            for (const e of Object.values(idx.entries)) {
+              if (e.type === 'story') console.log(e.id);
+            }
+          ")
+          echo "new_stories=${NEW_STORIES%, }" >> "$GITHUB_OUTPUT"
 
       - name: Upload diff on failure
         if: failure()
@@ -153,27 +179,42 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
           BRANCH: ${{ github.event.pull_request.head.ref }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          NEW_STORIES: ${{ needs.vrt.outputs.new_stories }}
         run: |
           {
             echo "<!-- swiss-stage-vrt -->"
-            echo "## 🖼 VRTで画面の差分を検出しました"
+            echo "## 🖼 VRTの実行結果"
             echo ""
-            echo "**マージはブロックしません**が、意図した変更かどうか確認してください。"
+            echo "**マージはブロックしません**が、内容を確認してください。"
             echo ""
-            echo "差分画像は実行ログの Artifacts (\`vrt-results\`) からダウンロードできます:"
+            echo "画像は実行ログの Artifacts (\`vrt-results\`) からダウンロードできます:"
             echo "${RUN_URL}"
             echo ""
-            echo "### 意図した変更だった場合"
+            if [ -n "$NEW_STORIES" ]; then
+              echo "### 新規ストーリーの参考スクリーンショット(デグレではありません)"
+              echo ""
+              echo "ベースラインがまだ無い新規ストーリーです。Plan PRの \`.stories.tsx\` 追加を含みます"
+              echo "(\`04_development_process.md\` §5.1): ${NEW_STORIES}"
+              echo ""
+              echo "Artifacts内の \`<ストーリーID>-actual.png\` がその画面の初回スクリーンショットです。"
+              echo "ローカルでStorybookを起動しなくてもレビューに使えます。意図した見た目であれば、"
+              echo "実装PRでベースラインを確定させてください(**必ずCI経由**で):"
+              echo ""
+              echo '```bash'
+              echo "gh workflow run vrt.yml -f update_snapshots=true --ref ${BRANCH}"
+              echo '```'
+              echo ""
+            fi
+            echo "### 既存ストーリーとの差分だった場合"
             echo ""
-            echo "ベースライン画像を更新してください(**必ずCI経由**で。ローカルとCIでフォントレンダリングが異なるため):"
+            echo "意図した変更であれば、ベースライン画像を更新してください(**必ずCI経由**で。"
+            echo "ローカルとCIでフォントレンダリングが異なるため):"
             echo ""
             echo '```bash'
             echo "gh workflow run vrt.yml -f update_snapshots=true --ref ${BRANCH}"
             echo '```'
             echo ""
-            echo "### 意図しない変更だった場合"
-            echo ""
-            echo "UIのデグレです。実装を修正してください。"
+            echo "意図しない変更であれば、UIのデグレです。実装を修正してください。"
           } > /tmp/vrt-notify.md
 
           # 1PRにつき1コメントを更新し続けるsticky方式

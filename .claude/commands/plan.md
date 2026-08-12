@@ -47,7 +47,21 @@ AskUserQuestion で**最大3問**にまとめて確認する。優先すべき�
   実際のドキュメント更新は実装PRで、実装コードと同じPRで行う(`04_development_process.md` §2。
   決定のSSoTを1箇所に保ち、Plan PRと設計ドキュメントの二重記述によるズレを防ぐため)
 
-## 5. 受け入れケースの追加
+## 5. 新規画面・大きなレイアウト変更のストーリー作成
+
+UI仕様(§3の観点で計画済み)確定後、対象画面が新規画面、または既存画面の大きなレイアウト変更に
+該当する場合は、`src/pages/XxxPage.stories.tsx` を作成する(`04_development_process.md` §5.1、
+`03_feature_plan_template.md` §3 の対象範囲。Plan PRの「コード0行」原則の例外)。該当しない場合は
+このステップを飛ばす。
+
+- **新規画面(0→1)の場合**: ページ本体(`src/pages/XxxPage.tsx`)がまだ存在しないため、ストーリー
+  ファイル内にインラインのプレースホルダー実装を書く。実装PRで本物のページに差し替え、
+  ストーリーを実importへ書き換える運用になる
+- **既存画面の大きなレイアウト変更の場合**: 本物のページを直importする(プレースホルダーは使わない)
+- **合意のタイミング**: 新しい承認ステップは発明しない。ストーリー作成後、Plan PRのレビュー・
+  マージそのものを「UI合意」のゲートとして扱う(`04_development_process.md` §5.1)
+
+## 6. 受け入れケースの追加
 
 `.claude/05_acceptance/01_acceptance_scope.md` に **Status=todo** でケースを追加する。
 
@@ -56,18 +70,18 @@ AskUserQuestion で**最大3問**にまとめて確認する。優先すべき�
 - 優先度は `02_severity.md` の判定フローに従う
 - 洗い出しには `09_test_strategy.md` §2.5 の技法を使い、境界値の両側と組み合わせの抜けを確認する
 
-## 6. 検証
+## 7. 検証
 
 `python3 .github/scripts/docs-lint.py` を実行し、違反があれば直す(0で終了するまで繰り返す)。
 
-## 7. ブランチ作成とコミット
+## 8. ブランチ作成とコミット
 
 - `main` から `feature/plan-<slug>` ブランチを作成する
 - メッセージ形式: `docs: <日本語の要約>(Plan PR)` + 空行 + 本文
 - 末尾に `Co-Authored-By: Claude <noreply@anthropic.com>` を付ける
 - **コミット前チェック(`pnpm run check` / `./gradlew check`)は不要**(コード変更を含まないため)
 
-## 8. プッシュとPR作成
+## 9. プッシュとPR作成
 
 - `git push -u origin feature/plan-<slug>`
 - `gh pr create` で作成。PR本文の冒頭に `Refs #$ARGUMENTS`(**`Closes` ではない**。実装が
@@ -92,13 +106,13 @@ Refs #$ARGUMENTS
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
-## 9. Issueへの反映
+## 10. Issueへの反映
 
 `gh issue comment $ARGUMENTS` で Plan PR のURLをコメントし、進捗チェックリストの
 「Plan PR」項目にチェックが入る想定であることを伝える(チェックボックスの実際の更新は
 Issue本文の編集操作なので、必要ならユーザーに確認する)。
 
-## 10. 報告
+## 11. 報告
 
 - Plan PR の URL を報告する
 - CI で docs-lint / ai-design-review / ai-plan-review(非ゲート)が自動実行されることを添え、

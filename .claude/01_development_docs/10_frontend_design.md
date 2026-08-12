@@ -110,6 +110,9 @@ export function useTournament(id: string) {
 - 既存画面の小さな修正では作らない
 - 対象は `.claude/02_design_system/00_basic_design.md` §4 の優先度に従う
   (共有ページ > 結果入力 > 順位表 > 運営者管理画面)
+- **Plan PRの一部として作成する**(Plan PRの「コード0行」原則の例外。
+  `.claude/00_project/04_development_process.md` §5.1)。Plan PRのレビュー・マージをもって
+  「UI合意」とし、実機を起動せずに確認・合意できるようにする
 
 ### 配置とファイル名
 
@@ -118,6 +121,11 @@ export function useTournament(id: string) {
   ストーリーの腐敗(propsの変更漏れ等)が自動検出されるため
 - ページは本番と同じ経路(直import・propsなし・hooks経由)でレンダリングする。
   ストーリー専用のダミー画面は作らない
+- **新規画面(0→1)の例外**: Plan PR時点でページ本体(`src/pages/XxxPage.tsx`)が未実装の間は、
+  ストーリーファイル内にインラインのプレースホルダー実装を置いてよい(上記「ストーリー専用ダミー
+  画面は作らない」原則のPlan PR時点での例外)。実装PRで本物のページに差し替え、ストーリーを実import
+  へ書き換える。既存画面の大きなレイアウト変更では、この例外は使わず引き続き本物のページを直import
+  する(プレースホルダーは新規画面のみの救済策)
 
 ### Provider・データ
 

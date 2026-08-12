@@ -38,8 +38,12 @@ env:
 jobs:
   review:
     # needs-humanラベル付きPRは自動ループを停止する(人間がラベルを外すと再開)。
-    # unlabeledイベントはneeds-human以外のラベル除去では発火させない(無関係なラベル操作で毎回レビューが走るのを防ぐ)
-    if: ${{ !github.event.pull_request.draft && !contains(github.event.pull_request.labels.*.name, 'needs-human') && (github.event.action != 'unlabeled' || github.event.label.name == 'needs-human') }}
+    # unlabeledイベントはneeds-human以外のラベル除去では発火させない(無関係なラベル操作で毎回レビューが走るのを防ぐ)。
+    # Plan PR(`feature/plan-*`ブランチ)は対象外: ai-design-review.yml/ai-plan-review.ymlが計画側の
+    # レビューを担う。Plan PRの「コード0行」原則の例外(対象画面の.stories.tsxのみ許可。
+    # `04_development_process.md` §5.1)によりPlan PRにも非md差分が乗るようになったため、
+    # paths-ignore(**.md)だけでは弾けなくなった
+    if: ${{ !github.event.pull_request.draft && !startsWith(github.head_ref, 'feature/plan-') && !contains(github.event.pull_request.labels.*.name, 'needs-human') && (github.event.action != 'unlabeled' || github.event.label.name == 'needs-human') }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     services:

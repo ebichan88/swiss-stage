@@ -29,7 +29,7 @@ AIレビュアー(`.claude/agents/reviewer.md`)がPRレビュー時に参照す�
 
 ## plan-reviewerエージェント管轄(レビューで指摘しない)
 
-Plan PR(`.claude/07_plans/**`)の計画そのものの抜け — 画面シナリオの異常系・境界・4状態の見せ方・受け入れケースの過不足 — はplan-reviewerエージェント(`.claude/agents/plan-reviewer.md`、CIは `ai-plan-review.yml`)が検証する(非ゲート)。Reviewerは実装後のコードを見るため、Plan PR(コード0行)自体はレビュー対象にならない。
+Plan PR(`.claude/07_plans/**`)の計画そのものの抜け — 画面シナリオの異常系・境界・4状態の見せ方・受け入れケースの過不足 — はplan-reviewerエージェント(`.claude/agents/plan-reviewer.md`、CIは `ai-plan-review.yml`)が検証する(非ゲート)。Reviewerは実装後のコードを見るため、Plan PR自体はレビュー対象にならない。Plan PRの「コード0行」原則には対象画面の`.stories.tsx`のみ例外があるが(`04_development_process.md` §5.1)、`ai-review.yml`/`ai-qa.yml`は`feature/plan-*`ブランチを対象外にしており、この例外があっても発火しない。
 
 ---
 

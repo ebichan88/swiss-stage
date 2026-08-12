@@ -42,6 +42,10 @@ flowchart TD
     F --> G["reviewer / qa / fixer / ci-fixer が回る"]
 ```
 
+> **例外(新規画面・大きなレイアウト変更)**: Plan PRは原則コード0行だが、対象画面のストーリー
+> (`src/pages/XxxPage.stories.tsx`)は例外的に含めてよい。実装前にUIを確認・合意する仕組みとして
+> 運用する(詳細は §5.1、`.claude/06_adr/11_story_first_agreement.md`)。
+
 ---
 
 ## 2. 分類ごとのトリガー表
@@ -57,7 +61,8 @@ flowchart TD
 
 - 「Plan PR 不要」の種別でも、実装が想定より大きくなった時点で Plan PR に切り替えてよい。
 - 受け入れケースの追加・変更・廃止の判断は**人間のみ**が行う(`00_acceptance_policy.md` §7)。AIは案を出すところまで。
-- **Plan PR が触るのは ADR・プラン(`07_plans/`)・受け入れケース台帳・`schema/openapi.yaml` まで**。
+- **Plan PR が触るのは ADR・プラン(`07_plans/`)・受け入れケース台帳・`schema/openapi.yaml` まで**
+  (新規画面・大きなレイアウト変更の場合は対象画面の `.stories.tsx` を含む。§5.1)。
   `.claude/01_development_docs/**` 等の設計ドキュメント本体の更新は**実装PRで、実装コードと同じPRで
   行う**(表の「設計ドキュメント更新」列が指すのは常にこのタイミング)。決定を書く場所が
   プラン1箇所に定まるため、Plan PRの中で「プラン・ADR・設計ドキュメント」の3箇所がずれて
@@ -196,6 +201,28 @@ Status と PR の更新は `/pr` が実装PRの中で行う。`done` になっ�
 > 既存の設計ドキュメントのどこにも書く場所がない(`04_screen_transition_design.md` は画面一覧と遷移図、
 > `10_frontend_design.md` は設計方針)。ここを溶かすと、実装後に「物足りない」と気づく手戻りの
 > 再発防止材料が失われる。
+
+### 5.1 ストーリー先行作成の例外(Plan PRへの `.stories.tsx` 追加)
+
+新規画面、または既存画面の大きなレイアウト変更を含む Plan PR には、対象画面のストーリー
+(`src/pages/XxxPage.stories.tsx`)を例外として含めてよい。対象範囲・UI仕様の記述基準は
+`03_feature_plan_template.md` §3 と同じ。
+
+- **合意のタイミング**: 新しい承認ステップは設けない。Plan PRのレビュー・マージそのものを
+  「UI合意」のゲートとして扱う。追加の機械的な逸脱検知の仕組み(VRTベースライン固定等)は設けない。
+- **新規画面(0→1)の場合**: ページ本体(`src/pages/XxxPage.tsx`)がまだ存在しないため、ストーリー
+  ファイル内にインラインのプレースホルダー実装を書いてよい(`10_frontend_design.md` §7 の
+  「ストーリー専用ダミー画面は作らない」原則のPlan PR時点での例外)。実装PRで本物のページに
+  差し替え、ストーリーを実importへ書き換える。
+- **既存画面の大きなレイアウト変更の場合**: この例外は使わず、引き続き本物のページを直import
+  する(プレースホルダーは新規画面のみの救済策)。
+- **CIへの影響**: Plan PRブランチに `.stories.tsx` が追加されると、既存の `ci.yml`(frontend
+  ジョブ: lint/type-check/build)・`vrt.yml` が自動的に実行される。新規ストーリーはVRTの初回実行
+  でベースライン欠如により失敗するが、`vrt.yml` は非ブロッキング運用のため実害はない。新規
+  ストーリーのスクリーンショットは `vrt.yml` のartifactからレビュアーが確認できる
+  (`09_test_strategy.md` §Storybook参照)。
+
+決定の経緯・却下案は `.claude/06_adr/11_story_first_agreement.md` を参照。
 
 ---
 

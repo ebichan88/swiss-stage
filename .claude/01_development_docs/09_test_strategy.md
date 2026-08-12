@@ -200,9 +200,16 @@ frontend/tests/
 
 ### Storybook(ページレベル)
 
-新規画面・大きなレイアウト変更では、実装前に `src/pages/XxxPage.stories.tsx` を作成し、
-実機を起動せずにUIの4状態(通常/空/ローディング/エラー)を確認・合意する(`10_frontend_design.md` §7)。
+新規画面・大きなレイアウト変更では、`src/pages/XxxPage.stories.tsx` を **Plan PRの一部として作成**し、
+実機を起動せずにUIの4状態(通常/空/ローディング/エラー)を確認・合意する(Plan PRのレビュー・
+マージをもって合意とする。`10_frontend_design.md` §7、`04_development_process.md` §5.1)。
 `components/ui/` 単体のカタログ化はしない。詳細は同ドキュメントを参照。
+
+Plan PRブランチに `.stories.tsx` が追加されると、既存の `ci.yml`(frontendジョブ: lint/type-check/
+build)と `vrt.yml` がpathsフィルタ・イベント条件の変更なしに自動実行される。新規ストーリーは
+対応するベースライン画像が存在しないため、下記VRTの初回実行では失敗するが、`vrt.yml` は
+非ブロッキング運用のため実害はない。新規ストーリーのスクリーンショットは `vrt.yml` のartifactから
+確認できる(下記VRT節参照)。
 
 ### Visual Regression Test(VRT)
 
@@ -224,6 +231,12 @@ Storybookのページストーリーをスクリーンショット比較し、UI
   `gh workflow run vrt.yml -f update_snapshots=true --ref <branch>`(CI経由。**ベースライン更新は必ずCI経由**とし、
   更新は意図したUI変更のときのみ・1PRにまとめる)。**PRトリガーではベースラインを更新しない**
   (更新されると差分を検知せず素通りするため)。差分を検出したPRには更新コマンドが自動でコメントされる
+- **新規ストーリーのスクリーンショット共有**: ベースライン画像がまだ存在しない新規ストーリー
+  (Plan PRで作成された場合を含む)は、`vrt` ジョブがスクリーンショットを `actions/upload-artifact@v4`
+  でartifact化し、`notify` ジョブがPRコメントでダウンロード案内を追記する(既存ストーリーの差分検知
+  失敗時のコメントとは別に案内する)。レビュアーはローカルで `pnpm run storybook` を起動しなくても
+  PR上でUIを確認できる。この仕組みはレビューの利便性向上が目的で、マージ可否には影響しない
+  (`04_development_process.md` §5.1)
 
 ---
 
