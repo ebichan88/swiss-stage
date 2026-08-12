@@ -1,2 +1,2 @@
-# swiss-stage-web
+# swiss-stage
 囲碁・将棋のスイス方式トーナメント運営を効率化するWebアプリケーション
