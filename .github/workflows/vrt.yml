@@ -114,6 +114,10 @@ jobs:
         if: ${{ failure() && github.event_name == 'pull_request' }}
         working-directory: frontend
         run: |
+          # コンテナジョブでの実行時にリポジトリの所有者判定(dubious ownership)でgitコマンドが
+          # 拒否される(下の「Commit updated baselines」ステップと同じ既知の問題。実測: PR #174
+          # run 31709982841、`fatal: detected dubious ownership`)。safe.directoryを明示する
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           NEW_FILES="$(git status --porcelain -- tests/vrt/__screenshots__/ | awk '/^\?\?/ {print $2}')"
           if [ -z "$NEW_FILES" ]; then
             echo "new_stories=" >> "$GITHUB_OUTPUT"
