@@ -101,64 +101,27 @@ jobs:
         run: pnpm exec playwright test --config=playwright-vrt.config.ts --update-snapshots
 
       # ベースラインが存在しない新規ストーリー(Plan PRの `.stories.tsx` 追加を含む)は、
-      # toHaveScreenshot が初回実行時に必ず失敗する仕様のため、下の「Upload diff on failure」で
-      # 実際のスクリーンショット(*-actual.png)がartifactに含まれる。ここではPRコメント用に
-      # 「新規ストーリー(デグレではない)」を機械的に判定する。スナップショットファイル名は
-      # playwright-vrt.config.ts の snapshotPathTemplate(`__screenshots__/{projectName}/{arg}.png`、
-      # {arg}はstories.spec.tsが渡すストーリーID)に対応する
+      # toHaveScreenshot が初回実行時に失敗するが、既定設定(updateSnapshots: 'missing')により
+      # 「ミスマッチでは上書きしないが、存在しない場合は新規作成する」動作のため、失敗と同時に
+      # 実際のスクリーンショットがベースラインパス自体に書き込まれる。つまりこのステップの時点では
+      # 対象ファイルは既に存在しており、ストーリーIDとファイル存在を突き合わせる方式では新規/既存を
+      # 判別できない(実測: PR #174 run 31709136317。ファイルは存在するがgitには未コミット)。
+      # 代わりに `git status` の未追跡ファイルを見て、このジョブ内でPlaywrightが新規生成した
+      # ベースラインだけを機械的に検出する(既存ストーリーの差分時はファイルが上書きされないため
+      # 追跡済みのまま=未追跡にならず、誤検出しない)
       - name: 新規ストーリー(ベースライン未確定)を検出
         id: detect-new-stories
         if: ${{ failure() && github.event_name == 'pull_request' }}
-        # コンテナジョブでは `run:` の既定シェルが `sh`(dash)になり、プロセス置換
-        # (`< <(...)`)がbash専用構文のため「Syntax error: redirection unexpected」で
-        # 落ちる(実測: PR #174 run 31643300008)。明示的にbashを指定する
-        shell: bash
         working-directory: frontend
         run: |
-          echo "cwd: $(pwd)"
-          if [ ! -f storybook-static/index.json ]; then
-            echo "::warning::storybook-static/index.json が見つからないため新規ストーリー判定をスキップします"
-            ls -la storybook-static/ 2>&1 || echo "storybook-static/ ディレクトリ自体が存在しません"
+          NEW_FILES="$(git status --porcelain -- tests/vrt/__screenshots__/ | awk '/^\?\?/ {print $2}')"
+          if [ -z "$NEW_FILES" ]; then
             echo "new_stories=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # プロセス置換(`< <(...)`)経由だと、この環境ではコマンドの標準出力を`while read`が
-          # 受け取れない(構文エラーは起きないが検出0件になる。実測: PR #174 run 31705708234、
-          # cwd/storybook-static/index.jsonの存在は正しいのにdetectedが常に空)。原因を切り分けにくい
-          # ため、一時ファイル経由の確実な方式に置き換える
-          STORY_IDS_FILE="$(mktemp)"
-          node -e "
-            const fs = require('fs');
-            const idx = JSON.parse(fs.readFileSync('storybook-static/index.json', 'utf-8'));
-            for (const e of Object.values(idx.entries)) {
-              if (e.type === 'story') console.log(e.id);
-            }
-          " > "$STORY_IDS_FILE"
-          echo "storybookストーリー数: $(wc -l < "$STORY_IDS_FILE")"
-
-          NEW_STORIES=""
-          LINE_COUNT=0
-          while IFS= read -r id; do
-            LINE_COUNT=$((LINE_COUNT + 1))
-            [ -n "$id" ] || continue
-            DESKTOP_FILE="tests/vrt/__screenshots__/desktop/${id}.png"
-            MOBILE_FILE="tests/vrt/__screenshots__/mobile/${id}.png"
-            if [ -f "$DESKTOP_FILE" ]; then D=yes; else D=no; fi
-            if [ -f "$MOBILE_FILE" ]; then M=yes; else M=no; fi
-            case "$id" in
-              *loginpage*|*toppage*) echo "  [$LINE_COUNT] id=[$id] desktop=$D mobile=$M" ;;
-            esac
-            # desktop/mobile いずれかにベースラインが無ければ「新規」扱いにする(両プロジェクトは
-            # 同じストーリーIDに対して同時に追加されるのが通常だが、片方だけ欠けている状態を
-            # 見逃さないため両方チェックする)
-            if [ "$D" = no ] || [ "$M" = no ]; then
-              NEW_STORIES="${NEW_STORIES}${id}, "
-            fi
-          done < "$STORY_IDS_FILE"
-          rm -f "$STORY_IDS_FILE"
-          echo "loop iterations: $LINE_COUNT"
-          echo "detected: [${NEW_STORIES%, }]"
-          echo "new_stories=${NEW_STORIES%, }" >> "$GITHUB_OUTPUT"
+          NEW_STORIES="$(echo "$NEW_FILES" | xargs -n1 basename | sed 's/\.png$//' | sort -u | paste -sd, - | sed 's/,/, /g')"
+          echo "detected: [$NEW_STORIES]"
+          echo "new_stories=$NEW_STORIES" >> "$GITHUB_OUTPUT"
 
       - name: Upload diff on failure
         if: failure()
