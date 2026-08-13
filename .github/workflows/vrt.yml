@@ -122,6 +122,20 @@ jobs:
             echo "new_stories=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          # プロセス置換(`< <(...)`)経由だと、この環境ではコマンドの標準出力を`while read`が
+          # 受け取れない(構文エラーは起きないが検出0件になる。実測: PR #174 run 31705708234、
+          # cwd/storybook-static/index.jsonの存在は正しいのにdetectedが常に空)。原因を切り分けにくい
+          # ため、一時ファイル経由の確実な方式に置き換える
+          STORY_IDS_FILE="$(mktemp)"
+          node -e "
+            const fs = require('fs');
+            const idx = JSON.parse(fs.readFileSync('storybook-static/index.json', 'utf-8'));
+            for (const e of Object.values(idx.entries)) {
+              if (e.type === 'story') console.log(e.id);
+            }
+          " > "$STORY_IDS_FILE"
+          echo "storybookストーリー数: $(wc -l < "$STORY_IDS_FILE")"
+
           NEW_STORIES=""
           while IFS= read -r id; do
             [ -n "$id" ] || continue
@@ -131,13 +145,8 @@ jobs:
             if [ ! -f "tests/vrt/__screenshots__/desktop/${id}.png" ] || [ ! -f "tests/vrt/__screenshots__/mobile/${id}.png" ]; then
               NEW_STORIES="${NEW_STORIES}${id}, "
             fi
-          done < <(node -e "
-            const fs = require('fs');
-            const idx = JSON.parse(fs.readFileSync('storybook-static/index.json', 'utf-8'));
-            for (const e of Object.values(idx.entries)) {
-              if (e.type === 'story') console.log(e.id);
-            }
-          ")
+          done < "$STORY_IDS_FILE"
+          rm -f "$STORY_IDS_FILE"
           echo "detected: [${NEW_STORIES%, }]"
           echo "new_stories=${NEW_STORIES%, }" >> "$GITHUB_OUTPUT"
 
