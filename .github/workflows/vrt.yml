@@ -101,35 +101,31 @@ jobs:
         run: pnpm exec playwright test --config=playwright-vrt.config.ts --update-snapshots
 
       # ベースラインが存在しない新規ストーリー(Plan PRの `.stories.tsx` 追加を含む)は、
-      # toHaveScreenshot が初回実行時に必ず失敗する仕様のため、下の「Upload diff on failure」で
-      # 実際のスクリーンショット(*-actual.png)がartifactに含まれる。ここではPRコメント用に
-      # 「新規ストーリー(デグレではない)」を機械的に判定する。スナップショットファイル名は
-      # playwright-vrt.config.ts の snapshotPathTemplate(`__screenshots__/{projectName}/{arg}.png`、
-      # {arg}はstories.spec.tsが渡すストーリーID)に対応する
+      # toHaveScreenshot が初回実行時に失敗するが、既定設定(updateSnapshots: 'missing')により
+      # 「ミスマッチでは上書きしないが、存在しない場合は新規作成する」動作のため、失敗と同時に
+      # 実際のスクリーンショットがベースラインパス自体に書き込まれる。つまりこのステップの時点では
+      # 対象ファイルは既に存在しており、ストーリーIDとファイル存在を突き合わせる方式では新規/既存を
+      # 判別できない(実測: PR #174 run 31709136317。ファイルは存在するがgitには未コミット)。
+      # 代わりに `git status` の未追跡ファイルを見て、このジョブ内でPlaywrightが新規生成した
+      # ベースラインだけを機械的に検出する(既存ストーリーの差分時はファイルが上書きされないため
+      # 追跡済みのまま=未追跡にならず、誤検出しない)
       - name: 新規ストーリー(ベースライン未確定)を検出
         id: detect-new-stories
         if: ${{ failure() && github.event_name == 'pull_request' }}
-        # コンテナジョブでは `run:` の既定シェルが `sh`(dash)になり、プロセス置換
-        # (`< <(...)`)がbash専用構文のため「Syntax error: redirection unexpected」で
-        # 落ちる(実測: PR #174 run 31643300008)。明示的にbashを指定する
-        shell: bash
+        working-directory: frontend
         run: |
-          NEW_STORIES=""
-          while IFS= read -r id; do
-            [ -n "$id" ] || continue
-            # desktop/mobile いずれかにベースラインが無ければ「新規」扱いにする(両プロジェクトは
-            # 同じストーリーIDに対して同時に追加されるのが通常だが、片方だけ欠けている状態を
-            # 見逃さないため両方チェックする)
-            if [ ! -f "tests/vrt/__screenshots__/desktop/${id}.png" ] || [ ! -f "tests/vrt/__screenshots__/mobile/${id}.png" ]; then
-              NEW_STORIES="${NEW_STORIES}${id}, "
-            fi
-          done < <(node -e "
-            const idx = require('./storybook-static/index.json');
-            for (const e of Object.values(idx.entries)) {
-              if (e.type === 'story') console.log(e.id);
-            }
-          ")
-          echo "new_stories=${NEW_STORIES%, }" >> "$GITHUB_OUTPUT"
+          # コンテナジョブでの実行時にリポジトリの所有者判定(dubious ownership)でgitコマンドが
+          # 拒否される(下の「Commit updated baselines」ステップと同じ既知の問題。実測: PR #174
+          # run 31709982841、`fatal: detected dubious ownership`)。safe.directoryを明示する
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          NEW_FILES="$(git status --porcelain -- tests/vrt/__screenshots__/ | awk '/^\?\?/ {print $2}')"
+          if [ -z "$NEW_FILES" ]; then
+            echo "new_stories=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          NEW_STORIES="$(echo "$NEW_FILES" | xargs -n1 basename | sed 's/\.png$//' | sort -u | paste -sd, - | sed 's/,/, /g')"
+          echo "detected: [$NEW_STORIES]"
+          echo "new_stories=$NEW_STORIES" >> "$GITHUB_OUTPUT"
 
       - name: Upload diff on failure
         if: failure()
