@@ -41,6 +41,7 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | AUTH-AC-007 | P2 | LoginPageでOAuth認可失敗時(`?error=oauth`)にエラーメッセージが表示され、再度Googleログインを試せる | todo | LoginPage.test(Vitest) |
 | AUTH-AC-008 | P2 | 開発ビルドのみLoginPageに開発用ログインボタンが表示され、本番ビルドでは表示されない | todo | LoginPage.test(Vitest) |
 | AUTH-AC-009 | P2 | 認証済みユーザーが `/` または `/login` に直接アクセスすると大会一覧へリダイレクトされる | todo | LoginPage.test, TopPage.test(Vitest) |
+| AUTH-AC-010 | P2 | LoginPageの通常表示(OAuthエラーなし)でロゴ・見出し・Googleログインボタンが表示される | todo | LoginPage.test(Vitest) |
 
 ## TRN: 大会
 

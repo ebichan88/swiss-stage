@@ -29,7 +29,7 @@ allowed-tools: Bash(git *), Bash(gh *), Bash(./gradlew *), Bash(pnpm *), Read, G
 - 受け入れケース台帳(`.claude/05_acceptance/01_acceptance_scope.md`)に対応するケースがあれば、Statusを todo → done に更新し、検証列を埋める
 - 対応する `.claude/06_adr/NN_*.md` が `Status: Proposed` であれば `Accepted` に更新する(Plan PRがマージされ実装に着手した時点のため。`04_development_process.md` §4)
 - 対応する `.claude/07_plans/NN_*.md` があれば、実装対象であることを確認する(`Status`/`PR` の更新はPR作成後に行う。`04_development_process.md` §5)
-- Plan PRで `src/pages/XxxPage.stories.tsx` が作成されている場合(`04_development_process.md` §5.1)、新規画面(0→1)であればストーリー内のプレースホルダー実装を本物のページ実装に差し替え、ストーリーを実importへ更新したか確認する
+- Plan PRで `src/pages/XxxPage.stories.tsx` が作成されている場合(`04_development_process.md` §5.1)、新規画面・既存画面の大きなレイアウト変更のいずれであっても、ストーリー内のプレースホルダー実装を本物のページ実装に差し替え、ストーリーを実importへ更新したか確認する
 
 ## 4. ブランチ作成
 

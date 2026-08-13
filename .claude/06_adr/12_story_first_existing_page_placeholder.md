@@ -1,6 +1,6 @@
 # 12. 既存画面の大きなレイアウト変更でもPlan PRストーリーにプレースホルダーを許可する
 
-- Status: Proposed
+- Status: Accepted
 - Issue: #173
 - Date: 2026-08-13
 
@@ -29,9 +29,17 @@ Issue #173(`LoginPage`/`TopPage` の大幅レイアウト変更)でこのルー�
 Plan PR時点での例外を、既存画面にも拡張する)。実装PRで本物のページ(`XxxPage.tsx`)をこの
 プレースホルダーの内容に合わせて書き換え、ストーリーを実importへ差し替える。
 
-この決定は `04_development_process.md` §5.1・`10_frontend_design.md` §7・`commands/plan.md`
-手順5の「既存画面の大きなレイアウト変更では本物のページを直importする」という記述を修正する
-(実装PRで反映。同じPRの計画 `.claude/07_plans/11_login_top_redesign.md` を参照)。
+この決定は `04_development_process.md` §5.1・`10_frontend_design.md` §7・`03_feature_plan_template.md`
+§3・`commands/plan.md` 手順5・`commands/pr.md` §3の「既存画面の大きなレイアウト変更では本物のページを
+直importする」という記述を修正する。
+
+**このADRは例外としてPlan PR内(本PR)で`Accepted`にし、上記5文書もPlan PR内で更新した。**
+通常、Plan PRで新規作成するADRは`Proposed`のまま実装PRで`Accepted`にする(`04_development_process.md`
+§4)が、本ADRの決定内容は「Plan PRの作り方」そのものであり、この決定を前提にした
+`LoginPage.stories.tsx`/`TopPage.stories.tsx`(既存画面のプレースホルダー実装)を同じPlan PRに
+含めている。決定をProposedのまま実装PR送りにすると、Plan PR自身が「まだ受理されていない決定」を
+既成事実として使うという矛盾が生じるため、この場合に限り即時反映する
+(`04_development_process.md` §4の例外規定を本ADRで初めて適用する)。
 
 `.claude/06_adr/11_story_first_agreement.md` の中核の決定(案Aの採用・VRTスクリーンショット共有)
 は変更しない。本ADRはその一部(既存画面ケースの扱い)を補正するものであり、ADR 11を

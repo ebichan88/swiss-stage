@@ -136,18 +136,25 @@
 
 ### プロセス側の技術設計(Issue #170メカニズムの補正、ADR 12)
 
-`.claude/06_adr/12_story_first_existing_page_placeholder.md` の決定を反映し、実装PRで以下を
-更新する(このプランでは更新しない。§6参照):
+`.claude/06_adr/12_story_first_existing_page_placeholder.md` の決定は、**本Plan PR内で即時反映した**
+(`04_development_process.md` §4「Plan PR内で`Accepted`にする場合」の例外規定。ADR 12自身の決定を
+使ってこのPlan PRの `.stories.tsx` を作成しているため、決定をProposedのまま実装PR送りにすると
+自己矛盾が生じる。§6参照)。
 
 - `.claude/00_project/04_development_process.md` §5.1 — 「既存画面の大きなレイアウト変更では
   本物のページを直importする」という記述を、「新規画面と同じくプレースホルダーを許可し、実装PRで
-  本物のページに差し替える」に修正する
+  本物のページに差し替える」に修正した
 - `.claude/01_development_docs/10_frontend_design.md` §7 — 同上の修正。「新規画面(0→1)の例外」を
-  「新規画面・既存画面の大きなレイアウト変更の例外」に一般化する
+  「新規画面・既存画面の大きなレイアウト変更の例外」に一般化した
+- `.claude/00_project/03_feature_plan_template.md` §3 — 同上の修正
 - `.claude/commands/plan.md` 手順5 — 「既存画面の大きなレイアウト変更の場合: 本物のページを
-  直importする」という分岐記述を削除し、新規画面と同じ手順に統一する
-- `.claude/02_design_system/02_component_design.md` — 「認証・LP系ページの構成パターン」を新設
-  (ロゴ+見出し+アクションのシンプル構成、カード意匠の踏襲)
+  直importする」という分岐記述を削除し、新規画面と同じ手順に統一した
+- `.claude/commands/pr.md` §3 — ストーリー実import化の確認条件を「新規画面(0→1)」限定から
+  「新規画面・既存画面の大きなレイアウト変更のいずれも」に一般化した
+
+`.claude/02_design_system/02_component_design.md`(「認証・LP系ページの構成パターン」の新設)は
+LoginPage/TopPage自体の実装(コード)に関わる設計ドキュメントであり、ADR 12の適用範囲(Plan PR
+の作り方)には含まれないため、他の設計ドキュメントと同様に実装PRで更新する(§6参照)。
 
 ## 5. 受け入れケース
 
@@ -160,22 +167,36 @@
 | AUTH-AC-007 | P2 | LoginPageでOAuth認可失敗時(`?error=oauth`)にエラーメッセージが表示され、再度Googleログインを試せる | Vitest |
 | AUTH-AC-008 | P2 | 開発ビルドのみLoginPageに開発用ログインボタンが表示され、本番ビルドでは表示されない | Vitest |
 | AUTH-AC-009 | P2 | 認証済みユーザーが `/` または `/login` に直接アクセスすると大会一覧へリダイレクトされる(再デザイン後も既存ロジックが壊れていないことの回帰防止) | Vitest |
+| AUTH-AC-010 | P2 | LoginPageの通常表示(OAuthエラーなし)でロゴ・見出し・Googleログインボタンが表示される | Vitest |
 
 - 優先度はすべてP2: 大会当日の運営停止・結果誤り・情報漏えいに該当せず(Critical該当なし)、仕様
   違反や新規のユーザー影響バグでもない(既存ロジックの回帰防止が主眼のためMajor該当なし)
 - AUTH-AC-009は既存動作(変更しない部分)の回帰防止だが、レイアウト全面書き換えでリダイレクト
   ロジックの記述位置が変わりうるため、境界(ログイン済み/未ログイン)の両側を明示的にケース化した
+- AUTH-AC-010は§2画面シナリオの正常系(エラーなし)に対応するケース。AUTH-AC-007(OAuth失敗側)
+  と対にして境界の両側を揃えた(`LoginPage.stories.tsx` の `Default` ストーリーが対応)
 
 ## 6. 更新する資料
 
 ### Plan PRで更新するもの
 
-- [x] `.claude/05_acceptance/01_acceptance_scope.md` — AUTH-AC-006〜009をStatus=todoで追加
-- [x] `.claude/06_adr/12_story_first_existing_page_placeholder.md` — ADRを新規作成
-      (`04_development_process.md` §3の条件2「複数案比較」に該当。既存ルールのまま/ストーリーを
+- [x] `.claude/05_acceptance/01_acceptance_scope.md` — AUTH-AC-006〜010をStatus=todoで追加
+- [x] `.claude/06_adr/12_story_first_existing_page_placeholder.md` — ADRを新規作成し`Accepted`で
+      確定(`04_development_process.md` §3の条件2「複数案比較」に該当。既存ルールのまま/ストーリーを
       作らない/Plan PRで本物のページも書き換える、の3案を比較し却下)
 - [x] `frontend/src/pages/TopPage.stories.tsx` — プレースホルダー実装を含めて新規作成
 - [x] `frontend/src/pages/LoginPage.stories.tsx` — プレースホルダー実装を含めて新規作成
+- [x] `.claude/00_project/04_development_process.md` §5.1・§4 — ADR 12の決定を反映(既存画面の
+      大きなレイアウト変更でもプレースホルダーを許可する旨に修正)、Plan PR内でADRを`Accepted`に
+      する場合の例外規定を追記
+- [x] `.claude/01_development_docs/10_frontend_design.md` §7 — 同上の反映
+- [x] `.claude/00_project/03_feature_plan_template.md` §3 — 同上の反映
+- [x] `.claude/commands/plan.md` 手順5 — 同上の反映
+- [x] `.claude/commands/pr.md` §3 — ストーリー実import化の確認条件を新規画面限定から一般化
+
+上記5文書の更新は、ADR 12が「Plan PRの作り方」自体を決定しており、その決定を前提にした
+`.stories.tsx`(既存画面のプレースホルダー)を同じPlan PRに含めているため、通常の「実装PRで
+反映」の原則を例外的に前倒しした(§4技術設計・ADR 12参照)。
 
 ### 実装PRで更新が必要な設計ドキュメント(今は更新しない・実装時の申し送り)
 
@@ -184,15 +205,11 @@
 - [ ] `frontend/src/pages/TopPage.stories.tsx` / `LoginPage.stories.tsx` — プレースホルダーから
       本物のページの実importへ差し替える
 - [ ] `.claude/02_design_system/02_component_design.md` — 認証・LP系ページの構成パターンを新設
-- [ ] `.claude/00_project/04_development_process.md` §5.1 — ADR 12の決定を反映(既存画面の
-      大きなレイアウト変更でもプレースホルダーを許可する旨に修正)
-- [ ] `.claude/01_development_docs/10_frontend_design.md` §7 — 同上
-- [ ] `.claude/commands/plan.md` 手順5 — 同上
 
 ## 7. DoD(完了の定義)
 
 - [ ] `pnpm run check`(frontend)が通る。backendに変更がないため `./gradlew check` は対象外
-- [ ] 受け入れケース(AUTH-AC-006〜009)が台帳で done になり、対応するVitestテストにIDが埋まっている
+- [ ] 受け入れケース(AUTH-AC-006〜010)が台帳で done になり、対応するVitestテストにIDが埋まっている
 - [ ] 新規画面ではないため新規smoke E2Eは必須要件ではないが、既存のログインフローのE2E
       (存在する場合)がレイアウト変更後も通ることを確認する
 - [ ] §6「実装PRで更新が必要な設計ドキュメント」が実装PRで更新されている
@@ -209,3 +226,8 @@
   追加されたときに再利用できる粒度で書けるか、実装PR時点で検討する
 - ADR 12(既存画面レイアウト変更でもプレースホルダーを許可)自体が運用検証中の決定であり、
   今回の実装PRでの二度書き(プレースホルダー→実装)のコストが許容範囲か、次回以降の判断材料にする
+- 本Plan PRのCI実行で、`.github/workflows/vrt.yml` の「新規ストーリー(ベースライン未確定)を検出」
+  ステップがコンテナの既定シェル(`sh`)でbashの構文(プロセス置換)を使っておりシンタックスエラーで
+  失敗し、新規ストーリーのartifact案内(PR #172で構築した仕組み)がPRコメントに出ないことが判明した。
+  本プランの範囲外(#170/#172の実装バグ)のため別PRで修正するが、この計画の検証目的(#170メカニズムの
+  実地確認)の一環で見つかった不具合として記録しておく

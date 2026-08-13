@@ -145,6 +145,14 @@ flowchart TD
 | `Issue` | 起点となった Issue 番号(`#42`)。Issue を持たない場合は `なし` |
 | `Date` | 決定日(ISO8601 の日付) |
 
+> **例外: Plan PR内で`Accepted`にする場合**。原則、Plan PRで新規作成するADRは`Proposed`のまま
+> レビューを受け、マージ後に`/pr`が実装PRで`Accepted`へ更新する(§5参照)。ただし、そのADRの決定
+> 自体が「Plan PRの作り方」に関わり、**同じPlan PR内でその決定を前提にしたファイルを作らないと
+> 自己矛盾を起こす場合**(例: `06_adr/12_story_first_existing_page_placeholder.md` — 決定
+> 「既存画面の大きなレイアウト変更でもプレースホルダーを許可する」を、その決定を使って作成した
+> `.stories.tsx` を含む同じPlan PRに適用する必要があった)は、例外としてPlan PR内で`Accepted`にし、
+> 影響する設計ドキュメントもそのPlan PR内で更新してよい。
+
 **本文構成**:
 
 ```markdown
@@ -210,12 +218,11 @@ Status と PR の更新は `/pr` が実装PRの中で行う。`done` になっ�
 
 - **合意のタイミング**: 新しい承認ステップは設けない。Plan PRのレビュー・マージそのものを
   「UI合意」のゲートとして扱う。追加の機械的な逸脱検知の仕組み(VRTベースライン固定等)は設けない。
-- **新規画面(0→1)の場合**: ページ本体(`src/pages/XxxPage.tsx`)がまだ存在しないため、ストーリー
-  ファイル内にインラインのプレースホルダー実装を書いてよい(`10_frontend_design.md` §7 の
-  「ストーリー専用ダミー画面は作らない」原則のPlan PR時点での例外)。実装PRで本物のページに
-  差し替え、ストーリーを実importへ書き換える。
-- **既存画面の大きなレイアウト変更の場合**: この例外は使わず、引き続き本物のページを直import
-  する(プレースホルダーは新規画面のみの救済策)。
+- **新規画面(0→1)・既存画面の大きなレイアウト変更のいずれも**: 本物のページ(`src/pages/XxxPage.tsx`)
+  が対象の新レイアウトをまだ反映していない(新規画面なら未存在、既存画面なら旧レイアウトのまま)ため、
+  ストーリーファイル内にインラインのプレースホルダー実装を書いてよい(`10_frontend_design.md` §7 の
+  「ストーリー専用ダミー画面は作らない」原則のPlan PR時点での例外)。実装PRで本物のページをこの
+  プレースホルダーに合わせて書き換え、ストーリーを実importへ書き換える(`06_adr/12_story_first_existing_page_placeholder.md`)。
 - **CIへの影響**: Plan PRブランチに `.stories.tsx` が追加されると、既存の `ci.yml`(frontend
   ジョブ: lint/type-check/build)・`vrt.yml` が自動的に実行される。新規ストーリーはVRTの初回実行
   でベースライン欠如により失敗するが、`vrt.yml` は非ブロッキング運用のため実害はない。新規
@@ -224,7 +231,7 @@ Status と PR の更新は `/pr` が実装PRの中で行う。`done` になっ�
   ブランチを対象外にしているため発火しない(Plan PRのレビューは `ai-design-review.yml`・
   `ai-plan-review.yml` が担う)。
 
-決定の経緯・却下案は `.claude/06_adr/11_story_first_agreement.md` を参照。
+決定の経緯・却下案は `.claude/06_adr/11_story_first_agreement.md`・`06_adr/12_story_first_existing_page_placeholder.md` を参照。
 
 ---
 
