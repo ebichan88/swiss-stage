@@ -109,6 +109,10 @@ jobs:
       - name: 新規ストーリー(ベースライン未確定)を検出
         id: detect-new-stories
         if: ${{ failure() && github.event_name == 'pull_request' }}
+        # コンテナジョブでは `run:` の既定シェルが `sh`(dash)になり、プロセス置換
+        # (`< <(...)`)がbash専用構文のため「Syntax error: redirection unexpected」で
+        # 落ちる(実測: PR #174 run 31643300008)。明示的にbashを指定する
+        shell: bash
         run: |
           NEW_STORIES=""
           while IFS= read -r id; do
