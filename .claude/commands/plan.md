@@ -41,7 +41,11 @@ AskUserQuestion で**最大3問**にまとめて確認する。優先すべき�
   を同じ連番規約で作成する(ADR用の連番は `.claude/06_adr/` 内で独立してカウントする)。
   ヘッダは `Status: Proposed`(Plan PR レビュー中のため。マージ後に `/pr` が `Accepted` へ更新する)
   / `Issue: #$ARGUMENTS` / `Date: <今日の日付>`。ADR §2「決定」は仕様を再記述せず「何を決めたか」を
-  数行に留め、詳細は同じPRのプランを参照させる(`04_development_process.md` §4)
+  数行に留め、詳細は同じPRのプランを参照させる(`04_development_process.md` §4)。
+  **例外**: このADRの決定自体が「Plan PRの作り方」に関わり、同じPR内でその決定を前提にした
+  ファイルを作る必要がある場合(`04_development_process.md` §4「Plan PR内で`Accepted`にする場合」)
+  は、`Status: Proposed` ではなく `Status: Accepted` で作成し、影響する設計ドキュメントもその
+  ADRが対象とする範囲に限りPlan PR内で更新する
 - API変更があれば `schema/openapi.yaml` を計画と同じPRで更新する。**`.claude/01_development_docs/**`
   配下の設計ドキュメント(`05_swiss_pairing_algorithm.md` 等)は Plan PR では更新しない**。
   マッチング・順位計算の仕様変更やデータモデルの変更方針は計画の「4. 技術設計」に文章で書き、

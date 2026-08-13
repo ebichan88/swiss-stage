@@ -212,6 +212,10 @@ LoginPage/TopPage自体の実装(コード)に関わる設計ドキュメント�
 - [ ] `frontend/src/pages/TopPage.stories.tsx` / `LoginPage.stories.tsx` — プレースホルダーから
       本物のページの実importへ差し替える
 - [ ] `.claude/02_design_system/02_component_design.md` — 認証・LP系ページの構成パターンを新設
+- [ ] `.claude/01_development_docs/04_screen_transition_design.md` §1 — S02(ログイン)の
+      「主な利用デバイス」を `PC` から `PC/スマホ` に更新する。従来「主な」利用デバイスの参考情報
+      であり技術的な対応範囲の制限ではなかったが、本プランでLoginPageも375px幅での表示を明示的に
+      設計対象にしたため、S01(トップ)と同じ表記に揃える(AI Design Reviewでの質問への回答)
 
 ## 7. DoD(完了の定義)
 
