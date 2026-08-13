@@ -113,7 +113,15 @@ jobs:
         # (`< <(...)`)がbash専用構文のため「Syntax error: redirection unexpected」で
         # 落ちる(実測: PR #174 run 31643300008)。明示的にbashを指定する
         shell: bash
+        working-directory: frontend
         run: |
+          echo "cwd: $(pwd)"
+          if [ ! -f storybook-static/index.json ]; then
+            echo "::warning::storybook-static/index.json が見つからないため新規ストーリー判定をスキップします"
+            ls -la storybook-static/ 2>&1 || echo "storybook-static/ ディレクトリ自体が存在しません"
+            echo "new_stories=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           NEW_STORIES=""
           while IFS= read -r id; do
             [ -n "$id" ] || continue
@@ -124,11 +132,13 @@ jobs:
               NEW_STORIES="${NEW_STORIES}${id}, "
             fi
           done < <(node -e "
-            const idx = require('./storybook-static/index.json');
+            const fs = require('fs');
+            const idx = JSON.parse(fs.readFileSync('storybook-static/index.json', 'utf-8'));
             for (const e of Object.values(idx.entries)) {
               if (e.type === 'story') console.log(e.id);
             }
           ")
+          echo "detected: [${NEW_STORIES%, }]"
           echo "new_stories=${NEW_STORIES%, }" >> "$GITHUB_OUTPUT"
 
       - name: Upload diff on failure
