@@ -137,16 +137,26 @@ jobs:
           echo "storybookストーリー数: $(wc -l < "$STORY_IDS_FILE")"
 
           NEW_STORIES=""
+          LINE_COUNT=0
           while IFS= read -r id; do
+            LINE_COUNT=$((LINE_COUNT + 1))
             [ -n "$id" ] || continue
+            DESKTOP_FILE="tests/vrt/__screenshots__/desktop/${id}.png"
+            MOBILE_FILE="tests/vrt/__screenshots__/mobile/${id}.png"
+            if [ -f "$DESKTOP_FILE" ]; then D=yes; else D=no; fi
+            if [ -f "$MOBILE_FILE" ]; then M=yes; else M=no; fi
+            case "$id" in
+              *loginpage*|*toppage*) echo "  [$LINE_COUNT] id=[$id] desktop=$D mobile=$M" ;;
+            esac
             # desktop/mobile いずれかにベースラインが無ければ「新規」扱いにする(両プロジェクトは
             # 同じストーリーIDに対して同時に追加されるのが通常だが、片方だけ欠けている状態を
             # 見逃さないため両方チェックする)
-            if [ ! -f "tests/vrt/__screenshots__/desktop/${id}.png" ] || [ ! -f "tests/vrt/__screenshots__/mobile/${id}.png" ]; then
+            if [ "$D" = no ] || [ "$M" = no ]; then
               NEW_STORIES="${NEW_STORIES}${id}, "
             fi
           done < "$STORY_IDS_FILE"
           rm -f "$STORY_IDS_FILE"
+          echo "loop iterations: $LINE_COUNT"
           echo "detected: [${NEW_STORIES%, }]"
           echo "new_stories=${NEW_STORIES%, }" >> "$GITHUB_OUTPUT"
 
