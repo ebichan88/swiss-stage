@@ -146,6 +146,22 @@
 `PairingTable`/`TeamPairingTable` の `MatchCard`(卓番号のタイル化)と印刷用ページは
 対象外のまま維持している(`00_basic_design.md`§4、`06_adr/08_design_system_admin_internal_scope.md`)。
 
+### 認証・LP系ページの構成パターン(TopPage / LoginPage、`.claude/07_plans/11_login_top_redesign.md`)
+
+未認証で開く2画面(トップ`/`・ログイン`/login`)専用のレイアウトパターン。他の運営者管理画面
+(一覧・詳細等)とは異なり `AppLayout` を経由しないため、この2画面だけで完結する構成にしている。
+
+- `Container maxWidth="sm"` の中央寄せ1カラム(`Box sx={{ py: 8, textAlign: 'center' }}`)。
+  ロゴ(`/swiss-stage.svg`、角丸)→サービス名(`Typography variant="h1"`)→説明文の順に積む
+- ログイン操作を伴うカード(LoginPage)は `Paper variant="outlined"` + 上端3pxの`primary.main`
+  アクセント線(`TournamentOverviewPage`/`SettingsPage`と同じ意匠トークンを流用、`textAlign: 'left'`
+  でカード内は左寄せに戻す)
+- エラー表示は `Alert severity="error"` をカード内・ボタンの直前に置く(OAuth失敗等)
+- 装飾(TopPageの囲碁・将棋アイコン)は`opacity`を下げた控えめな表示に留め、主要コンテンツより
+  視覚的に沈める
+- 2画面だけの共有のため専用コンポーネントへの切り出しは行わない。3箇所目の再利用が必要になった
+  時点で切り出す
+
 ### ステータス表示(StatusBadge)
 
 - MUI `Chip` ベース: 準備中=default / 開催中=success / 終了=default(outlined)

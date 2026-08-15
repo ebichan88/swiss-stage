@@ -1,8 +1,8 @@
 # 11. LoginPage/TopPageの大幅レイアウト変更
 
-- Status: planned
+- Status: in_progress
 - Issue: #173
-- PR: -
+- PR: #178
 
 ## 1. 背景・目的
 
@@ -219,14 +219,15 @@ LoginPage/TopPage自体の実装(コード)に関わる設計ドキュメント�
 
 ## 7. DoD(完了の定義)
 
-- [ ] `pnpm run check`(frontend)が通る。backendに変更がないため `./gradlew check` は対象外
-- [ ] 受け入れケース(AUTH-AC-006〜010)が台帳で done になり、対応するVitestテストにIDが埋まっている
-- [ ] 新規画面ではないため新規smoke E2Eは必須要件ではないが、既存のログインフローのE2E
-      (存在する場合)がレイアウト変更後も通ることを確認する
-- [ ] §6「実装PRで更新が必要な設計ドキュメント」が実装PRで更新されている
-- [ ] ローカル実機で動作確認済み(`.claude/skills/verify`)。特にGoogleログインボタンの遷移先
+- [x] `pnpm run check`(frontend)が通る。backendに変更がないため `./gradlew check` は対象外
+- [x] 受け入れケース(AUTH-AC-006〜010)が台帳で done になり、対応するVitestテストにIDが埋まっている
+- [x] 新規画面ではないため新規smoke E2Eは必須要件ではないが、既存のログインフローのE2E
+      (`tests/e2e/helpers.ts` の `loginAsOrganizer`)がレイアウト変更後も通ることを確認する
+      (`開発用ログイン`ボタンのaccessible nameを維持。Playwrightでの実機確認で同一フローの動作を確認済み)
+- [x] §6「実装PRで更新が必要な設計ドキュメント」が実装PRで更新されている
+- [x] ローカル実機で動作確認済み(`.claude/skills/verify`)。特にGoogleログインボタンの遷移先
       (`/api/v1/auth/login`)・開発用ログインボタンの本番非表示を確認する
-- [ ] `vrt.yml` を手動実行してベースラインを更新した(新規レイアウトのため必須)
+- [ ] `vrt.yml` を手動実行してベースラインを更新した(新規レイアウトのため必須。PR作成後に実行)
 
 ## 8. リスク・未確定事項
 
