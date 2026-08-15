@@ -23,13 +23,26 @@
 
 ### スコープ
 
-- 対象: `PairingTable`(個人戦, `frontend/src/components/features/round/PairingTable.tsx`)、
-  `MatchResultControl`(同ディレクトリ)、`TeamPairingTable`(団体戦,
-  `frontend/src/components/features/team/TeamPairingTable.tsx`)、`TeamMatchResultControl`(同ディレクトリ)。
-  個人戦・団体戦は同一パターンの実装のため、一方だけ直すと不整合が残る(ユーザー確認済み)
+- 対象(PCテーブル): `PairingTable`(個人戦, `frontend/src/components/features/round/PairingTable.tsx`、
+  `結果`列は`MatchResultControl`を使用)、`TeamPairingTable`(団体戦,
+  `frontend/src/components/features/team/TeamPairingTable.tsx`)。団体戦PCテーブルのBYE行は
+  `TeamPairingTable.tsx`内の直書き分岐(111〜122行目)、ボードごとの結果・申告ステータスは
+  `TeamBoardResultField`・`TeamBoardStatusCell`(いずれも`TeamMatchResultControl.tsx`内で定義)を使用する
+  (`TeamMatchResultControl`本体はPCテーブルでは使われていない。AI Plan Review指摘[PL1]で判明した
+  当初案の誤りを修正)
+- 対象(モバイルカード表示・団体戦の参加者向け自己申告ページ): `MatchResultControl`は個人戦PCテーブルの
+  `結果`列とモバイルカード表示(`PairingTable.tsx`の`isMobile`分岐)の両方で共用され、
+  `TeamMatchResultControl`は団体戦モバイルカード表示(`TeamPairingTable.tsx`の`isMobile`分岐)と
+  参加者向け自己申告ページ`frontend/src/pages/SharedTeamResultPage.tsx`の両方で共用されている。
+  これらのコンポーネントを対象外にすると、PCテーブル向けの変更(行の最小高さ統一)が意図せず
+  モバイル・参加者ページにも伝播してしまう(共通コンポーネントのため)。伝播を防ぐより、一貫した
+  見た目にする方が望ましいと判断し、モバイルカード表示・参加者ページも対象に含める
+  (AI Plan Review指摘[PL2]を受けてユーザーに確認し決定)。ただし**列幅固定(`table-layout: fixed`)は
+  表(Table)を使うPCの`PairingTable`/`TeamPairingTable`のみに適用**し、カード/インライン表示である
+  モバイル・参加者ページには適用しない(そもそも列という概念がなく、ずれの問題が発生しないため)
+- 個人戦・団体戦は同一パターンの実装のため、一方だけ直すと不整合が残る(ユーザー確認済み)
 - 対象外: `MatchResultsTable`(対戦結果表)・`TeamMatchResultsTable`。Issueで報告された課題はラウンド画面の
   組み合わせ表のみで、対戦結果表に同様の課題は報告されていない
-- 対象外: モバイル表示(`MatchCard`)。Issueの「制約・やらないこと」どおりレスポンシブ挙動は変更しない
 - ADR: 不要(`04_development_process.md` §3のいずれの条件にも該当しない。データモデル・外部サービス・
   認証方式・レイヤー構造に関わらず、単一の設計ドキュメント`02_component_design.md`に閉じる決定のため)
 
@@ -49,10 +62,17 @@
 - 運営者が ラウンド画面(団体戦・PC)で 同様の操作をすると 個人戦と同じ基準の行高・固定列幅で表示される
 - 運営者が 300名規模・複数ラウンドの大会で ラウンド画面を縦スクロールすると 行の高さ・列幅が一定のため
   表がジャンプせず読める
+- 運営者が ラウンド画面(個人戦・団体戦、スマホ幅の`MatchCard`カード表示)で 確定済み対局のカードを見ると
+  対局中カードと同じ最小高さで結果欄が表示される(列幅固定はカード表示には適用しない。カードはもともと
+  1列レイアウトのため列ずれの問題が存在しない)
+- 参加者が 団体戦の共有ページ(`SharedTeamResultPage`)で 確定済みボードの結果を見ると 他の状態と同じ
+  最小高さで表示される(操作方法・送信内容は変わらず、見た目の一貫性のみの変更)
 
 観点の抜けチェック:
 
-- 運営者(PC)のみが対象。参加者(スマホ共有ページ)の対局カード表示は対象外(表を使っていないため無関係)
+- 運営者(PC・モバイル)に加え、団体戦は参加者(スマホ共有ページ`SharedTeamResultPage`)も対象にした
+  (`MatchResultControl`/`TeamMatchResultControl`をPCテーブルとモバイル・参加者ページで共用しているため。
+  対象外のままにすると変更が意図せず伝播することがAI Plan Review指摘[PL2]で判明し、対象に含める判断にした)
 - 個人戦・団体戦の両方を対象にした(上記スコープ参照)
 - グループ分けあり(複数グループ、卓番号が`A-1`形式になる)/なしのどちらでも列幅固定の挙動は変わらない
 - 競合(同時操作)・権限外アクセス・無効トークンの経路: 本変更は表示のみで通信・権限を伴わないため該当なし
@@ -68,18 +88,22 @@
   行高・列幅の統一は、通常表示状態の中の「確定」「対局中」という**ラウンドステータス**の違いに対する
   対応であり、既存のローディング・エラー・空状態(対局0件)の表示ロジックには手を入れない
 - **行の高さ**: 「対局中」(結果入力用`TextField select`、`size="small"`)が実測でとる高さを基準の
-  最小行高(`min-height`)として、`MatchResultControl`/`TeamMatchResultControl`の3分岐
-  (BYE / 非editable(確定) / editable(対局中))すべてに同じ`min-height`のコンテナを適用する。
-  申告ステータス列に複数行の詳細テキストが表示される行は、その内容量に応じて基準より伸びてよい
-  (行の伸長自体は既存の許容挙動で、今回変えるのは「最小の高さを揃える」ことのみ)
+  最小行高(`min-height`)とする。個人戦は`MatchResultControl`の3分岐(BYE / 非editable(確定) /
+  editable(対局中))、団体戦PCテーブルは`TeamPairingTable.tsx`内のBYE行分岐 + `TeamBoardResultField`の
+  2分岐(非editable / editable)+ `TeamBoardStatusCell`のそれぞれに、同じ`min-height`のコンテナを適用する
+  (対象コンポーネントの詳細は§4参照)。申告ステータス列に複数行の詳細テキストが表示される行は、
+  その内容量に応じて基準より伸びてよい(行の伸長自体は既存の許容挙動で、今回変えるのは
+  「最小の高さを揃える」ことのみ)
 - **列幅**: `Table`に`table-layout: fixed`を指定し、ヘッダー`TableCell`(またはネイティブ`colgroup`)に
   各列の固定幅を指定する。対局者1・対局者2列は氏名+所属の想定最大長で収まる幅を確保し、収まらない場合は
   `white-space: nowrap` + `text-overflow: ellipsis`で1行に収め、`Tooltip`で全文を表示する
   (対戦結果表の「相手」列がNo.表示+Tooltipで同様の考え方を採っているのと一貫)
 - **大量データ時**: 300名・複数ラウンドでも行高・列幅が一定のため、`TableContainer`の縦スクロール中に
   表がガタつかない。列固定により横スクロールの発生条件は変わらない想定(既存の`overflowX: auto`のまま)
-- **レスポンシブ**: 375px(モバイル)は対象外。`useMediaQuery`によるカード表示(`MatchCard`)の分岐・
-  実装は変更しない。デスクトップ(テーブル表示)のみが対象
+- **レスポンシブ**: 375px(モバイル)の`useMediaQuery`による分岐(`MatchCard`カード表示)自体は変更しない
+  (レイアウト構成・要素の増減はなし)。ただしカード内の結果表示部分(`MatchResultControl`/
+  `TeamMatchResultControl`)は行高統一の対象に含む(下記「モバイルカード表示・参加者向け自己申告ページ」
+  参照)。列幅固定(`table-layout: fixed`)はデスクトップのテーブル表示のみが対象
 - **既存画面との一貫性**: 個人戦`PairingTable`と団体戦`TeamPairingTable`は同一パターンの実装であり、
   同じ基準行高・列幅ルールを適用して一貫させる。対戦結果表(`MatchResultsTable`)は列幅固定パターンを
   持たないが、今回のスコープ外(§1参照)。長い氏名の省略記号+Tooltipパターンは既存の対戦結果表の
@@ -87,6 +111,21 @@
 - **新しいUIパターンの有無**: 「行の最小高さ統一」「列幅固定+省略記号+Tooltip」は`PairingTable`/
   `TeamPairingTable`にとって新しいパターンのため、実装PRで`02_component_design.md`§3
   「組み合わせ表(PairingTable)」に追記する(§6参照)
+
+### モバイルカード表示・団体戦の参加者向け自己申告ページ(SharedTeamResultPage)
+
+- **レイアウト構成**: 既存のまま変更なし。カードの並び・要素構成は変えない
+- **主要要素**: 既存のまま
+- **4状態の見せ方**: PCテーブルと同様、通常表示状態の中の結果表示の高さ統一のみで、
+  ローディング・エラー・空状態のロジックには手を入れない
+- **対応内容**: `MatchResultControl`/`TeamMatchResultControl`の各分岐(BYE / 非editable / editable)に、
+  PCテーブルと同じ基準の`min-height`を適用する。これにより個人戦モバイルカード・団体戦モバイルカード・
+  団体戦参加者ページ(`SharedTeamResultPage`)の結果表示の高さも、確定/対局中で揃う
+- **列幅固定は対象外**: カード・インライン表示は列という概念を持たないため、`table-layout: fixed`等の
+  対応はしない(そもそも列ずれの問題が発生しない)
+- **大量データ時**: モバイルカードは1画面1対局分の情報量で、300名規模でも表示件数の増減以外の影響はない
+- **既存画面との一貫性**: PCテーブルの`結果`欄と同じコンポーネント・同じ`min-height`基準を使うため、
+  自然に一貫する
 
 > 本変更は新規画面ではなく、既存画面の列・行の並びや主要要素を変えない見た目の微調整(行高・列幅の
 > 固定化)であり、`04_development_process.md`§5.1の「大きなレイアウト変更」には当たらないと判断した。
@@ -102,34 +141,55 @@
   - `frontend/src/components/features/round/MatchResultControl.tsx`: BYE分岐・非editable分岐・
     editable分岐の3つを、同じ`min-height`を持つ共通のラッパー(`Box`の`sx`または小さな内部コンポーネント)
     に揃える。具体的な`min-height`の値は「対局中」の`TextField select`(`size="small"`、MUI標準の
-    アウトライン小サイズ入力の実高さ)を実装時に実測して確定する
-  - `frontend/src/components/features/round/PairingTable.tsx`: `Table`に`sx={{ tableLayout: 'fixed' }}`
-    を指定し、ヘッダー`TableCell`に列幅(`width`)を設定する。対局者1・対局者2セルの表示を
-    `white-space: nowrap` + `overflow: hidden` + `text-overflow: ellipsis`にし、`Tooltip`で全文表示する
-    (`playerText`が返す文字列をそのままTooltipのtitleに渡す)
-  - `frontend/src/components/features/team/TeamPairingTable.tsx` /
-    `TeamMatchResultControl.tsx`: 個人戦と同じ方針を団体戦の列構成(チーム名2列 + ボードごとの結果)に
-    適用する
+    アウトライン小サイズ入力の実高さ)を実装時に実測して確定する。このコンポーネントは個人戦PCテーブルの
+    `結果`列とモバイルカード表示(`PairingTable.tsx`の`isMobile`分岐)の両方から使われているため、
+    1箇所の修正で両方に反映される
+  - `frontend/src/components/features/round/PairingTable.tsx`: `isMobile`が`false`の分岐(PCテーブル)に
+    限り`Table`に`sx={{ tableLayout: 'fixed' }}`を指定し、ヘッダー`TableCell`に列幅(`width`)を設定する。
+    対局者1・対局者2セルの表示を`white-space: nowrap` + `overflow: hidden` + `text-overflow: ellipsis`にし、
+    `Tooltip`で全文表示する(`playerText`が返す文字列をそのままTooltipのtitleに渡す)。`isMobile`が`true`の
+    カード分岐は変更しない
+  - 団体戦PCテーブル(`frontend/src/components/features/team/TeamPairingTable.tsx`): 91行目以降の
+    `Table`に個人戦と同じ`table-layout: fixed`+列幅指定を適用する。BYE行の直書き分岐(111〜122行目)に
+    上記と同じ`min-height`を適用する。ボードごとの行(132行目以降)は`TeamBoardResultField`・
+    `TeamBoardStatusCell`(いずれも`TeamMatchResultControl.tsx`内で定義、非editable/editableの2分岐)に
+    同じ`min-height`を適用する(**PL1修正**: 当初案は誤って`TeamMatchResultControl`本体を対象としていたが、
+    PCテーブルの各行はこの2つの別コンポーネントで描画されており、`TeamMatchResultControl`本体は使われて
+    いない)
+  - `frontend/src/components/features/team/TeamMatchResultControl.tsx`の`TeamMatchResultControl`本体
+    (BYE分岐 / 非editable分岐 / editable分岐)にも同じ`min-height`を適用する。このコンポーネントは
+    団体戦モバイルカード表示(`TeamPairingTable.tsx`の`isMobile`分岐、73行目)と参加者向け自己申告ページ
+    `frontend/src/pages/SharedTeamResultPage.tsx`(148行目)の両方から使われているため、1箇所の修正で
+    両方に反映される
   - 列幅の値は個人戦・団体戦で列構成が異なる(団体戦はチーム名のみで所属を含まない、ボード数に応じた
     列がある)ため、共通定数ファイルには切り出さず各コンポーネント内にローカル定数として持つ
     (現時点で3箇所以上の重複がなく、共通化は時期尚早と判断)
-  - 新しいテーマトークン(`theme/index.ts`)は追加しない。行高・列幅は`PairingTable`/
-    `TeamPairingTable`というローカルなスコープに閉じた値であり、印刷帳票用の`PrintTokens`のような
-    複数コンポーネント・複数ファイルにまたがる共有トークンには当たらないと判断した
+  - 新しいテーマトークン(`theme/index.ts`)は追加しない。行高・列幅は対象コンポーネントというローカルな
+    スコープに閉じた値であり、印刷帳票用の`PrintTokens`のような複数コンポーネント・複数ファイルにまたがる
+    共有トークンには当たらないと判断した
 - **マッチング・順位計算**: 触れない
 
 ## 5. 受け入れケース
 
 `.claude/05_acceptance/00_acceptance_policy.md`§1.5の3条件(できることが増える/業務ルールが変わる/
 破られると大会当日の運営が止まる・結果が狂う・情報が漏れる)のいずれにも該当しない
-(意匠変更のみで、ユーザーができることも業務ルールも変わらない)。そのため**受け入れケース台帳への
-追加は該当なし**とし、以下の回帰テスト(IDタグなし)で担保する:
+(モバイルカード表示・参加者向け自己申告ページを対象に含めても、意匠変更のみでユーザーができることも
+業務ルールも変わらない点は同じ)。そのため**受け入れケース台帳への追加は該当なし**とし、以下の
+回帰テスト(IDタグなし)で担保する:
 
-- `frontend/tests/unit/components/MatchResultControl.test.tsx` / `TeamMatchResultControl.test.tsx`:
-  BYE・確定・対局中の3分岐で同じ`min-height`(またはそれに準ずるスタイル)が適用されることを検証
+- `frontend/tests/unit/components/MatchResultControl.test.tsx`: 個人戦の3分岐(BYE・確定・対局中)で
+  同じ`min-height`(またはそれに準ずるスタイル)が適用されることを検証(PCテーブルの`結果`列・
+  モバイルカードの両方から使われる共通コンポーネント)
+- `frontend/tests/unit/components/TeamPairingTable.test.tsx`: 団体戦PCテーブルのBYE行分岐・
+  `TeamBoardResultField`/`TeamBoardStatusCell`の各行で同じ`min-height`が適用されることを検証
+- `frontend/tests/unit/components/TeamMatchResultControl.test.tsx`: `TeamMatchResultControl`本体の
+  3分岐(BYE・確定・対局中)で同じ`min-height`が適用されることを検証(団体戦モバイルカード・
+  参加者ページ双方から使われる共通コンポーネント)
+- `frontend/tests/unit/pages/SharedTeamResultPage.test.tsx`: 既存テストに影響がないこと
+  (`TeamMatchResultControl`の変更が参加者ページの表示・操作を壊していないこと)を回帰確認する
 - `frontend/tests/unit/components/PairingTable.test.tsx` / `TeamPairingTable.test.tsx`:
-  `table-layout: fixed`と各列の`width`が設定されていること、長い対局者名がTooltipの`title`として
-  渡っていることを検証
+  PCテーブル分岐で`table-layout: fixed`と各列の`width`が設定されていること、長い対局者名が
+  Tooltipの`title`として渡っていることを検証。モバイルカード分岐には列幅指定が無いことも確認する
 
 ## 6. 更新する資料
 
@@ -153,7 +213,9 @@
 - [ ] §6「実装PRで更新が必要な設計ドキュメント」(`02_component_design.md`)が実装PRで更新されている
 - [ ] ローカル実機で動作確認済み(`.claude/skills/verify`)。個人戦・団体戦それぞれで「確定」「対局中」
   両方のラウンドを表示し、行高が揃うこと・ラウンドタブ切り替えで列位置がずれないこと・長い対局者名が
-  省略されTooltipで全文が見えることを目視確認する
+  省略されTooltipで全文が見えることを目視確認する。加えて個人戦・団体戦のモバイルカード表示
+  (ブラウザ幅375px)と団体戦の参加者向け共有ページ(`SharedTeamResultPage`)でも、確定/対局中の
+  結果表示の高さが揃うことを確認する
 - [ ] `vrt.yml`を手動実行してVRTベースラインを更新した(行高・列幅が変わり既存スクリーンショットと
   差分が出るため。`09_test_strategy.md`)
 
