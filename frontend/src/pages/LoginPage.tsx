@@ -63,7 +63,7 @@ export function LoginPage() {
           sx={{
             p: 4,
             borderTop: 3,
-            borderColor: 'primary.main',
+            borderTopColor: 'primary.main',
             textAlign: 'left',
           }}
         >
