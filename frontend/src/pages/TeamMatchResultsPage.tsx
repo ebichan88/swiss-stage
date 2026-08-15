@@ -43,7 +43,11 @@ export function TeamMatchResultsPage() {
           flexWrap: 'wrap',
         }}
       >
-        <Typography variant="h3" component="h2">
+        <Typography
+          variant="h3"
+          component="h2"
+          sx={{ borderLeft: 4, borderColor: 'primary.main', pl: 1.5 }}
+        >
           対戦結果
         </Typography>
         <Button

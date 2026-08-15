@@ -45,8 +45,12 @@ function IndividualStandingsPage() {
 
   return (
     <Box>
-      <Typography variant="h3" component="h2" sx={{ mb: 2 }}>
-        順位表
+      <Typography
+        variant="h3"
+        component="h2"
+        sx={{ mb: 2, borderLeft: 4, borderColor: 'primary.main', pl: 1.5 }}
+      >
+        順位
         {tournament.status === 'IN_PROGRESS' && (
           <Typography variant="body2" color="text.secondary" component="span" sx={{ ml: 1 }}>
             (第{tournament.currentRound}ラウンド時点)
