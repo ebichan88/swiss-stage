@@ -164,7 +164,7 @@ function IndividualParticipantsPage() {
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           mb: 2,
           gap: 1,
           flexWrap: 'wrap',
