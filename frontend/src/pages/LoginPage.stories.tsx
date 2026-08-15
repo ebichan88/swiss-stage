@@ -22,5 +22,5 @@ export const Default: Story = {
 
 /** OAuth認可失敗時のエラー表示(AUTH-AC-007) */
 export const OAuthError: Story = {
-  parameters: { route: '/login?error=oauth' },
+  parameters: { route: '/login?error=oauth', routePath: '/login' },
 };
