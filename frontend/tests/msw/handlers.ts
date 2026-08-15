@@ -62,6 +62,15 @@ function manyStandings(count: number) {
 }
 
 export const handlersFor = {
+  /** TopPage/LoginPageはuseAuth()でGET /auth/meを呼ぶ(未ログイン時のみ通常レイアウトを表示) */
+  auth: {
+    unauthenticated: () => [
+      http.get(`${API}/auth/me`, () =>
+        HttpResponse.json(apiError('UNAUTHORIZED', 'ログインしてください'), { status: 401 }),
+      ),
+    ],
+  },
+
   /** TournamentLayout(共通レイアウト)自体はuseTournament(id)で個別に大会情報を取得する */
   tournamentDetail: {
     filled: (overrides: Parameters<typeof tournamentOf>[0] = {}) => [

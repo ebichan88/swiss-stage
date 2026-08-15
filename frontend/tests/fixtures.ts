@@ -1,3 +1,4 @@
+import type { Me } from '../src/types/auth';
 import type { Group } from '../src/types/group';
 import type { Participant, ParticipantSummary } from '../src/types/participant';
 import type { Match, Round } from '../src/types/round';
@@ -16,6 +17,14 @@ import type {
 import type { Tournament } from '../src/types/tournament';
 
 /** テストデータビルダー(09_test_strategy.md §5)。個人名は架空の名前のみ使用する */
+
+export function meOf(overrides: Partial<Me> = {}): Me {
+  return {
+    sub: 'test-google-sub-0001',
+    name: '架空 運営太郎',
+    ...overrides,
+  };
+}
 
 export function tournamentOf(overrides: Partial<Tournament> = {}): Tournament {
   return {
