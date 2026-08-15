@@ -40,6 +40,15 @@
   (AI Plan Review指摘[PL2]を受けてユーザーに確認し決定)。ただし**列幅固定(`table-layout: fixed`)は
   表(Table)を使うPCの`PairingTable`/`TeamPairingTable`のみに適用**し、カード/インライン表示である
   モバイル・参加者ページには適用しない(そもそも列という概念がなく、ずれの問題が発生しないため)
+
+> **Issue #180との差分(AI Plan Review指摘[PL3])**: Issue #180の「制約・やらないこと」は
+> 「テーブルのレスポンシブ対応(スマホ幅での列幅・折り返し)は既存の挙動を維持し、本Issueのスコープ外
+> とする」としており、本計画はこれを一部拡張している。ただし拡張したのは「モバイルカード表示・
+> 参加者ページの**結果欄の最小高さ**」のみで、Issueが明示的に除外した「スマホ幅での**列幅・折り返し**」
+> (列幅固定・table-layout)には手を入れない。共通コンポーネント(`MatchResultControl`/
+> `TeamMatchResultControl`)を使う都合上、PCテーブル向けの行高統一だけを完全に分離することができず、
+> 分離を諦めて一貫性を優先した([PL2]参照)。Issue #180側にもこの経緯をコメントで残す(本文は
+> ユーザーの原文のまま変更しない)
 - 個人戦・団体戦は同一パターンの実装のため、一方だけ直すと不整合が残る(ユーザー確認済み)
 - 対象外: `MatchResultsTable`(対戦結果表)・`TeamMatchResultsTable`。Issueで報告された課題はラウンド画面の
   組み合わせ表のみで、対戦結果表に同様の課題は報告されていない
@@ -150,7 +159,11 @@
     `Tooltip`で全文表示する(`playerText`が返す文字列をそのままTooltipのtitleに渡す)。`isMobile`が`true`の
     カード分岐は変更しない
   - 団体戦PCテーブル(`frontend/src/components/features/team/TeamPairingTable.tsx`): 91行目以降の
-    `Table`に個人戦と同じ`table-layout: fixed`+列幅指定を適用する。BYE行の直書き分岐(111〜122行目)に
+    `Table`に個人戦と同じ`table-layout: fixed`+列幅指定を適用する。`チーム1`/`チーム2`セルにも
+    個人戦の対局者1・対局者2セルと同じ`white-space: nowrap` + `overflow: hidden` +
+    `text-overflow: ellipsis` + `Tooltip`(`teamText`が返す文字列をtitleに渡す)を適用し、個人戦と
+    崩れ方を揃える(**PL4対応**: チーム名は氏名+所属より短い想定だが、長いチーム名でも個人戦と
+    異なる折り返し・はみ出しが起きないよう同じ処理で統一する)。BYE行の直書き分岐(111〜122行目)に
     上記と同じ`min-height`を適用する。ボードごとの行(132行目以降)は`TeamBoardResultField`・
     `TeamBoardStatusCell`(いずれも`TeamMatchResultControl.tsx`内で定義、非editable/editableの2分岐)に
     同じ`min-height`を適用する(**PL1修正**: 当初案は誤って`TeamMatchResultControl`本体を対象としていたが、
