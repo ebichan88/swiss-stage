@@ -197,6 +197,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tournaments/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        /** 共同管理者一覧と現在の招待リンクの状態(OWNER専用。設定画面が1リクエストで両方使う) */
+        get: operations["listTournamentMembers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tournaments/{id}/members/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+                /** @description 共同管理者ID(ULID)。Google subをURLに出さないための識別子 */
+                memberId: components["parameters"]["TournamentMemberId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** 共同管理者の取り消し(OWNER専用。以後その大会は404になる。人数枠は戻らない) */
+        delete: operations["removeTournamentMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tournaments/{id}/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 招待リンクの発行・再発行(OWNER専用)。有効期限は発行から72時間固定。 再発行すると旧トークンは即時無効になり、使用済みの人数枠もリセットされる */
+        post: operations["issueTournamentInvite"];
+        /** 招待リンクの失効(OWNER専用。未発行でも204を返す=冪等) */
+        delete: operations["revokeTournamentInvite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 招待トークン(URL-safe文字列)。共有トークンとは別物で、共通のトークン空間を持たない */
+                token: components["parameters"]["InviteToken"];
+            };
+            cookie?: never;
+        };
+        /** 招待のプレビュー(承諾前に大会名・有効期限・すでにメンバーかを確認する) */
+        get: operations["getInvitation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations/{token}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 招待トークン(URL-safe文字列)。共有トークンとは別物で、共通のトークン空間を持たない */
+                token: components["parameters"]["InviteToken"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 招待の承諾。共同管理者(MAINTAINER)として登録し、遷移先の大会IDを返す。 すでにメンバー(OWNER本人を含む)の場合も200を返すが、二重登録せず人数枠も消費しない(冪等) */
+        post: operations["acceptInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tournaments/{id}/participants": {
         parameters: {
             query?: never;
@@ -739,10 +842,11 @@ export interface components {
             currentRound: number;
             status: components["schemas"]["TournamentStatus"];
             visibility: components["schemas"]["Visibility"];
-            /** @description 運営者にのみ返す(共有ページ集約には含めない)。null = 未発行 */
+            /** @description OWNERにのみ返す(共有ページ集約・MAINTAINER向けレスポンスには含めない)。null = 未発行または閲覧権限なし。 共有URLの管理は大会設定=OWNER専用の機能であるため */
             shareToken?: string | null;
             /** @description 共有トークン経由の結果入力を許可するか */
             resultInputEnabled: boolean;
+            role: components["schemas"]["TournamentRole"];
             /**
              * Format: int64
              * @description 楽観ロック用
@@ -750,6 +854,54 @@ export interface components {
             version: number;
             createdAt: string;
             updatedAt: string;
+        };
+        /**
+         * @description 大会に対する自分の役割。OWNER=作成者(大会設定・削除・共同管理者の管理ができる)、 MAINTAINER=共同管理者(設定以外はOWNERと同等)。 順序に意味を持たせず、権限判定はロールごとの明示的な述語で行う(ordinal依存の禁止)
+         * @enum {string}
+         */
+        TournamentRole: "OWNER" | "MAINTAINER";
+        TournamentMembersView: {
+            /** @description 共同管理者(MAINTAINER)のみ。OWNER自身は含まない */
+            members: components["schemas"]["TournamentMember"][];
+            /** @description 現在の招待リンク。未発行・失効済みならnull */
+            invite: components["schemas"]["TournamentInvite"] | null;
+            /** @description 共同管理者の上限人数(OWNERを含めない) */
+            maxMembers: number;
+        };
+        TournamentMember: {
+            memberId: components["schemas"]["Ulid"];
+            /** @description 承諾時のGoogle表示名。個人情報のためOWNER向けのこのレスポンス以外に含めず、ログにも出力しない (13_security_design.md §6) */
+            displayName: string;
+            role: components["schemas"]["TournamentRole"];
+            joinedAt: string;
+        };
+        TournamentInvite: {
+            /** @description 招待トークン。OWNERにのみ返す */
+            token: string;
+            /** @description 有効期限(ISO8601・発行から72時間) */
+            expiresAt: string;
+            /** @description 発行時に指定した人数枠 */
+            maxUses: number;
+            /** @description 残りの人数枠(maxUses - 使用済み)。共同管理者を取り消しても戻らない。 枠を戻したい場合は招待リンクを再発行する */
+            remainingUses: number;
+        };
+        IssueInviteRequest: {
+            /** @description この招待リンクで受け入れる人数枠。共同管理者の上限(9人)を超える指定は400 */
+            maxUses: number;
+        };
+        InvitationPreview: {
+            tournamentId: components["schemas"]["Ulid"];
+            tournamentName: string;
+            gameType: components["schemas"]["GameType"];
+            competitionType: components["schemas"]["CompetitionType"];
+            /** Format: date */
+            eventDate: string | null;
+            expiresAt: string;
+            /** @description すでにこの大会のOWNERまたはMAINTAINERか。trueなら承諾は冪等に成功する */
+            alreadyMember: boolean;
+        };
+        AcceptInvitationResult: {
+            tournamentId: components["schemas"]["Ulid"];
         };
         Participant: {
             id: components["schemas"]["Ulid"];
@@ -1079,6 +1231,62 @@ export interface components {
                     /** @enum {boolean} */
                     success: true;
                     data: components["schemas"]["Tournament"][];
+                    meta: components["schemas"]["Meta"];
+                };
+            };
+        };
+        /** @description 共同管理者一覧と招待リンクの状態 */
+        TournamentMembers: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @enum {boolean} */
+                    success: true;
+                    data: components["schemas"]["TournamentMembersView"];
+                    meta: components["schemas"]["Meta"];
+                };
+            };
+        };
+        /** @description 招待リンク */
+        TournamentInvite: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @enum {boolean} */
+                    success: true;
+                    data: components["schemas"]["TournamentInvite"];
+                    meta: components["schemas"]["Meta"];
+                };
+            };
+        };
+        /** @description 招待のプレビュー(招待された側に見せる情報) */
+        InvitationPreview: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @enum {boolean} */
+                    success: true;
+                    data: components["schemas"]["InvitationPreview"];
+                    meta: components["schemas"]["Meta"];
+                };
+            };
+        };
+        /** @description 承諾結果(遷移先の大会ID) */
+        AcceptInvitationResult: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @enum {boolean} */
+                    success: true;
+                    data: components["schemas"]["AcceptInvitationResult"];
                     meta: components["schemas"]["Meta"];
                 };
             };
@@ -1437,8 +1645,12 @@ export interface components {
         TeamMemberId: components["schemas"]["Ulid"];
         /** @description 団体戦対局ID(ULID) */
         TeamMatchId: components["schemas"]["Ulid"];
+        /** @description 共同管理者ID(ULID)。Google subをURLに出さないための識別子 */
+        TournamentMemberId: components["schemas"]["Ulid"];
         /** @description 共有トークン(URL-safe文字列) */
         ShareToken: string;
+        /** @description 招待トークン(URL-safe文字列)。共有トークンとは別物で、共通のトークン空間を持たない */
+        InviteToken: string;
     };
     requestBodies: never;
     headers: never;
@@ -1448,7 +1660,10 @@ export type $defs = Record<string, never>;
 export interface operations {
     authLogin: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description ログイン成功後に戻るSPA内のパス(招待リンク経由のログインで使う)。 `/` で始まり `//` で始まらない相対パスのみ許可し、それ以外は無視して /tournaments へ戻す (オープンリダイレクト防止)。短命のHttpOnly Cookieに退避される */
+                redirect?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1686,6 +1901,133 @@ export interface operations {
             200: components["responses"]["Tournament"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    listTournamentMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["TournamentMembers"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    removeTournamentMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+                /** @description 共同管理者ID(ULID)。Google subをURLに出さないための識別子 */
+                memberId: components["parameters"]["TournamentMemberId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 削除成功 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    issueTournamentInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueInviteRequest"];
+            };
+        };
+        responses: {
+            201: components["responses"]["TournamentInvite"];
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    revokeTournamentInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 大会ID(ULID) */
+                id: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 失効成功 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 招待トークン(URL-safe文字列)。共有トークンとは別物で、共通のトークン空間を持たない */
+                token: components["parameters"]["InviteToken"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["InvitationPreview"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    acceptInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 招待トークン(URL-safe文字列)。共有トークンとは別物で、共通のトークン空間を持たない */
+                token: components["parameters"]["InviteToken"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AcceptInvitationResult"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
         };
     };
     listParticipants: {
