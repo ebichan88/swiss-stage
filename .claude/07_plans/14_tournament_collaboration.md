@@ -337,8 +337,17 @@ CSVインポートは**連続した範囲をまとめて確保する**(1行ず�
 |---|---|---|---|
 | GET | `/api/v1/tournaments/{id}/members` | OWNER | 共同管理者一覧 + 現在の招待状態を1レスポンスで返す |
 | DELETE | `/api/v1/tournaments/{id}/members/{memberId}` | OWNER | 共同管理者の取り消し |
-| POST | `/api/v1/tournaments/{id}/invite` | OWNER | 招待リンクの発行・再発行(body: `maxUses`) |
+| POST | `/api/v1/tournaments/{id}/invite` | OWNER | 招待リンクの発行・再発行(body: `maxUses`)。**GET /members と同じ更新後のビューを返す** |
 | DELETE | `/api/v1/tournaments/{id}/invite` | OWNER | 招待リンクの失効 |
+
+設定画面は「共同管理者一覧」と「招待リンク」を必ず同時に表示するため、両者を1つのビュー
+(`TournamentMembersView`)にまとめ、発行も同じビューを返す。フロントは queryKey 1本で扱える。
+
+招待は `TournamentMembersView` の中にインラインで定義し、独立したスキーマにしない。OpenAPI 3.0 では
+`$ref` を nullable にできず、`allOf` での合成もこのファイルでは使えない(`schema/openapi.yaml` の
+responses 節の注記のとおり、swagger-request-validator が `additionalProperties: false` を暗黙適用
+するため `allOf` と併用すると必ず失敗する)。招待を返すのはこのビューだけなので、インライン定義に
+しても重複は生じない。
 | GET | `/api/v1/invitations/{token}` | 認証済み | 招待のプレビュー(大会名・期限・すでにメンバーか) |
 | POST | `/api/v1/invitations/{token}/accept` | 認証済み | 承諾。成功時に `tournamentId` を返す |
 
@@ -372,8 +381,10 @@ CSVインポートは**連続した範囲をまとめて確保する**(1行ず�
 - features: `components/features/tournament/CollaboratorsCard.tsx`(設定画面のセクション)
 - hooks: `useTournamentMembers(id)` / `useIssueInvite(id)` / `useRevokeInvite(id)` /
   `useRemoveMember(id)` / `useInvitation(token)` / `useAcceptInvitation(token)`
-- queryKey: `['tournaments', id, 'members']` / `['invitations', token]`。承諾成功時は
-  `['tournaments']` を invalidate して一覧に反映する
+- queryKey: `['tournaments', id, 'members']` / `['invitations', token]`。招待の発行・失効・
+  共同管理者の取り消しはいずれも `['tournaments', id, 'members']` の1本を更新すればよい
+  (発行は更新後のビューをそのまま返すため `setQueryData` で置き換えられる)。
+  承諾成功時は `['tournaments']` を invalidate して一覧に反映する
 - `TournamentLayout` の context に `role` を載せ、ナビゲーション項目と `SettingsPage` の
   権限判定に使う
 - 型は `pnpm run generate:api` で `schema/openapi.yaml` から再生成する

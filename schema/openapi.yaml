@@ -249,7 +249,8 @@ paths:
       operationId: issueTournamentInvite
       summary: >-
         招待リンクの発行・再発行(OWNER専用)。有効期限は発行から72時間固定。
-        再発行すると旧トークンは即時無効になり、使用済みの人数枠もリセットされる
+        再発行すると旧トークンは即時無効になり、使用済みの人数枠もリセットされる。
+        設定画面が1つのクエリキーで扱えるよう、GET /members と同じ更新後のビューを返す
       requestBody:
         required: true
         content:
@@ -258,7 +259,7 @@ paths:
               $ref: "#/components/schemas/IssueInviteRequest"
       responses:
         "201":
-          $ref: "#/components/responses/TournamentInvite"
+          $ref: "#/components/responses/TournamentMembers"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1119,22 +1120,6 @@ components:
                 $ref: "#/components/schemas/TournamentMembersView"
               meta:
                 $ref: "#/components/schemas/Meta"
-    TournamentInvite:
-      description: 招待リンク
-      content:
-        application/json:
-          schema:
-            type: object
-            additionalProperties: false
-            required: [success, data, meta]
-            properties:
-              success:
-                type: boolean
-                enum: [true]
-              data:
-                $ref: "#/components/schemas/TournamentInvite"
-              meta:
-                $ref: "#/components/schemas/Meta"
     InvitationPreview:
       description: 招待のプレビュー(招待された側に見せる情報)
       content:
@@ -1755,11 +1740,33 @@ components:
           items:
             $ref: "#/components/schemas/TournamentMember"
           description: 共同管理者(MAINTAINER)のみ。OWNER自身は含まない
+        # 招待は別スキーマへの $ref にしない: OpenAPI 3.0 では $ref をnullableにできず、
+        # allOfでの合成も使えない(このファイル冒頭 responses の注記のとおり、
+        # swagger-request-validator が additionalProperties:false を暗黙適用するため)。
+        # 招待を返すのはこのビューだけなので、インライン定義にして重複を作らない
         invite:
-          allOf:
-            - $ref: "#/components/schemas/TournamentInvite"
+          type: object
           nullable: true
-          description: 現在の招待リンク。未発行・失効済みならnull
+          additionalProperties: false
+          required: [token, expiresAt, maxUses, remainingUses]
+          description: 現在の招待リンク。未発行・失効済み・期限切れならnull
+          properties:
+            token:
+              type: string
+              description: 招待トークン。OWNERにのみ返す
+            expiresAt:
+              type: string
+              description: 有効期限(ISO8601・発行から72時間)
+            maxUses:
+              type: integer
+              minimum: 1
+              description: 発行時に指定した人数枠
+            remainingUses:
+              type: integer
+              minimum: 0
+              description: >-
+                残りの人数枠(maxUses - 使用済み)。共同管理者を取り消しても戻らない。
+                枠を戻したい場合は招待リンクを再発行する
         maxMembers:
           type: integer
           description: 共同管理者の上限人数(OWNERを含めない)
@@ -1779,27 +1786,6 @@ components:
           $ref: "#/components/schemas/TournamentRole"
         joinedAt:
           type: string
-    TournamentInvite:
-      type: object
-      additionalProperties: false
-      required: [token, expiresAt, maxUses, remainingUses]
-      properties:
-        token:
-          type: string
-          description: 招待トークン。OWNERにのみ返す
-        expiresAt:
-          type: string
-          description: 有効期限(ISO8601・発行から72時間)
-        maxUses:
-          type: integer
-          minimum: 1
-          description: 発行時に指定した人数枠
-        remainingUses:
-          type: integer
-          minimum: 0
-          description: >-
-            残りの人数枠(maxUses - 使用済み)。共同管理者を取り消しても戻らない。
-            枠を戻したい場合は招待リンクを再発行する
     IssueInviteRequest:
       type: object
       additionalProperties: false
