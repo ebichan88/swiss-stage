@@ -251,7 +251,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 招待リンクの発行・再発行(OWNER専用)。有効期限は発行から72時間固定。 再発行すると旧トークンは即時無効になり、使用済みの人数枠もリセットされる */
+        /** 招待リンクの発行・再発行(OWNER専用)。有効期限は発行から72時間固定。 再発行すると旧トークンは即時無効になり、使用済みの人数枠もリセットされる。 設定画面が1つのクエリキーで扱えるよう、GET /members と同じ更新後のビューを返す */
         post: operations["issueTournamentInvite"];
         /** 招待リンクの失効(OWNER専用。未発行でも204を返す=冪等) */
         delete: operations["revokeTournamentInvite"];
@@ -846,7 +846,7 @@ export interface components {
             shareToken?: string | null;
             /** @description 共有トークン経由の結果入力を許可するか */
             resultInputEnabled: boolean;
-            role: components["schemas"]["TournamentRole"];
+            role?: components["schemas"]["TournamentRole"];
             /**
              * Format: int64
              * @description 楽観ロック用
@@ -863,8 +863,17 @@ export interface components {
         TournamentMembersView: {
             /** @description 共同管理者(MAINTAINER)のみ。OWNER自身は含まない */
             members: components["schemas"]["TournamentMember"][];
-            /** @description 現在の招待リンク。未発行・失効済みならnull */
-            invite: components["schemas"]["TournamentInvite"] | null;
+            /** @description 現在の招待リンク。未発行・失効済み・期限切れならnull */
+            invite: {
+                /** @description 招待トークン。OWNERにのみ返す */
+                token: string;
+                /** @description 有効期限(ISO8601・発行から72時間) */
+                expiresAt: string;
+                /** @description 発行時に指定した人数枠 */
+                maxUses: number;
+                /** @description 残りの人数枠(maxUses - 使用済み)。共同管理者を取り消しても戻らない。 枠を戻したい場合は招待リンクを再発行する */
+                remainingUses: number;
+            } | null;
             /** @description 共同管理者の上限人数(OWNERを含めない) */
             maxMembers: number;
         };
@@ -874,16 +883,6 @@ export interface components {
             displayName: string;
             role: components["schemas"]["TournamentRole"];
             joinedAt: string;
-        };
-        TournamentInvite: {
-            /** @description 招待トークン。OWNERにのみ返す */
-            token: string;
-            /** @description 有効期限(ISO8601・発行から72時間) */
-            expiresAt: string;
-            /** @description 発行時に指定した人数枠 */
-            maxUses: number;
-            /** @description 残りの人数枠(maxUses - 使用済み)。共同管理者を取り消しても戻らない。 枠を戻したい場合は招待リンクを再発行する */
-            remainingUses: number;
         };
         IssueInviteRequest: {
             /** @description この招待リンクで受け入れる人数枠。共同管理者の上限(9人)を超える指定は400 */
@@ -1245,20 +1244,6 @@ export interface components {
                     /** @enum {boolean} */
                     success: true;
                     data: components["schemas"]["TournamentMembersView"];
-                    meta: components["schemas"]["Meta"];
-                };
-            };
-        };
-        /** @description 招待リンク */
-        TournamentInvite: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": {
-                    /** @enum {boolean} */
-                    success: true;
-                    data: components["schemas"]["TournamentInvite"];
                     meta: components["schemas"]["Meta"];
                 };
             };
@@ -1963,7 +1948,7 @@ export interface operations {
             };
         };
         responses: {
-            201: components["responses"]["TournamentInvite"];
+            201: components["responses"]["TournamentMembers"];
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
