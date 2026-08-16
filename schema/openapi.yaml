@@ -33,6 +33,17 @@ paths:
       operationId: authLogin
       summary: Google OAuth2認可フローへの入口(/api/v1/auth/login/google へリダイレクト)
       security: []
+      parameters:
+        - name: redirect
+          in: query
+          required: false
+          description: >-
+            ログイン成功後に戻るSPA内のパス(招待リンク経由のログインで使う)。
+            `/` で始まり `//` で始まらない相対パスのみ許可し、それ以外は無視して /tournaments へ戻す
+            (オープンリダイレクト防止)。短命のHttpOnly Cookieに退避される
+          schema:
+            type: string
+            maxLength: 512
       responses:
         "302":
           description: 認可エンドポイントへリダイレクト
@@ -196,6 +207,114 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
+  # ---- 共同管理(共同管理者・招待リンク) ----
+  # 認可: /members・/invite はすべてOWNER専用。MAINTAINERは403、非メンバーは404
+  # (13_security_design.md §3、07_plans/14_tournament_collaboration.md §4.1)
+  /api/v1/tournaments/{id}/members:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+    get:
+      operationId: listTournamentMembers
+      summary: 共同管理者一覧と現在の招待リンクの状態(OWNER専用。設定画面が1リクエストで両方使う)
+      responses:
+        "200":
+          $ref: "#/components/responses/TournamentMembers"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/tournaments/{id}/members/{memberId}:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+      - $ref: "#/components/parameters/TournamentMemberId"
+    delete:
+      operationId: removeTournamentMember
+      summary: 共同管理者の取り消し(OWNER専用。以後その大会は404になる。人数枠は戻らない)
+      responses:
+        "204":
+          description: 削除成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/tournaments/{id}/invite:
+    parameters:
+      - $ref: "#/components/parameters/TournamentId"
+    post:
+      operationId: issueTournamentInvite
+      summary: >-
+        招待リンクの発行・再発行(OWNER専用)。有効期限は発行から72時間固定。
+        再発行すると旧トークンは即時無効になり、使用済みの人数枠もリセットされる
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueInviteRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/TournamentInvite"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: revokeTournamentInvite
+      summary: 招待リンクの失効(OWNER専用。未発行でも204を返す=冪等)
+      responses:
+        "204":
+          description: 失効成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---- 招待の受諾(招待された側。ログイン必須) ----
+  # 期限切れ・人数枠切れ・失効済み・不正トークンはすべて 403 INVALID_INVITE_TOKEN に寄せ、
+  # 理由を出し分けない(有効なトークンの存在を推測させない。INVALID_SHARE_TOKENと同じ方針)
+  /api/v1/invitations/{token}:
+    parameters:
+      - $ref: "#/components/parameters/InviteToken"
+    get:
+      operationId: getInvitation
+      summary: 招待のプレビュー(承諾前に大会名・有効期限・すでにメンバーかを確認する)
+      responses:
+        "200":
+          $ref: "#/components/responses/InvitationPreview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /api/v1/invitations/{token}/accept:
+    parameters:
+      - $ref: "#/components/parameters/InviteToken"
+    post:
+      operationId: acceptInvitation
+      summary: >-
+        招待の承諾。共同管理者(MAINTAINER)として登録し、遷移先の大会IDを返す。
+        すでにメンバー(OWNER本人を含む)の場合も200を返すが、二重登録せず人数枠も消費しない(冪等)
+      responses:
+        "200":
+          $ref: "#/components/responses/AcceptInvitationResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
 
   # ---- 参加者 ----
   /api/v1/tournaments/{id}/participants:
@@ -890,11 +1009,25 @@ components:
       description: 団体戦対局ID(ULID)
       schema:
         $ref: "#/components/schemas/Ulid"
+    TournamentMemberId:
+      name: memberId
+      in: path
+      required: true
+      description: 共同管理者ID(ULID)。Google subをURLに出さないための識別子
+      schema:
+        $ref: "#/components/schemas/Ulid"
     ShareToken:
       name: token
       in: path
       required: true
       description: 共有トークン(URL-safe文字列)
+      schema:
+        type: string
+    InviteToken:
+      name: token
+      in: path
+      required: true
+      description: 招待トークン(URL-safe文字列)。共有トークンとは別物で、共通のトークン空間を持たない
       schema:
         type: string
 
@@ -968,6 +1101,70 @@ components:
                 type: array
                 items:
                   $ref: "#/components/schemas/Tournament"
+              meta:
+                $ref: "#/components/schemas/Meta"
+    TournamentMembers:
+      description: 共同管理者一覧と招待リンクの状態
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/TournamentMembersView"
+              meta:
+                $ref: "#/components/schemas/Meta"
+    TournamentInvite:
+      description: 招待リンク
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/TournamentInvite"
+              meta:
+                $ref: "#/components/schemas/Meta"
+    InvitationPreview:
+      description: 招待のプレビュー(招待された側に見せる情報)
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/InvitationPreview"
+              meta:
+                $ref: "#/components/schemas/Meta"
+    AcceptInvitationResult:
+      description: 承諾結果(遷移先の大会ID)
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [success, data, meta]
+            properties:
+              success:
+                type: boolean
+                enum: [true]
+              data:
+                $ref: "#/components/schemas/AcceptInvitationResult"
               meta:
                 $ref: "#/components/schemas/Meta"
     Participant:
@@ -1486,6 +1683,7 @@ components:
         - status
         - visibility
         - resultInputEnabled
+        - role
         - version
         - createdAt
         - updatedAt
@@ -1524,10 +1722,14 @@ components:
         shareToken:
           type: string
           nullable: true
-          description: 運営者にのみ返す(共有ページ集約には含めない)。null = 未発行
+          description: >-
+            OWNERにのみ返す(共有ページ集約・MAINTAINER向けレスポンスには含めない)。null = 未発行または閲覧権限なし。
+            共有URLの管理は大会設定=OWNER専用の機能であるため
         resultInputEnabled:
           type: boolean
           description: 共有トークン経由の結果入力を許可するか
+        role:
+          $ref: "#/components/schemas/TournamentRole"
         version:
           type: integer
           format: int64
@@ -1536,6 +1738,107 @@ components:
           type: string
         updatedAt:
           type: string
+    TournamentRole:
+      type: string
+      enum: [OWNER, MAINTAINER]
+      description: >-
+        大会に対する自分の役割。OWNER=作成者(大会設定・削除・共同管理者の管理ができる)、
+        MAINTAINER=共同管理者(設定以外はOWNERと同等)。
+        順序に意味を持たせず、権限判定はロールごとの明示的な述語で行う(ordinal依存の禁止)
+    TournamentMembersView:
+      type: object
+      additionalProperties: false
+      required: [members, invite, maxMembers]
+      properties:
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/TournamentMember"
+          description: 共同管理者(MAINTAINER)のみ。OWNER自身は含まない
+        invite:
+          allOf:
+            - $ref: "#/components/schemas/TournamentInvite"
+          nullable: true
+          description: 現在の招待リンク。未発行・失効済みならnull
+        maxMembers:
+          type: integer
+          description: 共同管理者の上限人数(OWNERを含めない)
+    TournamentMember:
+      type: object
+      additionalProperties: false
+      required: [memberId, displayName, role, joinedAt]
+      properties:
+        memberId:
+          $ref: "#/components/schemas/Ulid"
+        displayName:
+          type: string
+          description: >-
+            承諾時のGoogle表示名。個人情報のためOWNER向けのこのレスポンス以外に含めず、ログにも出力しない
+            (13_security_design.md §6)
+        role:
+          $ref: "#/components/schemas/TournamentRole"
+        joinedAt:
+          type: string
+    TournamentInvite:
+      type: object
+      additionalProperties: false
+      required: [token, expiresAt, maxUses, remainingUses]
+      properties:
+        token:
+          type: string
+          description: 招待トークン。OWNERにのみ返す
+        expiresAt:
+          type: string
+          description: 有効期限(ISO8601・発行から72時間)
+        maxUses:
+          type: integer
+          minimum: 1
+          description: 発行時に指定した人数枠
+        remainingUses:
+          type: integer
+          minimum: 0
+          description: >-
+            残りの人数枠(maxUses - 使用済み)。共同管理者を取り消しても戻らない。
+            枠を戻したい場合は招待リンクを再発行する
+    IssueInviteRequest:
+      type: object
+      additionalProperties: false
+      required: [maxUses]
+      properties:
+        maxUses:
+          type: integer
+          minimum: 1
+          maximum: 9
+          description: この招待リンクで受け入れる人数枠。共同管理者の上限(9人)を超える指定は400
+    InvitationPreview:
+      type: object
+      additionalProperties: false
+      required: [tournamentId, tournamentName, gameType, competitionType, eventDate, expiresAt, alreadyMember]
+      properties:
+        tournamentId:
+          $ref: "#/components/schemas/Ulid"
+        tournamentName:
+          type: string
+        gameType:
+          $ref: "#/components/schemas/GameType"
+        competitionType:
+          $ref: "#/components/schemas/CompetitionType"
+        eventDate:
+          type: string
+          format: date
+          nullable: true
+        expiresAt:
+          type: string
+        alreadyMember:
+          type: boolean
+          description: すでにこの大会のOWNERまたはMAINTAINERか。trueなら承諾は冪等に成功する
+    AcceptInvitationResult:
+      type: object
+      additionalProperties: false
+      required: [tournamentId]
+      properties:
+        tournamentId:
+          $ref: "#/components/schemas/Ulid"
     Participant:
       type: object
       additionalProperties: false

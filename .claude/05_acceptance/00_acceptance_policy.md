@@ -36,6 +36,7 @@ QAエージェント(`.claude/agents/qa.md`)の判断基準はこのファイル
 | RND | ラウンド・対局・順位 | RoundApiTest |
 | TEAM | 団体戦(チーム・メンバー・団体戦ラウンド/対局/順位・共有トークン経由の自己申告) | TeamApiTest, TeamRoundApiTest, TeamSharedApiTest |
 | SHR | 共有(トークン) | SharedApiTest, SharedRateLimitApiTest |
+| MBR | 大会の共同管理(共同管理者・招待リンク) | TournamentMemberApiTest, InvitationApiTest |
 | SPA | SPA配信 | SpaFallbackApiTest |
 | PRT | 帳票印刷(対局カード・対戦結果表・参加者名簿) | Vitest単体テスト(`frontend/tests/unit/components/print/`, `tests/unit/pages/`) |
 | E2E | 一気通貫(クリティカルパス) | Playwright(`frontend/tests/e2e/`) |
