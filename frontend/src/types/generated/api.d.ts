@@ -885,7 +885,7 @@ export interface components {
             joinedAt: string;
         };
         IssueInviteRequest: {
-            /** @description この招待リンクで受け入れる人数枠。共同管理者の上限(9人)を超える指定は400 */
+            /** @description この招待リンクで受け入れる人数枠。静的な範囲(1〜9)に加えて、発行時点の共同管理者数を 差し引いた残り枠(9 − 現在の共同管理者数)を超える指定も400になる(大会全体の上限9人は 発行時に一度だけ強制し、承諾時には別途チェックしない) */
             maxUses: number;
         };
         InvitationPreview: {
