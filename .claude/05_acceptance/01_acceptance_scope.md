@@ -92,7 +92,7 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | PTC-AC-012 | P1 | CSVダウンロードは大会の状態(PREPARING/IN_PROGRESS/FINISHED)を問わず利用できる | done | ParticipantApiTest |
 | PTC-AC-013 | P1 | 参加者一覧で棄権者(status=WITHDRAWN)の行が他の参加者と一目で区別できる(色の違いのみに依存しない) | done | ParticipantTable.test(Vitest) |
 | PTC-AC-014 | P0 | 参加者を同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる | todo | - |
-| PTC-AC-015 | P1 | 採番カウンタ未設定の既存大会でも、初回の参加者追加で既存の最大entryOrder+1から採番が続く | todo | - |
+| PTC-AC-015 | P0 | 採番カウンタ未設定の大会(既存大会の移行・新規大会いずれも)で、参加者0人からの初回追加はentryOrder=1、既存参加者がいる場合は最大entryOrder+1から採番される | todo | - |
 | PTC-AC-016 | P1 | CSVインポートは連続したentryOrderの範囲をまとめて確保し、割り込みの追加と重複しない | todo | - |
 
 ## GRP: グループ
@@ -165,7 +165,7 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | TEAM-AC-024 | P1 | CSVダウンロードは大会の状態を問わず利用でき、メンバーが1人もいないチームは行として出力されない | done | TeamApiTest |
 | TEAM-AC-025 | P1 | チーム一覧で棄権者(status=WITHDRAWN)の行が他のチームと一目で区別できる(色の違いのみに依存しない) | done | TeamTable.test(Vitest) |
 | TEAM-AC-026 | P0 | チームを同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる | todo | - |
-| TEAM-AC-027 | P1 | 採番カウンタ未設定の既存大会でも、初回のチーム追加で既存の最大entryOrder+1から採番が続く | todo | - |
+| TEAM-AC-027 | P0 | 採番カウンタ未設定の大会(既存大会の移行・新規大会いずれも)で、チーム0件からの初回追加はentryOrder=1、既存チームがいる場合は最大entryOrder+1から採番される | todo | - |
 | TEAM-AC-028 | P1 | チームCSVインポートは連続したentryOrderの範囲をまとめて確保し、割り込みの追加と重複しない | todo | - |
 
 ## SHR: 共有(トークン)
@@ -219,6 +219,7 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | MBR-AC-015 | P2 | 招待受諾画面は、通常・招待が無効・すでにメンバーの3分岐をそれぞれ専用の表示と導線で出し分ける | todo | - |
 | MBR-AC-016 | P0 | 招待のプレビュー・承諾APIはIPベースのレート制限超過で429になる(共有APIと同じ保護) | todo | - |
 | MBR-AC-017 | P2 | 人数枠1で発行した招待は1人が承諾すると即座に枠切れになり、以後の承諾はINVALID_INVITE_TOKENになる | todo | - |
+| MBR-AC-018 | P2 | 招待発行のmaxUsesに0または10以上を指定すると400 VALIDATION_ERRORになる | todo | - |
 
 ## SPA: SPA配信
 

@@ -29,7 +29,7 @@ const SAMPLE = {
   expiresAt: '2026/08/19 12:00',
 };
 
-/** カード枠。375pxでは全幅、デスクトップでは480pxで中央寄せ(LoginPageと同じトーン) */
+/** カード枠。375pxでは全幅、デスクトップでは480pxで中央寄せ(中央寄せカード1枚の構図はLoginPageと同じトーン) */
 function InvitationCard({ children }: { children: React.ReactNode }) {
   return (
     <Container maxWidth={false} sx={{ py: 6, display: 'flex', justifyContent: 'center' }}>
@@ -101,7 +101,7 @@ function InvitationPagePlaceholder({ view }: InvitationPagePlaceholderProps) {
         <Typography variant="h2" component="h1">
           大会の共同管理に招待されています
         </Typography>
-        <Typography variant="h3" component="p">
+        <Typography variant="h2" component="h2">
           {SAMPLE.tournamentName}
         </Typography>
         <Stack direction="row" spacing={1} sx={{ justifyContent: 'center' }}>
