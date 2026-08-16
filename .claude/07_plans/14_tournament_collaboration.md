@@ -296,28 +296,35 @@ GSI は引き続き2本で、上限3本に余裕を残す。
 
 ### 4.5 `entryOrder` の同時採番
 
-現行の `ParticipantService.nextEntryOrder()` は全参加者を読んで最大値+1を返す read-then-write で、
-条件付き書き込みがない。単一運営者前提が崩れると採番が重複し、**初回マッチングのエントリー順が壊れる**
-(`05_swiss_pairing_algorithm.md` の初回ペアリングに直結する)。
+現行の `ParticipantService.nextEntryOrder()`(個人戦)・`TeamService.nextEntryOrder()`(団体戦、
+`TeamService.java:316`)は**どちらも**全件を読んで最大値+1を返す read-then-write で、条件付き
+書き込みがない。単一運営者前提が崩れると採番が重複し、**初回マッチングのエントリー順が壊れる**
+(`Team.entryOrder` は `TeamSwissPairingService` の初回ペアリング順でも `Participant.entryOrder`
+と同じ重みを持つ。`05_swiss_pairing_algorithm.md` の初回ペアリングに直結する)。
 
-対策: 大会メタデータに `nextEntryOrder` カウンタを持ち、既存の `@DynamoDbVersionAttribute` による
-楽観ロックで採番する。
+対策: 大会メタデータに `nextEntryOrder` カウンタを1つ持ち、既存の `@DynamoDbVersionAttribute` に
+よる楽観ロックで採番する。**個人戦・団体戦の両方でこのカウンタを共有する**。`competitionType` は
+作成後変更不可で、1大会は個人戦か団体戦のどちらか一方でしか `Participant`/`Team` を作らないため
+(`02_database_design.md` 「Team は `competitionType=TEAM` の大会でのみ存在する」)、同一大会内で
+2つの採番系列が同時に動くことはなく、カウンタを分ける理由がない。
 
-1. 大会を読む。`nextEntryOrder` が null(既存大会)なら、その場で「既存参加者の最大 `entryOrder` + 1」を
-   算出して初期値とする(**移行スクリプト不要**。初回の参加者追加で自動的に埋まる)
+1. 大会を読む。`nextEntryOrder` が null(既存大会)なら、その場で「既存の `Participant`/`Team`
+   (`competitionType` に応じたどちらか一方)の最大 `entryOrder` + 1」を算出して初期値とする
+   (**移行スクリプト不要**。初回の追加で自動的に埋まる)
 2. 払い出す個数(単体追加=1、CSVインポート=行数)を決め、`nextEntryOrder + n` を書き戻す。
    version 不一致なら `ConflictException`(409)
-3. 採番済みの番号で `Participant` を作成・保存する
+3. 採番済みの番号で `Participant`(または `Team`)を作成・保存する
 
 CSVインポートは**連続した範囲をまとめて確保する**(1行ずつ採番しない)。途中で他の追加が割り込んでも
-範囲が重ならない。
+範囲が重ならない。個人戦・団体戦とも同じ採番ヘルパー(`TournamentEntryOrderAllocator` のような
+共通コンポーネント)に寄せ、実装を2箇所に重複させない。
 
 409 が返った場合の再試行はサーバー側では行わず、既存の競合と同じくフロントに「ほかの端末で更新
 されました。画面を更新して再度お試しください」を出す(`ErrorCode.CONFLICT` の既定メッセージ。
 自動リトライを入れると、失敗の理由が利用者から見えなくなる)。
 
-> `Participant` / `Group` アイテム自体への `version` 追加は本スコープでは行わない。参加者の
-> 追加・削除は採番カウンタ経由で直列化され、個々の参加者の編集(氏名・所属の変更)は
+> `Participant` / `Team` / `Group` アイテム自体への `version` 追加は本スコープでは行わない。
+> 追加・削除は採番カウンタ経由で直列化され、個々の参加者・チームの編集(氏名・所属の変更)は
 > 「最後の書き込みが勝つ」で実害が小さいためである。この割り切りは §8 に残す。
 
 ### 4.6 ログイン後のリダイレクト先
@@ -339,6 +346,8 @@ CSVインポートは**連続した範囲をまとめて確保する**(1行ず�
 | DELETE | `/api/v1/tournaments/{id}/members/{memberId}` | OWNER | 共同管理者の取り消し |
 | POST | `/api/v1/tournaments/{id}/invite` | OWNER | 招待リンクの発行・再発行(body: `maxUses`)。**GET /members と同じ更新後のビューを返す** |
 | DELETE | `/api/v1/tournaments/{id}/invite` | OWNER | 招待リンクの失効 |
+| GET | `/api/v1/invitations/{token}` | 認証済み・**IPベースのレート制限あり** | 招待のプレビュー(大会名・期限・すでにメンバーか) |
+| POST | `/api/v1/invitations/{token}/accept` | 認証済み・**IPベースのレート制限あり** | 承諾。成功時に `tournamentId` を返す |
 
 設定画面は「共同管理者一覧」と「招待リンク」を必ず同時に表示するため、両者を1つのビュー
 (`TournamentMembersView`)にまとめ、発行も同じビューを返す。フロントは queryKey 1本で扱える。
@@ -348,8 +357,14 @@ CSVインポートは**連続した範囲をまとめて確保する**(1行ず�
 responses 節の注記のとおり、swagger-request-validator が `additionalProperties: false` を暗黙適用
 するため `allOf` と併用すると必ず失敗する)。招待を返すのはこのビューだけなので、インライン定義に
 しても重複は生じない。
-| GET | `/api/v1/invitations/{token}` | 認証済み | 招待のプレビュー(大会名・期限・すでにメンバーか) |
-| POST | `/api/v1/invitations/{token}/accept` | 認証済み | 承諾。成功時に `tournamentId` を返す |
+
+**招待トークンのレート制限**: `GET /api/v1/invitations/{token}` ・ `POST /api/v1/invitations/{token}/accept`
+はいずれも既存の共有トークン(`/api/v1/shared/{token}` 系)と同じく、トークンの正しさをレスポンスの
+違いで判別できてはならない(§4.4 で「理由を出し分けない」と決めた前提そのもの)。総当たりでの
+トークン探索を防ぐため、既存の `SharedRateLimitFilter`(bucket4j・IPベース)と同じ仕組みをこの2
+エンドポイントにも適用する(`13_security_design.md` §5「結果入力・トークンアクセスにIPベースの
+簡易レート制限」、既存の `SHR-AC-009` / `SharedRateLimitApiTest` が同種の前例)。超過時は既存の
+`RATE_LIMITED`(429)をそのまま使う(新しいエラーコードは追加しない)
 
 既存スキーマの変更:
 
@@ -358,6 +373,12 @@ responses 節の注記のとおり、swagger-request-validator が `additionalPr
   共有URLの管理は設定画面=OWNER専用の機能であり、MAINTAINER に渡す必要がないため
   (`13_security_design.md` §6-4 の「共有トークン経由のレスポンスに shareToken を含めない」と同じ発想)
 - `GET /api/v1/auth/login` に `redirect` クエリパラメータを追加(§4.6)
+- **`updateTournament`(PATCH `/tournaments/{id}`)・`deleteTournament`(DELETE `/tournaments/{id}`)・
+  `regenerateShareToken`(POST `/tournaments/{id}/share-token/regenerate`)の3エンドポイントの
+  responsesに403 Forbiddenを追加する**。この3つは既存エンドポイントで、`loadOwner` の対象
+  (§4.1)であり MBR-AC-002 の対象でもあるが、これまで存在しなかった「認証済みだが権限がない」
+  という応答をこのPRで初めて持つため、契約(openapi.yaml)側の追加が必要
+- `invitations` の2エンドポイントのresponsesに429 `$ref: "#/components/responses/RateLimited"` を追加
 
 `schema/openapi.yaml` の変更が不要なもの:
 
@@ -411,9 +432,14 @@ responses 節の注記のとおり、swagger-request-validator が `additionalPr
 | MBR-AC-013 | P1 | 大会を削除すると共同管理者・招待アイテムも物理削除され、MAINTAINERの大会一覧から消える | contract |
 | MBR-AC-014 | P1 | ログイン後のリダイレクト先は自サイト内の相対パスのみ許可し、絶対URL・`//`始まりは無視して大会一覧へ戻す | contract |
 | MBR-AC-015 | P2 | 招待受諾画面は、通常・招待が無効・すでにメンバーの3分岐をそれぞれ専用の表示と導線で出し分ける | Vitest |
+| MBR-AC-016 | P0 | 招待のプレビュー・承諾APIはIPベースのレート制限超過で429になる(共有APIと同じ保護) | contract |
+| MBR-AC-017 | P2 | 人数枠1で発行した招待は1人が承諾すると即座に枠切れになり、以後の承諾はINVALID_INVITE_TOKENになる | contract |
 | PTC-AC-014 | P0 | 参加者を同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる | contract |
 | PTC-AC-015 | P1 | 採番カウンタ未設定の既存大会でも、初回の参加者追加で既存の最大entryOrder+1から採番が続く | contract |
 | PTC-AC-016 | P1 | CSVインポートは連続したentryOrderの範囲をまとめて確保し、割り込みの追加と重複しない | contract |
+| TEAM-AC-026 | P0 | チームを同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる(PTC-AC-014の団体戦版。同じカウンタを使う) | contract |
+| TEAM-AC-027 | P1 | 採番カウンタ未設定の既存大会でも、初回のチーム追加で既存の最大entryOrder+1から採番が続く | contract |
+| TEAM-AC-028 | P1 | チームCSVインポートは連続したentryOrderの範囲をまとめて確保し、割り込みの追加と重複しない | contract |
 | TRN-AC-024 | P2 | 大会一覧で共同管理中の大会に「共同管理」バッジが表示され、所有大会には表示されない | Vitest |
 | TRN-AC-025 | P2 | MAINTAINERには管理画面の共通ナビゲーションに「設定」が表示されず、設定画面を直接開くと権限がない旨と戻る導線が表示される | Vitest |
 | TRN-AC-026 | P2 | 設定画面の共同管理者セクションで、招待リンクの発行・コピー・失効と共同管理者の取り消しができる | Vitest |

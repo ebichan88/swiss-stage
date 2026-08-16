@@ -138,11 +138,11 @@ export interface paths {
         get: operations["getTournament"];
         put?: never;
         post?: never;
-        /** 大会削除(物理削除) */
+        /** 大会削除(物理削除。OWNER専用) */
         delete: operations["deleteTournament"];
         options?: never;
         head?: never;
-        /** 大会更新(名前・公開範囲・結果入力許可。nullの項目は変更しない) */
+        /** 大会更新(名前・公開範囲・結果入力許可。nullの項目は変更しない。OWNER専用) */
         patch: operations["updateTournament"];
         trace?: never;
     };
@@ -189,7 +189,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 共有トークンの発行・再発行(旧トークンは即時無効) */
+        /** 共有トークンの発行・再発行(旧トークンは即時無効。OWNER専用) */
         post: operations["regenerateShareToken"];
         delete?: never;
         options?: never;
@@ -270,7 +270,7 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** 招待のプレビュー(承諾前に大会名・有効期限・すでにメンバーかを確認する) */
+        /** 招待のプレビュー(承諾前に大会名・有効期限・すでにメンバーかを確認する)。 共有トークンと同じくIPベースのレート制限あり(13_security_design.md §5) */
         get: operations["getInvitation"];
         put?: never;
         post?: never;
@@ -292,7 +292,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 招待の承諾。共同管理者(MAINTAINER)として登録し、遷移先の大会IDを返す。 すでにメンバー(OWNER本人を含む)の場合も200を返すが、二重登録せず人数枠も消費しない(冪等) */
+        /** 招待の承諾。共同管理者(MAINTAINER)として登録し、遷移先の大会IDを返す。 すでにメンバー(OWNER本人を含む)の場合も200を返すが、二重登録せず人数枠も消費しない(冪等)。 共有トークンと同じくIPベースのレート制限あり(13_security_design.md §5) */
         post: operations["acceptInvitation"];
         delete?: never;
         options?: never;
@@ -1809,6 +1809,7 @@ export interface operations {
                 content?: never;
             };
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -1831,6 +1832,7 @@ export interface operations {
             200: components["responses"]["Tournament"];
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
         };
@@ -1885,6 +1887,7 @@ export interface operations {
         responses: {
             200: components["responses"]["Tournament"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -1995,6 +1998,7 @@ export interface operations {
             200: components["responses"]["InvitationPreview"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
         };
     };
     acceptInvitation: {
@@ -2013,6 +2017,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["RateLimited"];
         };
     };
     listParticipants: {

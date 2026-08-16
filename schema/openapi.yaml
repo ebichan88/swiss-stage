@@ -136,7 +136,7 @@ paths:
           $ref: "#/components/responses/NotFound"
     patch:
       operationId: updateTournament
-      summary: 大会更新(名前・公開範囲・結果入力許可。nullの項目は変更しない)
+      summary: 大会更新(名前・公開範囲・結果入力許可。nullの項目は変更しない。OWNER専用)
       requestBody:
         required: true
         content:
@@ -150,18 +150,22 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
     delete:
       operationId: deleteTournament
-      summary: 大会削除(物理削除)
+      summary: 大会削除(物理削除。OWNER専用)
       responses:
         "204":
           description: 削除済み
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
   /api/v1/tournaments/{id}/start:
@@ -197,7 +201,7 @@ paths:
   /api/v1/tournaments/{id}/share-token/regenerate:
     post:
       operationId: regenerateShareToken
-      summary: 共有トークンの発行・再発行(旧トークンは即時無効)
+      summary: 共有トークンの発行・再発行(旧トークンは即時無効。OWNER専用)
       parameters:
         - $ref: "#/components/parameters/TournamentId"
       responses:
@@ -205,6 +209,8 @@ paths:
           $ref: "#/components/responses/Tournament"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -291,7 +297,9 @@ paths:
       - $ref: "#/components/parameters/InviteToken"
     get:
       operationId: getInvitation
-      summary: 招待のプレビュー(承諾前に大会名・有効期限・すでにメンバーかを確認する)
+      summary: >-
+        招待のプレビュー(承諾前に大会名・有効期限・すでにメンバーかを確認する)。
+        共有トークンと同じくIPベースのレート制限あり(13_security_design.md §5)
       responses:
         "200":
           $ref: "#/components/responses/InvitationPreview"
@@ -299,6 +307,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
   /api/v1/invitations/{token}/accept:
     parameters:
       - $ref: "#/components/parameters/InviteToken"
@@ -306,7 +316,8 @@ paths:
       operationId: acceptInvitation
       summary: >-
         招待の承諾。共同管理者(MAINTAINER)として登録し、遷移先の大会IDを返す。
-        すでにメンバー(OWNER本人を含む)の場合も200を返すが、二重登録せず人数枠も消費しない(冪等)
+        すでにメンバー(OWNER本人を含む)の場合も200を返すが、二重登録せず人数枠も消費しない(冪等)。
+        共有トークンと同じくIPベースのレート制限あり(13_security_design.md §5)
       responses:
         "200":
           $ref: "#/components/responses/AcceptInvitationResult"
@@ -316,6 +327,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "409":
           $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/RateLimited"
 
   # ---- 参加者 ----
   /api/v1/tournaments/{id}/participants:
