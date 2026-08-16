@@ -221,6 +221,7 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | MBR-AC-017 | P2 | 人数枠1で発行した招待は1人が承諾すると即座に枠切れになり、以後の承諾はINVALID_INVITE_TOKENになる | todo | - |
 | MBR-AC-018 | P2 | 招待発行のmaxUsesに0または10以上を指定すると400 VALIDATION_ERRORになる | todo | - |
 | MBR-AC-019 | P1 | 招待発行のmaxUsesが「9−発行時点の共同管理者数」を超えると400 VALIDATION_ERRORになる | todo | - |
+| MBR-AC-022 | P2 | 共同管理者0人の状態でmaxUses=9を指定すると発行に成功し、共同管理者がN人いる状態でmaxUses=9-Nちょうどを指定しても発行に成功する | todo | - |
 | MBR-AC-020 | P2 | 招待を一度も発行していない大会でDELETE /inviteを呼んでも204になる(冪等) | todo | - |
 | MBR-AC-021 | P2 | 招待を一度も発行していない大会のGET /membersはinvite:nullを返す | todo | - |
 

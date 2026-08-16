@@ -43,7 +43,7 @@
 
 ### 招待する側(OWNER・PC)
 
-- OWNER が 大会設定画面で 人数枠(1〜9人)を選んで「招待リンクを発行」すると 招待リンクが表示され、コピーできる
+- OWNER が 大会設定画面で 人数枠(1〜(9−現在の共同管理者数)人。上限は現在の共同管理者数に応じて動的に変わる。§3参照)を選んで「招待リンクを発行」すると 招待リンクが表示され、コピーできる
 - OWNER が 大会設定画面で 招待リンクの「無効にする」を押すと 確認ダイアログのあとリンクが失効し、以後そのリンクでは承諾できない
 - OWNER が 大会設定画面で 招待リンクを再発行すると 旧リンクは即時無効になり、使用済みの枠がリセットされる
 - OWNER が 大会設定画面で 共同管理者一覧の取り消しを押すと 確認ダイアログのあとその人は以後この大会にアクセスできなくなる
@@ -451,6 +451,7 @@ responses 節の注記のとおり、swagger-request-validator が `additionalPr
 | MBR-AC-017 | P2 | 人数枠1で発行した招待は1人が承諾すると即座に枠切れになり、以後の承諾はINVALID_INVITE_TOKENになる | contract |
 | MBR-AC-018 | P2 | 招待発行のmaxUsesに0または10以上を指定すると400 VALIDATION_ERRORになる | contract |
 | MBR-AC-019 | P1 | 招待発行のmaxUsesが「9−発行時点の共同管理者数」を超えると400 VALIDATION_ERRORになる | contract |
+| MBR-AC-022 | P2 | 共同管理者0人の状態でmaxUses=9を指定すると発行に成功し、共同管理者がN人いる状態でmaxUses=9-Nちょうどを指定しても発行に成功する | contract |
 | MBR-AC-020 | P2 | 招待を一度も発行していない大会でDELETE /inviteを呼んでも204になる(冪等) | contract |
 | MBR-AC-021 | P2 | 招待を一度も発行していない大会のGET /membersはinvite:nullを返す | contract |
 | PTC-AC-014 | P0 | 参加者を同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる | contract |
@@ -483,6 +484,7 @@ IPベースのレート制限というトークン総当たり対策の欠落を
 - [ ] `.claude/05_acceptance/00_acceptance_policy.md` — MBRプレフィックスを§2の表に追記
 - [ ] `.claude/05_acceptance/01_acceptance_scope.md` — 上記ケースをStatus=todoで追加 + ジャーニー表にCP8を追加
 - [ ] `schema/openapi.yaml` — 新規6エンドポイント・`Tournament.role`・`shareToken` の記述をOWNER限定に変更・`/auth/login` の `redirect` パラメータ
+- [ ] `frontend/src/types/generated/api.d.ts` — 上記 `schema/openapi.yaml` 変更に伴う `pnpm run generate:api` の機械的な再生成結果。手で編集しない(`.stories.tsx` と同じくPlan PRの「コード0行」原則の例外。生成コマンドの出力であり実装コードではないため)
 - [ ] `frontend/src/pages/InvitationPage.stories.tsx` — 新規画面S14のストーリー(プレースホルダー実装)
 
 ### 実装PRで更新が必要な設計ドキュメント(今は更新しない・実装時の申し送り)
