@@ -264,7 +264,7 @@ paths:
             schema:
               $ref: "#/components/schemas/IssueInviteRequest"
       responses:
-        "201":
+        "200":
           $ref: "#/components/responses/TournamentMembers"
         "400":
           $ref: "#/components/responses/BadRequest"

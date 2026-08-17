@@ -1951,7 +1951,7 @@ export interface operations {
             };
         };
         responses: {
-            201: components["responses"]["TournamentMembers"];
+            200: components["responses"]["TournamentMembers"];
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];

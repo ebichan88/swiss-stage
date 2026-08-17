@@ -400,7 +400,7 @@ CSVインポートは**連続した範囲をまとめて確保する**(1行ず�
 |---|---|---|---|
 | GET | `/api/v1/tournaments/{id}/members` | OWNER | 共同管理者一覧 + 現在の招待状態を1レスポンスで返す |
 | DELETE | `/api/v1/tournaments/{id}/members/{memberId}` | OWNER | 共同管理者の取り消し。存在しない `memberId` は冪等にせず 404 `TOURNAMENT_MEMBER_NOT_FOUND` を返す(`DELETE /invite` の冪等204とは異なる。参加者・チームメンバー削除と同じ「特定サブリソースの404」の扱いに揃える) |
-| POST | `/api/v1/tournaments/{id}/invite` | OWNER | 招待リンクの発行・再発行(body: `maxUses`)。`maxUses` は1〜9かつ「9−発行時点の共同管理者数」以下(超過は400)。**GET /members と同じ更新後のビューを返す** |
+| POST | `/api/v1/tournaments/{id}/invite` | OWNER | 招待リンクの発行・再発行(body: `maxUses`)。`maxUses` は1〜9かつ「9−発行時点の共同管理者数」以下(超過は400)。**GET /members と同じ更新後のビューを返す**。応答は**200**(初回発行・再発行を同じ処理(同一アイテムの上書き)として扱う既存の `regenerateShareToken` と同じ判断。`03_api_design.md` §4のルール上は新規作成寄りに見えるが、1大会につき有効な招待は常に1本で「作成」と「更新」を利用者側が区別する意味がないため、既存の共有トークン発行と同じ扱いに揃える) |
 | DELETE | `/api/v1/tournaments/{id}/invite` | OWNER | 招待リンクの失効 |
 | GET | `/api/v1/invitations/{token}` | 認証済み・**IPベースのレート制限あり** | 招待のプレビュー(大会名・期限・すでにメンバーか) |
 | POST | `/api/v1/invitations/{token}/accept` | 認証済み・**IPベースのレート制限あり** | 承諾。成功時に `tournamentId` を返す |

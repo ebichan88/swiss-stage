@@ -9,7 +9,7 @@ import { ErrorState, FullPageSpinner } from '../components/ui/QueryStates';
  * S14 招待の受諾(`/invite/:token`)のUI合意用ストーリー。
  *
  * 本物のページ(`src/pages/InvitationPage.tsx`)はまだ存在しないため、Plan PRの例外として
- * インラインのプレースホルダー実装を置く(`04_development_process.md` §5.1、
+ * インラインのプレースホルダー実装を置く(`04_development_process.md` §5.1.1、
  * `06_adr/12_story_first_existing_page_placeholder.md`)。実装PRで本物のページを
  * このレイアウトに合わせて作成し、ここを実importへ書き換える。
  *
