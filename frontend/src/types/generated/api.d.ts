@@ -292,7 +292,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 招待の承諾。共同管理者(MAINTAINER)として登録し、遷移先の大会IDを返す。 すでにメンバー(OWNER本人を含む)の場合も200を返すが、二重登録せず人数枠も消費しない(冪等)。 共有トークンと同じくIPベースのレート制限あり(13_security_design.md §5) */
+        /** 招待の承諾。共同管理者(MAINTAINER)として登録し、遷移先の大会IDを返す。 すでにメンバー(OWNER本人を含む)の場合も200を返すが、二重登録せず人数枠も消費しない(冪等)。 同時承諾によるINVITEの楽観ロック競合はサーバー内部で再試行し、利用者には409を返さない (07_plans/14_tournament_collaboration.md §4.4)。競合の結果として招待が受け入れ不可に なった場合は403を返す。共有トークンと同じくIPベースのレート制限あり(13_security_design.md §5) */
         post: operations["acceptInvitation"];
         delete?: never;
         options?: never;
@@ -2016,7 +2016,6 @@ export interface operations {
             200: components["responses"]["AcceptInvitationResult"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
             429: components["responses"]["RateLimited"];
         };
     };

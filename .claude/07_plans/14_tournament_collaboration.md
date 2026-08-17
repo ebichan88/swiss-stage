@@ -335,8 +335,16 @@ GSI は引き続き2本で、上限3本に余裕を残す。
   できない(MBR-AC-012)
 - **二重承諾**: 既に MAINTAINER / OWNER 本人が承諾した場合は成功(200)を返すが、`usedCount` は
   増やさず MEMBER も追加しない(冪等)
-- 承諾は `TransactWriteItems` で「INVITE の条件付き更新(version一致)」+「MEMBER の作成
-  (`attribute_not_exists(SK)`)」を原子的に行う
+- **承諾の手順と競合時の応答**: (1) INVITE を読み、`isAcceptable(now)` を確認する。不可なら
+  403 `INVALID_INVITE_TOKEN`。(2) `TransactWriteItems` で「INVITE の条件付き更新(version一致で
+  `usedCount+1`)」+「MEMBER の作成(`attribute_not_exists(SK)`。二重承諾を弾く)」を原子的に行う。
+  (3) INVITE 側の version 不一致(同時承諾での競合)は **クライアントに409を返さず、サーバー内部で
+  (1)から再試行する**(数回程度の上限付き)。「参加する」ボタンはユーザーが編集内容を持つ画面ではなく
+  1回のクリックで完結させたい操作であり、`entryOrder` の採番(§4.5)のように「画面を更新して再試行」
+  をユーザーに委ねる理由がないため、ここでは `ParticipantService` とは異なる選択をする。再試行後に
+  枠が尽きていれば §2「同時操作」のとおり403になる。再試行の上限に達した場合(通常はミリ秒単位の
+  競合ウィンドウでしか起こらない)は500として扱う。この設計により `POST /invitations/{token}/accept`
+  は**契約上409を返さない**(`schema/openapi.yaml` の responses に409を含めない)
 
 ### 4.5 `entryOrder` の同時採番
 
@@ -518,6 +526,7 @@ responses 節の注記のとおり、swagger-request-validator が `additionalPr
 | TRN-AC-024 | P2 | 大会一覧で共同管理中の大会に「共同管理」バッジが表示され、所有大会には表示されない | Vitest |
 | TRN-AC-025 | P2 | MAINTAINERには管理画面の共通ナビゲーションに「設定」が表示されず、設定画面を直接開くと権限がない旨と戻る導線が表示される | Vitest |
 | TRN-AC-026 | P2 | 設定画面の共同管理者セクションで、招待リンクの発行・コピー・失効と共同管理者の取り消しができる | Vitest |
+| TRN-AC-027 | P1 | 大会一覧APIは所有大会と共同管理大会を1つのリストに混在させて返し、各アイテムのroleが所有はOWNER・共同管理はMAINTAINERと正しく区別される | contract |
 | E2E-AC-010 | P1 | 運営者が招待リンクを発行し、別アカウントが承諾して共同管理者として参加者を追加できる(CP8) | Playwright |
 
 **`MBR-AC-016` の優先度が `SHR-AC-009`(共有APIのレート制限超過429・P2)より高い理由**: どちらも
@@ -556,7 +565,7 @@ IPベースのレート制限というトークン総当たり対策の欠落を
 - [ ] `.claude/01_development_docs/02_database_design.md` — AP11〜AP14、Member/Inviteアイテム、`nextEntryOrder`、GSI1の`entityType`フィルタ
 - [ ] `.claude/01_development_docs/13_security_design.md` — §3 認可マトリクスにMAINTAINER列を追加、404/403の使い分け、招待トークンの扱い
 - [ ] `.claude/01_development_docs/04_screen_transition_design.md` — S14の追加、S09の権限、ナビゲーション項目の出し分け
-- [ ] `.claude/01_development_docs/06_error_handling_design.md` — `INVALID_INVITE_TOKEN` の追記
+- [ ] `.claude/01_development_docs/06_error_handling_design.md` — `INVALID_INVITE_TOKEN`・`TOURNAMENT_MEMBER_NOT_FOUND` の追記
 - [ ] `.claude/01_development_docs/03_api_design.md` — 新規エンドポイント群
 - [ ] `.claude/01_development_docs/12_e2e_test_design.md` — CP8の追加
 - [ ] `CLAUDE.md` — GSI1相乗りに伴う`entityType`フィルタ必須を「避けるべき落とし穴」に追記

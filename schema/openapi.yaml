@@ -317,7 +317,9 @@ paths:
       summary: >-
         招待の承諾。共同管理者(MAINTAINER)として登録し、遷移先の大会IDを返す。
         すでにメンバー(OWNER本人を含む)の場合も200を返すが、二重登録せず人数枠も消費しない(冪等)。
-        共有トークンと同じくIPベースのレート制限あり(13_security_design.md §5)
+        同時承諾によるINVITEの楽観ロック競合はサーバー内部で再試行し、利用者には409を返さない
+        (07_plans/14_tournament_collaboration.md §4.4)。競合の結果として招待が受け入れ不可に
+        なった場合は403を返す。共有トークンと同じくIPベースのレート制限あり(13_security_design.md §5)
       responses:
         "200":
           $ref: "#/components/responses/AcceptInvitationResult"
@@ -325,8 +327,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-        "409":
-          $ref: "#/components/responses/Conflict"
         "429":
           $ref: "#/components/responses/RateLimited"
 
