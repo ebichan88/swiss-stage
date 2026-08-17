@@ -556,6 +556,7 @@ MAINTAINER運用でこの方向のレースが実際に発生した場合、別I
 | MBR-AC-026 | P2 | 存在しないmemberIdのDELETEは404 TOURNAMENT_MEMBER_NOT_FOUNDになる(DELETE /inviteの冪等204とは異なり、参加者・チームメンバー削除と同じ404の扱い) | contract |
 | MBR-AC-020 | P2 | 招待を一度も発行していない大会でDELETE /inviteを呼んでも204になる(冪等) | contract |
 | MBR-AC-021 | P2 | 招待を一度も発行していない大会のGET /membersはinvite:nullを返す | contract |
+| MBR-AC-027 | P2 | GET /invitations/{token}はOWNER本人・既存MAINTAINERに対してalreadyMember:trueを返す | contract |
 | PTC-AC-014 | P0 | 参加者を同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる | contract |
 | PTC-AC-015 | P0 | 採番カウンタ未設定の大会(既存大会の移行・新規大会いずれも)で、参加者0人からの初回追加はentryOrder=1、既存参加者がいる場合は最大entryOrder+1から採番される | contract |
 | PTC-AC-016 | P1 | CSVインポートは連続したentryOrderの範囲をまとめて確保し、割り込みの追加と重複しない | contract |
@@ -595,6 +596,8 @@ IPベースのレート制限というトークン総当たり対策の欠落を
 - [ ] `.claude/06_adr/13_tournament_collaboration_model.md` — ADR(新規・Status: Proposed)
 - [ ] `.claude/06_adr/14_plan_pr_generated_types_exception.md` — ADR(新規・Status: Accepted。理由は下記`api.d.ts`の項を参照)
 - [ ] `CLAUDE.md` #18・`.claude/00_project/04_development_process.md` §5.1・`.claude/00_project/03_feature_plan_template.md` §6・`.claude/01_development_docs/11_cicd_design.md`・`.claude/04_quality/01_review_checklist.md`・`.claude/commands/plan.md`・`.claude/agents/planner.md` — ADR 14の決定を反映(Plan PRのコード0行原則の例外を2種類に整理。「`.stories.tsx` のみ」と書いていた箇所を洗い出して統一)
+- [ ] `.claude/01_development_docs/09_test_strategy.md`・`.claude/01_development_docs/10_frontend_design.md`・`.claude/commands/pr.md` — ストーリー例外だけを指す `§5.1` 参照を `§5.1.1` に統一(ADR 14 §2)
+- [ ] `.claude/agents/plan-reviewer.md` — 「禁止」節にあった「`.stories.tsx` のみ例外」という文言を、他ファイルと同じ「2種類の例外」の表現に更新(ADR 14 §2)
 - [ ] `.claude/05_acceptance/00_acceptance_policy.md` — MBRプレフィックスを§2の表に追記
 - [ ] `.claude/05_acceptance/01_acceptance_scope.md` — 上記ケースをStatus=todoで追加 + ジャーニー表にCP8を追加
 - [ ] `schema/openapi.yaml` — 新規6エンドポイント・`Tournament.role`・`shareToken` の記述をOWNER限定に変更・`/auth/login` の `redirect` パラメータ
@@ -642,6 +645,13 @@ IPベースのレート制限というトークン総当たり対策の欠落を
 
 ## 8. リスク・未確定事項
 
+- **MAINTAINERの自己離脱(セルフ削除)はスコープ外**。共同管理者の解除は
+  `DELETE /tournaments/{id}/members/{memberId}`(OWNER専用、§4.1)のみで、MAINTAINER自身が
+  離脱する導線は用意しない。抜けたい場合はOWNERに依頼する運用とする。設定画面(S09)を丸ごと
+  OWNER専用にするという既存の決定(Issue #185)と一貫させ、権限行使の起点をOWNER1箇所に保つ
+  ほうがシンプルであるため。撤回条件: 「OWNERに連絡が取れず抜けられない」という運用上の不満が
+  実際に出た場合、`memberId`が自分自身の場合に限り`loadOwner`ではなく`loadMember`で許可する
+  (対象は自分自身のみなので認可上のリスクは小さい)形で別Issueとして追加する
 - **招待リンクは共通リンクである**。リンクを持つ第三者は人数枠が残っている限り誰でも共同管理者に
   なれる(なりすまし対策ではない)。緩和は「72時間の期限」「人数枠」「OWNERが一覧で承諾者の表示名を
   確認して取り消せること」の3点。個別リンク方式(1回使い切り)へ切り替える場合、INVITEアイテムを

@@ -231,6 +231,7 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | MBR-AC-026 | P2 | 存在しないmemberIdのDELETEは404 TOURNAMENT_MEMBER_NOT_FOUNDになる(DELETE /inviteの冪等204とは異なり、参加者・チームメンバー削除と同じ404の扱い) | todo | - |
 | MBR-AC-020 | P2 | 招待を一度も発行していない大会でDELETE /inviteを呼んでも204になる(冪等) | todo | - |
 | MBR-AC-021 | P2 | 招待を一度も発行していない大会のGET /membersはinvite:nullを返す | todo | - |
+| MBR-AC-027 | P2 | GET /invitations/{token}はOWNER本人・既存MAINTAINERに対してalreadyMember:trueを返す | todo | - |
 
 ## SPA: SPA配信
 

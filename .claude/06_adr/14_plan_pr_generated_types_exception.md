@@ -45,7 +45,13 @@ Issue #185(大会の共同管理)の Plan PR で `schema/openapi.yaml` を変更
 (ストーリー例外(§5.1.1)は判断を伴うため引き続き無人実行の対象外だが、生成型定義の例外(§5.1.2)は
 機械的な出力であり対象内とする)。
 
-**このADRは例外としてPlan PR内(本PR)で `Accepted` にし、上記3文書もPlan PR内で更新した。**
+節番号の再構成(`§5.1` → `§5.1.1`/`§5.1.2`)に伴い、ストーリー例外だけを指して旧番号 `§5.1` を
+参照していた `01_development_docs/09_test_strategy.md`(2箇所)・`01_development_docs/10_frontend_design.md`・
+`commands/pr.md` の参照も `§5.1.1` に更新する。あわせて `agents/plan-reviewer.md` の「禁止」節に
+同じ「`.stories.tsx` のみ例外」という文言がもう1箇所残っていたため、他ファイルと同じ「2種類の例外」の
+表現に更新する。
+
+**このADRは例外としてPlan PR内(本PR)で `Accepted` にし、上記の各文書もPlan PR内で更新した。**
 通常、Plan PRで新規作成するADRは `Proposed` のまま実装PRで `Accepted` にする
 (`04_development_process.md` §4)が、本ADRの決定内容は「Plan PRの作り方」そのものであり、
 この決定を前提に本Plan PR自身が `frontend/src/types/generated/api.d.ts` を §6 の更新対象に
