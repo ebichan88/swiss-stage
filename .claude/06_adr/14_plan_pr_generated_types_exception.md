@@ -36,7 +36,14 @@ Issue #185(大会の共同管理)の Plan PR で `schema/openapi.yaml` を変更
 許可する対象は `.stories.tsx` のみ」という現行の文言はこのケースを正しく記述できていなかった。
 
 この決定は `CLAUDE.md` #18・`04_development_process.md` §5.1・`03_feature_plan_template.md` §6
-の該当箇所を修正する。
+の該当箇所を修正する。同じく「`.stories.tsx` のみ例外」と書いていた `01_development_docs/11_cicd_design.md`
+(Plan PRブランチで `ai-review.yml`/`ai-qa.yml` をスキップする理由の説明)・`04_quality/01_review_checklist.md`
+(plan-reviewerエージェント管轄の説明)・`commands/plan.md`(`/plan` の実行手順そのもの)も同じ内容の
+記述を持っていたため、あわせて修正する。特に `commands/plan.md` は次回以降の `/plan` 実行時に
+実際に読まれる手順であり、ここが古いままだと以後のPlan PRでこの決定が再現されない。`agents/planner.md`
+(無人実行版 `/plan`)にも `schema/openapi.yaml` 更新時の `generate:api` 実行を追記する
+(ストーリー例外(§5.1.1)は判断を伴うため引き続き無人実行の対象外だが、生成型定義の例外(§5.1.2)は
+機械的な出力であり対象内とする)。
 
 **このADRは例外としてPlan PR内(本PR)で `Accepted` にし、上記3文書もPlan PR内で更新した。**
 通常、Plan PRで新規作成するADRは `Proposed` のまま実装PRで `Accepted` にする

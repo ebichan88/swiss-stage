@@ -132,7 +132,7 @@ MUI標準に寄せてよいが、招待受諾画面(S14)はスマホで開かれ
 - **新しいUIパターンの有無**: なし(Card + Stack + Button の既存構成)
 
 > この画面は新規画面(0→1)のため、`frontend/src/pages/InvitationPage.stories.tsx` を本Plan PRに含める
-> (`04_development_process.md` §5.1)。本物のページは未実装のため、ストーリー内にインラインの
+> (`04_development_process.md` §5.1.1)。本物のページは未実装のため、ストーリー内にインラインの
 > プレースホルダー実装を書き、実装PRで本物のページに置き換えて実importへ切り替える
 > (`12_story_first_existing_page_placeholder.md`)。
 
@@ -553,7 +553,7 @@ IPベースのレート制限というトークン総当たり対策の欠落を
 - [ ] `.claude/07_plans/14_tournament_collaboration.md` — 本計画(新規)
 - [ ] `.claude/06_adr/13_tournament_collaboration_model.md` — ADR(新規・Status: Proposed)
 - [ ] `.claude/06_adr/14_plan_pr_generated_types_exception.md` — ADR(新規・Status: Accepted。理由は下記`api.d.ts`の項を参照)
-- [ ] `CLAUDE.md` #18・`.claude/00_project/04_development_process.md` §5.1・`.claude/00_project/03_feature_plan_template.md` §6 — ADR 14の決定を反映(Plan PRのコード0行原則の例外を2種類に整理)
+- [ ] `CLAUDE.md` #18・`.claude/00_project/04_development_process.md` §5.1・`.claude/00_project/03_feature_plan_template.md` §6・`.claude/01_development_docs/11_cicd_design.md`・`.claude/04_quality/01_review_checklist.md`・`.claude/commands/plan.md`・`.claude/agents/planner.md` — ADR 14の決定を反映(Plan PRのコード0行原則の例外を2種類に整理。「`.stories.tsx` のみ」と書いていた箇所を洗い出して統一)
 - [ ] `.claude/05_acceptance/00_acceptance_policy.md` — MBRプレフィックスを§2の表に追記
 - [ ] `.claude/05_acceptance/01_acceptance_scope.md` — 上記ケースをStatus=todoで追加 + ジャーニー表にCP8を追加
 - [ ] `schema/openapi.yaml` — 新規6エンドポイント・`Tournament.role`・`shareToken` の記述をOWNER限定に変更・`/auth/login` の `redirect` パラメータ

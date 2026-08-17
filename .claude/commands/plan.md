@@ -7,8 +7,10 @@ allowed-tools: Bash(gh issue view:*), Bash(gh issue comment:*), Bash(git *), Bas
 Issue #$ARGUMENTS から実装計画を立て、Plan PR を作成してください。
 
 `.claude/00_project/04_development_process.md` の「/plan」段階です。**このコマンドでは原則コードを
-1行も書かない**(新規画面・大きなレイアウト変更時は対象画面の `.stories.tsx` のみ例外。手順5、
-`04_development_process.md` §5.1)。以下の手順に従うこと。
+1行も書かない**(例外は2種類: 新規画面・大きなレイアウト変更時の対象画面 `.stories.tsx`(手順5、
+`04_development_process.md` §5.1.1)、`schema/openapi.yaml` を変更する場合の生成型定義
+`frontend/src/types/generated/api.d.ts`(手順4、`04_development_process.md` §5.1.2))。
+以下の手順に従うこと。
 
 ## 1. Issueを読む
 
@@ -54,11 +56,15 @@ AskUserQuestion で**最大3問**にまとめて確認する。優先すべき�
   **例外**: 作成したADRが`04_development_process.md` §4「Plan PR内で`Accepted`にする場合」に
   該当するとき(ADRの決定が「Plan PRの作り方」自体に関わり、同じPR内でその決定を前提にした
   ファイルを作る必要がある場合)は、そのADRが対象とする設計ドキュメントに限りPlan PR内で更新する
+- `schema/openapi.yaml` を更新した場合は、`frontend/` で `pnpm run generate:api` を実行し、
+  再生成された `frontend/src/types/generated/api.d.ts` もコミットに含める(`04_development_process.md`
+  §5.1.2、`06_adr/14_plan_pr_generated_types_exception.md`)。`ci.yml` の「生成型の鮮度チェック」が
+  ブランチ種別を問わない必須ゲートのため、含めないとCIが必ず落ちる。手で編集しない
 
 ## 5. 新規画面・大きなレイアウト変更のストーリー作成
 
 UI仕様(§3の観点で計画済み)確定後、対象画面が新規画面、または既存画面の大きなレイアウト変更に
-該当する場合は、`src/pages/XxxPage.stories.tsx` を作成する(`04_development_process.md` §5.1、
+該当する場合は、`src/pages/XxxPage.stories.tsx` を作成する(`04_development_process.md` §5.1.1、
 `03_feature_plan_template.md` §3 の対象範囲。Plan PRの「コード0行」原則の例外)。該当しない場合は
 このステップを飛ばす。
 
@@ -68,7 +74,7 @@ UI仕様(§3の観点で計画済み)確定後、対象画面が新規画面、�
   書く。実装PRで本物のページをこのプレースホルダーに合わせて書き換え、ストーリーを実importへ
   書き換える運用になる(`06_adr/12_story_first_existing_page_placeholder.md`)
 - **合意のタイミング**: 新しい承認ステップは発明しない。ストーリー作成後、Plan PRのレビュー・
-  マージそのものを「UI合意」のゲートとして扱う(`04_development_process.md` §5.1)
+  マージそのものを「UI合意」のゲートとして扱う(`04_development_process.md` §5.1.1)
 
 ## 6. 受け入れケースの追加
 
@@ -83,16 +89,27 @@ UI仕様(§3の観点で計画済み)確定後、対象画面が新規画面、�
 
 `python3 .github/scripts/docs-lint.py` を実行し、違反があれば直す(0で終了するまで繰り返す)。
 
+`schema/openapi.yaml` を変更した場合は、あわせて次を実行する(CIの必須ゲートで同じ検査が走るため、
+ローカルで先に検知した方が手戻りが小さい):
+
+```bash
+cd frontend
+pnpm --package=@redocly/cli@1 dlx redocly lint ../schema/openapi.yaml   # 構文・contract lint
+pnpm run generate:api                                                   # api.d.ts を追随させる(手順4)
+```
+
 ## 8. ブランチ作成とコミット
 
 - `main` から `feature/plan-<slug>` ブランチを作成する
 - メッセージ形式: `docs: <日本語の要約>(Plan PR)` + 空行 + 本文
 - 末尾に `Co-Authored-By: Claude <noreply@anthropic.com>` を付ける
 - **コミット前チェック(`pnpm run check` / `./gradlew check`)は、対象画面の `.stories.tsx` を
-  含まない限り不要**(コード変更を含まないため)。手順5の例外で `.stories.tsx` を含む場合は、
-  最低限 `pnpm run lint` / `pnpm run type-check` を実行する(フルの `pnpm run check` を実行
-  してもよい)。`ci.yml` のfrontendジョブがPlan PRブランチでも自動実行される(`04_development_process.md`
-  §5.1)ため必須ではないが、ローカルで先に検知した方が手戻りが小さい
+  含まない限り不要**(コード変更を含まないため)。手順5の例外で `.stories.tsx` を含む場合、または
+  `schema/openapi.yaml` の変更に伴い `api.d.ts` を含む場合は、最低限 `pnpm run lint` /
+  `pnpm run type-check` を実行する(フルの `pnpm run check` を実行してもよい。`schema/openapi.yaml`
+  変更時は手順7の `redocly lint` / `generate:api` も併せて実行済みであること)。`ci.yml` の
+  frontendジョブがPlan PRブランチでも自動実行される(`04_development_process.md` §5.1)ため必須
+  ではないが、ローカルで先に検知した方が手戻りが小さい
 
 ## 9. プッシュとPR作成
 
