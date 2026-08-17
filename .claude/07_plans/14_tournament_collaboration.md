@@ -75,6 +75,7 @@
 - 2人が 人数枠1の招待リンクを同時に承諾すると 先に確定した1人だけが共同管理者になり、もう1人は「この招待リンクは無効です」になる
 - OWNER が 共同管理者を取り消した直後に その人が操作を続けると 次のリクエストから404になる
 - 取り消された人が 取り消し前に受け取っていた(期限内・枠内でまだ有効だった)招待リンクを再度開くと 取り消しと同時に招待リンクも失効しているため「この招待リンクは無効です」表示になり、再承諾でMAINTAINERに復帰することはできない
+- MAINTAINER Aが対局結果を編集中に MAINTAINER Bが同じラウンドを先に確定させると Aの編集は失敗し(「確定済みラウンドの結果は変更できません」)、確定済みラウンドの結果が黙って書き換わることはない(§4.9)。個人戦・団体戦のどちらでも同じ対策が効く(同じRoundを参照するため)
 
 ### 個人戦・団体戦・グループ分け
 
@@ -484,6 +485,44 @@ responses 節の注記のとおり、swagger-request-validator が `additionalPr
   権限判定に使う
 - 型は `pnpm run generate:api` で `schema/openapi.yaml` から再生成する
 
+### 4.9 ラウンド確定と結果編集の競合
+
+本計画§1は「同時操作でデータが黙って壊れないこと」を最重要原則の1つに掲げており、当日の結果入力・
+ラウンド確定を複数MAINTAINERで分担することが本機能の主要な利用シーンである。この前提のもとで、
+既存の結果入力・ラウンド確定の実装に見落としていたTOCTOU(time-of-check-time-of-use)競合がある。
+
+**現状の問題**: `RoundService.editMatch()`(個人戦)・`TeamRoundService` の同名メソッド(団体戦。
+どちらも個人戦・団体戦で共通の `Round` を参照する)は、「ラウンドが確定済みか」を対局の読み取り
+直後に**1回だけ**チェックし(`round.status() == CONFIRMED`)、実際のMatch書き込みは
+Matchの`version`楽観ロックのみで行う(Round側は再チェックしない)。そのため次の競合ウィンドウが
+成立する: MAINTAINER Aが既に結果入力済みの対局Xを訂正しようとしてRound確定チェックを通過した
+直後、MAINTAINER Bが(その時点で全対局が決着済みのため)ラウンド確定に成功しRoundをCONFIRMEDで
+保存し、続いてAの対局X訂正がMatchのversion楽観ロックだけを通って保存されてしまう。これは
+`RND-AC-010`(確定済みラウンドの結果は変更できない)という既存の不変条件が破られる経路であり、
+単一運営者前提では同一人物が2タブを同時に開く稀なケースでしか起きなかったが、本機能により
+「当日の分担」という日常的な運用として発生確率が上がる。
+
+**対策**: `editMatch`(`RoundService`・`TeamRoundService`の両方が対象)のMatch保存を、Round確定
+チェックと同じ`TransactWriteItems`で行う。トランザクションに「Matchの更新」+「Round項目への
+ConditionCheck(`status <> CONFIRMED`)」を含める。競合窓の間にRound確定が割り込んだ場合はこの
+ConditionCheckが失敗し、既存の`InvalidStateException`(「確定済みラウンドの結果は変更できません」)
+にマッピングする。Match自体のversion不一致は従来どおり`ConflictException`にマッピングする
+(トランザクションのキャンセル理由をアイテムごとに判別して振り分ける)。この方式なら`Round`に
+新たに`version`属性を追加する必要はなく、トランザクションのアイテム数もMatch1件+Round1件の
+ConditionCheckの計2件のため、300名規模の大会でも`TransactWriteItems`の上限(100アイテム)に
+抵触しない。
+
+**対策の範囲外(残存リスク)**: 逆方向、すなわち「ラウンド確定の`undecided==0`判定が、判定直後に
+割り込む結果編集によって陳腐化し、実際には未確定の対局が残ったままRoundがCONFIRMEDで保存される」
+ケースは、本PRのスコープでは対策しない。この方向を完全に塞ぐには確定操作をその時点の全対局の
+versionを条件に含めたトランザクションにする必要があるが、大規模大会(最大300名・1ラウンドあたり
+最大150対局)では`TransactWriteItems`の100アイテム上限に抵触しうる。この制約は既存の
+`02_database_design.md`決定事項5(「ラウンド確定+次ラウンド生成は`TransactWriteItems`で原子的に
+行う(上限100アイテムに注意→大規模大会ではラウンド確定とマッチ生成を分離し、Roundのstatusで
+整合性を担保する)」)と同根の既知の制約であり、本機能固有の新しい問題ではない。撤回条件: 複数
+MAINTAINER運用でこの方向のレースが実際に発生した場合、別Issueで対応する(例: 確定操作の前に
+全対局を再読込し不一致があれば409で拒否する、等の緩和策を追加で検討する)。
+
 ## 5. 受け入れケース
 
 新しいコンポーネント(contractテストクラス)として `TournamentMemberApiTest` / `InvitationApiTest` を
@@ -523,6 +562,8 @@ responses 節の注記のとおり、swagger-request-validator が `additionalPr
 | TEAM-AC-026 | P0 | チームを同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる(PTC-AC-014の団体戦版。同じカウンタを使う) | contract |
 | TEAM-AC-027 | P0 | 採番カウンタ未設定の大会(既存大会の移行・新規大会いずれも)で、チーム0件からの初回追加はentryOrder=1、既存チームがいる場合は最大entryOrder+1から採番される | contract |
 | TEAM-AC-028 | P1 | チームCSVインポートは連続したentryOrderの範囲をまとめて確保し、割り込みの追加と重複しない | contract |
+| RND-AC-015 | P0 | 対局結果の編集中に別の運営者が同じラウンドを先に確定させると、編集は失敗し(確定済みラウンドの結果は変更できないエラー)、確定済みラウンドの結果が黙って書き換わらない | contract |
+| TEAM-AC-029 | P0 | 団体戦でも対局結果の編集中に別の運営者が同じラウンドを先に確定させると、編集は失敗し確定済みラウンドの結果が黙って書き換わらない(RND-AC-015の団体戦版。同じRoundを参照するため同じ対策が効く) | contract |
 | TRN-AC-024 | P2 | 大会一覧で共同管理中の大会に「共同管理」バッジが表示され、所有大会には表示されない | Vitest |
 | TRN-AC-025 | P2 | MAINTAINERには管理画面の共通ナビゲーションに「設定」が表示されず、設定画面を直接開くと権限がない旨と戻る導線が表示される | Vitest |
 | TRN-AC-026 | P2 | 設定画面の共同管理者セクションで、招待リンクの発行・コピー・失効と共同管理者の取り消しができる | Vitest |
@@ -562,7 +603,7 @@ IPベースのレート制限というトークン総当たり対策の欠落を
 
 ### 実装PRで更新が必要な設計ドキュメント(今は更新しない・実装時の申し送り)
 
-- [ ] `.claude/01_development_docs/02_database_design.md` — AP11〜AP14、Member/Inviteアイテム、`nextEntryOrder`、GSI1の`entityType`フィルタ
+- [ ] `.claude/01_development_docs/02_database_design.md` — AP11〜AP14、Member/Inviteアイテム、`nextEntryOrder`、GSI1の`entityType`フィルタ、`editMatch`のMatch更新をRound項目へのConditionCheck付き`TransactWriteItems`に変更する旨(§4.9)
 - [ ] `.claude/01_development_docs/13_security_design.md` — §3 認可マトリクスにMAINTAINER列を追加、404/403の使い分け、招待トークンの扱い
 - [ ] `.claude/01_development_docs/04_screen_transition_design.md` — S14の追加、S09の権限、ナビゲーション項目の出し分け
 - [ ] `.claude/01_development_docs/06_error_handling_design.md` — `INVALID_INVITE_TOKEN`・`TOURNAMENT_MEMBER_NOT_FOUND` の追記
@@ -591,6 +632,7 @@ IPベースのレート制限というトークン総当たり対策の欠落を
 | # | 内容 | 依存 |
 |---|---|---|
 | PR1 | `entryOrder` 採番カウンタ + 楽観ロック(§4.5)。共同管理と独立して単体で価値がある | なし |
+| PR1b | ラウンド確定と結果編集の競合対策(§4.9)。共同管理と独立して単体で価値がある。PR1と並行可 | なし |
 | PR2 | 認可基盤(`TournamentRole` / MEMBERアイテム / GSI1の`entityType`フィルタ / `loadOwner`・`loadMember` 分割 / 一覧マージ / `role`・`shareToken` の出し分け / メンバー一覧・取り消しAPI) | PR1 |
 | PR3 | 招待リンク(発行・失効・プレビュー・承諾)+ ログイン後リダイレクト(§4.6) | PR2 |
 | PR4 | フロントエンド(S14の本実装 + 設定画面の共同管理者カード + 一覧バッジ + ナビゲーション出し分け) | PR3 |
@@ -616,3 +658,7 @@ IPベースのレート制限というトークン総当たり対策の欠落を
   DynamoDB Local でのトランザクション挙動は実装前にスパイクで確認する。動かない場合の代替は
   「INVITEの条件付き更新を先に確定 → MEMBER作成が失敗したら `usedCount` を戻さず枠を1つ失う」
   (正確性を優先し、枠の損失は許容する)
+- **ラウンド確定と結果編集の競合(§4.9)**: 結果編集側(MAINTAINER Aの訂正がBの確定に割り込む)は
+  `TransactWriteItems`のConditionCheckで対策するが、逆方向(確定側の`undecided==0`判定が編集の
+  割り込みで陳腐化する)は大規模大会での`TransactWriteItems`100アイテム上限のため本PRでは対策
+  しない。撤回条件は§4.9のとおり、この方向のレースが実運用で実際に発生した場合

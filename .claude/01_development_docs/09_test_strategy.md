@@ -202,7 +202,7 @@ frontend/tests/
 
 新規画面・大きなレイアウト変更では、`src/pages/XxxPage.stories.tsx` を **Plan PRの一部として作成**し、
 実機を起動せずにUIの4状態(通常/空/ローディング/エラー)を確認・合意する(Plan PRのレビュー・
-マージをもって合意とする。`10_frontend_design.md` §7、`04_development_process.md` §5.1)。
+マージをもって合意とする。`10_frontend_design.md` §7、`04_development_process.md` §5.1.1)。
 `components/ui/` 単体のカタログ化はしない。詳細は同ドキュメントを参照。
 
 Plan PRブランチに `.stories.tsx` が追加されると、既存の `ci.yml`(frontendジョブ: lint/type-check/
@@ -236,7 +236,7 @@ Storybookのページストーリーをスクリーンショット比較し、UI
   でartifact化し、`notify` ジョブがPRコメントでダウンロード案内を追記する(既存ストーリーの差分検知
   失敗時のコメントとは別に案内する)。レビュアーはローカルで `pnpm run storybook` を起動しなくても
   PR上でUIを確認できる。この仕組みはレビューの利便性向上が目的で、マージ可否には影響しない
-  (`04_development_process.md` §5.1)
+  (`04_development_process.md` §5.1.1)
 
 ---
 
