@@ -148,6 +148,11 @@ MUI標準に寄せてよいが、招待受諾画面(S14)はスマホで開かれ
   | 発行済み(期限切れ・枠切れ) | 「この招待リンクは無効です」+ 人数枠 Select(未発行と同じ動的上限)+「招待リンクを再発行」ボタン |
   | 上限到達(共同管理者9人) | 発行フォームを disabled にし、「共同管理者は9人までです」を表示。人数枠 Select の選択肢が0件になる状態と同義のため、この状態は「未発行」「期限切れ・枠切れ」の派生として実装する(専用の判定を別に持たない) |
 
+  招待リンク領域は共同管理者一覧と同じ `GET /members`(§4.7)の1回の fetch を共有する(queryKey
+  1本、§4.8)。そのため**ローディング・エラー時の表示は共同管理者一覧側と同期する**(カード全体を
+  下記の「共同管理者一覧の状態」表のローディング/エラー表示にし、招待リンク領域だけを個別に
+  ローディング/エラー状態にしない)。
+
 - **共同管理者一覧の状態**:
 
   | 状態 | 表示 |
@@ -414,6 +419,14 @@ responses 節の注記のとおり、swagger-request-validator が `additionalPr
 - ページ: `InvitationPage`(`/invite/:token`・`RequireAuth` 配下・ルート分割は既存どおり lazy)
 - `routes.ts` に `invitation: (token) => \`/invite/${token}\`` を追加。共有ページの `/s/:token` とは
   パスを明確に分ける(トークンの種類を取り違えないため)
+- **`LoginPage.tsx` の配線**(§4.6 のバックエンド側の仕組みを実際に使うために必須): 現行の
+  `LoginPage.tsx` は Google ログインボタンを `<Button component="a" href={GOOGLE_LOGIN_URL}>`
+  (`GOOGLE_LOGIN_URL = '/api/v1/auth/login'` 固定文字列)として実装しており、`redirect` パラメータを
+  付与する余地がない。既に計算済みの `redirectTo`(`location.state.from.pathname` 相当。開発用
+  ログインの `navigate(redirectTo)` が使っているのと同じ値)を、Google ログインリンクの href に
+  `?redirect=${encodeURIComponent(redirectTo)}` として付与するよう変更する。OAuth2はSPA内遷移ではなく
+  `<a>` によるフルページ遷移のため(`LoginPage.tsx` の既存コメントのとおり)、`location.state` は
+  ログイン後まで生き残らない。バックエンドへ遷移先を伝える手段はこのクエリパラメータ経由に限られる
 - features: `components/features/tournament/CollaboratorsCard.tsx`(設定画面のセクション)
 - hooks: `useTournamentMembers(id)` / `useIssueInvite(id)` / `useRevokeInvite(id)` /
   `useRemoveMember(id)` / `useInvitation(token)` / `useAcceptInvitation(token)`
@@ -481,10 +494,12 @@ IPベースのレート制限というトークン総当たり対策の欠落を
 
 - [ ] `.claude/07_plans/14_tournament_collaboration.md` — 本計画(新規)
 - [ ] `.claude/06_adr/13_tournament_collaboration_model.md` — ADR(新規・Status: Proposed)
+- [ ] `.claude/06_adr/14_plan_pr_generated_types_exception.md` — ADR(新規・Status: Accepted。理由は下記`api.d.ts`の項を参照)
+- [ ] `CLAUDE.md` #18・`.claude/00_project/04_development_process.md` §5.1・`.claude/00_project/03_feature_plan_template.md` §6 — ADR 14の決定を反映(Plan PRのコード0行原則の例外を2種類に整理)
 - [ ] `.claude/05_acceptance/00_acceptance_policy.md` — MBRプレフィックスを§2の表に追記
 - [ ] `.claude/05_acceptance/01_acceptance_scope.md` — 上記ケースをStatus=todoで追加 + ジャーニー表にCP8を追加
 - [ ] `schema/openapi.yaml` — 新規6エンドポイント・`Tournament.role`・`shareToken` の記述をOWNER限定に変更・`/auth/login` の `redirect` パラメータ
-- [ ] `frontend/src/types/generated/api.d.ts` — 上記 `schema/openapi.yaml` 変更に伴う `pnpm run generate:api` の機械的な再生成結果。手で編集しない(`.stories.tsx` と同じくPlan PRの「コード0行」原則の例外。生成コマンドの出力であり実装コードではないため)
+- [ ] `frontend/src/types/generated/api.d.ts` — 上記 `schema/openapi.yaml` 変更に伴う `pnpm run generate:api` の機械的な再生成結果(手で編集しない)。CIの生成型鮮度チェックが必須ゲートのためPlan PRでも追随させる必要があり、`04_development_process.md` §5.1.2・`06_adr/14_plan_pr_generated_types_exception.md` でPlan PRの「コード0行」原則の例外として正式に定めた(このADRは本Plan PR内で`Accepted`にし、対象ドキュメントも同じPR内で更新している。§4「Plan PR内でAcceptedにする場合」の例外規定)
 - [ ] `frontend/src/pages/InvitationPage.stories.tsx` — 新規画面S14のストーリー(プレースホルダー実装)
 
 ### 実装PRで更新が必要な設計ドキュメント(今は更新しない・実装時の申し送り)
@@ -506,6 +521,11 @@ IPベースのレート制限というトークン総当たり対策の欠落を
 - [ ] §6「実装PRで更新が必要な設計ドキュメント」が実装PRで更新されている
 - [ ] ローカル実機で動作確認済み(`.claude/skills/verify`)。**2つのGoogleアカウント相当
       (local/testプロファイルの `test-login` で別 `sub`)で招待〜承諾〜操作を通す**
+- [ ] **`LoginPage.tsx` の Google ログインリンクに `redirect` クエリパラメータが実際に付与され、
+      `GET /api/v1/auth/login?redirect=...` → Cookie → `OAuth2LoginSuccessHandler` の経路を通って
+      招待画面へ戻ることを確認する**(`test-login` の SPA内遷移は `location.state` を直接使えて
+      しまうためこの配線漏れを検出しない。ブラウザの開発者ツールでリンクの href を確認する、または
+      実際に Google アカウントでこの経路を1回通すことで確認する)
 - [ ] `vrt.yml` を手動実行してS14のベースラインを更新した
 
 ### 実装PRの分割案

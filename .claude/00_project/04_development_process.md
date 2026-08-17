@@ -44,7 +44,7 @@ flowchart TD
 
 > **例外(新規画面・大きなレイアウト変更)**: Plan PRは原則コード0行だが、対象画面のストーリー
 > (`src/pages/XxxPage.stories.tsx`)は例外的に含めてよい。実装前にUIを確認・合意する仕組みとして
-> 運用する(詳細は §5.1、`.claude/06_adr/11_story_first_agreement.md`)。
+> 運用する(詳細は §5.1.1、`.claude/06_adr/11_story_first_agreement.md`)。
 
 ---
 
@@ -62,7 +62,8 @@ flowchart TD
 - 「Plan PR 不要」の種別でも、実装が想定より大きくなった時点で Plan PR に切り替えてよい。
 - 受け入れケースの追加・変更・廃止の判断は**人間のみ**が行う(`00_acceptance_policy.md` §7)。AIは案を出すところまで。
 - **Plan PR が触るのは ADR・プラン(`07_plans/`)・受け入れケース台帳・`schema/openapi.yaml` まで**
-  (新規画面・大きなレイアウト変更の場合は対象画面の `.stories.tsx` を含む。§5.1)。
+  (新規画面・大きなレイアウト変更の場合は対象画面の `.stories.tsx` を、`schema/openapi.yaml` を
+  変更する場合は生成型定義 `api.d.ts` を含む。§5.1)。
   `.claude/01_development_docs/**` 等の設計ドキュメント本体の更新は**実装PRで、実装コードと同じPRで
   行う**(表の「設計ドキュメント更新」列が指すのは常にこのタイミング)。決定を書く場所が
   プラン1箇所に定まるため、Plan PRの中で「プラン・ADR・設計ドキュメント」の3箇所がずれて
@@ -218,7 +219,11 @@ Status と PR の更新は `/pr` が実装PRの中で行う。`done` になっ�
 > `10_frontend_design.md` は設計方針)。ここを溶かすと、実装後に「物足りない」と気づく手戻りの
 > 再発防止材料が失われる。
 
-### 5.1 ストーリー先行作成の例外(Plan PRへの `.stories.tsx` 追加)
+### 5.1 コード0行原則の例外
+
+Plan PRは原則コード0行だが、次の2種類を例外として許可する。
+
+#### 5.1.1 ストーリー先行作成の例外(Plan PRへの `.stories.tsx` 追加)
 
 新規画面、または既存画面の大きなレイアウト変更を含む Plan PR には、対象画面のストーリー
 (`src/pages/XxxPage.stories.tsx`)を例外として含めてよい。対象範囲・UI仕様の記述基準は
@@ -240,6 +245,21 @@ Status と PR の更新は `/pr` が実装PRの中で行う。`done` になっ�
   `ai-plan-review.yml` が担う)。
 
 決定の経緯・却下案は `.claude/06_adr/11_story_first_agreement.md`・`06_adr/12_story_first_existing_page_placeholder.md` を参照。
+
+#### 5.1.2 生成型定義の例外(Plan PRへの `api.d.ts` 追加)
+
+`schema/openapi.yaml` を変更する Plan PR には、`pnpm run generate:api` の出力
+(`frontend/src/types/generated/api.d.ts`)を例外として含めてよい。手で編集した実装コードではなく、
+コミット済みの `schema/openapi.yaml` から一意に導出される生成物である。
+
+- **理由**: `ci.yml` の `frontend` ジョブにある「生成型の鮮度チェック」(`pnpm run generate:api` を
+  実行して `git diff --exit-code` する)はブランチ種別を問わない必須ゲートであり、
+  `schema/openapi.yaml` を変更したPRでは `api.d.ts` が追随していないと必ず失敗する。
+  Plan PRで `schema/openapi.yaml` を先に更新する既存ルール(§2・`03_feature_plan_template.md` §4)
+  を成立させるには、この生成物もあわせてコミットする必要がある
+- 手で `api.d.ts` を編集しないこと(生成コマンドの出力を機械的にコミットするのみ)
+
+決定の経緯・却下案は `.claude/06_adr/14_plan_pr_generated_types_exception.md` を参照。
 
 ---
 
