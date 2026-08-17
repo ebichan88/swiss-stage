@@ -80,6 +80,14 @@
 
 - 共同管理の権限判定は個人戦/団体戦、グループ分けの有無で変わらない(大会単位の権限であり、参加者・チーム・グループの構造には依存しない)
 
+### 大会の状態(PREPARING/IN_PROGRESS/FINISHED)
+
+- 招待の発行・失効・承諾、共同管理者の取り消しは **大会の状態を問わず常に可能**(409になる状態遷移制約を持たない)。
+  参加者・チーム・グループの追加/削除が大会開始後に409で拒否されるのは競技データの整合性を守るためだが、
+  共同管理系の操作は競技データ(参加者・対局結果)を一切変更せず、「誰が管理画面を操作できるか」だけに
+  関わる。むしろ IN_PROGRESS 中(当日の結果入力・ラウンド確定を分担したい場面)こそ共同管理者を
+  増減させる主要な利用シーンであり、FINISHED 後も監査目的で共同管理者を整理できる必要がある
+
 ## 3. UI仕様
 
 記述の厚みは `00_basic_design.md` §4 の優先度に従う。本機能は **4. 運営者管理画面** に属するため
@@ -383,11 +391,14 @@ CSVインポートは**連続した範囲をまとめて確保する**(1行ず�
 | メソッド | パス | 権限 | 概要 |
 |---|---|---|---|
 | GET | `/api/v1/tournaments/{id}/members` | OWNER | 共同管理者一覧 + 現在の招待状態を1レスポンスで返す |
-| DELETE | `/api/v1/tournaments/{id}/members/{memberId}` | OWNER | 共同管理者の取り消し |
+| DELETE | `/api/v1/tournaments/{id}/members/{memberId}` | OWNER | 共同管理者の取り消し。存在しない `memberId` は冪等にせず 404 `TOURNAMENT_MEMBER_NOT_FOUND` を返す(`DELETE /invite` の冪等204とは異なる。参加者・チームメンバー削除と同じ「特定サブリソースの404」の扱いに揃える) |
 | POST | `/api/v1/tournaments/{id}/invite` | OWNER | 招待リンクの発行・再発行(body: `maxUses`)。`maxUses` は1〜9かつ「9−発行時点の共同管理者数」以下(超過は400)。**GET /members と同じ更新後のビューを返す** |
 | DELETE | `/api/v1/tournaments/{id}/invite` | OWNER | 招待リンクの失効 |
 | GET | `/api/v1/invitations/{token}` | 認証済み・**IPベースのレート制限あり** | 招待のプレビュー(大会名・期限・すでにメンバーか) |
 | POST | `/api/v1/invitations/{token}/accept` | 認証済み・**IPベースのレート制限あり** | 承諾。成功時に `tournamentId` を返す |
+
+**大会の状態による制約はない**: 上記6エンドポイントはいずれも大会の状態(PREPARING/IN_PROGRESS/
+FINISHED)を問わず利用できる(409の状態遷移制約を持たない)。理由は §2「大会の状態」を参照。
 
 設定画面は「共同管理者一覧」と「招待リンク」を必ず同時に表示するため、両者を1つのビュー
 (`TournamentMembersView`)にまとめ、発行も同じビューを返す。フロントは queryKey 1本で扱える。
@@ -429,9 +440,16 @@ responses 節の注記のとおり、swagger-request-validator が `additionalPr
 - `POST /api/v1/tournaments/{id}/participants` と `/participants/import` は**既に409を定義済み**
   (大会開始後の追加拒否)。採番カウンタの競合も同じ `CONFLICT` に乗るためスキーマ変更は不要
 
-**新しいエラーコード**: `INVALID_INVITE_TOKEN`(403 /「この招待リンクは無効になっています。運営者に
-確認してください」)。期限切れ・枠切れ・失効・不正トークンをすべてこの1コードに寄せ、**理由を出し分けない**
-(総当たりで有効なトークンの存在を推測させないため。`INVALID_SHARE_TOKEN` と同じ方針)。
+**新しいエラーコード**:
+
+- `INVALID_INVITE_TOKEN`(403 /「この招待リンクは無効になっています。運営者に確認してください」)。
+  期限切れ・枠切れ・失効・不正トークンをすべてこの1コードに寄せ、**理由を出し分けない**
+  (総当たりで有効なトークンの存在を推測させないため。`INVALID_SHARE_TOKEN` と同じ方針)
+- `TOURNAMENT_MEMBER_NOT_FOUND`(404 /「共同管理者が見つかりません」)。存在しない `memberId` の
+  取り消しに使う。`TEAM_MEMBER_NOT_FOUND` と同じ命名規約(特定サブリソースの404には既存の
+  `TOURNAMENT_NOT_FOUND` を再利用しない)。「存在を漏らさない」方針(`13_security_design.md` §3)は
+  他人の大会を隠す目的のものであり、OWNER自身が管理する大会内のメンバーIDの存在有無を隠す必要はない
+
 `06_error_handling_design.md` の表への追記は実装PRで行う。
 
 ### 4.8 フロントエンド
@@ -486,6 +504,9 @@ responses 節の注記のとおり、swagger-request-validator が `additionalPr
 | MBR-AC-019 | P1 | 招待発行のmaxUsesが「9−発行時点の共同管理者数」を超えると400 VALIDATION_ERRORになる | contract |
 | MBR-AC-022 | P2 | 共同管理者0人の状態でmaxUses=9を指定すると発行に成功し、共同管理者がN人いる状態でmaxUses=9-Nちょうどを指定しても発行に成功する | contract |
 | MBR-AC-023 | P0 | 共同管理者を取り消すと発行中の招待リンクも同時に失効し、取り消された人が同じリンクで再承諾してMAINTAINERに復帰することはできない | contract |
+| MBR-AC-024 | P1 | 招待の発行・失効・承諾、共同管理者の取り消しは大会の状態(PREPARING/IN_PROGRESS/FINISHED)を問わず利用できる | contract |
+| MBR-AC-025 | P2 | 招待は発行から72時間経過直前は有効(承諾に成功する)、経過直後は無効(INVALID_INVITE_TOKEN)になる | contract |
+| MBR-AC-026 | P2 | 存在しないmemberIdのDELETEは404 TOURNAMENT_MEMBER_NOT_FOUNDになる(DELETE /inviteの冪等204とは異なり、参加者・チームメンバー削除と同じ404の扱い) | contract |
 | MBR-AC-020 | P2 | 招待を一度も発行していない大会でDELETE /inviteを呼んでも204になる(冪等) | contract |
 | MBR-AC-021 | P2 | 招待を一度も発行していない大会のGET /membersはinvite:nullを返す | contract |
 | PTC-AC-014 | P0 | 参加者を同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる | contract |

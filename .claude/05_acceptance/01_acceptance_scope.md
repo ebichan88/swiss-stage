@@ -223,6 +223,9 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | MBR-AC-019 | P1 | 招待発行のmaxUsesが「9−発行時点の共同管理者数」を超えると400 VALIDATION_ERRORになる | todo | - |
 | MBR-AC-022 | P2 | 共同管理者0人の状態でmaxUses=9を指定すると発行に成功し、共同管理者がN人いる状態でmaxUses=9-Nちょうどを指定しても発行に成功する | todo | - |
 | MBR-AC-023 | P0 | 共同管理者を取り消すと発行中の招待リンクも同時に失効し、取り消された人が同じリンクで再承諾してMAINTAINERに復帰することはできない | todo | - |
+| MBR-AC-024 | P1 | 招待の発行・失効・承諾、共同管理者の取り消しは大会の状態(PREPARING/IN_PROGRESS/FINISHED)を問わず利用できる | todo | - |
+| MBR-AC-025 | P2 | 招待は発行から72時間経過直前は有効(承諾に成功する)、経過直後は無効(INVALID_INVITE_TOKEN)になる | todo | - |
+| MBR-AC-026 | P2 | 存在しないmemberIdのDELETEは404 TOURNAMENT_MEMBER_NOT_FOUNDになる(DELETE /inviteの冪等204とは異なり、参加者・チームメンバー削除と同じ404の扱い) | todo | - |
 | MBR-AC-020 | P2 | 招待を一度も発行していない大会でDELETE /inviteを呼んでも204になる(冪等) | todo | - |
 | MBR-AC-021 | P2 | 招待を一度も発行していない大会のGET /membersはinvite:nullを返す | todo | - |
 
