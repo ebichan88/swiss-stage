@@ -1,8 +1,8 @@
 # 12. ラウンド画面テーブルの行高・列幅統一
 
-- Status: planned
+- Status: in_progress
 - Issue: #180
-- PR: -
+- PR: #190
 
 ## 1. 背景・目的
 
@@ -216,21 +216,27 @@
 
 ### 実装PRで更新が必要な設計ドキュメント(今は更新しない・実装時の申し送り)
 
-- [ ] `.claude/02_design_system/02_component_design.md`§3「組み合わせ表(PairingTable)」—
+- [x] `.claude/02_design_system/02_component_design.md`§3「組み合わせ表(PairingTable)」—
   行の最小高さ統一・列幅固定(`table-layout: fixed`)・長い氏名の省略記号+Tooltip表示の方針を追記する
 
 ## 7. DoD(完了の定義)
 
-- [ ] `pnpm run check`(frontend)が通る
-- [ ] 上記の回帰テスト(§5)が追加され、通る
-- [ ] §6「実装PRで更新が必要な設計ドキュメント」(`02_component_design.md`)が実装PRで更新されている
+- [x] `pnpm run check`(frontend)が通る
+- [x] 上記の回帰テスト(§5)が追加され、通る
+- [x] §6「実装PRで更新が必要な設計ドキュメント」(`02_component_design.md`)が実装PRで更新されている
 - [ ] ローカル実機で動作確認済み(`.claude/skills/verify`)。個人戦・団体戦それぞれで「確定」「対局中」
   両方のラウンドを表示し、行高が揃うこと・ラウンドタブ切り替えで列位置がずれないこと・長い対局者名が
   省略されTooltipで全文が見えることを目視確認する。加えて個人戦・団体戦のモバイルカード表示
   (ブラウザ幅375px)と団体戦の参加者向け共有ページ(`SharedTeamResultPage`)でも、確定/対局中の
   結果表示の高さが揃うことを確認する
-- [ ] `vrt.yml`を手動実行してVRTベースラインを更新した(行高・列幅が変わり既存スクリーンショットと
-  差分が出るため。`09_test_strategy.md`)
+  (このセッションはサンドボックス制約でローカルブラウザ起動・localhostへのネットワークアクセスが
+  できず、対話的な確認〈タブ切り替え・Tooltipホバー等〉は未実施。代わりにCI経由の`vrt.yml`が生成した
+  実ブラウザ〈Playwright〉スクリーンショット(下記)は目視確認済みで、レイアウト崩れは無い。
+  ユーザー側での対話的な最終確認を推奨)
+- [x] `vrt.yml`を手動実行してVRTベースラインを更新した(行高・列幅が変わり既存スクリーンショットと
+  差分が出るため。`09_test_strategy.md`。PR #190で`gh workflow run vrt.yml -f update_snapshots=true`
+  により実行し、`pages-roundspage--default`/`pages-teamroundspage--default`/
+  `pages-sharedteamresultpage--default`/`--already-decided`(デスクトップ・モバイル)のベースラインを更新)
 
 ## 8. リスク・未確定事項
 

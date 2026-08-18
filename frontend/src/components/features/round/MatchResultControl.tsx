@@ -10,6 +10,12 @@ import {
   tableLabel,
 } from './matchDisplay';
 
+/**
+ * 結果欄の最小行高。「対局中」のTextField select(size="small"、MUI標準アウトライン小サイズ)の
+ * 実高さ(40px)に、「確定」時の静的テキスト・BYE時のChipを揃えるための基準値
+ */
+const RESULT_MIN_HEIGHT = 40;
+
 /** 自己申告状態のChip(一致待ち・不一致・確定後の食い違いのみ表示。確定済み・未申告は何も出さない) */
 export function ReportStatusChip({ match }: { match: Match }) {
   const status = matchReportStatus(match);
@@ -69,12 +75,16 @@ export function MatchResultControl({
   hideStatusChip = false,
 }: MatchResultControlProps) {
   if (match.result === 'BYE') {
-    return <Chip label="不戦勝" size="small" variant="outlined" />;
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', minHeight: RESULT_MIN_HEIGHT }}>
+        <Chip label="不戦勝" size="small" variant="outlined" />
+      </Box>
+    );
   }
   if (!editable) {
     return (
       <Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: RESULT_MIN_HEIGHT }}>
           <Typography variant="body2">{matchResultText(match)}</Typography>
           {!hideStatusChip && <ReportStatusChip match={match} />}
         </Box>
@@ -85,7 +95,7 @@ export function MatchResultControl({
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: RESULT_MIN_HEIGHT }}>
         <TextField
           select
           size="small"

@@ -11,6 +11,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -35,11 +36,46 @@ export interface TeamPairingTableProps {
   onInputResult: (match: TeamMatch, boardResults: MatchResult[]) => void;
 }
 
+/**
+ * 結果欄の最小行高。「対局中」のTextField select(size="small"、MUI標準アウトライン小サイズ)の
+ * 実高さ(40px)に、BYE時のChipを揃えるための基準値。
+ * frontend/src/components/features/round/MatchResultControl.tsx と同じ値
+ */
+const RESULT_MIN_HEIGHT = 40;
+
+/** PCテーブルの固定列幅(table-layout: fixed用)。個人戦PairingTableと同じ考え方でローカルに持つ */
+const COLUMN_WIDTH = {
+  table: 72,
+  team: 220,
+  // 「対局中」のTeamBoardResultField(ラベルminWidth:56 + gap:8 + TextField minWidth:180 = 244px)
+  // + TableCellの左右padding(16px*2)が収まる幅
+  result: 280,
+  status: 220,
+};
+
+const ELLIPSIS_SX = {
+  display: 'block',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+} as const;
+
 function teamText(team: TeamSummary | null, mark: string | null): string {
   if (team === null) {
     return '(不戦勝)';
   }
   return mark ? `${mark} ${team.name}` : team.name;
+}
+
+/** チーム名セル(PCテーブル用)。長いチーム名は省略記号で1行に収め、Tooltipで全文表示する */
+function TeamNameCell({ text }: { text: string }) {
+  return (
+    <Tooltip title={text}>
+      <Box component="span" sx={ELLIPSIS_SX}>
+        {text}
+      </Box>
+    </Tooltip>
+  );
 }
 
 /** 団体戦の組み合わせ表(02_component_design.md §3)。PC=テーブル / スマホ=1対局1カード */
@@ -88,7 +124,7 @@ export function TeamPairingTable({
 
   return (
     <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
-      <Table size="small">
+      <Table size="small" sx={{ tableLayout: 'fixed' }}>
         <TableHead
           sx={{
             bgcolor: 'primary.main',
@@ -96,11 +132,21 @@ export function TeamPairingTable({
           }}
         >
           <TableRow>
-            <TableCell scope="col">卓</TableCell>
-            <TableCell scope="col">チーム1</TableCell>
-            <TableCell scope="col">チーム2</TableCell>
-            <TableCell scope="col">結果</TableCell>
-            <TableCell scope="col">申告ステータス</TableCell>
+            <TableCell scope="col" sx={{ width: COLUMN_WIDTH.table }}>
+              卓
+            </TableCell>
+            <TableCell scope="col" sx={{ width: COLUMN_WIDTH.team }}>
+              チーム1
+            </TableCell>
+            <TableCell scope="col" sx={{ width: COLUMN_WIDTH.team }}>
+              チーム2
+            </TableCell>
+            <TableCell scope="col" sx={{ width: COLUMN_WIDTH.result }}>
+              結果
+            </TableCell>
+            <TableCell scope="col" sx={{ width: COLUMN_WIDTH.status }}>
+              申告ステータス
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -112,10 +158,18 @@ export function TeamPairingTable({
               return (
                 <TableRow key={match.id} sx={{ bgcolor: rowBg }}>
                   <TableCell>{teamTableLabel(match, multiGroup)}</TableCell>
-                  <TableCell>{teamText(match.team1, teamResultMark(match, 'team1'))}</TableCell>
-                  <TableCell>{teamText(match.team2, teamResultMark(match, 'team2'))}</TableCell>
                   <TableCell>
-                    <Chip label="不戦勝" size="small" variant="outlined" />
+                    <TeamNameCell text={teamText(match.team1, teamResultMark(match, 'team1'))} />
+                  </TableCell>
+                  <TableCell>
+                    <TeamNameCell text={teamText(match.team2, teamResultMark(match, 'team2'))} />
+                  </TableCell>
+                  <TableCell>
+                    <Box
+                      sx={{ display: 'flex', alignItems: 'center', minHeight: RESULT_MIN_HEIGHT }}
+                    >
+                      <Chip label="不戦勝" size="small" variant="outlined" />
+                    </Box>
                   </TableCell>
                   <TableCell />
                 </TableRow>
@@ -137,10 +191,10 @@ export function TeamPairingTable({
                       {teamTableLabel(match, multiGroup)}
                     </TableCell>
                     <TableCell rowSpan={boards.length}>
-                      {teamText(match.team1, teamResultMark(match, 'team1'))}
+                      <TeamNameCell text={teamText(match.team1, teamResultMark(match, 'team1'))} />
                     </TableCell>
                     <TableCell rowSpan={boards.length}>
-                      {teamText(match.team2, teamResultMark(match, 'team2'))}
+                      <TeamNameCell text={teamText(match.team2, teamResultMark(match, 'team2'))} />
                     </TableCell>
                   </>
                 )}

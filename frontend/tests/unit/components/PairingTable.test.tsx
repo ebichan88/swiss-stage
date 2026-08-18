@@ -151,6 +151,72 @@ describe('PairingTable', () => {
     expect(within(resultCell).queryByText(/の申告:/)).not.toBeInTheDocument();
   });
 
+  it('PCテーブルはtable-layout: fixedと各列の固定幅を持ち、ラウンドをまたいで列位置がずれない', () => {
+    renderWithProviders(
+      <PairingTable
+        matches={[matchOf({ id: 'm1', tableNumber: 1 })]}
+        editable
+        multiGroup={false}
+        savingMatchId={null}
+        onInputResult={() => {}}
+      />,
+    );
+
+    const table = screen.getByRole('table');
+    expect(window.getComputedStyle(table).tableLayout).toBe('fixed');
+
+    const headers = screen.getAllByRole('columnheader');
+    for (const header of headers) {
+      expect(window.getComputedStyle(header).width).not.toBe('');
+    }
+  });
+
+  it('対局者名(所属含む)が長い場合は1行に省略表示し、ホバーでTooltipに全文を表示する', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PairingTable
+        matches={[
+          matchOf({
+            id: 'm1',
+            player1: summaryOf({
+              id: 'p1',
+              name: '橋本 竹子',
+              organization: '天元クラブ',
+            }),
+          }),
+        ]}
+        editable
+        multiGroup={false}
+        savingMatchId={null}
+        onInputResult={() => {}}
+      />,
+    );
+
+    const rows = screen.getAllByRole('row');
+    const player1Cell = within(rows[1]).getAllByRole('cell')[1];
+    expect(window.getComputedStyle(player1Cell.firstElementChild as Element).textOverflow).toBe(
+      'ellipsis',
+    );
+
+    await user.hover(within(player1Cell).getByText('橋本 竹子(天元クラブ)'));
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('橋本 竹子(天元クラブ)');
+  });
+
+  it('スマホ表示はTableを使わないため列幅指定が存在しない', () => {
+    mockMatchMedia(true);
+    renderWithProviders(
+      <PairingTable
+        matches={[matchOf({ id: 'm1', tableNumber: 1 })]}
+        editable
+        multiGroup={false}
+        savingMatchId={null}
+        onInputResult={() => {}}
+      />,
+    );
+
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
   it('確定済み(editable=false)は入力コントロールを出さない', () => {
     renderWithProviders(
       <PairingTable

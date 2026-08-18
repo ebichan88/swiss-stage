@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TeamPairingTable } from '../../../src/components/features/team/TeamPairingTable';
@@ -156,5 +157,128 @@ describe('TeamPairingTable', () => {
 
     const rows = screen.getAllByRole('row');
     expect(rows[1]).toHaveTextContent('A-1');
+  });
+
+  it('BYE行・確定・対局中の各行で結果欄の最小高さが揃う(行高統一の回帰防止)', () => {
+    const teamA = teamSummaryOf({ id: 't1', name: 'Aチーム' });
+
+    const byeResult = renderWithProviders(
+      <TeamPairingTable
+        matches={[teamMatchOf({ id: 'm1', team1: teamA, team2: null, boardResults: [] })]}
+        editable
+        multiGroup={false}
+        savingMatchId={null}
+        onInputResult={() => {}}
+      />,
+    );
+    const byeRows = screen.getAllByRole('row');
+    const byeResultCell = within(byeRows[1]).getAllByRole('cell')[3];
+    const byeMinHeight = window.getComputedStyle(
+      byeResultCell.firstElementChild as HTMLElement,
+    ).minHeight;
+    byeResult.unmount();
+
+    const decidedResult = renderWithProviders(
+      <TeamPairingTable
+        matches={[
+          teamMatchOf({
+            id: 'm1',
+            boardResults: [boardResultOf({ boardPosition: 1, result: 'PLAYER1_WIN' })],
+          }),
+        ]}
+        editable={false}
+        multiGroup={false}
+        savingMatchId={null}
+        onInputResult={() => {}}
+      />,
+    );
+    const decidedRows = screen.getAllByRole('row');
+    const decidedResultCell = within(decidedRows[1]).getAllByRole('cell')[3];
+    const decidedMinHeight = window.getComputedStyle(
+      decidedResultCell.firstElementChild as HTMLElement,
+    ).minHeight;
+    decidedResult.unmount();
+
+    const playingResult = renderWithProviders(
+      <TeamPairingTable
+        matches={[teamMatchOf({ id: 'm1', boardResults: [boardResultOf({ boardPosition: 1 })] })]}
+        editable
+        multiGroup={false}
+        savingMatchId={null}
+        onInputResult={() => {}}
+      />,
+    );
+    const playingRows = screen.getAllByRole('row');
+    const playingResultCell = within(playingRows[1]).getAllByRole('cell')[3];
+    const playingMinHeight = window.getComputedStyle(
+      playingResultCell.firstElementChild as HTMLElement,
+    ).minHeight;
+    playingResult.unmount();
+
+    expect(byeMinHeight).toBe('40px');
+    expect(decidedMinHeight).toBe('40px');
+    expect(playingMinHeight).toBe('40px');
+  });
+
+  it('PCテーブルはtable-layout: fixedと各列の固定幅を持ち、ラウンドをまたいで列位置がずれない', () => {
+    renderWithProviders(
+      <TeamPairingTable
+        matches={[teamMatchOf({ id: 'm1', tableNumber: 1 })]}
+        editable
+        multiGroup={false}
+        savingMatchId={null}
+        onInputResult={() => {}}
+      />,
+    );
+
+    const table = screen.getByRole('table');
+    expect(window.getComputedStyle(table).tableLayout).toBe('fixed');
+
+    const headers = screen.getAllByRole('columnheader');
+    for (const header of headers) {
+      expect(window.getComputedStyle(header).width).not.toBe('');
+    }
+  });
+
+  it('チーム名が長い場合は1行に省略表示し、ホバーでTooltipに全文を表示する', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <TeamPairingTable
+        matches={[
+          teamMatchOf({
+            id: 'm1',
+            team1: teamSummaryOf({ id: 't1', name: '囲碁将棋クラブ長い名前チーム' }),
+          }),
+        ]}
+        editable
+        multiGroup={false}
+        savingMatchId={null}
+        onInputResult={() => {}}
+      />,
+    );
+
+    const rows = screen.getAllByRole('row');
+    const team1Cell = within(rows[1]).getAllByRole('cell')[1];
+    expect(window.getComputedStyle(team1Cell.firstElementChild as Element).textOverflow).toBe(
+      'ellipsis',
+    );
+
+    await user.hover(within(team1Cell).getByText('囲碁将棋クラブ長い名前チーム'));
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('囲碁将棋クラブ長い名前チーム');
+  });
+
+  it('スマホ表示はTableを使わないため列幅指定が存在しない', () => {
+    mockMatchMedia(true);
+    renderWithProviders(
+      <TeamPairingTable
+        matches={[teamMatchOf({ id: 'm1', tableNumber: 1 })]}
+        editable
+        multiGroup={false}
+        savingMatchId={null}
+        onInputResult={() => {}}
+      />,
+    );
+
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 });

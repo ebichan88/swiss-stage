@@ -125,6 +125,64 @@ describe('TeamMatchResultControl', () => {
     expect(screen.getByText('不戦勝')).toBeInTheDocument();
   });
 
+  it('BYE・確定・対局中の3分岐で結果欄の最小高さが揃う(行高統一の回帰防止)', () => {
+    const byeResult = renderWithProviders(
+      <TeamMatchResultControl
+        match={teamMatchOf({ team1, team2: null, boardResults: [] })}
+        editable
+        multiGroup={false}
+        saving={false}
+        onInput={() => {}}
+      />,
+    );
+    const byeMinHeight = window.getComputedStyle(
+      byeResult.container.firstElementChild as HTMLElement,
+    ).minHeight;
+    byeResult.unmount();
+
+    const decidedResult = renderWithProviders(
+      <TeamMatchResultControl
+        match={teamMatchOf({
+          team1,
+          team2,
+          boardResults: [boardResultOf({ boardPosition: 1, result: 'PLAYER1_WIN' })],
+        })}
+        editable={false}
+        multiGroup={false}
+        saving={false}
+        onInput={() => {}}
+      />,
+    );
+    const decidedRoot = decidedResult.container.firstElementChild as HTMLElement;
+    const decidedMinHeight = window.getComputedStyle(
+      decidedRoot.firstElementChild!.firstElementChild as HTMLElement,
+    ).minHeight;
+    decidedResult.unmount();
+
+    const playingResult = renderWithProviders(
+      <TeamMatchResultControl
+        match={teamMatchOf({
+          team1,
+          team2,
+          boardResults: [boardResultOf({ boardPosition: 1 })],
+        })}
+        editable
+        multiGroup={false}
+        saving={false}
+        onInput={() => {}}
+      />,
+    );
+    const playingRoot = playingResult.container.firstElementChild as HTMLElement;
+    const playingMinHeight = window.getComputedStyle(
+      playingRoot.firstElementChild!.firstElementChild as HTMLElement,
+    ).minHeight;
+    playingResult.unmount();
+
+    expect(byeMinHeight).toBe('40px');
+    expect(decidedMinHeight).toBe('40px');
+    expect(playingMinHeight).toBe('40px');
+  });
+
   it('結果セレクトの背景色をテーマ既定に統合した後も、結果を選ぶとonInputが呼ばれる(回帰防止)', async () => {
     const user = userEvent.setup();
     const onInput = vi.fn();
