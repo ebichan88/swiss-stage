@@ -173,6 +173,10 @@ SKIPPED** に分類し、補足に「設計判断を要するため人間対応�
 - [ ] `.github/workflows/guard.yml`(対象コミットprefixに `[plan-fix]` 追加、§4.4)
 - [ ] `.claude/01_development_docs/11_cicd_design.md`(§2.5/§2.7/§2.9の `MAX_FIX_ATTEMPTS` 値・
       説明文言を更新、§2.10/§2.11にplan-fixerの追加を反映、新設小節で§4.1〜§4.6の設計を記述)
+- [ ] `CLAUDE.md`(「AIエージェント連携」節にplan-fixerの行を追記。既存の
+      reviewer/fixer・qa/qa-fixer・ci-fixer・design-reviewerと同じ形式で、
+      `.claude/agents/plan-fixer.md` とCI連携先 `ai-plan-review.yml`/`ai-design-review.yml` を
+      記載する、§4.1)
 
 ## 7. DoD(完了の定義)
 
