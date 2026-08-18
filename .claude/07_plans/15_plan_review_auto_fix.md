@@ -1,8 +1,8 @@
 # 15. plan-reviewer/design-reviewerの自動修正エージェント(plan-fixer)を追加し、MAX_FIX_ATTEMPTSを4に統一する
 
-- Status: planned
+- Status: in_progress
 - Issue: #187
-- PR: -
+- PR: #189
 
 ## 1. 背景・目的
 
