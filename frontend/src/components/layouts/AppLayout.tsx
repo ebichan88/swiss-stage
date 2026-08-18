@@ -1,5 +1,6 @@
 import LogoutIcon from '@mui/icons-material/Logout';
 import { AppBar, Box, Button, Toolbar, Typography } from '@mui/material';
+import { darken } from '@mui/material/styles';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 
 import { useAuth, useLogout } from '../../hooks/useAuth';
@@ -49,10 +50,18 @@ export function AppLayout() {
             {user?.name}
           </Typography>
           <Button
-            color="inherit"
             startIcon={<LogoutIcon />}
             onClick={handleLogout}
             disabled={logoutMutation.isPending}
+            sx={{
+              '&:not(.Mui-disabled)': {
+                backgroundColor: 'primary.light',
+                color: 'primary.dark',
+              },
+              '&:not(.Mui-disabled):hover': {
+                backgroundColor: (theme) => darken(theme.palette.primary.light, 0.08),
+              },
+            }}
           >
             ログアウト
           </Button>
