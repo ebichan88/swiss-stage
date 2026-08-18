@@ -165,6 +165,9 @@ SKIPPED** に分類し、補足に「設計判断を要するため人間対応�
 ### 実装PRで更新が必要な設計ドキュメント(今は更新しない・実装時の申し送り)
 
 - [ ] `.claude/agents/plan-fixer.md`(新規作成、§4.1)
+- [ ] `.claude/agents/plan-reviewer.md`・`.claude/agents/design-reviewer.md`(末尾「重要な原則」の
+      「自動修正との連携もない」という記述を、plan-fixer接続後の実態(非ゲートである点は変わらないが
+      自動修正は接続される)に合わせて修正、§4.2)
 - [ ] `.github/workflows/ai-plan-review.yml`(gate + plan-fixer + 再レビュー追加、§4.2)
 - [ ] `.github/workflows/ai-design-review.yml`(同上、§4.2)
 - [ ] `.github/workflows/ai-review.yml`(`MAX_FIX_ATTEMPTS` 3→4、§4.3)
