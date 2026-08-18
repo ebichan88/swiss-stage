@@ -230,9 +230,13 @@
   (ブラウザ幅375px)と団体戦の参加者向け共有ページ(`SharedTeamResultPage`)でも、確定/対局中の
   結果表示の高さが揃うことを確認する
   (このセッションはサンドボックス制約でローカルブラウザ起動・localhostへのネットワークアクセスが
-  できず、実施できていない。ユーザー側での目視確認が必要)
-- [ ] `vrt.yml`を手動実行してVRTベースラインを更新した(行高・列幅が変わり既存スクリーンショットと
-  差分が出るため。`09_test_strategy.md`)
+  できず、対話的な確認〈タブ切り替え・Tooltipホバー等〉は未実施。代わりにCI経由の`vrt.yml`が生成した
+  実ブラウザ〈Playwright〉スクリーンショット(下記)は目視確認済みで、レイアウト崩れは無い。
+  ユーザー側での対話的な最終確認を推奨)
+- [x] `vrt.yml`を手動実行してVRTベースラインを更新した(行高・列幅が変わり既存スクリーンショットと
+  差分が出るため。`09_test_strategy.md`。PR #190で`gh workflow run vrt.yml -f update_snapshots=true`
+  により実行し、`pages-roundspage--default`/`pages-teamroundspage--default`/
+  `pages-sharedteamresultpage--default`/`--already-decided`(デスクトップ・モバイル)のベースラインを更新)
 
 ## 8. リスク・未確定事項
 
