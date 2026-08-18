@@ -44,7 +44,17 @@ Claude Codeのセッション内で人間が手動で往復対応する結果に
 - **聖域の再定義**(fixer/qa-fixerの聖域をそのまま踏襲しない):
   - `schema/openapi.yaml`・`.claude/05_acceptance/01_acceptance_scope.md`(このPlan PRが
     新規追加・調整した行に限る)は**自動修正を許可する**。Plan PRはそもそもこの2つを起草する
-    ことが目的のファイルであり、AIが起草し人間がPRマージで承認する既存の運用の延長とみなせる
+    ことが目的のファイルであり、AIが起草し人間がPRマージで承認する既存の運用の延長とみなせる。
+    **既存原則との関係**: `04_development_process.md` §2・`00_acceptance_policy.md` §7-3は
+    「受け入れケースの追加・変更・廃止は人間のみが判断し、AIエージェントは指摘を閉じる目的で
+    台帳を書き換えてはならない」と無条件に定めており、qa-fixerもこの原則に従い
+    `close: ledger-side`(台帳自体の書き換え)には一切触れない(`00_acceptance_policy.md` §7.5)。
+    この決定はplan-fixerに限り、qa-fixerが避けている操作を許可する**明示的な例外**であり、
+    根拠は「Plan PR自体がまだ人間のマージ承認を得ていない draft であり、plan-fixerが触るのは
+    `Status: todo` のままこのPlan PRが新規に導入した行に限られる(＝実装PRで台帳が指す
+    `close: ledger-side` の対象、既にマージ済みの他機能の既存行には一切触れない)」という
+    構造的な違いにある。この例外を無条件原則のまま黙って踏み越えないよう、`00_acceptance_policy.md`
+    §7に qa-fixerの §7.5 と同じ形式でplan-fixerの例外条項を追記する(§6)
   - `.claude/01_development_docs/**`(`05_swiss_pairing_algorithm.md` を除く)・`CLAUDE.md` は
     原則聖域。ただし**このPlan PR内に `Status: Accepted` のADR(`04_development_process.md` §4
     「Plan PR内でAcceptedにする場合」)が存在し、そのADRの決定に関する用語・節番号などの
@@ -84,9 +94,13 @@ Claude Codeのセッション内で人間が手動で往復対応する結果に
   次のpushイベントで自然に再試行される運用上許容されたリスクとして扱われている。plan-fixerも
   同じ扱いにする
 - **案: `.claude/05_acceptance/01_acceptance_scope.md`・`schema/openapi.yaml` を fixer/qa-fixer
-  と同じく常に聖域にする。**
+  と同じく常に聖域にする(qa-fixerに完全に揃え、`00_acceptance_policy.md` §7-3の無条件原則を
+  一切緩めない)。**
   却下理由: Plan PRはこの2つを起草すること自体が目的のファイルであり、聖域にすると往復削減効果が
-  実際の往復履歴(スキーマlintエラー・招待の人数枠の動的上限化)の相当割合をカバーできなくなる
+  実際の往復履歴(スキーマlintエラー・招待の人数枠の動的上限化)の相当割合をカバーできなくなる。
+  ただし §7-3の原則を無条件のまま残すことはできないため、上記「決定」に書いたとおり
+  `00_acceptance_policy.md` に明示的な例外条項を追記する対応(qa-fixerの §7.5 と同型)を
+  セットで採用する。例外条項を書かずに黙って踏み越える設計は採らない
 - **案: `.claude/01_development_docs/**`・`CLAUDE.md` への修正を無条件で許可する。**
   却下理由: Plan PRの「設計ドキュメント本体は実装PRで更新する」という核となる原則
   (`04_development_process.md` §2)を緩めすぎる。ADR Accepted-in-PR例外の範囲に限定することで、

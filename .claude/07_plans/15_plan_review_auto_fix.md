@@ -68,7 +68,7 @@ Plan PR側だけこれが欠けている。
 | `.claude/01_development_docs/05_swiss_pairing_algorithm.md` | 常に聖域 |
 | `.github/workflows/**` | 常に聖域(`fixer.md` と同じ技術的制約。Claude GitHub Appの個別トークンがworkflowsへのpush権限を持たない) |
 | `schema/openapi.yaml` | **許可**(Plan PRの正規スコープ。API契約の起草そのものが目的のファイル) |
-| `.claude/05_acceptance/01_acceptance_scope.md` | **許可、ただしこのPlan PRが新規追加・調整した行に限る**。他機能の既存行のStatus・内容変更は禁止 |
+| `.claude/05_acceptance/01_acceptance_scope.md` | **許可、ただしこのPlan PRが新規追加・調整した行に限る**。他機能の既存行のStatus・内容変更は禁止。この許可は `04_development_process.md` §2・`00_acceptance_policy.md` §7-3「AIエージェントは指摘を閉じる目的で台帳を書き換えてはならない」の無条件原則に対する**明示的な例外**であり、qa-fixerの `close: test-side` 限定(§7.5)と同じ形式で `00_acceptance_policy.md` に例外条項を追記する(§6、理由は `06_adr/15_plan_review_auto_fix.md` §2) |
 | `.claude/01_development_docs/**`(`05_swiss_pairing_algorithm.md`を除く)・`CLAUDE.md` | **原則聖域**。例外: このPlan PR内に `Status: Accepted` のADR(`04_development_process.md` §4「Plan PR内でAcceptedにする場合」)が存在し、そのADRの決定に関する**用語・節番号などの機械的な同期に限る**場合のみ許可(新しい仕様判断を伴う編集は常にSKIPPED) |
 | `frontend/src/types/generated/api.d.ts` | `schema/openapi.yaml` を修正した場合、`pnpm run generate:api` の出力のみ許可(手編集禁止。`06_adr/14_plan_pr_generated_types_exception.md` と同じ制約) |
 | `src/pages/XxxPage.stories.tsx` | このPlan PRが対象とする画面のストーリーに限り許可 |
@@ -90,6 +90,13 @@ Plan PR側だけこれが欠けている。
   (`startsWith(github.head_ref, 'feature/plan-')`)。`ai-design-review.yml` は実装PRでも
   起動する広いトリガーを持つため、Plan PR以外のブランチでは既存の非ゲート・自動修正なしの運用を
   変えない
+- **`needs-human` 解除時の再開**: `ai-review.yml`/`ai-qa.yml` と同じく、`on.pull_request.types`
+  に `opened, synchronize, ready_for_review` に加えて **`unlabeled`** を追加する。
+  `needs-human` ラベルを人間が外した際に自動ループ(plan-fixer含む)を再開するためで、
+  `unlabeled` イベントは `needs-human` の除去以外では発火させないガード条件
+  (`github.event.action != 'unlabeled' || github.event.label.name == 'needs-human'`)も
+  既存2系統と同じ形で適用する。これを入れないと、`needs-human` を人間が外しても新しいpushが
+  無い限りワークフローが再起動せず既存2系統との挙動パリティが崩れる
 - **ゲート判定**(`ai-review.yml`と同じ思想。bashで決定的に判定): 対象レポートの
   `VERDICT: FAIL` かつ `### 要対応` を抽出できる かつ 聖域に該当しない かつ
   `[plan-fix]` コミット数が `MAX_FIX_ATTEMPTS` 未満 かつ 過去に修正済みの指摘が再指摘されていない
@@ -186,6 +193,11 @@ SKIPPED** に分類し、補足に「設計判断を要するため人間対応�
       説明文言を更新、§2.10/§2.11にplan-fixerの追加を反映、新設小節で§4.1〜§4.6の設計を記述)
 - [ ] `.claude/commands/apply-review.md`(§5の聖域定義に、`feature/plan-*` ブランチに限り
       `schema/`・受け入れケース台帳(このPR導入行)をplan-fixerと同じ条件で除外する旨を追記、§4.5)
+- [ ] `.claude/05_acceptance/00_acceptance_policy.md`(§7に、qa-fixerの §7.5 と同じ形式で
+      plan-fixerの例外条項を追記する: `feature/plan-*` ブランチ上で、そのPlan PRが新規追加・
+      調整した行に限り自動修正してよい。他機能の既存行・`ledger-side` 相当の判断には一切触れない、
+      §4.1。`04_development_process.md` §2「受け入れケースの追加・変更・廃止は人間のみが判断する」
+      の無条件原則との関係を明文化する)
 - [ ] `CLAUDE.md`(「AIエージェント連携」節に、**plan-reviewer自体の既存エントリが現状無い分と
       plan-fixerの新規分の両方**を追記する。現状は reviewer/fixer・qa/qa-fixer・ci-fixer・
       design-reviewerの4行のみで、`ai-plan-review.yml` で既にCI連携済みのplan-reviewerが
@@ -218,6 +230,9 @@ SKIPPED** に分類し、補足に「設計判断を要するため人間対応�
 - [ ] `ai-review.yml`・`ci.yml`・`ai-qa.yml` の `MAX_FIX_ATTEMPTS` が4に更新され、`ci.yml` の
       決定論的修正+ci-fixerの数え方(合算)が変わっていないことを確認する
 - [ ] `guard.yml` の対象コミットprefixに `[plan-fix]` が追加されていることを確認する
+- [ ] `needs-human` が付いた状態で人間がラベルを外すと、新しいpushが無くても
+      `unlabeled` イベントでplan-fixerのループが再開することを確認する
+      (`ai-review.yml`/`ai-qa.yml` と同じ挙動パリティの直接検証)
 - [ ] §6「実装PRで更新が必要な設計ドキュメント」がすべて実装PRで更新されている
 
 ## 8. リスク・未確定事項
