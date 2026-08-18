@@ -60,15 +60,20 @@ AskUserQuestionは使えない。Issue本文・全コメント(過去の質問�
   作成する(連番は既存最大値+1)
 - ADR要否は `04_development_process.md` §3 の条件で判定し、必要なら
   `.claude/06_adr/NN_<slug>.md` を作成する
-- API変更があれば `schema/openapi.yaml` を更新する(`.claude/01_development_docs/**` は更新しない)
+- API変更があれば `schema/openapi.yaml` を更新する(`.claude/01_development_docs/**` は更新しない)。
+  更新した場合は `frontend/` で `pnpm run generate:api` を実行し、再生成された
+  `frontend/src/types/generated/api.d.ts` もコミットに含める(`04_development_process.md` §5.1.2、
+  `06_adr/14_plan_pr_generated_types_exception.md`。CIの生成型鮮度チェックが必須ゲートのため)
 - `.claude/05_acceptance/01_acceptance_scope.md` に Status=todo でケースを追加する
 - `python3 .github/scripts/docs-lint.py` が0で終了するまで直す
 
 **`/plan` 手順5(新規画面・大きなレイアウト変更のストーリー作成)は対象外とする。** `planner` は
 文章による計画作成のみを行い、`.stories.tsx` の作成は行わない。対象画面が新規画面・大きなレイアウト
 変更に該当する場合でも、ストーリー作成は人間主導の `/plan` またはPlan PRレビュー後の人間の作業に
-委ね、Plan PRドラフトには含めない(`04_development_process.md` §5.1 の例外は無人実行の対象外。
-UIレイアウトの判断を伴うコード生成を無人ループに含めるのは時期尚早と判断した)。
+委ね、Plan PRドラフトには含めない(`04_development_process.md` §5.1.1 のストーリー例外は無人実行の
+対象外。UIレイアウトの判断を伴うコード生成を無人ループに含めるのは時期尚早と判断した。§5.1.2の
+生成型定義の例外は機械的な `generate:api` の出力であり判断を伴わないため、上記のとおり無人実行の
+対象内とする)。
 
 検証(docs-lint)を通せなければ **FAILED** として §6 の手順に進む。
 

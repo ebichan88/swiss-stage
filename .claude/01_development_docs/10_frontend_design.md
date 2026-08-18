@@ -111,7 +111,7 @@ export function useTournament(id: string) {
 - 対象は `.claude/02_design_system/00_basic_design.md` §4 の優先度に従う
   (共有ページ > 結果入力 > 順位表 > 運営者管理画面)
 - **Plan PRの一部として作成する**(Plan PRの「コード0行」原則の例外。
-  `.claude/00_project/04_development_process.md` §5.1)。Plan PRのレビュー・マージをもって
+  `.claude/00_project/04_development_process.md` §5.1.1)。Plan PRのレビュー・マージをもって
   「UI合意」とし、実機を起動せずに確認・合意できるようにする
 
 ### 配置とファイル名

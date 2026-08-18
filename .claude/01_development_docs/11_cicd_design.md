@@ -28,10 +28,12 @@
 配下はほぼ全て `.md` のため、この基準で「利用者から見た挙動を変えない純ドキュメント変更」を
 実質的にカバーできる。コードを1つでも含むPRでは従来通り全ワークフローが起動する。
 
-**例外**: Plan PRの「コード0行」原則には、新規画面・大きなレイアウト変更を含む場合に対象画面の
-`.stories.tsx` のみを許可する例外がある(`04_development_process.md` §5.1)。この場合Plan PRに
-コード(`.stories.tsx`)が含まれ`paths-ignore`だけでは弾けなくなるため、`ai-review.yml` /
-`ai-qa.yml` はジョブ条件に `!startsWith(github.head_ref, 'feature/plan-')` を追加し、Plan PR
+**例外**: Plan PRの「コード0行」原則には2種類の例外がある(`04_development_process.md` §5.1):
+新規画面・大きなレイアウト変更を含む場合の対象画面の `.stories.tsx`(§5.1.1)、
+`schema/openapi.yaml` を変更する場合の生成型定義 `frontend/src/types/generated/api.d.ts`
+(§5.1.2、`06_adr/14_plan_pr_generated_types_exception.md`)。いずれの場合もPlan PRにコードが
+含まれ`paths-ignore`だけでは弾けなくなるため、`ai-review.yml` / `ai-qa.yml` はジョブ条件に
+`!startsWith(github.head_ref, 'feature/plan-')` を追加し、Plan PR
 のブランチ命名規約(`feature/plan-*`)でスキップする。Plan PRのレビューは
 `ai-design-review.yml` / `ai-plan-review.yml`(いずれも非ゲート)が担うため、`ai-qa.yml` の
 「VERDICT: FAILはゲート」がPlan PR(受け入れケースが`Status: todo`のまま実装が無い状態)を

@@ -72,7 +72,7 @@ Plan PRでは、このテンプレートに沿って書いたファイルを `.c
 - **新しいUIパターンの有無**: 必要なら **先に `02_component_design.md` に定義を追加してから実装する**
 
 > 新規画面・大きなレイアウト変更では、ここに挙げた画面のストーリー(`src/pages/XxxPage.stories.tsx`)を
-> **Plan PRの一部として作成する**(Plan PRの「コード0行」原則の例外。`04_development_process.md` §5.1)。
+> **Plan PRの一部として作成する**(Plan PRの「コード0行」原則の例外。`04_development_process.md` §5.1.1)。
 > Plan PRのレビュー・マージをもって「UI合意」とし、実機を起動せずに確認できるようにする。
 > 本物のページが対象の新レイアウトをまだ反映していない(新規画面なら未実装、既存画面の大きな
 > レイアウト変更なら旧レイアウトのまま)間は、ストーリー内にインラインのプレースホルダー実装を
@@ -119,7 +119,8 @@ Plan PRでは、このテンプレートに沿って書いたファイルを `.c
 - [ ] `.claude/05_acceptance/01_acceptance_scope.md` — ケース追加(ほぼ常に対象)
 - [ ] `.claude/06_adr/NN_<slug>.md` — ADRを書く条件(`04_development_process.md` §3)に当たる場合
 - [ ] `schema/openapi.yaml` — API変更がある場合(実装より先)
-- [ ] `src/pages/XxxPage.stories.tsx` — 新規画面・大きなレイアウト変更の場合(`04_development_process.md` §5.1)
+- [ ] `src/pages/XxxPage.stories.tsx` — 新規画面・大きなレイアウト変更の場合(`04_development_process.md` §5.1.1)
+- [ ] `frontend/src/types/generated/api.d.ts` — `schema/openapi.yaml` を変更する場合、`pnpm run generate:api` の出力(`04_development_process.md` §5.1.2)
 
 ### 実装PRで更新が必要な設計ドキュメント(今は更新しない・実装時の申し送り)
 

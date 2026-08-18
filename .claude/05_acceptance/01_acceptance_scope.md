@@ -15,6 +15,7 @@
 | グループ運営 | 運営者が参加者をグループに分けて並行運営する | CP5(E2E-AC-006) | GRP |
 | 団体戦 | 運営者・参加者が団体戦(3/5チーム制)を運営する | CP6(E2E-AC-007, 008) | TEAM |
 | 紙帳票 | 運営者がスマホを持たない参加者向けに紙の帳票で運営する | CP7(E2E-AC-009) | PRT |
+| 共同管理 | 運営者が招待リンクで別の運営者を招き、1つの大会を複数人で運営する | CP8(E2E-AC-010) | MBR, TRN |
 
 CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独立したジャーニーではなく
 「大会運営」の中の特に重要なルールとして扱う。AUTH・SPA は全ジャーニー横断の前提。
@@ -69,6 +70,10 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | TRN-AC-021 | P2 | 状態(すべて/準備中/開催中/終了)フィルタで、選択した状態の大会だけが表示される。「すべて」は初期表示時・他の状態から選び直した場合のいずれでも空白にならず選択状態として表示される | done | TournamentListPage.test(Vitest) |
 | TRN-AC-022 | P2 | 大会名検索と状態フィルタを同時に指定すると、両方を満たす大会だけが表示される(AND) | done | TournamentListPage.test(Vitest) |
 | TRN-AC-023 | P2 | 検索・フィルタの結果が0件のとき専用の空状態が表示され、「検索条件をクリア」で元の一覧に戻る | done | TournamentListPage.test(Vitest) |
+| TRN-AC-024 | P2 | 大会一覧で共同管理中の大会に「共同管理」バッジが表示され、所有大会には表示されない | todo | - |
+| TRN-AC-025 | P2 | MAINTAINERには管理画面の共通ナビゲーションに「設定」が表示されず、設定画面を直接開くと権限がない旨と戻る導線が表示される | todo | - |
+| TRN-AC-026 | P2 | 設定画面の共同管理者セクションで、招待リンクの発行・コピー・失効と共同管理者の取り消しができる | todo | - |
+| TRN-AC-027 | P1 | 大会一覧APIは所有大会と共同管理大会を1つのリストに混在させて返し、各アイテムのroleが所有はOWNER・共同管理はMAINTAINERと正しく区別される | todo | - |
 
 ## PTC: 参加者
 
@@ -87,6 +92,9 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | PTC-AC-011 | P2 | 参加者が0件のときのCSVダウンロードはヘッダー行のみになりテンプレートとして使える | done | ParticipantApiTest |
 | PTC-AC-012 | P1 | CSVダウンロードは大会の状態(PREPARING/IN_PROGRESS/FINISHED)を問わず利用できる | done | ParticipantApiTest |
 | PTC-AC-013 | P1 | 参加者一覧で棄権者(status=WITHDRAWN)の行が他の参加者と一目で区別できる(色の違いのみに依存しない) | done | ParticipantTable.test(Vitest) |
+| PTC-AC-014 | P0 | 参加者を同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる | todo | - |
+| PTC-AC-015 | P0 | 採番カウンタ未設定の大会(既存大会の移行・新規大会いずれも)で、参加者0人からの初回追加はentryOrder=1、既存参加者がいる場合は最大entryOrder+1から採番される | todo | - |
+| PTC-AC-016 | P1 | CSVインポートは連続したentryOrderの範囲をまとめて確保し、割り込みの追加と重複しない | todo | - |
 
 ## GRP: グループ
 
@@ -127,6 +135,7 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | RND-AC-012 | P1 | 片方のみ申告・申告不一致で結果が未確定の対局が残っているとラウンド確定はブロックされる。運営者が結果を確定すれば確定できる | done | RoundApiTest |
 | RND-AC-013 | P2 | 管理画面の順位と対戦結果は別メニュー(別画面)で表示される | done | RankingBoard.test, MatchResultsTable.test(Vitest) |
 | RND-AC-014 | P1 | 管理画面の順位表はラウンド1が確定するまで表示されない(未確定時は全員同率rank=1になり表示が崩れるため) | done | cp1-tournament-flow(E2E) |
+| RND-AC-015 | P0 | 対局結果の編集中に別の運営者が同じラウンドを先に確定させると、編集は失敗し(確定済みラウンドの結果は変更できないエラー)、確定済みラウンドの結果が黙って書き換わらない | todo | - |
 
 ## TEAM: 団体戦
 
@@ -157,6 +166,10 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | TEAM-AC-023 | P2 | チームが0件のときのCSVダウンロードはヘッダー行のみになりテンプレートとして使える | done | TeamApiTest |
 | TEAM-AC-024 | P1 | CSVダウンロードは大会の状態を問わず利用でき、メンバーが1人もいないチームは行として出力されない | done | TeamApiTest |
 | TEAM-AC-025 | P1 | チーム一覧で棄権者(status=WITHDRAWN)の行が他のチームと一目で区別できる(色の違いのみに依存しない) | done | TeamTable.test(Vitest) |
+| TEAM-AC-026 | P0 | チームを同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる | todo | - |
+| TEAM-AC-027 | P0 | 採番カウンタ未設定の大会(既存大会の移行・新規大会いずれも)で、チーム0件からの初回追加はentryOrder=1、既存チームがいる場合は最大entryOrder+1から採番される | todo | - |
+| TEAM-AC-028 | P1 | チームCSVインポートは連続したentryOrderの範囲をまとめて確保し、割り込みの追加と重複しない | todo | - |
+| TEAM-AC-029 | P0 | 団体戦でも対局結果の編集中に別の運営者が同じラウンドを先に確定させると、編集は失敗し確定済みラウンドの結果が黙って書き換わらない(RND-AC-015の団体戦版) | todo | - |
 
 ## SHR: 共有(トークン)
 
@@ -183,6 +196,42 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | SHR-AC-019 | P1 | テーマで定義した文字色と背景色の主要な組み合わせがWCAG AA(4.5:1)以上のコントラスト比を満たす | done | theme.test(Vitest) |
 | SHR-AC-020 | P1 | 共有ページの対局カードは勝敗を色だけでなく記号(○/●)で併記する | done | SharedPage.test(Vitest) |
 | SHR-AC-021 | P1 | 団体戦の共有ページの対局カードは勝敗を色だけでなく記号でも表示し、個人名を出さずチーム名のみで表示する | done | TeamSharedPage.test(Vitest) |
+
+## MBR: 大会の共同管理
+
+1つの大会を複数の運営者で運営する機能。招待リンクで共同管理者(MAINTAINER)を追加し、
+大会設定(S09)だけをOWNER専用に残す。仕様は `14_tournament_collaboration.md`、
+決定の経緯は `13_tournament_collaboration_model.md` を参照。
+
+| ID | P | 受け入れ基準 | Status | 検証 |
+|----|---|------------|--------|------|
+| MBR-AC-001 | P0 | 招待を承諾したユーザーはMAINTAINERとして登録され、その大会の参加者管理・ラウンド進行・結果入力APIを実行できる | todo | - |
+| MBR-AC-002 | P0 | MAINTAINERが大会設定・削除・共有トークン再発行・招待/メンバー管理APIを呼ぶと403 FORBIDDENになる | todo | - |
+| MBR-AC-003 | P0 | どのメンバーでもないユーザーは大会APIすべてで404 TOURNAMENT_NOT_FOUNDになり、403との差で所属を推測できない | todo | - |
+| MBR-AC-004 | P0 | 期限切れ・人数枠切れ・失効済み・不正な招待トークンはいずれも同一の403 INVALID_INVITE_TOKENになり、理由を出し分けない | todo | - |
+| MBR-AC-005 | P0 | 人数枠を超える同時承諾は上限で打ち切られ、枠を超えるMAINTAINERは作られない | todo | - |
+| MBR-AC-006 | P0 | 共同管理者一覧・招待情報(トークンを含む)はOWNERにのみ返り、MAINTAINER・未認証には返らない | todo | - |
+| MBR-AC-007 | P0 | MAINTAINER向けの大会レスポンスにはshareTokenが含まれない | todo | - |
+| MBR-AC-008 | P0 | 招待リンクを再発行すると旧トークンは即時無効になり、使用済みの枠がリセットされる | todo | - |
+| MBR-AC-009 | P0 | OWNERが共同管理者を取り消すと、取り消された側は以後その大会で404になり一覧からも消える | todo | - |
+| MBR-AC-010 | P0 | 招待の失効(DELETE)後はそのトークンで承諾できない | todo | - |
+| MBR-AC-011 | P1 | OWNER本人・既にMAINTAINERのユーザーが承諾しても二重登録されず、人数枠も消費しない | todo | - |
+| MBR-AC-012 | P1 | 共同管理者は9人(OWNER含め10人)を超えて追加できず、招待を再発行しても上限は回避できない(再発行時もmaxUsesの上限が発行時点の共同管理者数で再計算されるため) | todo | - |
+| MBR-AC-013 | P1 | 大会を削除すると共同管理者・招待アイテムも物理削除され、MAINTAINERの大会一覧から消える | todo | - |
+| MBR-AC-014 | P1 | ログイン後のリダイレクト先は自サイト内の相対パスのみ許可し、絶対URL・`//`始まりは無視して大会一覧へ戻す | todo | - |
+| MBR-AC-015 | P2 | 招待受諾画面は、通常・招待が無効・すでにメンバーの3分岐をそれぞれ専用の表示と導線で出し分ける | todo | - |
+| MBR-AC-016 | P0 | 招待のプレビュー・承諾APIはIPベースのレート制限超過で429になる(招待トークンの漏洩はMAINTAINER権限の奪取に直結するためSHR-AC-009より優先度を上げる) | todo | - |
+| MBR-AC-017 | P2 | 人数枠1で発行した招待は1人が承諾すると即座に枠切れになり、以後の承諾はINVALID_INVITE_TOKENになる | todo | - |
+| MBR-AC-018 | P2 | 招待発行のmaxUsesに0または10以上を指定すると400 VALIDATION_ERRORになる | todo | - |
+| MBR-AC-019 | P1 | 招待発行のmaxUsesが「9−発行時点の共同管理者数」を超えると400 VALIDATION_ERRORになる | todo | - |
+| MBR-AC-022 | P2 | 共同管理者0人の状態でmaxUses=9を指定すると発行に成功し、共同管理者がN人いる状態でmaxUses=9-Nちょうどを指定しても発行に成功する | todo | - |
+| MBR-AC-023 | P0 | 共同管理者を取り消すと発行中の招待リンクも同時に失効し、取り消された人が同じリンクで再承諾してMAINTAINERに復帰することはできない | todo | - |
+| MBR-AC-024 | P1 | 招待の発行・失効・承諾、共同管理者の取り消しは大会の状態(PREPARING/IN_PROGRESS/FINISHED)を問わず利用できる | todo | - |
+| MBR-AC-025 | P2 | 招待は発行から72時間経過直前は有効(承諾に成功する)、経過直後は無効(INVALID_INVITE_TOKEN)になる | todo | - |
+| MBR-AC-026 | P2 | 存在しないmemberIdのDELETEは404 TOURNAMENT_MEMBER_NOT_FOUNDになる(DELETE /inviteの冪等204とは異なり、参加者・チームメンバー削除と同じ404の扱い) | todo | - |
+| MBR-AC-020 | P2 | 招待を一度も発行していない大会でDELETE /inviteを呼んでも204になる(冪等) | todo | - |
+| MBR-AC-021 | P2 | 招待を一度も発行していない大会のGET /membersはinvite:nullを返す | todo | - |
+| MBR-AC-027 | P2 | GET /invitations/{token}はOWNER本人・既存MAINTAINERに対してalreadyMember:trueを返す | todo | - |
 
 ## SPA: SPA配信
 
@@ -231,3 +280,4 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | E2E-AC-007 | P0 | CP6: 団体戦(3人制)をログインから順位表まで一気通貫で運営でき、メンバー氏名が一切表示されない | done | cp6-team-tournament |
 | E2E-AC-008 | P1 | CP6補: 団体戦の共有ページで両チームの自己申告が一致したボードが運営者画面に反映される | done | cp6-team-tournament |
 | E2E-AC-009 | P1 | CP7: 印刷画面は印刷メディアで画面用ツールバー・ナビゲーションが非表示になり、帳票本体のみが出力される | done | cp7-print |
+| E2E-AC-010 | P1 | CP8: 運営者が招待リンクを発行し、別アカウントが承諾して共同管理者として参加者を追加できる | todo | - |
