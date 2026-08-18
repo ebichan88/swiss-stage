@@ -22,7 +22,7 @@ permissions:
   id-token: write
 
 env:
-  MAX_FIX_ATTEMPTS: 3
+  MAX_FIX_ATTEMPTS: 4
   # 自動修正禁止領域(正確性の心臓部とAPI契約=仕様)。.claude/agents/fixer.md の聖域定義と同期させること
   SANCTUARY_PATTERN: '^(backend/src/main/java/com/swiss_stage/domain/service/|\.claude/01_development_docs/05_swiss_pairing_algorithm\.md|schema/)'
   # 業務上の聖域とは理由が異なる技術的制約: FixerはClaude GitHub Appの認証で動くが、

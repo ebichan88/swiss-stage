@@ -1,6 +1,6 @@
 # 15. plan-reviewer/design-reviewerの自動修正(plan-fixer)を追加し、MAX_FIX_ATTEMPTSを4に統一する
 
-- Status: Proposed
+- Status: Accepted
 - Issue: #187
 - Date: 2026-08-18
 

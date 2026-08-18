@@ -19,8 +19,8 @@
 | `ai-qa.yml` | `pull_request`(**.mdのみのPRを除く。`feature/plan-*`ブランチも除く) | 受け入れケース台帳との突合。**VERDICT: FAILはゲート**(§2.9) |
 | `guard.yml` | `pull_request`(**.mdのみのPRを除く) | テスト弱体化ガード。AI自動修正の安全装置(§2.6) |
 | `mutation.yml` | `workflow_dispatch` / 週次schedule | Mutation Testing(PITest、domain層限定。`09_test_strategy.md` §2.6) |
-| `ai-design-review.yml` | `pull_request`(`.claude/**`/`schema/**`/`CLAUDE.md`のみ) | 設計ドキュメント間の整合性(非ゲート・レポートのみ。§2.10) |
-| `ai-plan-review.yml` | `pull_request`(`.claude/07_plans/**`/`.claude/06_adr/**`のみ) | Plan PRの計画の抜け(異常系・境界・4状態・受け入れケース)を検出(非ゲート・レポートのみ。§2.11) |
+| `ai-design-review.yml` | `pull_request`(`.claude/**`/`schema/**`/`CLAUDE.md`のみ) | 設計ドキュメント間の整合性(非ゲート・レポートのみ。`feature/plan-*`ブランチはplan-fixerによる自動修正あり。§2.10・§2.11.1) |
+| `ai-plan-review.yml` | `pull_request`(`.claude/07_plans/**`/`.claude/06_adr/**`のみ) | Plan PRの計画の抜け(異常系・境界・4状態・受け入れケース)を検出(非ゲート・レポートのみ・plan-fixerによる自動修正あり。§2.11・§2.11.1) |
 | `scheduled-planner.yml` | 週次`schedule` / `workflow_dispatch` / `issue_comment` | `auto-plan:P0/P1/P2`ラベル付きIssueを1件選び、無人実行版`/plan`でPlan PRドラフトを自動作成(§2.13) |
 
 `e2e.yml` / `ai-review.yml` / `ai-qa.yml` / `guard.yml` は、変更が `**.md`
@@ -64,15 +64,19 @@ flowchart TD
     CI -->|"失敗"| AUTOFIX["ci.ymlのautofixジョブ<br/>決定論的修正 or ci-fixer(§2.7)"]
     REVIEW -->|"FAIL"| FIXER["fixer<br/>Critical/Majorのみ修正(§2.5)"]
     QA -->|"FAIL"| QAFIXER["qa-fixer<br/>close:test-sideのみ修正(§2.9)"]
+    DESIGN -->|"FAIL(feature/plan-*のみ)"| PLANFIXER["plan-fixer<br/>要対応のみ修正(§2.11.1)"]
+    PLAN -->|"FAIL(feature/plan-*のみ)"| PLANFIXER
 
     AUTOFIX -.->|"[ci-fix]コミット"| GUARD["guard.yml<br/>テスト弱体化ガード(§2.6)"]
     FIXER -.->|"[ai-fix]コミット"| GUARD
     QAFIXER -.->|"[qa-fix]コミット"| GUARD
+    PLANFIXER -.->|"[plan-fix]コミット"| GUARD
 ```
 
-上記のうち `ci.yml` / `guard.yml` はマージをブロックする実線経路。`ai-review.yml` / `ai-qa.yml`
-から伸びる自動修正(`fixer` / `qa-fixer` / autofix)は、いずれも `guard.yml` の検査対象になる
-(破線)。詳細な分岐条件は各節の図を参照。
+上記のうち `ci.yml` / `guard.yml` はマージをブロックする実線経路。`ai-review.yml` / `ai-qa.yml` /
+`ai-design-review.yml` / `ai-plan-review.yml` から伸びる自動修正(`fixer` / `qa-fixer` /
+`plan-fixer` / autofix)は、いずれも `guard.yml` の検査対象になる(破線)。詳細な分岐条件は
+各節の図を参照。
 
 ### `vrt.yml` の運用
 
@@ -196,7 +200,7 @@ flowchart TD
 - **役割定義**: Reviewer = `.claude/agents/reviewer.md` / Fixer = `.claude/agents/fixer.md`。品質基準は `.claude/04_quality/`
 - **ゲート(Fixer起動条件)**: 以下のいずれかに該当したらFixerを起動せず `needs-human` ラベルを付ける
   - 聖域への指摘: `backend/**/domain/service/**`(マッチング・順位計算)、`05_swiss_pairing_algorithm.md`(`SANCTUARY_PATTERN`)
-  - 自動修正回数が上限(`MAX_FIX_ATTEMPTS`=3、`[ai-fix]` コミット数で計測)
+  - 自動修正回数が上限(`MAX_FIX_ATTEMPTS`=4、`[ai-fix]` コミット数で計測)
   - 過去に `Fixed: <slug>` 済みの指摘が再指摘された(修正が無効)
   - レポートの形式崩れ(指摘を抽出できない)
   - レポートが存在しない(`UNKNOWN`)。この場合はCIも失敗させる
@@ -359,8 +363,8 @@ flowchart TD
   が既に完了しているため、同一runのログを参照できる)
 - **判定**: FIXED / DISPUTED(テスト側の誤りだと確信) / SKIPPED(聖域 or カバレッジ不足) / FAILED
 - **聖域**: `ai-review.yml`/`fixer.md` と同じ3領域 + テストの弱体化(パスによらず適用)
-- **`MAX_FIX_ATTEMPTS=2`**: 決定論的修正とci-fixerの合計で数える(`[ci-fix]` コミット数)。
-  通常は「決定論的修正1回 → まだ失敗 → ci-fixer1回」の最大2回で打ち切りになる
+- **`MAX_FIX_ATTEMPTS=4`**: 決定論的修正とci-fixerの合計で数える(`[ci-fix]` コミット数)。
+  「決定論的修正1回 → まだ失敗 → ci-fixerが最大3回」の最大4回で打ち切りになる
 - **fail-closed**: ci-fixerのsticky reportが見つからない場合、内容にかかわらず `needs-human`
   にする(§2.5「fail-closedの原則」と同じ理由。レビューと同様、AI修正でも「レポートが無い
   =何が起きたか分からない」を素通りさせない)
@@ -510,7 +514,7 @@ flowchart TD
 
 ### 設計上の要点
 
-- **MAX_FIX_ATTEMPTS=2**: `[qa-fix]` コミット数で数える(ai-review.yml/ci.ymlと同じ数え方)
+- **MAX_FIX_ATTEMPTS=4**: `[qa-fix]` コミット数で数える(ai-review.yml/ci.ymlと同じ数え方)
 - **fail-closed**: qa-fixerのsticky reportが見つからない場合、内容にかかわらず `needs-human`
   にする(§2.5と同じ理由)
 - **修正後の再突合**: qa-fixerが全指摘をFIXEDしpushにも成功した場合、同一ラン内でQAを
@@ -535,8 +539,12 @@ Reviewerは「実装↔コード品質」、QAは「実装↔受け入れケー�
 
 - **トリガー**: `pull_request` かつ `.claude/**` / `schema/**` / `CLAUDE.md` を変更した場合のみ
   (paths フィルタ。設計ドキュメントに触れないPRでは起動しない)
-- **非ゲート**: レポートのみ(FAILでもCIは失敗しない・自動修正との連携もない)。VERDICT行は
-  可読性のために出力するが、`ai-review.yml`/`ai-qa.yml` と違いゲート判定には使わない
+- **非ゲート**: レポートのみ(FAILでもCIは失敗しない)。VERDICT行は可読性のために出力するが、
+  `ai-review.yml`/`ai-qa.yml` と違いゲート判定には使わない
+- **自動修正**: `feature/plan-*` ブランチ(Plan PR)に限り、`### 要対応` の指摘に
+  `plan-fixer` による自動修正ループが接続されている(§2.11.1)。design-reviewerは実装PR等の
+  非Plan-PRブランチでも幅広く起動するため、それ以外のブランチでは従来どおり自動修正との
+  連携はない
 - **責務の切り分け**: コード品質(Reviewer)・台帳整合(QA)・機械検査済み項目(docs-lint)は
   指摘しない。`01_review_checklist.md` の「機械検査済みの項目」表と同じ発想で、
   design-reviewer自身の定義内に「禁止」節として明記している
@@ -553,51 +561,138 @@ design-reviewerが「設計ドキュメント同士の矛盾」を見るのに�
 design-reviewerと同時に起動する。
 
 - **トリガー**: `pull_request` かつ `.claude/07_plans/**` / `.claude/06_adr/**` を変更した場合のみ
-- **非ゲート**: レポートのみ(FAILでもCIは失敗しない・自動修正との連携もない)。
-  Plan PRの承認(マージ)は常に人間が行う(`04_development_process.md` §1)
+- **非ゲート**: レポートのみ(FAILでもCIは失敗しない)。Plan PRの承認(マージ)は常に人間が
+  行う(`04_development_process.md` §1)。この点はplan-fixer導入後も変わらない
+- **自動修正**: `feature/plan-*` ブランチに限り、`### 要対応` の指摘に `plan-fixer` による
+  自動修正ループが接続されている(§2.11.1)
 
-> **なぜ非ゲートで始めるのか**: 下流(`ai-qa.yml`)は「実装が受け入れケースを満たしているか」という
-> 判断がグレーになりにくい領域でゲート化できているが、上流(計画の抜け)は判断がグレーになりやすい。
-> design-reviewerが非ゲートで安定運用できている前例に倣い、まず非ゲートで開始し、誤検知の実績を
-> 見てからゲート化を再検討する(却下案の詳細は `.claude/06_adr/01_upstream_process_artifacts.md` §3)。
+> **なぜレビュー自体は非ゲートのままなのか**: 下流(`ai-qa.yml`)は「実装が受け入れケースを
+> 満たしているか」という判断がグレーになりにくい領域でゲート化できているが、上流(計画の抜け)は
+> 判断がグレーになりやすい。design-reviewerが非ゲートで安定運用できている前例に倣い、まず
+> 非ゲートで開始し、誤検知の実績を見てからゲート化を再検討する(却下案の詳細は
+> `.claude/06_adr/01_upstream_process_artifacts.md` §3)。plan-fixerは「指摘を検出したら
+> マージをブロックする」ゲート化ではなく、「検出した指摘への対応を自動化する」ループであり、
+> この非ゲート方針とは独立した決定である
 
 - **責務の切り分け**: コード品質(Reviewer)・設計ドキュメント間の矛盾(design-reviewer)・
   台帳整合(QA)・機械検査済み項目(ADR/プランのヘッダ・命名規約はdocs-lint)は指摘しない。
   `01_review_checklist.md` と同じ発想で、plan-reviewer自身の定義内に「禁止」節として明記している
 - **sticky comment**: `<!-- swiss-stage-ai-plan-review -->`
 
-非ゲートのため自動修正の経路が最初から無い。指摘への対応は §2.12 を参照。
+---
+
+## 2.11.1 Plan PRレビューの自動修正(`plan-fixer`)
+
+Reviewer→`fixer`(§2.5)・CI失敗→`ci-fixer`(§2.7)・QA→`qa-fixer`(§2.9)はいずれも指摘への
+自動修正ループを持つが、plan-reviewer(§2.11)・design-reviewer(§2.10)のPlan PRに対する
+指摘だけがこれを欠いていた。`plan-fixer`(`.claude/agents/plan-fixer.md`)がこの欠落を埋める。
+決定の経緯・却下案は `.claude/06_adr/15_plan_review_auto_fix.md` を参照。
+
+```mermaid
+flowchart TD
+    A["Plan PR(open/push、feature/plan-*ブランチ)"] --> B1["plan-reviewer実行<br/>(sticky comment更新)"]
+    A --> B2["design-reviewer実行<br/>(sticky comment更新)"]
+    B1 --> C1{"VERDICT"}
+    B2 --> C2{"VERDICT"}
+    C1 -->|"PASS"| D["終了(マージ判断は人間)"]
+    C2 -->|"PASS"| D
+    C1 -->|"FAIL"| E1{"ゲート判定(bash・決定的)"}
+    C2 -->|"FAIL"| E2{"ゲート判定(bash・決定的)"}
+    E1 -->|"起動可"| F1["plan-fixer<br/>Plan Reviewの要対応のみ修正 → 検証 → レポート投稿 → push"]
+    E2 -->|"起動可"| F2["plan-fixer<br/>Design Reviewの要対応のみ修正 → 検証 → レポート投稿 → push"]
+    F1 --> B1
+    F2 --> B2
+    E1 -->|"起動不可"| G["needs-humanラベル + 理由コメント"]
+    E2 -->|"起動不可"| G
+```
+
+- **1エージェントを2ワークフローが共用**: `ai-plan-review.yml`(AI Plan Reviewレポート担当)・
+  `ai-design-review.yml`(AI Design Reviewレポート担当)がそれぞれ独立に
+  「レビュー → ゲート(bash) → plan-fixer → 再レビュー」を自己完結させる(`ai-review.yml`と
+  同型)。**2ワークフロー間の明示的な調整は行わない**(次項「2ワークフロー間のpush競合」参照)
+- **起動条件**: `feature/plan-*` ブランチに限定(`startsWith(github.head_ref, 'feature/plan-')`)。
+  design-reviewerは実装PR等の非Plan-PRブランチでも起動する広いトリガーを持つため、
+  `ai-design-review.yml` はこの条件を満たさないブランチでは従来どおりレポートのみ・
+  自動修正なしのまま変わらない
+- **核となる指示**: 指摘された箇所だけを直すのではなく、原因になっているパターン(用語・
+  節番号・エラーコード名等)を `grep` 等で関連ファイル全体から洗い出してから、同じパターンの
+  他の箇所もまとめて直す。往復ラウンド数を削減する主目的(実例: PR #186で13ラウンド)
+- **聖域の再定義**: fixer/qa-fixerの聖域をそのまま踏襲しない。`schema/openapi.yaml`・
+  `.claude/05_acceptance/01_acceptance_scope.md`(このPlan PRが新規追加・調整した行に限る)は
+  自動修正を許可する(Plan PRはこの2つを起草すること自体が目的のファイルであるため)。
+  `.claude/01_development_docs/**`(`05_swiss_pairing_algorithm.md`を除く)・`CLAUDE.md`は、
+  このPR内に `Status: Accepted` のADR(`04_development_process.md` §4の例外)がある場合の
+  機械的な同期に限り許可する。詳細な表は `.claude/agents/plan-fixer.md` を正とする
+- **受け入れケース台帳への書き込みは`00_acceptance_policy.md` §7-3の明示的な例外**:
+  同ポリシーは「AIエージェントは指摘を閉じる目的で台帳を書き換えてはならない」と無条件に
+  定めており、qa-fixerもこれに従い `close: ledger-side` には一切触れない(§2.9)。plan-fixerは
+  Plan PR自体がまだ人間のマージ承認を得ていないdraftであり、触るのはそのPRが新規導入した行に
+  限られるという構造的な違いから、この原則の明示的な例外として扱う(`00_acceptance_policy.md` §7.6)
+- **設計判断を伴う指摘は SKIPPED**: 対応の書き方が一意に決まらない・新しい設計判断が必要だと
+  plan-fixer自身が気づいた指摘は、DISPUTED(指摘が誤りだと確信した場合専用)ではなく
+  SKIPPEDに分類し、`needs-human` 経由で人間対応(`/apply-review`、§2.12)に回す
+- **コミットprefix**: `[plan-fix]`(新設)。`ai-plan-review.yml`・`ai-design-review.yml`の
+  両方が同じprefixを使うため、`git log` ベースの試行回数カウントは自動的に合算され、
+  追加の調整インフラなしに「このPlan PR全体で合計4回まで」という単一予算になる
+- **`MAX_FIX_ATTEMPTS=4`**: 他3系統と同じ値に統一(次項参照)
+- **fail-closed**: `feature/plan-*` ブランチに限り、既存3系統と同じ原則でレポート欠落
+  (`UNKNOWN`)を `needs-human` + CIジョブ失敗にする。非Plan-PRブランチではこの検証自体を
+  行わない(design-reviewerの既存の非ゲート運用を壊さないため)
+- **`needs-human` 解除時の再開**: `ai-review.yml`/`ai-qa.yml` と同じく、両ワークフローの
+  `on.pull_request.types` に `unlabeled` を追加し、`needs-human` ラベルを外した際に
+  新しいpushが無くても自動ループが再開する
+
+### 2ワークフロー間のpush競合
+
+`ai-plan-review.yml` と `ai-design-review.yml` は互いに無調整で並行動作するため、両方が
+同時に `[plan-fix]` コミットをpushしようとすると稀に非fast-forwardエラーが起きうる。
+既存のFixer(§2.5)・qa-fixer(§2.9)・ci-fixer(§2.7)も同じPRイベントに対して並行動作する
+構造を持ち、同じリスクを抱えたまま運用されている。次のpushイベントで自然に再試行されるため、
+plan-fixerも同じ運用上許容されたリスクとして扱う。共有concurrency groupによる直列化は
+採用していない(異なるワークフローファイル間でconcurrency groupを共有すると、GitHub Actionsの
+concurrency groupはワークフローファイルをまたいでリポジトリ全体でユニークなため、
+`cancel-in-progress` が意図せず互いの実行中ランをキャンセルしてしまう)。
+
+### `MAX_FIX_ATTEMPTS` の4系統統一
+
+plan-fixer導入にあわせて、既存3系統とあわせた4系統すべてを `MAX_FIX_ATTEMPTS=4` に統一した
+(以前は `ai-review.yml`=3、`ci.yml`/`ai-qa.yml`=2で系統ごとにバラバラだった)。カウント方法
+(コミット数、`ci.yml` は決定論的修正+ci-fixerを合算)は変更していない。無人で加えられる
+変更量を増やす一方で、4系統の運用を単純化する利点を優先した判断(`06_adr/15_plan_review_auto_fix.md` §2/§3)。
 
 ---
 
 ## 2.12 指摘をセッションで直接修正する(`/apply-review`)
 
-`ai-review.yml`(§2.5)・`ai-qa.yml`(§2.9)はfixer/qa-fixerの対象外になった指摘を
-`needs-human` ラベルで止め、`ai-plan-review.yml`(§2.11)は最初から自動修正の経路を持たない
-(非ゲート・レポートのみ)。いずれの場合も、「人間がPRコメントを読んで指摘は妥当だと
-判断した」あとに実際の修正へつなげる手段は、このドキュメントが扱う3ワークフローの
-どこにも属さない(**CIの外**、対話セッション側の話)。これまではPRコメントの内容を
-手でコピペしてセッションに貼るしかなかった。
+`ai-review.yml`(§2.5)・`ai-qa.yml`(§2.9)・`ai-plan-review.yml`/`ai-design-review.yml`
+(§2.11.1、`feature/plan-*` ブランチのみ)はfixer/qa-fixer/plan-fixerの対象外になった指摘を
+`needs-human` ラベルで止める。「人間がPRコメントを読んで指摘は妥当だと判断した」あとに
+実際の修正へつなげる手段は、このドキュメントが扱うCI側のワークフローのどこにも属さない
+(**CIの外**、対話セッション側の話)。これまではPRコメントの内容を手でコピペしてセッションに
+貼るしかなかった。
 
-`.claude/commands/apply-review.md`(`/apply-review <PR番号> [指摘ID...]`)が、3種の
-sticky comment(`<!-- swiss-stage-ai-review -->` / `-ai-qa-` / `-ai-plan-review-`)を
-読み取り、`fixer.md`/`qa-fixer.md` と同じ4分類(FIXED/DISPUTED/SKIPPED/FAILED)・
-聖域定義でその場で修正する。指摘ID省略時は、Critical/Major・`close: test-side`・
-plan-reviewerの「抜け」を一括で対象にできる。
+`.claude/commands/apply-review.md`(`/apply-review <PR番号> [指摘ID...]`)が、4種の
+sticky comment(`<!-- swiss-stage-ai-review -->` / `-ai-qa-` / `-ai-plan-review-` /
+`-ai-design-review-`)を読み取り、`fixer.md`/`qa-fixer.md`/`plan-fixer.md` と同じ4分類
+(FIXED/DISPUTED/SKIPPED/FAILED)・聖域定義でその場で修正する。指摘ID省略時は、
+Critical/Major・`close: test-side`・plan-reviewer/design-reviewerの `### 要対応` を
+一括で対象にできる。
 
-CI版のfixer/qa-fixerとの違い:
+CI版のfixer/qa-fixer/plan-fixerとの違い:
 
-| | CI版(fixer/qa-fixer) | `/apply-review` |
+| | CI版(fixer/qa-fixer/plan-fixer) | `/apply-review` |
 |---|---|---|
 | 起動条件 | 機械的なゲート判定(聖域・パス等) | 人間が指摘を読んで妥当と判断した後、明示的に呼ぶ |
 | 権限 | `bypassPermissions` | セッション通常の権限確認に従う |
 | 修正方針が一意に決まらない指摘 | 一律SKIPPED/DISPUTEDに倒す(無人実行のため質問できない) | ユーザーに質問してから進める |
-| plan-reviewerの指摘 | 対応する自動修正が存在しない | 対応する |
 | push | 自動(修正後の再レビューまで同一ラン内) | しない(コミットまで。pushは人間が確認してから) |
 
 聖域(`domain/service` 配下・`schema/`・`.claude/01_development_docs/05_swiss_pairing_algorithm.md`・
-受け入れケース台帳・基準hack検出・テスト弱体化)は変わらず自動修正しない。詳細な判定基準は
-`.claude/commands/apply-review.md` を正とする(ここでは再記述しない)。
+受け入れケース台帳・基準hack検出・テスト弱体化)は変わらず自動修正しない。ただし
+**`feature/plan-*` ブランチに限り**、plan-fixerの聖域再定義(§2.11.1)と対称に、`schema/`・
+`.claude/05_acceptance/01_acceptance_scope.md`(そのPRが新規導入した行に限る)は聖域から
+除外される。詳細な判定基準は `.claude/commands/apply-review.md` を正とする
+(ここでは再記述しない)。
 
 ---
 

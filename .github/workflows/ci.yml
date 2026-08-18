@@ -11,9 +11,9 @@ on:
 
 env:
   # [ci-fix]コミットの上限(決定論的修正+ci-fixerの合計)。ai-review.ymlのMAX_FIX_ATTEMPTS
-  # と同じ数え方(コミット数)。決定論的修正だけで直る場合は1回で収束するので、通常は
-  # 「決定論的修正1回 → まだ失敗 → ci-fixer1回」の最大2回で打ち切りになる
-  MAX_FIX_ATTEMPTS: 2
+  # と同じ数え方(コミット数)。決定論的修正だけで直る場合は1回で収束するので、
+  # 「決定論的修正1回 → まだ失敗 → ci-fixerが最大3回」の最大4回で打ち切りになる
+  MAX_FIX_ATTEMPTS: 4
 
 permissions:
   contents: read

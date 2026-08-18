@@ -29,7 +29,7 @@ concurrency:
 env:
   # [qa-fix]コミットの上限。ai-review.ymlのMAX_FIX_ATTEMPTS/ci.ymlのMAX_FIX_ATTEMPTSと
   # 同じ数え方(コミット数)
-  MAX_FIX_ATTEMPTS: 2
+  MAX_FIX_ATTEMPTS: 4
 
 permissions:
   contents: write # qa-fixerの修正コミットpush

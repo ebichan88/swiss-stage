@@ -5,11 +5,16 @@ name: AI Plan Review
 # 同士の矛盾)・QA(実装↔受け入れケース台帳)・docs-lint(機械検査可能なヘッダ・命名規約)の
 # いずれも見ていない「計画の中身が実装前に必要な水準を満たしているか」を埋める。
 #
-# 非ゲート(レポートのみ・FAILでもCIは失敗しない・自動修正との連携もない)。何を作るかの
-# 決定は常に人間が行う(.claude/agents/plan-reviewer.md)。
+# レビュー自体は非ゲート(FAILでもCIは失敗しない。マージ判断は常に人間、
+# .claude/agents/plan-reviewer.md)。`feature/plan-*` ブランチでは、`### 要対応` の指摘に
+# plan-fixer(.claude/agents/plan-fixer.md)による自動修正ループ(レビュー→ゲート→修正→再レビュー、
+# ai-review.ymlと同型)を接続する。詳細設計は
+# .claude/01_development_docs/11_cicd_design.md §2.11、決定の経緯は
+# .claude/06_adr/15_plan_review_auto_fix.md を参照。
 on:
   pull_request:
-    types: [opened, synchronize, ready_for_review]
+    # unlabeled: needs-humanラベルを外した際に自動ループを再開するため(ai-review.ymlと同じ)
+    types: [opened, synchronize, ready_for_review, unlabeled]
     paths:
       - '.claude/07_plans/**'
       - '.claude/06_adr/**'
@@ -18,29 +23,40 @@ concurrency:
   group: ai-plan-review-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+env:
+  MAX_FIX_ATTEMPTS: 4
+  # 自動修正禁止領域(正確性の心臓部)。.claude/agents/plan-fixer.md の聖域定義と同期させること
+  SANCTUARY_PATTERN: '^(backend/src/main/java/com/swiss_stage/domain/service/|\.claude/01_development_docs/05_swiss_pairing_algorithm\.md)'
+  # 原則聖域だが、このPR内にStatus: AcceptedなADRがある場合のみ機械的な同期に限り許可する
+  # (04_development_process.md §4「Plan PR内でAcceptedにする場合」の例外)
+  DESIGN_DOC_PATTERN: '^(\.claude/01_development_docs/|CLAUDE\.md$)'
+  # 技術的制約(Claude GitHub Appの個別トークンがworkflowsへのpush権限を持たない)。ai-review.ymlと同じ
+  WORKFLOW_PATH_PATTERN: '^\.github/workflows/'
+
 permissions:
-  contents: read
+  contents: write # plan-fixerの修正コミットpush
   pull-requests: write
+  issues: write # needs-humanラベルの作成・付与
   id-token: write # claude-code-actionのOIDCトークン交換(GitHub App認証)に必須
 
 jobs:
   plan-review:
-    if: ${{ !github.event.pull_request.draft }}
+    # needs-humanラベル付きPRは自動ループを停止する(ai-review.ymlと同じ規約)
+    if: ${{ !github.event.pull_request.draft && !contains(github.event.pull_request.labels.*.name, 'needs-human') && (github.event.action != 'unlabeled' || github.event.label.name == 'needs-human') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          # merge refではなくPRブランチ実体をcheckoutする(plan-fixerがpushするため)
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
 
       - name: AI Plan Review
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: "claude,github-actions"
-          # #105: 一度は「コマンド連結が原因」と誤って診断したが、実際はshow_full_outputで
-          # 拒否ログを見て`.claude/settings.json`のask一覧(Bash(gh api --method *))が
-          # CI(無人実行・askを承認できない)でPATCH実行をブロックしていたことが分かった
-          # (settings.jsonに専用のallowパターンを追加して解消。詳細はそのコミット参照)。
-          # 診断が容易になったのはこのオプションのおかげなので、恒常的に残す
           show_full_output: true
           prompt: |
             REPO: ${{ github.repository }}
@@ -54,6 +70,273 @@ jobs:
             レポートの投稿(1PRにつき1コメントを更新し続けるsticky方式):
             1. レポートを一時ファイル(例: /tmp/plan-review-report.md)に書き出す
             2. `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --paginate --jq '.[] | select(.body | startswith("<!-- swiss-stage-ai-plan-review -->")) | .id'` で既存コメントを探す
+            3. 見つかったら `gh api --method PATCH repos/${{ github.repository }}/issues/comments/<ID> -F body=@/tmp/plan-review-report.md` で更新する
+            4. 見つからなければ `gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/plan-review-report.md` で新規投稿する
+
+            レポートはPRコメントとしてのみ投稿してください。結果をメッセージ本文に出力しないでください。
+            **重要**: サブエージェント(Agent / Task ツール)に委譲しないでください。
+            このジョブはあなたのターンが終わると同時に終了するため、バックグラウンドで
+            起動したエージェントは投稿する前に強制終了され、レポートが永久に投稿されません。
+            必ずあなた自身がこのターン内で作業を完了し、投稿まで終えてください。
+          claude_args: |
+            --allowedTools "Read,Grep,Glob,Write,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*)"
+            --disallowedTools "Task,Agent"
+
+      # ---- 以下、plan-fixerのゲート・起動は Plan PR ブランチに限る。design-reviewと違い
+      # ai-plan-review.ymlは.claude/07_plans/**・.claude/06_adr/**にのみ反応するため実質的に
+      # 常にPlan PRブランチだが、実装PRでADRのStatusをAcceptedに更新するpushでも起動しうるため、
+      # 念のため明示的にブランチを確認する(04_development_process.md §5 `/pr` 手順3)
+      - name: Fixerゲート判定
+        id: gate
+        if: startsWith(github.head_ref, 'feature/plan-')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+
+          BODY=$(gh api "repos/$REPO/issues/$PR/comments" --paginate \
+            --jq '[.[] | select(.body | startswith("<!-- swiss-stage-ai-plan-review -->"))] | (last // {}) | .body // ""')
+          VERDICT=$(printf '%s\n' "$BODY" | grep -m1 -oE 'VERDICT: *(PASS|FAIL)' | grep -oE 'PASS|FAIL' || echo "UNKNOWN")
+          echo "verdict=$VERDICT" >> "$GITHUB_OUTPUT"
+          echo "AI Plan ReviewのVERDICT: $VERDICT"
+
+          git fetch origin "$BASE" -q
+
+          # fail-closed(ai-review.ymlと同じ原則)。UNKNOWN(レポート欠落)はPASS扱いにしない
+          if [ "$VERDICT" = "UNKNOWN" ]; then
+            echo "run_fixer=false" >> "$GITHUB_OUTPUT"
+            if git diff --name-only "origin/$BASE...HEAD" | grep -q '^\.github/workflows/ai-plan-review\.yml$'; then
+              echo "unknown_reason=workflow-validation" >> "$GITHUB_OUTPUT"
+              echo "stop_reason=ai-plan-review.yml自体を変更しているPRのため、claude-code-actionのワークフロー検証によりレビューがスキップされました。**このPRは人間がレビューしてください**。マージ後は通常どおり動作します" >> "$GITHUB_OUTPUT"
+            else
+              echo "unknown_reason=missing" >> "$GITHUB_OUTPUT"
+              echo "stop_reason=AI Plan Reviewのレポートが見つかりません(レビューが実施されていない可能性)" >> "$GITHUB_OUTPUT"
+            fi
+            exit 0
+          fi
+
+          if [ "$VERDICT" != "FAIL" ]; then
+            echo "run_fixer=false" >> "$GITHUB_OUTPUT"
+            echo "stop_reason=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # 「### 要対応」節(「### 任意」の手前)から指摘スラッグと対象パスを抽出
+          CM=$(printf '%s\n' "$BODY" | awk '/^### 要対応/{f=1} /^### 任意/{f=0} f')
+          SLUGS=$(printf '%s\n' "$CM" | grep -oE '^#+ +\[PL[0-9]+\] +[A-Za-z0-9._-]+' | awk '{print $NF}' || true)
+          # 「- 対象:」行にはバッククォート区切りの複数パスが並ぶことがあるため全て抽出する
+          TARGET_LINES=$(printf '%s\n' "$CM" | grep -E '^- 対象:' || true)
+          PATHS=$(printf '%s\n' "$TARGET_LINES" | grep -oE '`[^`]+`' | tr -d '`' | cut -d: -f1 || true)
+
+          STOP=""
+
+          if [ -z "$SLUGS" ]; then
+            STOP="レポートから要対応指摘を抽出できませんでした(形式崩れの可能性)"
+          fi
+
+          if [ -z "$STOP" ] && printf '%s\n' "$PATHS" | grep -qE "$SANCTUARY_PATTERN"; then
+            STOP="聖域(domain/service または 05_swiss_pairing_algorithm.md)への指摘のため自動修正しません"
+          fi
+
+          if [ -z "$STOP" ] && printf '%s\n' "$PATHS" | grep -qE "$WORKFLOW_PATH_PATTERN"; then
+            STOP="ワークフローファイル(.github/workflows/**)への指摘のため自動修正しません(plan-fixerはpushできない技術的制約があります)"
+          fi
+
+          # 設計ドキュメント(01_development_docs/**・CLAUDE.md)は、このPR内にStatus: Accepted
+          # なADRが存在する場合のみ許可する。「ADRが存在するか」は機械的に判定できるが、
+          # 「その決定に関する機械的な同期に限るか」はplan-fixer自身の判断に委ねる
+          if [ -z "$STOP" ] && printf '%s\n' "$PATHS" | grep -qE "$DESIGN_DOC_PATTERN"; then
+            ACCEPTED_ADR=""
+            for f in $(git diff --name-only "origin/$BASE...HEAD" -- '.claude/06_adr/*.md'); do
+              if [ -f "$f" ] && head -5 "$f" | grep -q '^- Status: Accepted'; then
+                ACCEPTED_ADR="$f"
+                break
+              fi
+            done
+            if [ -z "$ACCEPTED_ADR" ]; then
+              STOP="設計ドキュメント(01_development_docs/**・CLAUDE.md)への指摘だが、このPR内にStatus: AcceptedなADRが無いため自動修正しません"
+            fi
+          fi
+
+          # 自動修正の試行回数上限([plan-fix]コミット数で数える)。ai-design-review.ymlと
+          # prefixを共用するため、両ワークフローの[plan-fix]コミットが合算でカウントされる
+          AI_FIX_COMMITS=$(git log "origin/$BASE..HEAD" --format='%H%x09%s' \
+            | grep -E $'^[0-9a-f]+\t.*\\[plan-fix\\]' | cut -f1 || true)
+          ATTEMPTS=$(printf '%s' "$AI_FIX_COMMITS" | grep -c . || true)
+          echo "これまでのplan-fix試行回数(このワークフローの結果): $ATTEMPTS"
+          if [ -z "$STOP" ] && [ "$ATTEMPTS" -ge "$MAX_FIX_ATTEMPTS" ]; then
+            STOP="自動修正の上限(${MAX_FIX_ATTEMPTS}回、ai-plan-review.yml/ai-design-review.yml合算)に達しました"
+          fi
+
+          # 同一指摘の再発チェック
+          if [ -z "$STOP" ] && [ -n "$AI_FIX_COMMITS" ]; then
+            for s in $SLUGS; do
+              if git show -s --format=%B $AI_FIX_COMMITS | grep -q "Fixed: $s"; then
+                STOP="指摘 $s が自動修正後も再指摘されています(修正が無効か、指摘が不安定)"
+                break
+              fi
+            done
+          fi
+
+          if [ -n "$STOP" ]; then
+            echo "run_fixer=false" >> "$GITHUB_OUTPUT"
+            echo "stop_reason=$STOP" >> "$GITHUB_OUTPUT"
+            echo "plan-fixerを起動しません: $STOP"
+          else
+            echo "run_fixer=true" >> "$GITHUB_OUTPUT"
+            echo "stop_reason=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: needs-humanラベルを用意
+        if: startsWith(github.head_ref, 'feature/plan-') && (steps.gate.outputs.verdict == 'FAIL' || steps.gate.outputs.verdict == 'UNKNOWN')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create needs-human --color B60205 \
+            --description "AIレビューの自動対応範囲外。人間の判断が必要(外すと自動レビュー再開)" --force
+
+      - name: 人間レビュー要求(自動修正の対象外)
+        if: startsWith(github.head_ref, 'feature/plan-') && (steps.gate.outputs.verdict == 'FAIL' || steps.gate.outputs.verdict == 'UNKNOWN') && steps.gate.outputs.run_fixer != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          VERDICT: ${{ steps.gate.outputs.verdict }}
+          REASON: ${{ steps.gate.outputs.stop_reason }}
+        run: |
+          gh pr edit "$PR" --add-label needs-human
+          if [ "$VERDICT" = "UNKNOWN" ]; then
+            HEADLINE="⚠️ **AI Plan Reviewは実施されていません**"
+          else
+            HEADLINE="🚨 **plan-fixerは実行されません**"
+          fi
+          {
+            echo "${HEADLINE}: ${REASON}"
+            echo ""
+            echo "対応後、\`needs-human\` ラベルを外すと自動レビューが再開されます。"
+          } > /tmp/needs-human.md
+          gh pr comment "$PR" --body-file /tmp/needs-human.md
+
+      - name: レビュー未実施はCIを失敗させる
+        if: startsWith(github.head_ref, 'feature/plan-') && steps.gate.outputs.verdict == 'UNKNOWN' && steps.gate.outputs.unknown_reason != 'workflow-validation'
+        run: |
+          echo "AI Plan Reviewのレポートが見つかりません。レビューが実施されていない可能性があります。" >&2
+          exit 1
+
+      # ---- 以下はplan-fixerが起動する場合のみ ----
+
+      - uses: pnpm/action-setup@v4
+        if: steps.gate.outputs.run_fixer == 'true'
+        with:
+          package_json_file: frontend/package.json
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.run_fixer == 'true'
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: フロントエンド依存を準備
+        if: steps.gate.outputs.run_fixer == 'true'
+        run: (cd frontend && pnpm install --frozen-lockfile)
+
+      - name: plan-fixer
+        if: steps.gate.outputs.run_fixer == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "claude,github-actions"
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+            対象レポート: AI Plan Review(`<!-- swiss-stage-ai-plan-review -->`)
+
+            あなたはこのリポジトリのplan-fixerです。
+            `.claude/agents/plan-fixer.md` を読み、その指示に厳密に従って直近のAI Plan Review指摘を修正してください。
+
+            前提:
+            - レビューレポートは `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --paginate --jq '[.[] | select(.body | startswith("<!-- swiss-stage-ai-plan-review -->"))] | (last // {}) | .body // ""'` で取得できます
+            - もう一方のAI Design Reviewのレポートは `<!-- swiss-stage-ai-design-review -->` マーカーで同様に取得でき、参照してよい(自分の担当分はAI Plan Reviewの指摘のみ)
+            - カレントディレクトリはPRブランチ(${{ github.event.pull_request.head.ref }})のcheckoutです
+            - フロントエンドの依存(pnpm install)は準備済みです
+
+            手順はplan-fixer.mdの通りですが、CI実行のため順序に注意:
+            コミット後、**pushする前に**結果レポート(`<!-- swiss-stage-plan-fixer -->` 形式)をPRコメントに投稿し、pushは最後に行ってください。
+
+            結果レポートの投稿(sticky方式):
+            1. レポートを /tmp/plan-fixer-report.md に書き出す
+            2. `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --paginate --jq '.[] | select(.body | startswith("<!-- swiss-stage-plan-fixer -->")) | .id'` で既存コメントを探す
+            3. 見つかったら `gh api --method PATCH repos/${{ github.repository }}/issues/comments/<ID> -F body=@/tmp/plan-fixer-report.md` で更新する
+            4. 見つからなければ `gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/plan-fixer-report.md` で新規投稿する
+
+            DISPUTED / SKIPPED / FAILED が1件でもある場合は
+            `gh pr edit ${{ github.event.pull_request.number }} --add-label needs-human` も実行してください。
+
+            **重要**: サブエージェント(Agent / Task ツール)に委譲しないでください。
+            このジョブはあなたのターンが終わると同時に終了するため、バックグラウンドで
+            起動したエージェントは修正・投稿・pushを終える前に強制終了されます。
+            必ずあなた自身がこのターン内で作業を完了してください。
+          claude_args: |
+            --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh pr edit:*),Bash(gh api:*),Bash(cd:*),Bash(pnpm:*),Bash(python3:*),Bash(ls:*),Bash(cat:*)"
+            --disallowedTools "Task,Agent"
+            --permission-mode bypassPermissions
+
+      - name: 修正pushの有無を確認
+        id: post_fix
+        if: steps.gate.outputs.run_fixer == 'true'
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          EVENT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          LOCAL=$(git rev-parse HEAD)
+          REMOTE=$(git ls-remote origin "refs/heads/$BRANCH" | cut -f1)
+          if [ "$LOCAL" != "$EVENT_SHA" ] && [ "$LOCAL" = "$REMOTE" ]; then
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+            echo "修正コミット $LOCAL がpushされました"
+          else
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            echo "修正pushはありません(local=$LOCAL remote=$REMOTE event=$EVENT_SHA)"
+          fi
+
+      # Fixerのpushがpull_requestイベントを発火しない環境向けの保険(ai-review.ymlと同じ)。
+      # ci.ymlのfrontendジョブ(docs-lint等)が修正後のコミットに対しても確実に走るようにする
+      - name: 修正コミットのCIを起動(イベント未発火時の保険)
+        if: steps.post_fix.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          sleep 20
+          SHA=$(git rev-parse HEAD)
+          if [ -z "$(gh run list --workflow ci.yml --commit "$SHA" --json databaseId --jq '.[].databaseId')" ]; then
+            echo "修正コミットのCIが起動していないため手動起動します"
+            gh workflow run ci.yml --ref "$BRANCH"
+          else
+            echo "修正コミットのCIは自動起動済みです"
+          fi
+
+      - name: AI Plan Review(修正後の再レビュー)
+        if: steps.post_fix.outputs.pushed == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "claude,github-actions"
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            あなたはこのリポジトリのplan-reviewerです。plan-fixerによる修正pushの直後の再レビューです。
+            `.claude/agents/plan-reviewer.md` を読み、その指示に厳密に従ってこのPRの**現在の状態**をレビューしてください。
+            差分は `gh pr diff ${{ github.event.pull_request.number }}` で取得します。
+
+            レポートの投稿(1PRにつき1コメントを更新し続けるsticky方式):
+            1. レポートを一時ファイル(例: /tmp/plan-review-report.md)に書き出す
+            2. `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --paginate --jq '.[] | select(.body | startswith("<!-- swiss-stage-ai-plan-review -->")) | .id'` で既存のAI Plan Reviewコメントを探す
             3. 見つかったら `gh api --method PATCH repos/${{ github.repository }}/issues/comments/<ID> -F body=@/tmp/plan-review-report.md` で更新する
             4. 見つからなければ `gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/plan-review-report.md` で新規投稿する
 

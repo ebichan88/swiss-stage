@@ -113,6 +113,8 @@ docker compose up -d dynamodb-local   # DynamoDB Local(:8000)
 - QAは `.claude/agents/qa.md`(受け入れケース台帳と差分を突合)、CI連携は `.github/workflows/ai-qa.yml`。指摘の自動修正は `.claude/agents/qa-fixer.md`
 - ci-fixerは `.claude/agents/ci-fixer.md`、CI連携は `.github/workflows/ci.yml` の `autofix` ジョブ
 - design-reviewerは `.claude/agents/design-reviewer.md`、CI連携は `.github/workflows/ai-design-review.yml`
+- plan-reviewerは `.claude/agents/plan-reviewer.md`(Plan PRの計画の抜けを検出)、CI連携は `.github/workflows/ai-plan-review.yml`
+- plan-fixerは `.claude/agents/plan-fixer.md`(plan-reviewer/design-reviewerの指摘を`feature/plan-*`ブランチに限り自動修正)、CI連携は `.github/workflows/ai-plan-review.yml` / `ai-design-review.yml`
 - 受け入れケース台帳のID整合・ファイル参照切れの機械検査は `.github/scripts/docs-lint.py`(CIの`frontend`ジョブ)
 
 ## ドキュメント運用ルール
