@@ -137,7 +137,15 @@ Plan PR側だけこれが欠けている。
 による機械的な範囲のみを無人で対応し、それ以外(SKIPPED/DISPUTEDに倒された指摘、聖域越えの
 指摘、設計判断を伴う指摘)は人間が読んで妥当と判断した後に `/apply-review` で対応する。
 `/apply-review` は既にPlan Review(`PL*`)・Design Review(`D*`)の指摘IDを読み取り・対応する
-経路を持つため(`.claude/commands/apply-review.md` §3/§4)、コマンド自体の変更は不要。
+経路を持つため(`.claude/commands/apply-review.md` §3/§4)、この読み取り経路自体の変更は不要。
+
+ただし `/apply-review` §5の聖域定義は `schema/` 配下・`.claude/05_acceptance/**` をPR種別を
+問わず一律で自動修正禁止としており、§4.1で定めたplan-fixerの聖域再定義(Plan PRの正規スコープ
+内は許可)と非対称になる。この非対称を放置すると、CIのplan-fixerが自動修正できる指摘を、
+人間が明示的に妥当と判断して `/apply-review` で対応しようとしても規約上SKIPPEDになる逆転が
+起きる。実装PRで `/apply-review` §5に「`feature/plan-*` ブランチに限り、`schema/`・
+`.claude/05_acceptance/01_acceptance_scope.md`(このPR導入行に限る)はplan-fixerと同じ条件で
+聖域から除外する」旨を追記し、対称性を揃える。
 
 ### 4.6 設計判断を伴う指摘の扱い(停止条件)
 
@@ -176,10 +184,13 @@ SKIPPED** に分類し、補足に「設計判断を要するため人間対応�
 - [ ] `.github/workflows/guard.yml`(対象コミットprefixに `[plan-fix]` 追加、§4.4)
 - [ ] `.claude/01_development_docs/11_cicd_design.md`(§2.5/§2.7/§2.9の `MAX_FIX_ATTEMPTS` 値・
       説明文言を更新、§2.10/§2.11にplan-fixerの追加を反映、新設小節で§4.1〜§4.6の設計を記述)
-- [ ] `CLAUDE.md`(「AIエージェント連携」節にplan-fixerの行を追記。既存の
-      reviewer/fixer・qa/qa-fixer・ci-fixer・design-reviewerと同じ形式で、
-      `.claude/agents/plan-fixer.md` とCI連携先 `ai-plan-review.yml`/`ai-design-review.yml` を
-      記載する、§4.1)
+- [ ] `.claude/commands/apply-review.md`(§5の聖域定義に、`feature/plan-*` ブランチに限り
+      `schema/`・受け入れケース台帳(このPR導入行)をplan-fixerと同じ条件で除外する旨を追記、§4.5)
+- [ ] `CLAUDE.md`(「AIエージェント連携」節に、**plan-reviewer自体の既存エントリが現状無い分と
+      plan-fixerの新規分の両方**を追記する。現状は reviewer/fixer・qa/qa-fixer・ci-fixer・
+      design-reviewerの4行のみで、`ai-plan-review.yml` で既にCI連携済みのplan-reviewerが
+      未記載のため、他の行と同じ形式でplan-reviewer行を追加した上で、plan-fixer行(CI連携先
+      `ai-plan-review.yml`/`ai-design-review.yml`)も追加する、§4.1)
 
 ## 7. DoD(完了の定義)
 
