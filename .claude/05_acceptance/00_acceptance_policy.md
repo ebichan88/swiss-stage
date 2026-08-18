@@ -88,7 +88,7 @@ API契約に変化がなく**UI表示のみ**を追加・変更するケース(�
 
 1. **新機能・挙動変更は、実装前に台帳へケースを追加する(Status=todo)**。仕様変更を伴う場合は先に設計ドキュメントを直す(CLAUDE.mdの既存ルールどおり)
 2. 実装PRで受け入れテストを書き、**同じPRで** Statusをdoneに更新し検証列を記入する(「実装とドキュメントの乖離は同じPRで直す」ルールの適用)
-3. ケース自体の追加・変更・廃止(=仕様の決定)は**人間が判断する**。AIエージェント(特にFixer)は指摘を閉じる目的で台帳を書き換えてはならない
+3. ケース自体の追加・変更・廃止(=仕様の決定)は**人間が判断する**。AIエージェント(特にFixer)は指摘を閉じる目的で台帳を書き換えてはならない(**例外**: `feature/plan-*` ブランチ上のplan-fixerに限る。§7.6)
 4. QAエージェントの誤検知・見逃しに気づいたら、本ファイルまたは台帳を同じPRで直して育てる(`01_review_checklist.md` と同じ運用)
 
 ## 7.5 QAの close 分類とqa-fixerの自動修正範囲
@@ -103,6 +103,28 @@ QAエージェント(`.claude/agents/qa.md`)の各指摘には `close:`(`ledger-
 台帳を書き換えてはならない」の原則は、qa-fixer導入後も変わらず適用される
 (`.github/workflows/ai-qa.yml` のゲートが `close: test-side` 以外を含む場合はqa-fixerを
 起動せず `needs-human` にする)。
+
+## 7.6 plan-fixerの自動修正範囲(Plan PR限定の例外)
+
+`plan-fixer`(`.claude/agents/plan-fixer.md`、`.github/workflows/ai-plan-review.yml`/
+`ai-design-review.yml` から `feature/plan-*` ブランチに限り起動)は、AI Plan Review・
+AI Design Reviewの `### 要対応` 指摘に対応するため、**台帳(`01_acceptance_scope.md`)への
+書き込みを許可された唯一のAIエージェント**である。§7-3の無条件原則(AIは指摘を閉じる目的で
+台帳を書き換えてはならない)に対する明示的な例外であり、qa-fixerの§7.5(`close: test-side`
+限定)と同じ位置づけで以下のとおり限定する。
+
+- **対象**: そのPlan PRが**新規追加・調整した行**(＝ `Status: todo` のまま、まだ人間のマージ
+  承認を経ていない同一PR内のdraft行)に限る。他機能の既存行(他のPlan PRで導入済み・マージ済みの
+  行)のStatus・内容変更は禁止(qa-fixerと同じく `ledger-side` 相当の操作には一切触れない)
+- **なぜ例外にできるのか**: qa-fixerが扱う台帳行は既にマージされたPlan PRが確定させた仕様
+  (=`close: ledger-side` の変更は既存の合意を書き換える行為)だが、plan-fixerが扱う行は
+  そのPlan PR自身がまだ人間の承認(マージ)を得ていないdraftである。plan-fixerによる追加・調整も
+  最終的に同じPRのレビュー・マージという人間の判断ゲートを経るため、「AIが仕様の決定を
+  無断で確定させる」ことにはならない
+- **判定はソフトルール**: 「新規追加・調整した行」の範囲はパスベースの機械的ゲートではなく、
+  plan-fixer自身の指示への準拠に依存する(`.claude/agents/plan-fixer.md` の聖域定義)。
+  `.github/workflows/ai-plan-review.yml`/`ai-design-review.yml` のゲート判定は
+  `.claude/05_acceptance/01_acceptance_scope.md` への指摘であること自体はブロックしない
 
 ## 8. やらないこと(out-of-scope)の扱い
 

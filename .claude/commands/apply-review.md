@@ -9,10 +9,11 @@ AI Design Review(`ai-design-review.yml`)の指摘のうち、人間が読んで�
 このセッションが直接修正します。
 ユーザーからの入力: $ARGUMENTS
 
-**位置づけ**: CIの `fixer`/`qa-fixer`(`.claude/agents/fixer.md`/`qa-fixer.md`)は無人実行のため
-対象を機械的な条件で絞っている。このコマンドは「人間が指摘を読んで妥当だと判断した後」に
-呼ばれる前提なので、その判断範囲までは踏み込んで修正してよい。ただし正確性・仕様に関わる
-聖域はCI版と同じ理由で自動修正しない(5節)。
+**位置づけ**: CIの `fixer`/`qa-fixer`/`plan-fixer`(`.claude/agents/fixer.md`/`qa-fixer.md`/
+`plan-fixer.md`)は無人実行のため対象を機械的な条件で絞っている(`plan-fixer`は
+`feature/plan-*` ブランチでのみ起動する。`11_cicd_design.md` §2.11.1)。このコマンドは
+「人間が指摘を読んで妥当だと判断した後」に呼ばれる前提なので、その判断範囲までは踏み込んで
+修正してよい。ただし正確性・仕様に関わる聖域はCI版と同じ理由で自動修正しない(5節)。
 
 ## 0. 引数の解析
 
@@ -76,6 +77,12 @@ gh api "repos/<owner/repo>/issues/<PR番号>/comments" --paginate \
 - テストの削除・`@Disabled`/`.skip()`等による無効化・アサーションの弱体化を伴う修正
 
 該当する指摘は常に **SKIPPED** とし、理由を添えて報告する。
+
+**例外(`feature/plan-*` ブランチに限る)**: `plan-fixer`(`.claude/agents/plan-fixer.md`)の
+聖域再定義と対称に揃えるため、対象PRが `feature/plan-*` ブランチ(Plan PR)の場合に限り、
+`schema/` 配下・`.claude/05_acceptance/01_acceptance_scope.md`(そのPRが新規追加・調整した行に
+限る。他機能の既存行のStatus・内容変更は引き続き聖域)は上記の聖域から除外する。それ以外の
+ブランチ(実装PR等)では従来どおり無条件の聖域のまま変えない。
 
 ## 6. 指摘ごとの判定
 
