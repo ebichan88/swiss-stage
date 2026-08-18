@@ -2,7 +2,7 @@
 
 - Status: in_progress
 - Issue: #180
-- PR: -
+- PR: #190
 
 ## 1. 背景・目的
 
