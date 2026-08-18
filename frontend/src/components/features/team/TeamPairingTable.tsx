@@ -47,7 +47,9 @@ const RESULT_MIN_HEIGHT = 40;
 const COLUMN_WIDTH = {
   table: 72,
   team: 220,
-  result: 240,
+  // 「対局中」のTeamBoardResultField(ラベルminWidth:56 + gap:8 + TextField minWidth:180 = 244px)
+  // + TableCellの左右padding(16px*2)が収まる幅
+  result: 280,
   status: 220,
 };
 
