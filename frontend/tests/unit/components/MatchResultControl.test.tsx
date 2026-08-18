@@ -89,6 +89,37 @@ describe('MatchResultControl', () => {
     expect(screen.queryByText(/の申告:/)).not.toBeInTheDocument();
   });
 
+  it('BYE・確定・対局中の3分岐で結果欄の最小高さが揃う(行高統一の回帰防止)', () => {
+    const cases: Array<{ label: string; match: ReturnType<typeof matchOf>; editable: boolean }> = [
+      { label: 'BYE', match: matchOf({ player1, player2: null, result: 'BYE' }), editable: false },
+      {
+        label: '確定',
+        match: matchOf({ player1, player2, result: 'PLAYER1_WIN' }),
+        editable: false,
+      },
+      { label: '対局中', match: matchOf({ player1, player2 }), editable: true },
+    ];
+
+    const minHeights = cases.map(({ label, match, editable }) => {
+      const { container, unmount } = renderWithProviders(
+        <MatchResultControl
+          match={match}
+          editable={editable}
+          multiGroup={false}
+          saving={false}
+          onInput={() => {}}
+        />,
+      );
+      const root = container.firstElementChild as HTMLElement;
+      const target = match.result === 'BYE' ? root : (root.firstElementChild as HTMLElement);
+      const minHeight = window.getComputedStyle(target).minHeight;
+      unmount();
+      return { label, minHeight };
+    });
+
+    expect(minHeights.every(({ minHeight }) => minHeight === '40px')).toBe(true);
+  });
+
   it('結果セレクトの背景色をテーマ既定に統合した後も、結果を選ぶとonInputが呼ばれる(回帰防止)', async () => {
     const user = userEvent.setup();
     const onInput = vi.fn();

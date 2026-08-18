@@ -10,6 +10,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -31,12 +32,38 @@ export interface PairingTableProps {
   onInputResult: (match: Match, result: MatchResult) => void;
 }
 
+/** PCテーブルの固定列幅(table-layout: fixed用)。団体戦TeamPairingTableと同じ考え方でローカルに持つ */
+const COLUMN_WIDTH = {
+  table: 72,
+  player: 260,
+  result: 240,
+  status: 220,
+};
+
+const ELLIPSIS_SX = {
+  display: 'block',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+} as const;
+
 function playerText(player: ParticipantSummary | null, mark: string | null): string {
   if (player === null) {
     return '(不戦勝)';
   }
   const name = player.organization ? `${player.name}(${player.organization})` : player.name;
   return mark ? `${mark} ${name}` : name;
+}
+
+/** 対局者名セル(PCテーブル用)。長い氏名(所属含む)は省略記号で1行に収め、Tooltipで全文表示する */
+function PlayerNameCell({ text }: { text: string }) {
+  return (
+    <Tooltip title={text}>
+      <Box component="span" sx={ELLIPSIS_SX}>
+        {text}
+      </Box>
+    </Tooltip>
+  );
 }
 
 /** 組み合わせ表(02_component_design.md §3)。PC=テーブル / スマホ=1対局1カード */
@@ -85,7 +112,7 @@ export function PairingTable({
 
   return (
     <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
-      <Table size="small">
+      <Table size="small" sx={{ tableLayout: 'fixed' }}>
         <TableHead
           sx={{
             bgcolor: 'primary.main',
@@ -93,11 +120,21 @@ export function PairingTable({
           }}
         >
           <TableRow>
-            <TableCell scope="col">卓</TableCell>
-            <TableCell scope="col">対局者1</TableCell>
-            <TableCell scope="col">対局者2</TableCell>
-            <TableCell scope="col">結果</TableCell>
-            <TableCell scope="col">申告ステータス</TableCell>
+            <TableCell scope="col" sx={{ width: COLUMN_WIDTH.table }}>
+              卓
+            </TableCell>
+            <TableCell scope="col" sx={{ width: COLUMN_WIDTH.player }}>
+              対局者1
+            </TableCell>
+            <TableCell scope="col" sx={{ width: COLUMN_WIDTH.player }}>
+              対局者2
+            </TableCell>
+            <TableCell scope="col" sx={{ width: COLUMN_WIDTH.result }}>
+              結果
+            </TableCell>
+            <TableCell scope="col" sx={{ width: COLUMN_WIDTH.status }}>
+              申告ステータス
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -107,8 +144,12 @@ export function PairingTable({
               sx={{ bgcolor: index % 2 === 0 ? 'background.paper' : 'background.default' }}
             >
               <TableCell>{tableLabel(match, multiGroup)}</TableCell>
-              <TableCell>{playerText(match.player1, resultMark(match, 'player1'))}</TableCell>
-              <TableCell>{playerText(match.player2, resultMark(match, 'player2'))}</TableCell>
+              <TableCell>
+                <PlayerNameCell text={playerText(match.player1, resultMark(match, 'player1'))} />
+              </TableCell>
+              <TableCell>
+                <PlayerNameCell text={playerText(match.player2, resultMark(match, 'player2'))} />
+              </TableCell>
               <TableCell>
                 <MatchResultControl
                   match={match}

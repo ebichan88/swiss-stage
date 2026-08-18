@@ -75,6 +75,18 @@
 - PCのヘッダー行は対戦結果表と同じ `primary.main` 背景+白文字
 - PCのデータ行は対戦結果表と同じ `background.paper`/`background.default` を交互に敷くゼブラストライプ
 - 列: 卓・対局者1・対局者2・結果(入力コントロール)・申告ステータス(Chip)。申告ステータスは結果列に埋め込まず独立した列にする(スマホカードでは列がないため結果の下にChipをまとめて表示)
+- **行の最小高さ**: 「確定」(静的テキスト)と「対局中」(結果入力用`TextField select`、`size="small"`)で
+  行の縦幅が異なって見えないよう、結果欄のコンテナに共通の`min-height`(40px、MUI標準アウトライン小サイズの
+  実高さ)を適用する。BYE(不戦勝)行のChipにも同じ`min-height`を適用する。この`min-height`は
+  `MatchResultControl`/`TeamMatchResultControl`(団体戦PCテーブルは`TeamBoardResultField`・
+  `TeamBoardStatusCell`)に閉じたローカル値で、対象コンポーネントが個人戦・団体戦のモバイルカード表示
+  (`MatchCard`)と団体戦の参加者向け自己申告ページ(`SharedTeamResultPage`)にも共用されるため、
+  行高統一はPCテーブルに限らずこれらの画面にも及ぶ(`.claude/07_plans/12_round_table_layout_consistency.md`)
+- **列幅の固定**: PCテーブルは`table-layout: fixed`+各`TableCell`(ヘッダー)への`width`指定で列幅を固定し、
+  対局者名・所属の長さでラウンドをまたいで列位置がずれないようにする。対局者1・対局者2(団体戦は
+  チーム1・チーム2)セルは`white-space: nowrap` + `text-overflow: ellipsis`で1行に収め、`Tooltip`で全文を
+  表示する(対戦結果表の「相手」列のTooltip補足と方向性を合わせる)。列幅固定はカード・インライン表示
+  (モバイル・参加者ページ)には適用しない(列という概念がなく、ずれの問題が発生しないため)
 
 ### 共有ページの意匠(SharedPage / SharedResultPage・2026-08刷新)
 

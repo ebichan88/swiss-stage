@@ -13,6 +13,13 @@ import {
 } from './teamMatchDisplay';
 
 /**
+ * 結果欄の最小行高。「対局中」のTextField select(size="small"、MUI標準アウトライン小サイズ)の
+ * 実高さ(40px)に、「確定」時の静的テキスト・BYE時のChipを揃えるための基準値。
+ * frontend/src/components/features/round/MatchResultControl.tsx と同じ値
+ */
+const RESULT_MIN_HEIGHT = 40;
+
+/**
  * 自己申告状態のChip。申告待ち・不一致・確定後の食い違いに加え、
  * 自己申告一致で自動確定した場合は「申告済み」を表示する(運営者が申告なしで直接確定した場合・未申告は何も出さない)
  */
@@ -81,7 +88,11 @@ export function TeamMatchResultControl({
   hideStatusChip = false,
 }: TeamMatchResultControlProps) {
   if (match.team2 === null) {
-    return <Chip label="不戦勝" size="small" variant="outlined" />;
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', minHeight: RESULT_MIN_HEIGHT }}>
+        <Chip label="不戦勝" size="small" variant="outlined" />
+      </Box>
+    );
   }
 
   if (!editable) {
@@ -89,7 +100,9 @@ export function TeamMatchResultControl({
       <Stack spacing={0.5}>
         {match.boardResults.map((board) => (
           <Box key={board.boardPosition}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: RESULT_MIN_HEIGHT }}
+            >
               <Typography variant="body2" sx={{ minWidth: 56 }}>
                 {boardPositionLabel(board.boardPosition)}
               </Typography>
@@ -111,7 +124,7 @@ export function TeamMatchResultControl({
     <Stack spacing={0.5}>
       {match.boardResults.map((board, index) => (
         <Box key={board.boardPosition}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: RESULT_MIN_HEIGHT }}>
             <Typography variant="body2" sx={{ minWidth: 56 }}>
               {boardPositionLabel(board.boardPosition)}
             </Typography>
@@ -169,7 +182,7 @@ export function TeamBoardResultField({
 }: TeamBoardResultFieldProps) {
   if (!editable) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: RESULT_MIN_HEIGHT }}>
         <Typography variant="body2" sx={{ minWidth: 56 }}>
           {boardPositionLabel(board.boardPosition)}
         </Typography>
@@ -179,7 +192,7 @@ export function TeamBoardResultField({
   }
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: RESULT_MIN_HEIGHT }}>
       <Typography variant="body2" sx={{ minWidth: 56 }}>
         {boardPositionLabel(board.boardPosition)}
       </Typography>
@@ -213,7 +226,14 @@ export function TeamBoardResultField({
 /** 1ボード分の申告ステータス(Chip + 申告詳細)。テーブルの「申告ステータス」列に埋め込む用 */
 export function TeamBoardStatusCell({ match, board }: { match: TeamMatch; board: BoardResult }) {
   return (
-    <Box>
+    <Box
+      sx={{
+        minHeight: RESULT_MIN_HEIGHT,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+      }}
+    >
       <BoardReportStatusChip board={board} />
       <BoardReportedResultsDetail match={match} board={board} />
     </Box>
