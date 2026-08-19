@@ -26,7 +26,7 @@ describe('AppLayout', () => {
 
     const logoutButton = await screen.findByRole('button', { name: 'ログアウト' });
     expect(logoutButton).toHaveStyle({
-      backgroundColor: 'rgba(255, 255, 255, 0.24)', // ヘッダー地色に24%の白を重ねた背景
+      backgroundColor: 'rgba(255, 255, 255, 0.12)', // ヘッダー地色に12%の白を重ねた背景
     });
   });
 });

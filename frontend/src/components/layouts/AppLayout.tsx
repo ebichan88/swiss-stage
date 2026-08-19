@@ -55,11 +55,11 @@ export function AppLayout() {
             disabled={logoutMutation.isPending}
             sx={{
               '&:not(.Mui-disabled)': {
-                backgroundColor: (theme) => alpha(theme.palette.common.white, 0.24),
+                backgroundColor: (theme) => alpha(theme.palette.common.white, 0.12),
                 color: 'inherit',
               },
               '&:not(.Mui-disabled):hover': {
-                backgroundColor: (theme) => alpha(theme.palette.common.white, 0.36),
+                backgroundColor: (theme) => alpha(theme.palette.common.white, 0.2),
               },
             }}
           >
