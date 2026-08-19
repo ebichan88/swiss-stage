@@ -1,8 +1,8 @@
 # 13. ヘッダーのログアウトボタンの視認性を改善する
 
-- Status: planned
+- Status: in_progress
 - Issue: #183
-- PR: -
+- PR: #191
 
 ---
 
@@ -114,19 +114,19 @@
 
 ### 実装PRで更新が必要な設計ドキュメント(今は更新しない・実装時の申し送り)
 
-- [ ] `.claude/02_design_system/01_design_principles.md` — カラーパレット表の `primary.light`/
+- [x] `.claude/02_design_system/01_design_principles.md` — カラーパレット表の `primary.light`/
       `primary.dark` の用途欄に「運営者ヘッダーのログアウトボタン背景/文字色」を追記する
 
 ## 7. DoD(完了の定義)
 
-- [ ] `pnpm run check`(frontend)が通る
-- [ ] 受け入れケースの追加は無い(§5参照)。ログアウトボタンの背景色・文字色を確認する回帰テスト
+- [x] `pnpm run check`(frontend)が通る
+- [x] 受け入れケースの追加は無い(§5参照)。ログアウトボタンの背景色・文字色を確認する回帰テスト
       (IDタグなし)をVitestで追加する
-- [ ] 新規画面ではないため新規smoke E2Eは不要
-- [ ] §6「実装PRで更新が必要な設計ドキュメント」が実装PRで更新されている
-- [ ] ローカル実機で動作確認済み(`.claude/skills/verify`)。特にホバー/フォーカス時の見た目と、
+- [x] 新規画面ではないため新規smoke E2Eは不要
+- [x] §6「実装PRで更新が必要な設計ドキュメント」が実装PRで更新されている
+- [x] ローカル実機で動作確認済み(`.claude/skills/verify`)。特にホバー/フォーカス時の見た目と、
       ログアウト処理中の無効化表示に不自然な点が無いことを確認する
-- [ ] ボタン単体の色変更のため `vrt.yml` を手動実行してベースラインを更新した(`09_test_strategy.md`)
+- [ ] ボタン単体の色変更のため `vrt.yml` を手動実行してベースラインを更新した(`09_test_strategy.md`) — PR作成後にGitHub Actionsから手動実行する
 
 ## 8. リスク・未確定事項
 
