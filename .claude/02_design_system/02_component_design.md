@@ -153,6 +153,9 @@
 サブ見出し(「参加者(N名)」等)には左端4pxの `primary.main` アクセント線を付けた。
 ダイアログの `DialogTitle` は `primary.main` のベタ塗り背景+白文字(`primary.contrastText`)
 にし(Paperの角丸から色がはみ出さないよう `overflow: hidden` でクリップする)、
+`DialogContent`(`DialogTitle` 直後の上padding)・`DialogActions` の内側余白は
+`01_design_principles.md` の「コンポーネント内部の余白: 16px」を下回らないようテーマの
+`MuiDialogContent`/`MuiDialogActions` で底上げしている(個別ダイアログでの`sx`上書きはしない)。
 `TournamentOverviewPage`/`SettingsPage` のカードには上端3pxの `primary.main` アクセント線
 (危険な操作カードは全辺2pxの `error.main` 枠)を付けた。組み合わせ表の「結果」セレクトボックスは
 ゼブラストライプの行によって塗りが変わって見えないよう `background.paper` を背景色にしている
