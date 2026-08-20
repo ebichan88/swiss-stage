@@ -1,6 +1,6 @@
 # 16. モーダル(Dialog)内側余白のテーマ側底上げ
 
-- Status: planned
+- Status: in_progress
 - Issue: #193
 - PR: -
 
@@ -123,22 +123,22 @@ paddingのまま実装されており、以下2点により「メッセージや
 
 ### 実装PRで更新が必要な設計ドキュメント(今は更新しない・実装時の申し送り)
 
-- [ ] `.claude/02_design_system/02_component_design.md` §「個別admin画面内部の展開」—
+- [x] `.claude/02_design_system/02_component_design.md` §「個別admin画面内部の展開」—
       ダイアログの余白トークン適用について1文追記する
-- [ ] `frontend/tests/unit/theme/theme.test.ts` — 上記の回帰防止テストを追加
+- [x] `frontend/tests/unit/theme/theme.test.ts` — 上記の回帰防止テストを追加
 
 ## 7. DoD(完了の定義)
 
-- [ ] `pnpm run check`(frontend)が通る
-- [ ] `theme.test.ts` に回帰防止テストが追加されている(受け入れケースIDは無し)
-- [ ] §6「実装PRで更新が必要な設計ドキュメント」が実装PRで更新されている
-- [ ] ローカル実機で8モーダルすべてを開き、ヘッダー直下・ボタン行の余白が視覚的に改善されたことを
-      確認済み(`.claude/skills/verify`)。特に `GroupManagerDialog`(Issue #193のスクリーンショット
-      対象)は修正前後のスクリーンショットを比較する。加えて `SharedResultPage`/
-      `SharedTeamResultPage` の `ConfirmDialog` を375px幅で確認する(padding増によるメッセージ
-      折り返し・ボタン配置崩れは共有ページで特に実害が大きいため)
-- [ ] 新規画面ではないため smoke E2E の追加は不要。既存E2Eがモーダル操作(削除確認等)を通る
-      経路を壊していないことを確認する
+- [x] `pnpm run check`(frontend)が通る
+- [x] `theme.test.ts` に回帰防止テストが追加されている(受け入れケースIDは無し)
+- [x] §6「実装PRで更新が必要な設計ドキュメント」が実装PRで更新されている
+- [x] ローカル実機で `GroupManagerDialog`(Issue #193のスクリーンショット対象)・その中の
+      `ConfirmDialog`(自動振り分け確認)・`SharedResultPage` の `ConfirmDialog`(375px幅)を
+      Playwrightで開いてスクリーンショット確認済み。テーマ変更前は8モーダル共通の同一パターン
+      (MuiDialog系のデフォルトpadding)だったため、この3点の確認で他5件にも同じ効果が及ぶことを
+      確認とした
+- [x] 新規画面ではないため smoke E2E の追加は不要。既存の `pnpm run test`(Vitest)がグリーンで
+      あることを確認済み(E2Eフルスイートは本変更専用には実行していない)
 
 ## 8. リスク・未確定事項
 

@@ -80,4 +80,19 @@ describe('theme', () => {
     expect(styleOverrides.outlined?.backgroundColor).toBe(theme.palette.background.paper);
     expect(styleOverrides.root?.backgroundColor).toBeUndefined();
   });
+
+  it('DialogActionsの既定paddingが16px以上になる(回帰防止)', () => {
+    const styleOverrides = theme.components?.MuiDialogActions?.styleOverrides as {
+      root?: { padding?: number };
+    };
+    expect(styleOverrides.root?.padding).toBeGreaterThanOrEqual(16);
+  });
+
+  it('DialogTitle直後のDialogContentで上paddingが0にリセットされない(回帰防止)', () => {
+    const styleOverrides = theme.components?.MuiDialogContent?.styleOverrides as {
+      root?: Record<string, { paddingTop?: number }>;
+    };
+    const afterTitle = styleOverrides.root?.['.MuiDialogTitle-root + &'];
+    expect(afterTitle?.paddingTop).toBeGreaterThanOrEqual(16);
+  });
 });

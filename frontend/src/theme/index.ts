@@ -109,5 +109,19 @@ export const theme = createTheme({
         indicator: { height: 3, borderRadius: 1.5 },
       },
     },
+    MuiDialogContent: {
+      styleOverrides: {
+        // DialogTitle直後は隣接セレクタ(`.MuiDialogTitle-root + &`)で上paddingが
+        // 0にリセットされる仕様があるため、同じ詳細度のセレクタで明示的に上書きする
+        root: {
+          '.MuiDialogTitle-root + &': { paddingTop: 16 },
+        },
+      },
+    },
+    MuiDialogActions: {
+      styleOverrides: {
+        root: { padding: 16 },
+      },
+    },
   },
 });
