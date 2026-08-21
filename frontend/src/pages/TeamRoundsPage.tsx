@@ -1,15 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
-import {
-  Alert,
-  Box,
-  Button,
-  CircularProgress,
-  Link as MuiLink,
-  Tab,
-  Tabs,
-  Typography,
-} from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Tab, Tabs, Typography } from '@mui/material';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
@@ -118,9 +109,9 @@ export function TeamRoundsPage() {
     return (
       <Alert severity="info">
         大会を開始すると組み合わせを生成できます。
-        <MuiLink component={Link} to={paths.tournament(tournament.id)} sx={{ ml: 1 }}>
+        <Button component={Link} to={paths.tournament(tournament.id)} size="small" sx={{ ml: 1 }}>
           概要へ
-        </MuiLink>
+        </Button>
       </Alert>
     );
   }
