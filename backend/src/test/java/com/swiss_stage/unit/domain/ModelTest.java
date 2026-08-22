@@ -28,6 +28,9 @@ import com.swiss_stage.domain.model.TeamMember;
 import com.swiss_stage.domain.model.TeamMemberId;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
+import com.swiss_stage.domain.model.TournamentMember;
+import com.swiss_stage.domain.model.TournamentMemberId;
+import com.swiss_stage.domain.model.TournamentRole;
 import com.swiss_stage.domain.model.TournamentStatus;
 import com.swiss_stage.domain.model.Visibility;
 import java.time.Instant;
@@ -162,6 +165,70 @@ class ModelTest {
                   Tournament.create(
                       "個人戦", GameType.GO, CompetitionType.INDIVIDUAL, 3, null, 5, "owner", now))
           .isInstanceOf(DomainException.class);
+    }
+  }
+
+  @Nested
+  class TournamentMemberTest {
+
+    private final Instant now = Instant.parse("2026-07-13T00:00:00Z");
+
+    @Test
+    @DisplayName("subが空・nullの共同管理者は作成できない")
+    void subのバリデーション() {
+      assertThatThrownBy(() -> TournamentMember.create(" ", "表示名", now))
+          .isInstanceOf(DomainException.class);
+      assertThatThrownBy(() -> TournamentMember.create(null, "表示名", now))
+          .isInstanceOf(DomainException.class);
+    }
+
+    @Test
+    @DisplayName("roleがnullの共同管理者は作成できない")
+    void roleのバリデーション() {
+      assertThatThrownBy(
+              () -> new TournamentMember(TournamentMemberId.generate(), "sub", null, "表示名", now))
+          .isInstanceOf(DomainException.class);
+    }
+
+    @Test
+    @DisplayName("表示名が空・nullの共同管理者は作成できない")
+    void 表示名のバリデーション() {
+      assertThatThrownBy(() -> TournamentMember.create("sub", " ", now))
+          .isInstanceOf(DomainException.class);
+      assertThatThrownBy(() -> TournamentMember.create("sub", null, now))
+          .isInstanceOf(DomainException.class);
+    }
+
+    @Test
+    @DisplayName("参加日時がnullの共同管理者は作成できない")
+    void 参加日時のバリデーション() {
+      assertThatThrownBy(() -> TournamentMember.create("sub", "表示名", null))
+          .isInstanceOf(DomainException.class);
+    }
+
+    @Test
+    @DisplayName("createはMAINTAINERロールで作成される")
+    void 生成時のロール() {
+      TournamentMember member = TournamentMember.create("sub", "表示名", now);
+      assertThat(member.role()).isEqualTo(TournamentRole.MAINTAINER);
+    }
+
+    @Test
+    @DisplayName("設定管理権限はOWNERのみ持つ")
+    void 設定管理権限() {
+      assertThat(TournamentRole.OWNER.canManageSettings()).isTrue();
+      assertThat(TournamentRole.MAINTAINER.canManageSettings()).isFalse();
+    }
+  }
+
+  @Nested
+  class TournamentMemberIdTest {
+
+    @Test
+    @DisplayName("空文字・nullのTournamentMemberIdは作成できない")
+    void バリデーション() {
+      assertThatThrownBy(() -> new TournamentMemberId(" ")).isInstanceOf(DomainException.class);
+      assertThatThrownBy(() -> new TournamentMemberId(null)).isInstanceOf(DomainException.class);
     }
   }
 
