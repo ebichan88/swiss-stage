@@ -34,6 +34,7 @@ public class ParticipantService {
   private final ParticipantCsvParser csvParser;
   private final ParticipantCsvWriter csvWriter;
   private final SharedViewCache sharedViewCache;
+  private final TournamentEntryOrderAllocator entryOrderAllocator;
 
   public ParticipantService(
       ParticipantRepository participantRepository,
@@ -41,13 +42,15 @@ public class ParticipantService {
       TournamentAccessSupport access,
       ParticipantCsvParser csvParser,
       ParticipantCsvWriter csvWriter,
-      SharedViewCache sharedViewCache) {
+      SharedViewCache sharedViewCache,
+      TournamentEntryOrderAllocator entryOrderAllocator) {
     this.participantRepository = participantRepository;
     this.groupRepository = groupRepository;
     this.access = access;
     this.csvParser = csvParser;
     this.csvWriter = csvWriter;
     this.sharedViewCache = sharedViewCache;
+    this.entryOrderAllocator = entryOrderAllocator;
   }
 
   public List<ParticipantDto> list(TournamentId tournamentId, String ownerSub) {
@@ -72,7 +75,7 @@ public class ParticipantService {
             request.name(),
             normalize(request.organization()),
             request.rank(),
-            nextEntryOrder(tournamentId),
+            entryOrderAllocator.allocate(tournament, 1, () -> initialEntryOrder(tournamentId)),
             groupId);
     participantRepository.save(tournamentId, participant);
     sharedViewCache.evict(tournamentId);
@@ -88,7 +91,9 @@ public class ParticipantService {
         groups.stream().collect(Collectors.toMap(Group::name, Group::id));
     validateGroupNames(rows, groupsByName);
 
-    int entryOrder = nextEntryOrder(tournamentId);
+    int entryOrder =
+        entryOrderAllocator.allocate(
+            tournament, rows.size(), () -> initialEntryOrder(tournamentId));
     GroupId defaultGroupId = firstGroup(groups).id();
     List<Participant> participants = new ArrayList<>();
     for (ParticipantCsvParser.Row row : rows) {
@@ -197,7 +202,8 @@ public class ParticipantService {
     }
   }
 
-  private int nextEntryOrder(TournamentId tournamentId) {
+  /** 採番カウンタ未初期化時の初期値。既存参加者の最大entryOrder+1、1件もなければ1 */
+  private int initialEntryOrder(TournamentId tournamentId) {
     return participantRepository.findAllByTournamentId(tournamentId).stream()
             .mapToInt(Participant::entryOrder)
             .max()

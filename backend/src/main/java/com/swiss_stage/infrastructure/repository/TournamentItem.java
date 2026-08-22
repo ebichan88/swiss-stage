@@ -31,6 +31,7 @@ public class TournamentItem {
   private String shareToken;
   private Boolean resultInputEnabled;
   private String ownerSub;
+  private Integer nextEntryOrder;
   private String gsi1Pk;
   private String gsi1Sk;
   private String gsi2Pk;
@@ -161,6 +162,15 @@ public class TournamentItem {
 
   public void setOwnerSub(String ownerSub) {
     this.ownerSub = ownerSub;
+  }
+
+  /** entryOrder採番カウンタ(未初期化はnull。14_tournament_collaboration.md §4.5) */
+  public Integer getNextEntryOrder() {
+    return nextEntryOrder;
+  }
+
+  public void setNextEntryOrder(Integer nextEntryOrder) {
+    this.nextEntryOrder = nextEntryOrder;
   }
 
   @DynamoDbSecondaryPartitionKey(indexNames = "GSI1")

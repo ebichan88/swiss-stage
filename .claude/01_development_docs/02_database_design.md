@@ -46,6 +46,7 @@
 | shareToken | `a1b2c3...` | GSI2PK に `SHARE#{token}` を設定 |
 | resultInputEnabled | `true` / `false` | 共有トークン経由の結果入力を許可するか(既定false。属性なし=false) |
 | ownerSub | `google-oauth2|1234` | GSI1PK に `USER#{sub}` を設定 |
+| nextEntryOrder | `3` / 属性なし | 参加者・チームのentryOrder採番カウンタ。個人戦・団体戦で共有し、`version`楽観ロックで採番する。未初期化(属性なし)は初回追加時に遅延初期化される(14_tournament_collaboration.md §4.5) |
 | GSI1PK / GSI1SK | `USER#{sub}` / `TOURNAMENT#{createdAt}` | AP5用 |
 | GSI2PK | `SHARE#{token}` | AP6用(トークン未発行時は属性なし) |
 | createdAt / updatedAt | ISO8601(UTC) | MVPでは METADATA アイテムのみ保持(子アイテムのタイムスタンプはDTOで不要なため) |

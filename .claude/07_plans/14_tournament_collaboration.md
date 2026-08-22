@@ -1,8 +1,8 @@
 # 14. 大会の共同管理(招待リンクによる共同管理者)
 
-- Status: planned
+- Status: in_progress
 - Issue: #185
-- PR: -
+- PR: #198(PR1: entryOrder採番カウンタ)
 
 ## 1. 背景・目的
 

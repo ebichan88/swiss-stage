@@ -64,12 +64,23 @@ public class InMemoryRepositoryConfig {
 
       @Override
       public void save(Tournament tournament) {
-        Tournament stored = store.get(tournament.id().value());
-        long storedVersion = stored == null ? 0 : stored.version();
-        if (tournament.version() != storedVersion) {
+        // DynamoDBの条件付き書き込みと同じ原子性を再現するため、
+        // 同一キーへのread-check-writeを1つの compute 呼び出しに閉じ込める
+        // (ConcurrentHashMap#computeは同一キーに対するリエントラント以外の呼び出しを直列化する)
+        var conflict = new java.util.concurrent.atomic.AtomicBoolean(false);
+        store.compute(
+            tournament.id().value(),
+            (key, stored) -> {
+              long storedVersion = stored == null ? 0 : stored.version();
+              if (tournament.version() != storedVersion) {
+                conflict.set(true);
+                return stored;
+              }
+              return withVersion(tournament, storedVersion + 1);
+            });
+        if (conflict.get()) {
           throw new OptimisticLockException("大会が他の操作で更新されています");
         }
-        store.put(tournament.id().value(), withVersion(tournament, storedVersion + 1));
       }
 
       @Override
@@ -92,6 +103,7 @@ public class InMemoryRepositoryConfig {
             t.shareToken(),
             t.resultInputEnabled(),
             t.ownerSub(),
+            t.nextEntryOrder(),
             version,
             t.createdAt(),
             t.updatedAt());

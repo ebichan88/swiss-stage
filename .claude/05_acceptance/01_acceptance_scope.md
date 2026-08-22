@@ -92,9 +92,9 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | PTC-AC-011 | P2 | 参加者が0件のときのCSVダウンロードはヘッダー行のみになりテンプレートとして使える | done | ParticipantApiTest |
 | PTC-AC-012 | P1 | CSVダウンロードは大会の状態(PREPARING/IN_PROGRESS/FINISHED)を問わず利用できる | done | ParticipantApiTest |
 | PTC-AC-013 | P1 | 参加者一覧で棄権者(status=WITHDRAWN)の行が他の参加者と一目で区別できる(色の違いのみに依存しない) | done | ParticipantTable.test(Vitest) |
-| PTC-AC-014 | P0 | 参加者を同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる | todo | - |
-| PTC-AC-015 | P0 | 採番カウンタ未設定の大会(既存大会の移行・新規大会いずれも)で、参加者0人からの初回追加はentryOrder=1、既存参加者がいる場合は最大entryOrder+1から採番される | todo | - |
-| PTC-AC-016 | P1 | CSVインポートは連続したentryOrderの範囲をまとめて確保し、割り込みの追加と重複しない | todo | - |
+| PTC-AC-014 | P0 | 参加者を同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる | done | ParticipantApiTest |
+| PTC-AC-015 | P0 | 採番カウンタ未設定の大会(既存大会の移行・新規大会いずれも)で、参加者0人からの初回追加はentryOrder=1、既存参加者がいる場合は最大entryOrder+1から採番される | done | ParticipantApiTest |
+| PTC-AC-016 | P1 | CSVインポートは連続したentryOrderの範囲をまとめて確保し、割り込みの追加と重複しない | done | ParticipantApiTest |
 
 ## GRP: グループ
 
@@ -166,9 +166,9 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | TEAM-AC-023 | P2 | チームが0件のときのCSVダウンロードはヘッダー行のみになりテンプレートとして使える | done | TeamApiTest |
 | TEAM-AC-024 | P1 | CSVダウンロードは大会の状態を問わず利用でき、メンバーが1人もいないチームは行として出力されない | done | TeamApiTest |
 | TEAM-AC-025 | P1 | チーム一覧で棄権者(status=WITHDRAWN)の行が他のチームと一目で区別できる(色の違いのみに依存しない) | done | TeamTable.test(Vitest) |
-| TEAM-AC-026 | P0 | チームを同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる | todo | - |
-| TEAM-AC-027 | P0 | 採番カウンタ未設定の大会(既存大会の移行・新規大会いずれも)で、チーム0件からの初回追加はentryOrder=1、既存チームがいる場合は最大entryOrder+1から採番される | todo | - |
-| TEAM-AC-028 | P1 | チームCSVインポートは連続したentryOrderの範囲をまとめて確保し、割り込みの追加と重複しない | todo | - |
+| TEAM-AC-026 | P0 | チームを同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる | done | TeamApiTest |
+| TEAM-AC-027 | P0 | 採番カウンタ未設定の大会(既存大会の移行・新規大会いずれも)で、チーム0件からの初回追加はentryOrder=1、既存チームがいる場合は最大entryOrder+1から採番される | done | TeamApiTest |
+| TEAM-AC-028 | P1 | チームCSVインポートは連続したentryOrderの範囲をまとめて確保し、割り込みの追加と重複しない | done | TeamApiTest |
 | TEAM-AC-029 | P0 | 団体戦でも対局結果の編集中に別の運営者が同じラウンドを先に確定させると、編集は失敗し確定済みラウンドの結果が黙って書き換わらない(RND-AC-015の団体戦版) | todo | - |
 
 ## SHR: 共有(トークン)

@@ -43,6 +43,7 @@ public class TeamService {
   private final TeamCsvParser csvParser;
   private final TeamCsvWriter csvWriter;
   private final SharedViewCache sharedViewCache;
+  private final TournamentEntryOrderAllocator entryOrderAllocator;
   private final TeamRosterValidationService rosterValidation = new TeamRosterValidationService();
 
   public TeamService(
@@ -51,13 +52,15 @@ public class TeamService {
       TournamentAccessSupport access,
       TeamCsvParser csvParser,
       TeamCsvWriter csvWriter,
-      SharedViewCache sharedViewCache) {
+      SharedViewCache sharedViewCache,
+      TournamentEntryOrderAllocator entryOrderAllocator) {
     this.teamRepository = teamRepository;
     this.groupRepository = groupRepository;
     this.access = access;
     this.csvParser = csvParser;
     this.csvWriter = csvWriter;
     this.sharedViewCache = sharedViewCache;
+    this.entryOrderAllocator = entryOrderAllocator;
   }
 
   public List<TeamDto> list(TournamentId tournamentId, String ownerSub) {
@@ -78,7 +81,11 @@ public class TeamService {
         request.groupId() == null
             ? firstGroup(groups).id()
             : resolveGroup(groups, request.groupId()).id();
-    Team team = createTeam(request.name(), nextEntryOrder(tournamentId), groupId);
+    Team team =
+        createTeam(
+            request.name(),
+            entryOrderAllocator.allocate(tournament, 1, () -> initialEntryOrder(tournamentId)),
+            groupId);
     teamRepository.save(tournamentId, team);
     sharedViewCache.evict(tournamentId);
     return TeamDto.from(team);
@@ -94,10 +101,13 @@ public class TeamService {
         groups.stream().collect(Collectors.toMap(Group::name, Group::id));
     validateGroupNames(rows, groupsByName);
 
-    int entryOrder = nextEntryOrder(tournamentId);
+    List<List<TeamCsvParser.Row>> teamRowGroups = csvParser.groupByTeam(rows);
+    int entryOrder =
+        entryOrderAllocator.allocate(
+            tournament, teamRowGroups.size(), () -> initialEntryOrder(tournamentId));
     GroupId defaultGroupId = firstGroup(groups).id();
     List<Team> teams = new ArrayList<>();
-    for (List<TeamCsvParser.Row> teamRows : csvParser.groupByTeam(rows)) {
+    for (List<TeamCsvParser.Row> teamRows : teamRowGroups) {
       TeamCsvParser.Row first = teamRows.getFirst();
       GroupId groupId =
           first.groupName() == null ? defaultGroupId : groupsByName.get(first.groupName());
@@ -313,7 +323,8 @@ public class TeamService {
     }
   }
 
-  private int nextEntryOrder(TournamentId tournamentId) {
+  /** 採番カウンタ未初期化時の初期値。既存チームの最大entryOrder+1、1件もなければ1 */
+  private int initialEntryOrder(TournamentId tournamentId) {
     return teamRepository.findAllByTournamentId(tournamentId).stream()
             .mapToInt(Team::entryOrder)
             .max()
