@@ -846,7 +846,7 @@ export interface components {
             shareToken?: string | null;
             /** @description 共有トークン経由の結果入力を許可するか */
             resultInputEnabled: boolean;
-            role?: components["schemas"]["TournamentRole"];
+            role: components["schemas"]["TournamentRole"];
             /**
              * Format: int64
              * @description 楽観ロック用

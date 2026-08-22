@@ -64,7 +64,7 @@ public class TeamService {
   }
 
   public List<TeamDto> list(TournamentId tournamentId, String ownerSub) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requireTeamCompetition(tournament);
     return teamRepository.findAllByTournamentId(tournamentId).stream()
         .sorted(Comparator.comparingInt(Team::entryOrder))
@@ -73,7 +73,7 @@ public class TeamService {
   }
 
   public TeamDto create(TournamentId tournamentId, String ownerSub, CreateTeamRequest request) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requireTeamCompetition(tournament);
     requirePreparing(tournament, "チームの追加は大会開始前のみ可能です");
     List<Group> groups = groupRepository.findAllByTournamentId(tournamentId);
@@ -92,7 +92,7 @@ public class TeamService {
   }
 
   public TeamCsvImportResultDto importCsv(TournamentId tournamentId, String ownerSub, byte[] csv) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requireTeamCompetition(tournament);
     requirePreparing(tournament, "CSVインポートは大会開始前のみ可能です");
     List<TeamCsvParser.Row> rows = csvParser.parse(csv, tournament.teamSize());
@@ -126,7 +126,7 @@ public class TeamService {
 
   /** CSVダウンロード。インポートと対称の列構成で全チーム(棄権含む)をエントリー順・メンバー1人1行で返す。状態制約なし */
   public CsvExport exportCsv(TournamentId tournamentId, String ownerSub) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requireTeamCompetition(tournament);
     List<Team> teams =
         teamRepository.findAllByTournamentId(tournamentId).stream()
@@ -140,7 +140,7 @@ public class TeamService {
 
   public TeamDto update(
       TournamentId tournamentId, TeamId teamId, String ownerSub, UpdateTeamRequest request) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requireTeamCompetition(tournament);
     Team team = load(tournamentId, teamId);
 
@@ -173,7 +173,7 @@ public class TeamService {
   }
 
   public void delete(TournamentId tournamentId, TeamId teamId, String ownerSub) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requireTeamCompetition(tournament);
     requirePreparing(tournament, "チームの削除は大会開始前のみ可能です(開始後は棄権にしてください)");
     load(tournamentId, teamId);
@@ -183,7 +183,7 @@ public class TeamService {
 
   public TeamDto addMember(
       TournamentId tournamentId, TeamId teamId, String ownerSub, AddTeamMemberRequest request) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requireTeamCompetition(tournament);
     requirePreparing(tournament, "メンバーの追加は大会開始前のみ可能です");
     validateBoardPositionRange(request.boardPosition(), tournament.teamSize());
@@ -205,7 +205,7 @@ public class TeamService {
       TeamMemberId memberId,
       String ownerSub,
       UpdateTeamMemberRequest request) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requireTeamCompetition(tournament);
     requirePreparing(tournament, "メンバーの変更は大会開始前のみ可能です");
     boolean clearRank = Boolean.TRUE.equals(request.clearRank());
@@ -243,7 +243,7 @@ public class TeamService {
 
   public TeamDto deleteMember(
       TournamentId tournamentId, TeamId teamId, TeamMemberId memberId, String ownerSub) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requireTeamCompetition(tournament);
     requirePreparing(tournament, "メンバーの削除は大会開始前のみ可能です");
     Team team = load(tournamentId, teamId);
