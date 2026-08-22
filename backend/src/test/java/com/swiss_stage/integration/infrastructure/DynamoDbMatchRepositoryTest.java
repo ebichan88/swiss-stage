@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.swiss_stage.domain.OptimisticLockException;
+import com.swiss_stage.domain.RoundConfirmedException;
 import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Match;
 import com.swiss_stage.domain.model.MatchResult;
@@ -94,6 +95,51 @@ class DynamoDbMatchRepositoryTest extends DynamoDbRepositoryTestSupport {
 
     // 古いversionのまま上書きしようとすると競合
     assertThatThrownBy(() -> repository.save(tournamentId, loaded.withResult(MatchResult.DRAW)))
+        .isInstanceOf(OptimisticLockException.class);
+  }
+
+  @Test
+  @DisplayName(
+      "RND-AC-015: 対局の保存とラウンド未確定チェックは同一トランザクションで行われ、"
+          + "Match側のversionが一致していてもRoundが確定済みなら保存されない(§4.9のTOCTOU対策)")
+  void ラウンド確定と結果編集の競合() {
+    TournamentId tournamentId = TournamentId.generate();
+    Match match =
+        Match.pairOf(1, 1, ParticipantId.generate(), ParticipantId.generate(), GroupId.generate());
+    repository.save(tournamentId, match);
+    roundRepository.create(tournamentId, Round.pairing(1).startPlaying());
+
+    // ラウンドが未確定の間はMatchのversionが正しければ保存できる
+    Match decided =
+        repository.findById(tournamentId, match.id()).orElseThrow().withResult(MatchResult.DRAW);
+    repository.saveIfRoundNotConfirmed(tournamentId, decided, 1);
+    Match afterFirstEdit = repository.findById(tournamentId, match.id()).orElseThrow();
+    assertThat(afterFirstEdit.result()).isEqualTo(MatchResult.DRAW);
+
+    // 別の運営者がラウンドを確定させた直後を模す(Match側のversionはまだ一致している)
+    Round confirmed = roundRepository.findByRoundNumber(tournamentId, 1).orElseThrow().confirm();
+    roundRepository.save(tournamentId, confirmed);
+
+    Match correction = afterFirstEdit.withResult(MatchResult.PLAYER1_WIN);
+    assertThatThrownBy(() -> repository.saveIfRoundNotConfirmed(tournamentId, correction, 1))
+        .isInstanceOf(RoundConfirmedException.class);
+    // Matchのversion条件自体は満たしていたにもかかわらず、確定済みラウンドへの割り込みとして保存は行われない
+    assertThat(repository.findById(tournamentId, match.id()).orElseThrow().result())
+        .isEqualTo(MatchResult.DRAW);
+  }
+
+  @Test
+  @DisplayName("saveIfRoundNotConfirmedはMatch側のversion不一致もOptimisticLockExceptionとして区別する")
+  void 採番トランザクションのversion競合() {
+    TournamentId tournamentId = TournamentId.generate();
+    Match match =
+        Match.pairOf(1, 1, ParticipantId.generate(), ParticipantId.generate(), GroupId.generate());
+    repository.save(tournamentId, match);
+    roundRepository.create(tournamentId, Round.pairing(1).startPlaying());
+
+    Match stale = match.withResult(MatchResult.DRAW);
+    // 実際にはversion 0の対局は既にversionが払い出されているため、これは古いversionでの保存
+    assertThatThrownBy(() -> repository.saveIfRoundNotConfirmed(tournamentId, stale, 1))
         .isInstanceOf(OptimisticLockException.class);
   }
 }

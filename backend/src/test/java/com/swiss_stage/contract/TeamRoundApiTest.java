@@ -138,6 +138,51 @@ class TeamRoundApiTest extends ApiContractTestSupport {
         .andExpect(status().isOk());
   }
 
+  @Test
+  @DisplayName(
+      "TEAM-AC-029: 確定済みラウンドの対局結果は変更できない(RND-AC-015の団体戦版。"
+          + "同じRoundを参照するため対局の保存とラウンド未確定チェックが同一トランザクションで行われる)")
+  void 確定済みラウンドの結果は変更できない() throws Exception {
+    MvcResult r1 =
+        performApi(post(base() + "/team-rounds").cookie(ownerCookie()))
+            .andExpect(status().isCreated())
+            .andReturn();
+    JsonNode matches = dataOf(r1).path("round").path("matches");
+    JsonNode target = matches.get(0);
+    String matchId = target.path("id").asText();
+
+    for (JsonNode match : matches) {
+      inputAllBoardsWin(match, "PLAYER1_WIN");
+    }
+    performApi(post(base() + "/team-rounds/1/confirm").cookie(ownerCookie()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("CONFIRMED"));
+
+    // 確定済みラウンドの対局を訂正しようとすると409(Matchのversion自体は最新でも保存されない)
+    MvcResult roundList =
+        performApi(get(base() + "/team-rounds").cookie(ownerCookie())).andReturn();
+    long currentVersion = -1;
+    for (JsonNode round : dataOf(roundList)) {
+      for (JsonNode match : round.path("matches")) {
+        if (match.path("id").asText().equals(matchId)) {
+          currentVersion = match.path("version").asLong();
+        }
+      }
+    }
+    assertThat(currentVersion).isNotEqualTo(-1);
+    performApi(
+            put(base() + "/team-matches/" + matchId + "/result")
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"boardResults\":[\"PLAYER2_WIN\",\"PLAYER2_WIN\",\"PLAYER2_WIN\"],"
+                        + "\"version\":"
+                        + currentVersion
+                        + "}"))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.error.code").value("INVALID_STATE"));
+  }
+
   private void createTeamWithFullRoster(String name) throws Exception {
     MvcResult result =
         performApi(

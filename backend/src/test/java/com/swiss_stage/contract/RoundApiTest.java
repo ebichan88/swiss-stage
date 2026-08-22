@@ -119,7 +119,9 @@ class RoundApiTest extends ApiContractTestSupport {
 
   @Test
   @DisplayName(
-      "RND-AC-008,RND-AC-009,RND-AC-010,RND-AC-011: 結果入力はversion不一致・確定済みラウンドで409、不正値は400になる")
+      "RND-AC-008,RND-AC-009,RND-AC-010,RND-AC-011,RND-AC-015: "
+          + "結果入力はversion不一致・確定済みラウンドで409、不正値は400になる"
+          + "(確定済みラウンドへの書き込みは対局保存と同一トランザクションのラウンド未確定チェックで防ぐ)")
   void 結果入力の競合と確定後変更() throws Exception {
     MvcResult r1 =
         performApi(post(base() + "/rounds").cookie(ownerCookie()))

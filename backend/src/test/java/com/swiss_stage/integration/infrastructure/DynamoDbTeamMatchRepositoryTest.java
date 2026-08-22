@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.swiss_stage.domain.OptimisticLockException;
+import com.swiss_stage.domain.RoundConfirmedException;
 import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.MatchResult;
 import com.swiss_stage.domain.model.MatchSide;
@@ -127,5 +128,45 @@ class DynamoDbTeamMatchRepositoryTest extends DynamoDbRepositoryTestSupport {
                             MatchResult.PLAYER2_WIN,
                             MatchResult.PLAYER2_WIN))))
         .isInstanceOf(OptimisticLockException.class);
+  }
+
+  @Test
+  @DisplayName(
+      "TEAM-AC-029: 団体戦でも対局の保存とラウンド未確定チェックは同一トランザクションで行われ、"
+          + "Match側のversionが一致していてもRoundが確定済みなら保存されない(RND-AC-015の団体戦版。同じRoundを参照するため)")
+  void ラウンド確定と結果編集の競合() {
+    TournamentId tournamentId = TournamentId.generate();
+    TeamMatch match =
+        TeamMatch.pairOf(1, 1, TeamId.generate(), TeamId.generate(), 3, GroupId.generate());
+    repository.save(tournamentId, match);
+    roundRepository.create(tournamentId, Round.pairing(1).startPlaying());
+
+    TeamMatch decided =
+        repository
+            .findById(tournamentId, match.id())
+            .orElseThrow()
+            .withBoardResults(
+                List.of(MatchResult.PLAYER1_WIN, MatchResult.PLAYER1_WIN, MatchResult.DRAW));
+    repository.saveIfRoundNotConfirmed(tournamentId, decided, 1);
+    TeamMatch afterFirstEdit = repository.findById(tournamentId, match.id()).orElseThrow();
+    assertThat(afterFirstEdit.boardResults().get(0).result()).isEqualTo(MatchResult.PLAYER1_WIN);
+
+    // 別の運営者がラウンドを確定させた直後を模す(Match側のversionはまだ一致している)
+    Round confirmed = roundRepository.findByRoundNumber(tournamentId, 1).orElseThrow().confirm();
+    roundRepository.save(tournamentId, confirmed);
+
+    TeamMatch correction =
+        afterFirstEdit.withBoardResults(
+            List.of(MatchResult.PLAYER2_WIN, MatchResult.PLAYER2_WIN, MatchResult.PLAYER2_WIN));
+    assertThatThrownBy(() -> repository.saveIfRoundNotConfirmed(tournamentId, correction, 1))
+        .isInstanceOf(RoundConfirmedException.class);
+    assertThat(
+            repository
+                .findById(tournamentId, match.id())
+                .orElseThrow()
+                .boardResults()
+                .get(0)
+                .result())
+        .isEqualTo(MatchResult.PLAYER1_WIN);
   }
 }

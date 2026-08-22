@@ -20,12 +20,16 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 @Repository
 public class DynamoDbMatchRepository implements MatchRepository {
 
+  private final DynamoDbEnhancedClient enhancedClient;
   private final DynamoDbTable<MatchItem> table;
+  private final DynamoDbTable<RoundItem> roundTable;
 
   public DynamoDbMatchRepository(
       DynamoDbEnhancedClient enhancedClient,
       @Value("${app.dynamodb.table-name}") String tableName) {
+    this.enhancedClient = enhancedClient;
     this.table = enhancedClient.table(tableName, TableSchema.fromBean(MatchItem.class));
+    this.roundTable = enhancedClient.table(tableName, TableSchema.fromBean(RoundItem.class));
   }
 
   @Override
@@ -59,6 +63,18 @@ public class DynamoDbMatchRepository implements MatchRepository {
   public void saveAll(TournamentId tournamentId, List<Match> matches) {
     // BatchWriteItemは条件付き書き込み(楽観ロック)が効かないため逐次putで書く
     matches.forEach(m -> save(tournamentId, m));
+  }
+
+  @Override
+  public void saveIfRoundNotConfirmed(TournamentId tournamentId, Match match, int roundNumber) {
+    RoundConfirmationGuard.putIfRoundNotConfirmed(
+        enhancedClient,
+        table,
+        MatchItemMapper.toItem(tournamentId, match),
+        roundTable,
+        tournamentId,
+        roundNumber,
+        match.id().value());
   }
 
   /** SK前方一致で対局を取得する。プレフィックスがROUND#の場合Roundアイテムも一致するためentityTypeで絞る */

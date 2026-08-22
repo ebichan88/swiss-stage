@@ -145,6 +145,7 @@
    ただし削除前に確認ダイアログ+大会名の入力確認を必須とする。
 4. **楽観ロック**: `version` 属性 + 条件付き書き込みで更新競合を防ぐ(特に結果入力・ラウンド確定)。
 5. **トランザクション**: ラウンド確定+次ラウンド生成は `TransactWriteItems` で原子的に行う(上限100アイテムに注意 → 大規模大会ではラウンド確定とマッチ生成を分離し、Roundのstatusで整合性を担保)。
+6. **結果編集とラウンド確定の競合対策**: `MatchRepository`/`TeamMatchRepository` の `saveIfRoundNotConfirmed` は、対局の保存(version条件付き)とラウンド(SK=`ROUND#nn`)への `status <> CONFIRMED` の `ConditionCheck` を同一 `TransactWriteItems`(2アイテム)で行う。結果入力・自己申告の確定チェックとMatch書き込みの間にラウンドが確定するTOCTOU競合を防ぐ(`14_tournament_collaboration.md` §4.9)。個人戦・団体戦は同じRoundアイテムを参照するため同じ仕組みで両方に効く。
 
 ---
 
