@@ -1,6 +1,6 @@
 # 13. 大会の共同管理を招待リンク + 大会単位のメンバーシップで実現する
 
-- Status: Proposed
+- Status: Accepted
 - Issue: #185
 - Date: 2026-08-16
 

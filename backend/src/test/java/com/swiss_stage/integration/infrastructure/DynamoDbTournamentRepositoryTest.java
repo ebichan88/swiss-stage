@@ -100,6 +100,27 @@ class DynamoDbTournamentRepositoryTest extends DynamoDbRepositoryTestSupport {
   }
 
   @Test
+  @DisplayName("nextEntryOrder(entryOrder採番カウンタ)は未設定でnullを保存・復元でき、更新後の値も往復する")
+  void 採番カウンタの保存と取得() {
+    Tournament tournament =
+        Tournament.create(
+            "採番カウンタ統合テスト",
+            GameType.GO,
+            CompetitionType.INDIVIDUAL,
+            null,
+            null,
+            3,
+            uniqueSub(),
+            NOW);
+    repository.save(tournament);
+    assertThat(repository.findById(tournament.id()).orElseThrow().nextEntryOrder()).isNull();
+
+    Tournament loaded = repository.findById(tournament.id()).orElseThrow();
+    repository.save(loaded.withNextEntryOrder(3).touched(NOW.plusSeconds(1)));
+    assertThat(repository.findById(tournament.id()).orElseThrow().nextEntryOrder()).isEqualTo(3);
+  }
+
+  @Test
   @DisplayName("存在しない大会はemptyを返す")
   void 未存在() {
     assertThat(repository.findById(com.swiss_stage.domain.model.TournamentId.generate())).isEmpty();

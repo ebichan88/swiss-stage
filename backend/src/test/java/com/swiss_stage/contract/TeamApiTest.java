@@ -1,6 +1,7 @@
 package com.swiss_stage.contract;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -9,10 +10,28 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.swiss_stage.application.service.TournamentEntryOrderAllocator;
+import com.swiss_stage.domain.OptimisticLockException;
+import com.swiss_stage.domain.model.GroupId;
+import com.swiss_stage.domain.model.Team;
+import com.swiss_stage.domain.model.Tournament;
+import com.swiss_stage.domain.model.TournamentId;
+import com.swiss_stage.domain.repository.GroupRepository;
+import com.swiss_stage.domain.repository.TeamRepository;
+import com.swiss_stage.domain.repository.TournamentRepository;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MvcResult;
@@ -20,6 +39,11 @@ import tools.jackson.databind.JsonNode;
 
 /** 団体戦(competitionType=TEAM)のチーム・メンバー管理APIコントラクト (05_swiss_pairing_algorithm.md §5.1)。 */
 class TeamApiTest extends ApiContractTestSupport {
+
+  @Autowired private TournamentRepository tournamentRepository;
+  @Autowired private TeamRepository teamRepository;
+  @Autowired private GroupRepository groupRepository;
+  @Autowired private TournamentEntryOrderAllocator entryOrderAllocator;
 
   private String tournamentId;
 
@@ -288,6 +312,128 @@ class TeamApiTest extends ApiContractTestSupport {
             .andReturn();
     assertThat(csvBodyWithoutBom(result))
         .isEqualTo("チーム名,氏名,段級位,ポジション,グループ\r\n" + "Aチーム,主将 一郎,,主将,A\r\n");
+  }
+
+  @Test
+  @DisplayName("TEAM-AC-026: チームを同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる")
+  void 同時追加の競合() throws Exception {
+    Tournament staleSnapshot =
+        tournamentRepository.findById(new TournamentId(tournamentId)).orElseThrow();
+    performApi(
+            post(teamsPath())
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"先に確定\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.entryOrder").value(1));
+    assertThatThrownBy(() -> entryOrderAllocator.allocate(staleSnapshot, 1, () -> 1))
+        .isInstanceOf(OptimisticLockException.class);
+
+    int concurrency = 24;
+    ExecutorService pool = Executors.newFixedThreadPool(concurrency);
+    CyclicBarrier barrier = new CyclicBarrier(concurrency);
+    try {
+      List<Future<Integer>> futures = new ArrayList<>();
+      for (int i = 0; i < concurrency; i++) {
+        int index = i;
+        futures.add(
+            pool.submit(
+                () -> {
+                  barrier.await();
+                  MvcResult result =
+                      performApi(
+                              post(teamsPath())
+                                  .cookie(ownerCookie())
+                                  .contentType(MediaType.APPLICATION_JSON)
+                                  .content("{\"name\":\"同時追加" + index + "\"}"))
+                          .andReturn();
+                  int httpStatus = result.getResponse().getStatus();
+                  if (httpStatus == 201) {
+                    return dataOf(result).path("entryOrder").asInt();
+                  }
+                  assertThat(httpStatus).isEqualTo(409);
+                  return null;
+                }));
+      }
+      List<Integer> entryOrders = new ArrayList<>();
+      for (Future<Integer> future : futures) {
+        Integer entryOrder = future.get(10, TimeUnit.SECONDS);
+        if (entryOrder != null) {
+          entryOrders.add(entryOrder);
+        }
+      }
+      assertThat(entryOrders).doesNotHaveDuplicates();
+      List<Integer> sorted = entryOrders.stream().sorted().toList();
+      assertThat(sorted).isEqualTo(IntStream.rangeClosed(2, 1 + sorted.size()).boxed().toList());
+    } finally {
+      pool.shutdown();
+    }
+  }
+
+  @Test
+  @DisplayName(
+      "TEAM-AC-027: 採番カウンタ未設定の大会(既存大会の移行)でも、"
+          + "既存チームの最大entryOrder+1から採番される(0件からの初回追加はentryOrder=1)")
+  void 採番カウンタ未設定時の初期化() throws Exception {
+    performApi(
+            post(teamsPath())
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"一チーム目\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.entryOrder").value(1));
+
+    MvcResult migrated =
+        performApi(
+                post("/api/v1/tournaments")
+                    .cookie(ownerCookie())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        "{\"name\":\"移行団体戦大会\",\"gameType\":\"GO\","
+                            + "\"competitionType\":\"TEAM\",\"teamSize\":3,\"totalRounds\":3}"))
+            .andExpect(status().isCreated())
+            .andReturn();
+    String migratedTournamentId = dataOf(migrated).path("id").asText();
+    TournamentId migratedId = new TournamentId(migratedTournamentId);
+    GroupId groupId = groupRepository.findAllByTournamentId(migratedId).getFirst().id();
+    teamRepository.save(migratedId, Team.create("先客チーム", 5, groupId));
+
+    performApi(
+            post("/api/v1/tournaments/" + migratedTournamentId + "/teams")
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"後発チーム\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.entryOrder").value(6));
+  }
+
+  @Test
+  @DisplayName("TEAM-AC-028: チームCSVインポートは連続したentryOrderの範囲をまとめて確保し、割り込みの追加と重複しない")
+  void CSVインポートの範囲確保() throws Exception {
+    performApi(
+            post(teamsPath())
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"先発チーム\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.entryOrder").value(1));
+
+    String csv = "チーム名,氏名,段級位,ポジション\n" + "Bチーム,主将 一郎,,主将\n" + "Cチーム,主将 二郎,,主将\n";
+    performApi(
+            multipart(teamsPath() + "/csv-import")
+                .file(csvFile(csv.getBytes(StandardCharsets.UTF_8)))
+                .cookie(ownerCookie()))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.teams[0].entryOrder").value(2))
+        .andExpect(jsonPath("$.data.teams[1].entryOrder").value(3));
+
+    performApi(
+            post(teamsPath())
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"後発チーム\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.entryOrder").value(4));
   }
 
   private void fillRequiredPositions(String teamId, int teamSize) throws Exception {

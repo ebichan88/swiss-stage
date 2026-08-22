@@ -30,6 +30,7 @@ final class TournamentItemMapper {
     item.setShareToken(t.shareToken());
     item.setResultInputEnabled(t.resultInputEnabled());
     item.setOwnerSub(t.ownerSub());
+    item.setNextEntryOrder(t.nextEntryOrder());
     item.setGsi1Pk(DynamoDbKeys.gsi1Pk(t.ownerSub()));
     item.setGsi1Sk(DynamoDbKeys.gsi1Sk(t.createdAt()));
     item.setGsi2Pk(t.shareToken() == null ? null : DynamoDbKeys.gsi2Pk(t.shareToken()));
@@ -60,6 +61,7 @@ final class TournamentItemMapper {
         // Phase 5 以前の既存アイテムには属性がない(null)ため false 扱い
         Boolean.TRUE.equals(item.getResultInputEnabled()),
         item.getOwnerSub(),
+        item.getNextEntryOrder(),
         item.getVersion() == null ? 0L : item.getVersion(),
         Instant.parse(item.getCreatedAt()),
         Instant.parse(item.getUpdatedAt()));

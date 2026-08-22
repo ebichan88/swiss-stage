@@ -13,6 +13,10 @@ import java.util.Set;
  * は作成後変更不可(totalRoundsと同様)。teamSizeは competitionType=TEAM
  * の時のみ非null(3または5。05_swiss_pairing_algorithm.md §5.1)。 eventDate は開催日(未設定はnull)で、帳票印刷のヘッダーに使う。 時刻は
  * Clock をDIした呼び出し側(application層)から渡す(domainでは Instant.now() を呼ばない)。
+ *
+ * <p>nextEntryOrder は参加者・チームのentryOrder採番カウンタ(未初期化はnull。個人戦・団体戦で共有する。
+ * 14_tournament_collaboration.md §4.5)。作成時には設定せず、初回の追加時に {@code TournamentEntryOrderAllocator}
+ * が遅延初期化する。
  */
 public record Tournament(
     TournamentId id,
@@ -28,6 +32,7 @@ public record Tournament(
     String shareToken,
     boolean resultInputEnabled,
     String ownerSub,
+    Integer nextEntryOrder,
     long version,
     Instant createdAt,
     Instant updatedAt) {
@@ -57,6 +62,9 @@ public record Tournament(
     if (competitionType == CompetitionType.INDIVIDUAL && teamSize != null) {
       throw new DomainException("個人戦にチーム制は指定できません");
     }
+    if (nextEntryOrder != null && nextEntryOrder < 1) {
+      throw new DomainException("entryOrder採番カウンタが不正です");
+    }
   }
 
   public static Tournament create(
@@ -82,6 +90,7 @@ public record Tournament(
         null,
         false,
         ownerSub,
+        null,
         0L,
         now,
         now);
@@ -136,6 +145,7 @@ public record Tournament(
         shareToken,
         resultInputEnabled,
         ownerSub,
+        nextEntryOrder,
         version,
         createdAt,
         updatedAt);
@@ -157,6 +167,7 @@ public record Tournament(
         shareToken,
         resultInputEnabled,
         ownerSub,
+        nextEntryOrder,
         version,
         createdAt,
         updatedAt);
@@ -177,6 +188,7 @@ public record Tournament(
         shareToken,
         resultInputEnabled,
         ownerSub,
+        nextEntryOrder,
         version,
         createdAt,
         updatedAt);
@@ -197,6 +209,7 @@ public record Tournament(
         newShareToken,
         resultInputEnabled,
         ownerSub,
+        nextEntryOrder,
         version,
         createdAt,
         updatedAt);
@@ -217,6 +230,29 @@ public record Tournament(
         shareToken,
         newResultInputEnabled,
         ownerSub,
+        nextEntryOrder,
+        version,
+        createdAt,
+        updatedAt);
+  }
+
+  /** entryOrder採番カウンタの更新。{@link TournamentEntryOrderAllocator}専用 */
+  public Tournament withNextEntryOrder(int newNextEntryOrder) {
+    return new Tournament(
+        id,
+        name,
+        gameType,
+        competitionType,
+        teamSize,
+        eventDate,
+        totalRounds,
+        currentRound,
+        status,
+        visibility,
+        shareToken,
+        resultInputEnabled,
+        ownerSub,
+        newNextEntryOrder,
         version,
         createdAt,
         updatedAt);
@@ -238,6 +274,7 @@ public record Tournament(
         shareToken,
         resultInputEnabled,
         ownerSub,
+        nextEntryOrder,
         version,
         createdAt,
         now);
@@ -258,6 +295,7 @@ public record Tournament(
         shareToken,
         resultInputEnabled,
         ownerSub,
+        nextEntryOrder,
         version,
         createdAt,
         updatedAt);

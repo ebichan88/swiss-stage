@@ -1,6 +1,7 @@
 package com.swiss_stage.contract;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -8,16 +9,39 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.swiss_stage.application.service.TournamentEntryOrderAllocator;
+import com.swiss_stage.domain.OptimisticLockException;
+import com.swiss_stage.domain.model.GroupId;
+import com.swiss_stage.domain.model.Participant;
+import com.swiss_stage.domain.model.Tournament;
+import com.swiss_stage.domain.model.TournamentId;
+import com.swiss_stage.domain.repository.GroupRepository;
+import com.swiss_stage.domain.repository.ParticipantRepository;
+import com.swiss_stage.domain.repository.TournamentRepository;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MvcResult;
 
 class ParticipantApiTest extends ApiContractTestSupport {
+
+  @Autowired private TournamentRepository tournamentRepository;
+  @Autowired private ParticipantRepository participantRepository;
+  @Autowired private GroupRepository groupRepository;
+  @Autowired private TournamentEntryOrderAllocator entryOrderAllocator;
 
   private String tournamentId;
 
@@ -301,6 +325,140 @@ class ParticipantApiTest extends ApiContractTestSupport {
         .andExpect(jsonPath("$.data.participants[0].rank").value("KYU_3"))
         .andExpect(jsonPath("$.data.participants[1].name").value("山田 花子"))
         .andExpect(jsonPath("$.data.participants[1].rank").value("DAN_1"));
+  }
+
+  @Test
+  @DisplayName("PTC-AC-014: 参加者を同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる")
+  void 同時追加の競合() throws Exception {
+    // 運営者Aがこれから使うつもりで読み込んだ状態(採番カウンタ未初期化)を、
+    // 運営者Bの追加が確定した後に保存しようとすると、同じカウンタへの競合として409相当の
+    // OptimisticLockExceptionになる(GlobalExceptionHandlerがCONFLICTへ変換する経路は
+    // TournamentApiTest/RoundApiTestの楽観ロックテストで別途検証済みのため、ここでは
+    // TournamentEntryOrderAllocator自体が競合を検出することを直接確認する)
+    Tournament staleSnapshot =
+        tournamentRepository.findById(new TournamentId(tournamentId)).orElseThrow();
+    performApi(
+            post(participantsPath())
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"先に確定\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.entryOrder").value(1));
+    assertThatThrownBy(() -> entryOrderAllocator.allocate(staleSnapshot, 1, () -> 1))
+        .isInstanceOf(OptimisticLockException.class);
+
+    // 実際に多数の運営者が同時にリクエストしても、entryOrderの重複・欠落が起きないことを確認する
+    // (真の競合が実際に発生するかはスレッドスケジューリング依存のため、409の発生自体は断定しない。
+    // 断定できるのは「成功したレスポンスのentryOrderが重複しない」という安全性のほうである)
+    int concurrency = 24;
+    ExecutorService pool = Executors.newFixedThreadPool(concurrency);
+    CyclicBarrier barrier = new CyclicBarrier(concurrency);
+    try {
+      List<Future<Integer>> futures = new ArrayList<>();
+      for (int i = 0; i < concurrency; i++) {
+        int index = i;
+        futures.add(
+            pool.submit(
+                () -> {
+                  barrier.await();
+                  MvcResult result =
+                      performApi(
+                              post(participantsPath())
+                                  .cookie(ownerCookie())
+                                  .contentType(MediaType.APPLICATION_JSON)
+                                  .content("{\"name\":\"同時追加" + index + "\"}"))
+                          .andReturn();
+                  int httpStatus = result.getResponse().getStatus();
+                  if (httpStatus == 201) {
+                    return dataOf(result).path("entryOrder").asInt();
+                  }
+                  assertThat(httpStatus).isEqualTo(409);
+                  return null;
+                }));
+      }
+      List<Integer> entryOrders = new ArrayList<>();
+      for (Future<Integer> future : futures) {
+        Integer entryOrder = future.get(10, TimeUnit.SECONDS);
+        if (entryOrder != null) {
+          entryOrders.add(entryOrder);
+        }
+      }
+      assertThat(entryOrders).doesNotHaveDuplicates();
+      List<Integer> sorted = entryOrders.stream().sorted().toList();
+      // 既に1件(先に確定)があるため、2から連番で欠落なく続く
+      assertThat(sorted).isEqualTo(IntStream.rangeClosed(2, 1 + sorted.size()).boxed().toList());
+    } finally {
+      pool.shutdown();
+    }
+  }
+
+  @Test
+  @DisplayName(
+      "PTC-AC-015: 採番カウンタ未設定の大会(既存大会の移行)でも、"
+          + "既存参加者の最大entryOrder+1から採番される(0人からの初回追加はentryOrder=1)")
+  void 採番カウンタ未設定時の初期化() throws Exception {
+    // 0人からの初回追加はentryOrder=1(採番カウンタ未初期化の新規大会)
+    performApi(
+            post(participantsPath())
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"一人目\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.entryOrder").value(1));
+
+    // 既存大会の移行を模して、別の大会で採番カウンタを経由せずentryOrder=5の参加者を用意する
+    MvcResult migrated =
+        performApi(
+                post("/api/v1/tournaments")
+                    .cookie(ownerCookie())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        "{\"name\":\"移行大会\",\"gameType\":\"GO\","
+                            + "\"competitionType\":\"INDIVIDUAL\",\"totalRounds\":3}"))
+            .andExpect(status().isCreated())
+            .andReturn();
+    String migratedTournamentId = dataOf(migrated).path("id").asText();
+    TournamentId migratedId = new TournamentId(migratedTournamentId);
+    GroupId groupId = groupRepository.findAllByTournamentId(migratedId).getFirst().id();
+    participantRepository.save(migratedId, Participant.create("先客", null, null, 5, groupId));
+
+    performApi(
+            post("/api/v1/tournaments/" + migratedTournamentId + "/participants")
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"後発\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.entryOrder").value(6));
+  }
+
+  @Test
+  @DisplayName("PTC-AC-016: CSVインポートは連続したentryOrderの範囲をまとめて確保し、割り込みの追加と重複しない")
+  void CSVインポートの範囲確保() throws Exception {
+    performApi(
+            post(participantsPath())
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"先発\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.entryOrder").value(1));
+
+    String csv = "氏名,所属,段級位\n二人目,,\n三人目,,\n四人目,,\n";
+    performApi(
+            multipart(participantsPath() + "/import")
+                .file(csvFile(csv.getBytes(StandardCharsets.UTF_8)))
+                .cookie(ownerCookie()))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.participants[0].entryOrder").value(2))
+        .andExpect(jsonPath("$.data.participants[1].entryOrder").value(3))
+        .andExpect(jsonPath("$.data.participants[2].entryOrder").value(4));
+
+    performApi(
+            post(participantsPath())
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"後発\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.data.entryOrder").value(5));
   }
 
   private String participantsPath() {
