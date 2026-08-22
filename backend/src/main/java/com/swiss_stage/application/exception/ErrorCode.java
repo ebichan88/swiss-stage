@@ -19,6 +19,7 @@ public enum ErrorCode {
   TEAM_NOT_FOUND(404, "チームが見つかりません"),
   TEAM_MEMBER_NOT_FOUND(404, "チームメンバーが見つかりません"),
   TEAM_MATCH_NOT_FOUND(404, "対局が見つかりません"),
+  TOURNAMENT_MEMBER_NOT_FOUND(404, "共同管理者が見つかりません"),
   INVALID_STATE(409, "現在の状態ではこの操作はできません"),
   CONFLICT(409, "ほかの端末で更新されました。画面を更新して再度お試しください"),
   ROUND_ALREADY_EXISTS(409, "このラウンドは既に生成されています"),

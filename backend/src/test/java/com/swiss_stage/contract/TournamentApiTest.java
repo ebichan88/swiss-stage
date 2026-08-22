@@ -1,5 +1,6 @@
 package com.swiss_stage.contract;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -7,13 +8,23 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.swiss_stage.domain.model.Tournament;
+import com.swiss_stage.domain.model.TournamentId;
+import com.swiss_stage.domain.model.TournamentMember;
+import com.swiss_stage.domain.repository.TournamentMemberRepository;
+import com.swiss_stage.domain.repository.TournamentRepository;
+import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 import tools.jackson.databind.JsonNode;
 
 class TournamentApiTest extends ApiContractTestSupport {
+
+  @Autowired private TournamentRepository tournamentRepository;
+  @Autowired private TournamentMemberRepository memberRepository;
 
   private JsonNode createTournament() throws Exception {
     MvcResult result =
@@ -249,5 +260,48 @@ class TournamentApiTest extends ApiContractTestSupport {
     performApi(get("/api/v1/tournaments"))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
+  }
+
+  @Test
+  @DisplayName(
+      "TRN-AC-027: 大会一覧APIは所有大会と共同管理大会を1つのリストに混在させて返し、"
+          + "各アイテムのroleが所有はOWNER・共同管理はMAINTAINERと正しく区別される")
+  void 一覧は所有大会と共同管理大会をマージする() throws Exception {
+    String ownedId = createTournament().path("id").asText();
+
+    MvcResult otherOwned =
+        performApi(
+                post("/api/v1/tournaments")
+                    .cookie(sessionCookie(OTHER_SUB))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        "{\"name\":\"他人の大会\",\"gameType\":\"GO\",\"competitionType\":\"INDIVIDUAL\",\"totalRounds\":3}"))
+            .andExpect(status().isCreated())
+            .andReturn();
+    String maintainedId = dataOf(otherOwned).path("id").asText();
+    Tournament maintainedTournament =
+        tournamentRepository.findById(new TournamentId(maintainedId)).orElseThrow();
+    memberRepository.save(
+        maintainedTournament.id(),
+        TournamentMember.create(OWNER_SUB, "共同管理 太郎", Instant.now()),
+        maintainedTournament.createdAt());
+
+    // 一覧は他のテストと同じOWNER_SUBを共有するため蓄積されうる。件数ではなく該当IDの有無で検証する
+    MvcResult list =
+        performApi(get("/api/v1/tournaments").cookie(ownerCookie()))
+            .andExpect(status().isOk())
+            .andReturn();
+    JsonNode data = dataOf(list);
+    assertThat(roleOf(data, ownedId)).isEqualTo("OWNER");
+    assertThat(roleOf(data, maintainedId)).isEqualTo("MAINTAINER");
+  }
+
+  private static String roleOf(JsonNode list, String tournamentId) {
+    for (JsonNode item : list) {
+      if (item.path("id").asText().equals(tournamentId)) {
+        return item.path("role").asText();
+      }
+    }
+    throw new AssertionError("大会一覧に " + tournamentId + " が見つかりません");
   }
 }

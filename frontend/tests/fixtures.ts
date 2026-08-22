@@ -40,6 +40,7 @@ export function tournamentOf(overrides: Partial<Tournament> = {}): Tournament {
     visibility: 'PRIVATE',
     shareToken: null,
     resultInputEnabled: false,
+    role: 'OWNER',
     version: 1,
     createdAt: '2026-07-12T10:00:00+09:00',
     updatedAt: '2026-07-12T10:00:00+09:00',

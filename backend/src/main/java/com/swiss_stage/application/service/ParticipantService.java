@@ -54,7 +54,7 @@ public class ParticipantService {
   }
 
   public List<ParticipantDto> list(TournamentId tournamentId, String ownerSub) {
-    access.loadOwned(tournamentId, ownerSub);
+    access.loadMember(tournamentId, ownerSub);
     return participantRepository.findAllByTournamentId(tournamentId).stream()
         .sorted(Comparator.comparingInt(Participant::entryOrder))
         .map(ParticipantDto::from)
@@ -63,7 +63,7 @@ public class ParticipantService {
 
   public ParticipantDto add(
       TournamentId tournamentId, String ownerSub, CreateParticipantRequest request) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requirePreparing(tournament, "参加者の追加は大会開始前のみ可能です");
     List<Group> groups = groupRepository.findAllByTournamentId(tournamentId);
     GroupId groupId =
@@ -83,7 +83,7 @@ public class ParticipantService {
   }
 
   public CsvImportResultDto importCsv(TournamentId tournamentId, String ownerSub, byte[] csv) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requirePreparing(tournament, "CSVインポートは大会開始前のみ可能です");
     List<ParticipantCsvParser.Row> rows = csvParser.parse(csv);
     List<Group> groups = groupRepository.findAllByTournamentId(tournamentId);
@@ -111,7 +111,7 @@ public class ParticipantService {
 
   /** CSVダウンロード。インポートと対称の列構成で全参加者(棄権含む)をエントリー順に返す。状態制約なし */
   public CsvExport exportCsv(TournamentId tournamentId, String ownerSub) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     List<Participant> participants =
         participantRepository.findAllByTournamentId(tournamentId).stream()
             .sorted(Comparator.comparingInt(Participant::entryOrder))
@@ -127,7 +127,7 @@ public class ParticipantService {
       ParticipantId participantId,
       String ownerSub,
       UpdateParticipantRequest request) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     boolean clearRank = Boolean.TRUE.equals(request.clearRank());
     if (clearRank && request.rank() != null) {
       throw new ValidationException("rank と clearRank は同時に指定できません");
@@ -160,7 +160,7 @@ public class ParticipantService {
   }
 
   public void delete(TournamentId tournamentId, ParticipantId participantId, String ownerSub) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requirePreparing(tournament, "参加者の削除は大会開始前のみ可能です(開始後は棄権にしてください)");
     participantRepository
         .findById(tournamentId, participantId)

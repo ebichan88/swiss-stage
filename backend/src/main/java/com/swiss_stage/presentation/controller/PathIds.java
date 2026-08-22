@@ -9,6 +9,7 @@ import com.swiss_stage.domain.model.TeamId;
 import com.swiss_stage.domain.model.TeamMatchId;
 import com.swiss_stage.domain.model.TeamMemberId;
 import com.swiss_stage.domain.model.TournamentId;
+import com.swiss_stage.domain.model.TournamentMemberId;
 import java.util.regex.Pattern;
 
 /**
@@ -54,6 +55,11 @@ final class PathIds {
   static TeamMatchId teamMatchId(String value) {
     requireUlid(value, ErrorCode.TEAM_MATCH_NOT_FOUND);
     return new TeamMatchId(value);
+  }
+
+  static TournamentMemberId tournamentMemberId(String value) {
+    requireUlid(value, ErrorCode.TOURNAMENT_MEMBER_NOT_FOUND);
+    return new TournamentMemberId(value);
   }
 
   private static void requireUlid(String value, ErrorCode notFound) {

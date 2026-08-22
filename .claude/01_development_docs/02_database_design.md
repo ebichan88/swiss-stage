@@ -23,6 +23,8 @@
 | AP8 | 大会のグループ一覧を取得 | PK=`TOURNAMENT#{id}`, SK begins_with `GROUP#` |
 | AP9 | 大会のチーム一覧を取得(団体戦) | PK=`TOURNAMENT#{id}`, SK begins_with `TEAM#` |
 | AP10 | 特定ラウンドのチーム対局一覧を取得(団体戦) | PK=`TOURNAMENT#{id}`, SK begins_with `ROUND#{n}#TEAM_MATCH#` |
+| AP11 | 大会の共同管理者一覧を取得 | PK=`TOURNAMENT#{id}`, SK begins_with `MEMBER#` |
+| AP12 | ユーザーが共同管理する大会のID一覧を取得 | GSI1: PK=`USER#{sub}`(`entityType=MEMBER` でTOURNAMENTアイテムと区別) |
 
 ---
 
@@ -135,6 +137,23 @@
 | resultInputBy | `OWNER` / `SHARE_TOKEN` | Matchと同じ監査用属性 |
 
 - チーム全体の勝敗(○/●/△相当)は保存せず、`boardResults` から都度点数集計して導出する(`05_swiss_pairing_algorithm.md` §5.3)
+
+### Member(共同管理者)
+
+| 属性 | 例 | 備考 |
+|------|----|------|
+| PK / SK | `TOURNAMENT#01J...` / `MEMBER#{sub}` | SKに`sub`を使い、同一ユーザーの二重登録を構造的に不可能にする |
+| entityType | `MEMBER` | |
+| memberId | `01J...`(ULID) | APIのパスで使う識別子。`sub`をURLに出さないため |
+| sub | Google sub | |
+| role | `MAINTAINER` | MVPでは常にこの値。OWNERはMEMBERアイテムを持たない(`ownerSub`が正) |
+| displayName | 承諾時のGoogle表示名 | OWNERが「誰を許可したか」を確認するために保持する個人情報。OWNER向けレスポンス以外に出さない・ログに出さない(CLAUDE.md #8) |
+| joinedAt | ISO8601(UTC) | |
+| GSI1PK / GSI1SK | `USER#{sub}` / `TOURNAMENT#{大会のcreatedAt}` | AP12用。SKには**大会の**作成日時を入れ、所有大会と同じ並び順に揃える |
+
+- `version`は持たない(作成と削除のみで更新がないため)
+- GSI1PKは`TournamentアイテムのGSI1PK(USER#{ownerSub})`と同じ形式(`USER#{sub}`)で相乗りするため、AP5・AP12のクエリは必ず`entityType`でフィルタする(付け忘れるとMEMBERアイテムがTournamentItemとして誤マッピングされる。`06_adr/13_tournament_collaboration_model.md`)
+- 招待リンク(Inviteアイテム)は別PRで追加する
 
 ## 4. 設計上の決定事項
 

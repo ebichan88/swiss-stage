@@ -73,7 +73,7 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | TRN-AC-024 | P2 | 大会一覧で共同管理中の大会に「共同管理」バッジが表示され、所有大会には表示されない | todo | - |
 | TRN-AC-025 | P2 | MAINTAINERには管理画面の共通ナビゲーションに「設定」が表示されず、設定画面を直接開くと権限がない旨と戻る導線が表示される | todo | - |
 | TRN-AC-026 | P2 | 設定画面の共同管理者セクションで、招待リンクの発行・コピー・失効と共同管理者の取り消しができる | todo | - |
-| TRN-AC-027 | P1 | 大会一覧APIは所有大会と共同管理大会を1つのリストに混在させて返し、各アイテムのroleが所有はOWNER・共同管理はMAINTAINERと正しく区別される | todo | - |
+| TRN-AC-027 | P1 | 大会一覧APIは所有大会と共同管理大会を1つのリストに混在させて返し、各アイテムのroleが所有はOWNER・共同管理はMAINTAINERと正しく区別される | done | TournamentApiTest |
 
 ## PTC: 参加者
 
@@ -206,14 +206,14 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | ID | P | 受け入れ基準 | Status | 検証 |
 |----|---|------------|--------|------|
 | MBR-AC-001 | P0 | 招待を承諾したユーザーはMAINTAINERとして登録され、その大会の参加者管理・ラウンド進行・結果入力APIを実行できる | todo | - |
-| MBR-AC-002 | P0 | MAINTAINERが大会設定・削除・共有トークン再発行・招待/メンバー管理APIを呼ぶと403 FORBIDDENになる | todo | - |
-| MBR-AC-003 | P0 | どのメンバーでもないユーザーは大会APIすべてで404 TOURNAMENT_NOT_FOUNDになり、403との差で所属を推測できない | todo | - |
+| MBR-AC-002 | P0 | MAINTAINERが大会設定・削除・共有トークン再発行・招待/メンバー管理APIを呼ぶと403 FORBIDDENになる | done | TournamentMemberApiTest |
+| MBR-AC-003 | P0 | どのメンバーでもないユーザーは大会APIすべてで404 TOURNAMENT_NOT_FOUNDになり、403との差で所属を推測できない | done | TournamentMemberApiTest |
 | MBR-AC-004 | P0 | 期限切れ・人数枠切れ・失効済み・不正な招待トークンはいずれも同一の403 INVALID_INVITE_TOKENになり、理由を出し分けない | todo | - |
 | MBR-AC-005 | P0 | 人数枠を超える同時承諾は上限で打ち切られ、枠を超えるMAINTAINERは作られない | todo | - |
-| MBR-AC-006 | P0 | 共同管理者一覧・招待情報(トークンを含む)はOWNERにのみ返り、MAINTAINER・未認証には返らない | todo | - |
-| MBR-AC-007 | P0 | MAINTAINER向けの大会レスポンスにはshareTokenが含まれない | todo | - |
+| MBR-AC-006 | P0 | 共同管理者一覧・招待情報(トークンを含む)はOWNERにのみ返り、MAINTAINER・未認証には返らない | done | TournamentMemberApiTest |
+| MBR-AC-007 | P0 | MAINTAINER向けの大会レスポンスにはshareTokenが含まれない | done | TournamentMemberApiTest |
 | MBR-AC-008 | P0 | 招待リンクを再発行すると旧トークンは即時無効になり、使用済みの枠がリセットされる | todo | - |
-| MBR-AC-009 | P0 | OWNERが共同管理者を取り消すと、取り消された側は以後その大会で404になり一覧からも消える | todo | - |
+| MBR-AC-009 | P0 | OWNERが共同管理者を取り消すと、取り消された側は以後その大会で404になり一覧からも消える | done | TournamentMemberApiTest |
 | MBR-AC-010 | P0 | 招待の失効(DELETE)後はそのトークンで承諾できない | todo | - |
 | MBR-AC-011 | P1 | OWNER本人・既にMAINTAINERのユーザーが承諾しても二重登録されず、人数枠も消費しない | todo | - |
 | MBR-AC-012 | P1 | 共同管理者は9人(OWNER含め10人)を超えて追加できず、招待を再発行しても上限は回避できない(再発行時もmaxUsesの上限が発行時点の共同管理者数で再計算されるため) | todo | - |
@@ -228,7 +228,7 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | MBR-AC-023 | P0 | 共同管理者を取り消すと発行中の招待リンクも同時に失効し、取り消された人が同じリンクで再承諾してMAINTAINERに復帰することはできない | todo | - |
 | MBR-AC-024 | P1 | 招待の発行・失効・承諾、共同管理者の取り消しは大会の状態(PREPARING/IN_PROGRESS/FINISHED)を問わず利用できる | todo | - |
 | MBR-AC-025 | P2 | 招待は発行から72時間経過直前は有効(承諾に成功する)、経過直後は無効(INVALID_INVITE_TOKEN)になる | todo | - |
-| MBR-AC-026 | P2 | 存在しないmemberIdのDELETEは404 TOURNAMENT_MEMBER_NOT_FOUNDになる(DELETE /inviteの冪等204とは異なり、参加者・チームメンバー削除と同じ404の扱い) | todo | - |
+| MBR-AC-026 | P2 | 存在しないmemberIdのDELETEは404 TOURNAMENT_MEMBER_NOT_FOUNDになる(DELETE /inviteの冪等204とは異なり、参加者・チームメンバー削除と同じ404の扱い) | done | TournamentMemberApiTest |
 | MBR-AC-020 | P2 | 招待を一度も発行していない大会でDELETE /inviteを呼んでも204になる(冪等) | todo | - |
 | MBR-AC-021 | P2 | 招待を一度も発行していない大会のGET /membersはinvite:nullを返す | todo | - |
 | MBR-AC-027 | P2 | GET /invitations/{token}はOWNER本人・既存MAINTAINERに対してalreadyMember:trueを返す | todo | - |
