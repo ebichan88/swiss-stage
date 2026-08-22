@@ -2,6 +2,7 @@ package com.swiss_stage.contract;
 
 import com.swiss_stage.domain.DuplicateRoundException;
 import com.swiss_stage.domain.OptimisticLockException;
+import com.swiss_stage.domain.RoundConfirmedException;
 import com.swiss_stage.domain.model.Group;
 import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Match;
@@ -9,6 +10,7 @@ import com.swiss_stage.domain.model.MatchId;
 import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
 import com.swiss_stage.domain.model.Round;
+import com.swiss_stage.domain.model.RoundStatus;
 import com.swiss_stage.domain.model.Team;
 import com.swiss_stage.domain.model.TeamId;
 import com.swiss_stage.domain.model.TeamMatch;
@@ -187,7 +189,7 @@ public class InMemoryRepositoryConfig {
 
   @Bean
   @Primary
-  public MatchRepository inMemoryMatchRepository() {
+  public MatchRepository inMemoryMatchRepository(RoundRepository roundRepository) {
     return new MatchRepository() {
       private final Map<String, Map<String, Match>> store = new ConcurrentHashMap<>();
 
@@ -235,6 +237,15 @@ public class InMemoryRepositoryConfig {
       @Override
       public void saveAll(TournamentId tournamentId, List<Match> matches) {
         matches.forEach(m -> save(tournamentId, m));
+      }
+
+      @Override
+      public void saveIfRoundNotConfirmed(TournamentId tournamentId, Match match, int roundNumber) {
+        Round round = roundRepository.findByRoundNumber(tournamentId, roundNumber).orElseThrow();
+        if (round.status() == RoundStatus.CONFIRMED) {
+          throw new RoundConfirmedException("確定済みラウンドの結果は変更できません");
+        }
+        save(tournamentId, match);
       }
 
       private Map<String, Match> byTournament(TournamentId tournamentId) {
@@ -317,7 +328,7 @@ public class InMemoryRepositoryConfig {
 
   @Bean
   @Primary
-  public TeamMatchRepository inMemoryTeamMatchRepository() {
+  public TeamMatchRepository inMemoryTeamMatchRepository(RoundRepository roundRepository) {
     return new TeamMatchRepository() {
       private final Map<String, Map<String, TeamMatch>> store = new ConcurrentHashMap<>();
 
@@ -363,6 +374,16 @@ public class InMemoryRepositoryConfig {
       @Override
       public void saveAll(TournamentId tournamentId, List<TeamMatch> matches) {
         matches.forEach(m -> save(tournamentId, m));
+      }
+
+      @Override
+      public void saveIfRoundNotConfirmed(
+          TournamentId tournamentId, TeamMatch match, int roundNumber) {
+        Round round = roundRepository.findByRoundNumber(tournamentId, roundNumber).orElseThrow();
+        if (round.status() == RoundStatus.CONFIRMED) {
+          throw new RoundConfirmedException("確定済みラウンドの結果は変更できません");
+        }
+        save(tournamentId, match);
       }
 
       private Map<String, TeamMatch> byTournament(TournamentId tournamentId) {

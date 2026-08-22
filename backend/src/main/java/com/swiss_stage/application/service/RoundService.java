@@ -14,6 +14,7 @@ import com.swiss_stage.application.exception.ValidationException;
 import com.swiss_stage.domain.DomainException;
 import com.swiss_stage.domain.DuplicateRoundException;
 import com.swiss_stage.domain.OptimisticLockException;
+import com.swiss_stage.domain.RoundConfirmedException;
 import com.swiss_stage.domain.model.Group;
 import com.swiss_stage.domain.model.GroupId;
 import com.swiss_stage.domain.model.Match;
@@ -23,7 +24,6 @@ import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.ParticipantId;
 import com.swiss_stage.domain.model.ResultInputBy;
 import com.swiss_stage.domain.model.Round;
-import com.swiss_stage.domain.model.RoundStatus;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
 import com.swiss_stage.domain.model.TournamentStatus;
@@ -275,12 +275,8 @@ public class RoundService {
         matchRepository
             .findById(tournamentId, matchId)
             .orElseThrow(() -> new NotFoundException(ErrorCode.MATCH_NOT_FOUND));
-    Round round =
-        roundRepository
-            .findByRoundNumber(tournamentId, match.roundNumber())
-            .orElseThrow(() -> new NotFoundException(ErrorCode.ROUND_NOT_FOUND));
-    if (round.status() == RoundStatus.CONFIRMED) {
-      throw new InvalidStateException("確定済みラウンドの結果は変更できません");
+    if (roundRepository.findByRoundNumber(tournamentId, match.roundNumber()).isEmpty()) {
+      throw new NotFoundException(ErrorCode.ROUND_NOT_FOUND);
     }
     if (match.version() != expectedVersion) {
       throw new ConflictException();
@@ -292,7 +288,10 @@ public class RoundService {
       throw new ValidationException(e.getMessage());
     }
     try {
-      matchRepository.save(tournamentId, updated);
+      // 対局の保存とラウンド未確定チェックを同一トランザクションで行う(TOCTOU対策。§4.9)
+      matchRepository.saveIfRoundNotConfirmed(tournamentId, updated, match.roundNumber());
+    } catch (RoundConfirmedException e) {
+      throw new InvalidStateException(e.getMessage());
     } catch (OptimisticLockException e) {
       throw new ConflictException();
     }

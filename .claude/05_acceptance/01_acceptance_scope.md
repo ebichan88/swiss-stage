@@ -135,7 +135,7 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | RND-AC-012 | P1 | 片方のみ申告・申告不一致で結果が未確定の対局が残っているとラウンド確定はブロックされる。運営者が結果を確定すれば確定できる | done | RoundApiTest |
 | RND-AC-013 | P2 | 管理画面の順位と対戦結果は別メニュー(別画面)で表示される | done | RankingBoard.test, MatchResultsTable.test(Vitest) |
 | RND-AC-014 | P1 | 管理画面の順位表はラウンド1が確定するまで表示されない(未確定時は全員同率rank=1になり表示が崩れるため) | done | cp1-tournament-flow(E2E) |
-| RND-AC-015 | P0 | 対局結果の編集中に別の運営者が同じラウンドを先に確定させると、編集は失敗し(確定済みラウンドの結果は変更できないエラー)、確定済みラウンドの結果が黙って書き換わらない | todo | - |
+| RND-AC-015 | P0 | 対局結果の編集中に別の運営者が同じラウンドを先に確定させると、編集は失敗し(確定済みラウンドの結果は変更できないエラー)、確定済みラウンドの結果が黙って書き換わらない | done | RoundApiTest, DynamoDbMatchRepositoryTest |
 
 ## TEAM: 団体戦
 
@@ -169,7 +169,7 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | TEAM-AC-026 | P0 | チームを同時に追加してもentryOrderが重複せず、採番カウンタの競合は409 CONFLICTになる | done | TeamApiTest |
 | TEAM-AC-027 | P0 | 採番カウンタ未設定の大会(既存大会の移行・新規大会いずれも)で、チーム0件からの初回追加はentryOrder=1、既存チームがいる場合は最大entryOrder+1から採番される | done | TeamApiTest |
 | TEAM-AC-028 | P1 | チームCSVインポートは連続したentryOrderの範囲をまとめて確保し、割り込みの追加と重複しない | done | TeamApiTest |
-| TEAM-AC-029 | P0 | 団体戦でも対局結果の編集中に別の運営者が同じラウンドを先に確定させると、編集は失敗し確定済みラウンドの結果が黙って書き換わらない(RND-AC-015の団体戦版) | todo | - |
+| TEAM-AC-029 | P0 | 団体戦でも対局結果の編集中に別の運営者が同じラウンドを先に確定させると、編集は失敗し確定済みラウンドの結果が黙って書き換わらない(RND-AC-015の団体戦版) | done | TeamRoundApiTest, DynamoDbTeamMatchRepositoryTest |
 
 ## SHR: 共有(トークン)
 
