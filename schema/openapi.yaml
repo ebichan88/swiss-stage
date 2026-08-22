@@ -1681,6 +1681,7 @@ components:
         - status
         - visibility
         - resultInputEnabled
+        - role
         - version
         - createdAt
         - updatedAt
@@ -1725,10 +1726,6 @@ components:
         resultInputEnabled:
           type: boolean
           description: 共有トークン経由の結果入力を許可するか
-        # Plan PR時点では任意(required に入れない)。required にすると既存のレスポンスが
-        # 契約違反になり、Plan PRに実装コードを持ち込まないと contract テストが通らなくなる。
-        # 認可基盤の実装PRで値を詰めると同時に required へ移す
-        # (07_plans/14_tournament_collaboration.md §4.7)
         role:
           $ref: "#/components/schemas/TournamentRole"
         version:

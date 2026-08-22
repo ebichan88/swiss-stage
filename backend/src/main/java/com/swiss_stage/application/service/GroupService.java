@@ -52,14 +52,14 @@ public class GroupService {
   }
 
   public List<GroupDto> list(TournamentId tournamentId, String ownerSub) {
-    access.loadOwned(tournamentId, ownerSub);
+    access.loadMember(tournamentId, ownerSub);
     return groupRepository.findAllByTournamentId(tournamentId).stream()
         .map(GroupDto::from)
         .toList();
   }
 
   public GroupDto create(TournamentId tournamentId, String ownerSub, GroupRequest request) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requirePreparing(tournament, "グループの作成は大会開始前のみ可能です");
     List<Group> groups = groupRepository.findAllByTournamentId(tournamentId);
     if (groups.size() >= MAX_GROUPS) {
@@ -74,7 +74,7 @@ public class GroupService {
 
   public GroupDto rename(
       TournamentId tournamentId, GroupId groupId, String ownerSub, GroupRequest request) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requirePreparing(tournament, "グループの変更は大会開始前のみ可能です");
     Group group = load(tournamentId, groupId);
     requireUniqueName(groupRepository.findAllByTournamentId(tournamentId), request.name(), groupId);
@@ -86,7 +86,7 @@ public class GroupService {
 
   /** グループ削除。最後の1グループは削除できない(大会は常に1つ以上のグループを持つ)。 割当済みの参加者(団体戦はチーム)は直前のグループ(先頭グループの削除時は直後のグループ)へ移す */
   public void delete(TournamentId tournamentId, GroupId groupId, String ownerSub) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requirePreparing(tournament, "グループの削除は大会開始前のみ可能です");
     List<Group> groups = groupRepository.findAllByTournamentId(tournamentId);
     int index = indexOf(groups, groupId);
@@ -118,7 +118,7 @@ public class GroupService {
    * §5.2)
    */
   public List<ParticipantDto> autoAssign(TournamentId tournamentId, String ownerSub) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     if (tournament.isTeamCompetition()) {
       throw new InvalidStateException("団体戦では段級位による自動振り分けは利用できません");
     }

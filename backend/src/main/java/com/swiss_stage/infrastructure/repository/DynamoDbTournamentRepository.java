@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
@@ -66,6 +67,14 @@ public class DynamoDbTournamentRepository implements TournamentRepository {
                 QueryConditional.keyEqualTo(
                     Key.builder().partitionValue(DynamoDbKeys.gsi1Pk(ownerSub)).build()))
             .scanIndexForward(false) // GSI1SK=TOURNAMENT#{createdAt} の降順 = 新しい順
+            // GSI1PKはMEMBERアイテム(USER#{sub})と相乗りするため、entityTypeで絞らないと
+            // 混入する(14_tournament_collaboration.md §4.3の実装時の落とし穴)
+            .filterExpression(
+                Expression.builder()
+                    .expression("entityType = :entityType")
+                    .expressionValues(
+                        Map.of(":entityType", AttributeValue.fromS(TournamentItem.ENTITY_TYPE)))
+                    .build())
             .build();
     List<Tournament> result = new ArrayList<>();
     gsi1.query(request)

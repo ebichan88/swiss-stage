@@ -17,13 +17,18 @@ import com.swiss_stage.domain.model.TeamMatch;
 import com.swiss_stage.domain.model.TeamMatchId;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
+import com.swiss_stage.domain.model.TournamentMember;
+import com.swiss_stage.domain.model.TournamentMemberId;
 import com.swiss_stage.domain.repository.GroupRepository;
 import com.swiss_stage.domain.repository.MatchRepository;
 import com.swiss_stage.domain.repository.ParticipantRepository;
 import com.swiss_stage.domain.repository.RoundRepository;
 import com.swiss_stage.domain.repository.TeamMatchRepository;
 import com.swiss_stage.domain.repository.TeamRepository;
+import com.swiss_stage.domain.repository.TournamentMemberRepository;
 import com.swiss_stage.domain.repository.TournamentRepository;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -387,6 +392,59 @@ public class InMemoryRepositoryConfig {
       }
 
       private Map<String, TeamMatch> byTournament(TournamentId tournamentId) {
+        return store.computeIfAbsent(tournamentId.value(), k -> new ConcurrentHashMap<>());
+      }
+    };
+  }
+
+  @Bean
+  @Primary
+  public TournamentMemberRepository inMemoryTournamentMemberRepository() {
+    return new TournamentMemberRepository() {
+      private final Map<String, Map<String, TournamentMember>> store = new ConcurrentHashMap<>();
+
+      @Override
+      public List<TournamentMember> findByTournamentId(TournamentId tournamentId) {
+        return List.copyOf(byTournament(tournamentId).values());
+      }
+
+      @Override
+      public Optional<TournamentMember> findBySub(TournamentId tournamentId, String sub) {
+        return Optional.ofNullable(byTournament(tournamentId).get(sub));
+      }
+
+      @Override
+      public Optional<TournamentMember> findByMemberId(
+          TournamentId tournamentId, TournamentMemberId memberId) {
+        return byTournament(tournamentId).values().stream()
+            .filter(m -> m.id().equals(memberId))
+            .findFirst();
+      }
+
+      @Override
+      public List<TournamentId> findTournamentIdsByUserSub(String sub) {
+        List<TournamentId> result = new ArrayList<>();
+        store.forEach(
+            (tournamentId, members) -> {
+              if (members.containsKey(sub)) {
+                result.add(new TournamentId(tournamentId));
+              }
+            });
+        return result;
+      }
+
+      @Override
+      public void save(
+          TournamentId tournamentId, TournamentMember member, Instant tournamentCreatedAt) {
+        byTournament(tournamentId).put(member.sub(), member);
+      }
+
+      @Override
+      public void delete(TournamentId tournamentId, TournamentMemberId memberId) {
+        byTournament(tournamentId).values().removeIf(m -> m.id().equals(memberId));
+      }
+
+      private Map<String, TournamentMember> byTournament(TournamentId tournamentId) {
         return store.computeIfAbsent(tournamentId.value(), k -> new ConcurrentHashMap<>());
       }
     };

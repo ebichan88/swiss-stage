@@ -79,7 +79,7 @@ public class TeamRoundService {
   }
 
   public List<TeamRoundDto> list(TournamentId tournamentId, String ownerSub) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requireTeamCompetition(tournament);
     return assembleRounds(tournamentId);
   }
@@ -104,7 +104,7 @@ public class TeamRoundService {
   }
 
   public GeneratedTeamRoundDto generateNextRound(TournamentId tournamentId, String ownerSub) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requireTeamCompetition(tournament);
     if (tournament.status() != TournamentStatus.IN_PROGRESS) {
       throw new InvalidStateException("組み合わせ生成は開催中の大会のみ可能です");
@@ -202,7 +202,7 @@ public class TeamRoundService {
    * 1ボードでも未確定のまま確定すると、その対局は全ボード分が順位計算から除外され続けてしまうため
    */
   public TeamRoundDto confirm(TournamentId tournamentId, int roundNumber, String ownerSub) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requireTeamCompetition(tournament);
     Round round =
         roundRepository
@@ -230,7 +230,7 @@ public class TeamRoundService {
       TeamMatchId matchId,
       String ownerSub,
       InputTeamMatchResultRequest request) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     requireTeamCompetition(tournament);
     return applyResult(tournamentId, matchId, request);
   }

@@ -81,7 +81,7 @@ public class RoundService {
   }
 
   public List<RoundDto> list(TournamentId tournamentId, String ownerSub) {
-    access.loadOwned(tournamentId, ownerSub);
+    access.loadMember(tournamentId, ownerSub);
     return assembleRounds(tournamentId);
   }
 
@@ -106,7 +106,7 @@ public class RoundService {
 
   /** 次ラウンドの組み合わせ生成(05_swiss_pairing_algorithm.md §2)。 ラウンドは条件付き書き込みで作成してから対局を保存し、二重生成を防ぐ。 */
   public GeneratedRoundDto generateNextRound(TournamentId tournamentId, String ownerSub) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     if (tournament.status() != TournamentStatus.IN_PROGRESS) {
       throw new InvalidStateException("組み合わせ生成は開催中の大会のみ可能です");
     }
@@ -209,7 +209,7 @@ public class RoundService {
    * (確定後は編集不可になり、result=NONEのまま順位計算から除外され続けてしまうため)
    */
   public RoundDto confirm(TournamentId tournamentId, int roundNumber, String ownerSub) {
-    access.loadOwned(tournamentId, ownerSub);
+    access.loadMember(tournamentId, ownerSub);
     Round round =
         roundRepository
             .findByRoundNumber(tournamentId, roundNumber)
@@ -233,7 +233,7 @@ public class RoundService {
   /** 対局結果入力(PUT・べき等)。確定済みラウンドの対局は変更不可 */
   public MatchDto inputResult(
       TournamentId tournamentId, MatchId matchId, String ownerSub, InputResultRequest request) {
-    access.loadOwned(tournamentId, ownerSub);
+    access.loadMember(tournamentId, ownerSub);
     return applyResult(tournamentId, matchId, request, ResultInputBy.OWNER);
   }
 

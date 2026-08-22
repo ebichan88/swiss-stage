@@ -41,7 +41,7 @@ public class StandingService {
   }
 
   public List<GroupStandingsDto> standings(TournamentId tournamentId, String ownerSub) {
-    access.loadOwned(tournamentId, ownerSub);
+    access.loadMember(tournamentId, ownerSub);
     return assembleStandings(tournamentId);
   }
 

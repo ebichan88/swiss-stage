@@ -12,11 +12,13 @@ import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.Rank;
 import com.swiss_stage.domain.model.Round;
 import com.swiss_stage.domain.model.Tournament;
+import com.swiss_stage.domain.model.TournamentMember;
 import com.swiss_stage.domain.model.TournamentStatus;
 import com.swiss_stage.domain.model.Visibility;
 import com.swiss_stage.domain.repository.MatchRepository;
 import com.swiss_stage.domain.repository.ParticipantRepository;
 import com.swiss_stage.domain.repository.RoundRepository;
+import com.swiss_stage.domain.repository.TournamentMemberRepository;
 import com.swiss_stage.domain.repository.TournamentRepository;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -34,6 +36,7 @@ class DynamoDbTournamentRepositoryTest extends DynamoDbRepositoryTestSupport {
   @Autowired ParticipantRepository participantRepository;
   @Autowired RoundRepository roundRepository;
   @Autowired MatchRepository matchRepository;
+  @Autowired TournamentMemberRepository memberRepository;
 
   @Test
   @DisplayName("大会を保存して全属性を復元できる(初回保存でversionが払い出される)")
@@ -171,6 +174,23 @@ class DynamoDbTournamentRepositoryTest extends DynamoDbRepositoryTestSupport {
               return list.size() == 2 ? list : List.of();
             });
     assertThat(found).extracting(Tournament::name).containsExactly("新しい大会", "古い大会");
+  }
+
+  @Test
+  @DisplayName("運営者の大会一覧は、同じsubがGSI1に相乗りする共同管理者(MEMBER)アイテムを混入させない")
+  void 運営者の大会一覧のMEMBER混入防止() {
+    String sub = uniqueSub();
+    Tournament owned =
+        Tournament.create("所有大会", GameType.GO, CompetitionType.INDIVIDUAL, null, null, 3, sub, NOW);
+    repository.save(owned);
+    Tournament other =
+        Tournament.create(
+            "共同管理先大会", GameType.GO, CompetitionType.INDIVIDUAL, null, null, 3, uniqueSub(), NOW);
+    repository.save(other);
+    memberRepository.save(other.id(), TournamentMember.create(sub, "表示名", NOW), NOW);
+
+    List<Tournament> found = awaitNonEmpty(() -> repository.findByOwnerSub(sub));
+    assertThat(found).extracting(Tournament::id).containsExactly(owned.id());
   }
 
   @Test

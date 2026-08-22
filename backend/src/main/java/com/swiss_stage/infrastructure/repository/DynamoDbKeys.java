@@ -19,6 +19,7 @@ final class DynamoDbKeys {
   static final String PARTICIPANT_PREFIX = "PARTICIPANT#";
   static final String GROUP_PREFIX = "GROUP#";
   static final String TEAM_PREFIX = "TEAM#";
+  static final String MEMBER_PREFIX = "MEMBER#";
 
   private DynamoDbKeys() {}
 
@@ -69,5 +70,10 @@ final class DynamoDbKeys {
 
   static String gsi2Pk(String shareToken) {
     return "SHARE#" + shareToken;
+  }
+
+  /** SKには sub を使い、同一ユーザーの二重登録を構造的に不可能にする */
+  static String memberSk(String sub) {
+    return MEMBER_PREFIX + sub;
   }
 }

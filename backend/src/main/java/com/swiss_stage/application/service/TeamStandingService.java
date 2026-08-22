@@ -44,7 +44,7 @@ public class TeamStandingService {
   }
 
   public List<GroupTeamStandingsDto> standings(TournamentId tournamentId, String ownerSub) {
-    Tournament tournament = access.loadOwned(tournamentId, ownerSub);
+    Tournament tournament = access.loadMember(tournamentId, ownerSub);
     if (tournament.competitionType() != CompetitionType.TEAM) {
       throw new InvalidStateException("この操作は団体戦の大会でのみ可能です");
     }

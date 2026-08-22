@@ -15,16 +15,21 @@ import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.Team;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
+import com.swiss_stage.domain.model.TournamentRole;
 import com.swiss_stage.domain.repository.GroupRepository;
 import com.swiss_stage.domain.repository.ParticipantRepository;
 import com.swiss_stage.domain.repository.TeamRepository;
+import com.swiss_stage.domain.repository.TournamentMemberRepository;
 import com.swiss_stage.domain.repository.TournamentRepository;
 import com.swiss_stage.domain.service.GroupAssignmentService;
 import com.swiss_stage.domain.service.TeamRosterValidationService;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -36,6 +41,7 @@ public class TournamentService {
   private final ParticipantRepository participantRepository;
   private final TeamRepository teamRepository;
   private final GroupRepository groupRepository;
+  private final TournamentMemberRepository memberRepository;
   private final TournamentAccessSupport access;
   private final SharedViewCache sharedViewCache;
   private final GroupAssignmentService assignmentService = new GroupAssignmentService();
@@ -47,6 +53,7 @@ public class TournamentService {
       ParticipantRepository participantRepository,
       TeamRepository teamRepository,
       GroupRepository groupRepository,
+      TournamentMemberRepository memberRepository,
       TournamentAccessSupport access,
       SharedViewCache sharedViewCache,
       Clock clock) {
@@ -54,13 +61,24 @@ public class TournamentService {
     this.participantRepository = participantRepository;
     this.teamRepository = teamRepository;
     this.groupRepository = groupRepository;
+    this.memberRepository = memberRepository;
     this.access = access;
     this.sharedViewCache = sharedViewCache;
     this.clock = clock;
   }
 
-  public List<TournamentDto> list(String ownerSub) {
-    return tournamentRepository.findByOwnerSub(ownerSub).stream().map(TournamentDto::from).toList();
+  /** 所有大会と共同管理大会を1つのリストにマージして返す(新しい順。TRN-AC-027) */
+  public List<TournamentDto> list(String sub) {
+    List<Tournament> owned = tournamentRepository.findByOwnerSub(sub);
+    List<Tournament> memberTournaments =
+        memberRepository.findTournamentIdsByUserSub(sub).stream()
+            .map(tournamentRepository::findById)
+            .flatMap(Optional::stream)
+            .toList();
+    return Stream.concat(owned.stream(), memberTournaments.stream())
+        .sorted(Comparator.comparing(Tournament::createdAt).reversed())
+        .map(t -> TournamentDto.from(t, roleOf(t, sub)))
+        .toList();
   }
 
   public TournamentDto create(String ownerSub, CreateTournamentRequest request) {
@@ -84,7 +102,7 @@ public class TournamentService {
       tournamentRepository.delete(tournament.id());
       throw e;
     }
-    return reload(tournament.id());
+    return reload(tournament.id(), TournamentRole.OWNER);
   }
 
   /**
@@ -101,12 +119,13 @@ public class TournamentService {
     }
   }
 
-  public TournamentDto get(TournamentId id, String ownerSub) {
-    return TournamentDto.from(access.loadOwned(id, ownerSub));
+  public TournamentDto get(TournamentId id, String sub) {
+    Tournament tournament = access.loadMember(id, sub);
+    return TournamentDto.from(tournament, roleOf(tournament, sub));
   }
 
   public TournamentDto update(TournamentId id, String ownerSub, UpdateTournamentRequest request) {
-    Tournament tournament = access.loadOwned(id, ownerSub);
+    Tournament tournament = access.loadOwner(id, ownerSub);
     if (tournament.version() != request.version()) {
       throw new ConflictException();
     }
@@ -127,7 +146,7 @@ public class TournamentService {
     }
     tournamentRepository.save(tournament.touched(Instant.now(clock)));
     sharedViewCache.evict(id);
-    return reload(id);
+    return reload(id, TournamentRole.OWNER);
   }
 
   /** 開催日の設定と未設定化を同時に指示されたらどちらを優先すべきか決まらないため、明示的に弾く */
@@ -139,21 +158,21 @@ public class TournamentService {
 
   /** 共有トークンの発行・再発行(13_security_design.md §2)。 上書き保存のため旧トークンは即時無効になる(キャッシュも同時に破棄)。 */
   public TournamentDto regenerateShareToken(TournamentId id, String ownerSub) {
-    Tournament tournament = access.loadOwned(id, ownerSub);
+    Tournament tournament = access.loadOwner(id, ownerSub);
     tournamentRepository.save(
         tournament.withShareToken(ShareTokens.generate()).touched(Instant.now(clock)));
     sharedViewCache.evict(id);
-    return reload(id);
+    return reload(id, TournamentRole.OWNER);
   }
 
   public void delete(TournamentId id, String ownerSub) {
-    access.loadOwned(id, ownerSub);
+    access.loadOwner(id, ownerSub);
     tournamentRepository.delete(id);
     sharedViewCache.evict(id);
   }
 
-  public TournamentDto start(TournamentId id, String ownerSub) {
-    Tournament tournament = access.loadOwned(id, ownerSub);
+  public TournamentDto start(TournamentId id, String sub) {
+    Tournament tournament = access.loadMember(id, sub);
     if (tournament.isTeamCompetition()) {
       validateTeamsForStart(id, tournament.teamSize());
     } else {
@@ -161,7 +180,7 @@ public class TournamentService {
     }
     tournamentRepository.save(tournament.start().touched(Instant.now(clock)));
     sharedViewCache.evict(id);
-    return reload(id);
+    return reload(id, roleOf(tournament, sub));
   }
 
   private void validateParticipantsForStart(TournamentId id) {
@@ -192,18 +211,23 @@ public class TournamentService {
     }
   }
 
-  public TournamentDto finish(TournamentId id, String ownerSub) {
-    Tournament tournament = access.loadOwned(id, ownerSub);
+  public TournamentDto finish(TournamentId id, String sub) {
+    Tournament tournament = access.loadMember(id, sub);
     tournamentRepository.save(tournament.finish().touched(Instant.now(clock)));
     sharedViewCache.evict(id);
-    return reload(id);
+    return reload(id, roleOf(tournament, sub));
   }
 
   /** 保存でversionが進むため、レスポンスは保存後の状態を読み直して返す */
-  private TournamentDto reload(TournamentId id) {
+  private TournamentDto reload(TournamentId id, TournamentRole role) {
     return tournamentRepository
         .findById(id)
-        .map(TournamentDto::from)
+        .map(t -> TournamentDto.from(t, role))
         .orElseThrow(() -> new NotFoundException(ErrorCode.TOURNAMENT_NOT_FOUND));
+  }
+
+  /** loadOwner/loadMemberで所属済みと確定した後の役割判定(追加のクエリを要しない) */
+  private static TournamentRole roleOf(Tournament tournament, String sub) {
+    return tournament.isOwnedBy(sub) ? TournamentRole.OWNER : TournamentRole.MAINTAINER;
   }
 }
