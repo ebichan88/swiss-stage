@@ -2,7 +2,7 @@
 
 - Status: in_progress
 - Issue: #185
-- PR: #198(PR1: entryOrder採番カウンタ)
+- PR: #198(PR1: entryOrder採番カウンタ)、#199(PR1b: ラウンド確定と結果編集の競合対策)
 
 ## 1. 背景・目的
 
