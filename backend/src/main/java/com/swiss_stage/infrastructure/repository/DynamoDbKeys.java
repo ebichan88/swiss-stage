@@ -20,6 +20,7 @@ final class DynamoDbKeys {
   static final String GROUP_PREFIX = "GROUP#";
   static final String TEAM_PREFIX = "TEAM#";
   static final String MEMBER_PREFIX = "MEMBER#";
+  static final String INVITE_SK = "INVITE";
 
   private DynamoDbKeys() {}
 
@@ -70,6 +71,11 @@ final class DynamoDbKeys {
 
   static String gsi2Pk(String shareToken) {
     return "SHARE#" + shareToken;
+  }
+
+  /** 招待トークンのGSI2PK。共有トークン(SHARE#接頭辞)と名前空間が異なるためGSI2に相乗りできる */
+  static String gsi2PkForInvite(String inviteToken) {
+    return "INVITE#" + inviteToken;
   }
 
   /** SKには sub を使い、同一ユーザーの二重登録を構造的に不可能にする */

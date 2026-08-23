@@ -10,6 +10,7 @@ public enum ErrorCode {
   UNAUTHORIZED(401, "ログインしてください"),
   FORBIDDEN(403, "この操作を行う権限がありません"),
   INVALID_SHARE_TOKEN(403, "このURLは無効になっています。運営者に確認してください"),
+  INVALID_INVITE_TOKEN(403, "この招待リンクは無効になっています。運営者に確認してください"),
   NOT_FOUND(404, "リソースが見つかりません"),
   TOURNAMENT_NOT_FOUND(404, "大会が見つかりません"),
   PARTICIPANT_NOT_FOUND(404, "参加者が見つかりません"),
