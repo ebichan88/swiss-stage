@@ -216,8 +216,8 @@ CP3(再戦・BYE重複禁止、E2E-AC-004)・CP4(異常系、E2E-AC-005)は独�
 | MBR-AC-009 | P0 | OWNERが共同管理者を取り消すと、取り消された側は以後その大会で404になり一覧からも消える | done | TournamentMemberApiTest |
 | MBR-AC-010 | P0 | 招待の失効(DELETE)後はそのトークンで承諾できない | done | TournamentInviteApiTest |
 | MBR-AC-011 | P1 | OWNER本人・既にMAINTAINERのユーザーが承諾しても二重登録されず、人数枠も消費しない | done | InvitationApiTest |
-| MBR-AC-012 | P1 | 共同管理者は9人(OWNER含め10人)を超えて追加できず、招待を再発行しても上限は回避できない(再発行時もmaxUsesの上限が発行時点の共同管理者数で再計算されるため) | done | TournamentInviteApiTest(MBR-AC-019・MBR-AC-022と共通の検証) |
-| MBR-AC-013 | P1 | 大会を削除すると共同管理者・招待アイテムも物理削除され、MAINTAINERの大会一覧から消える | done | TournamentMemberApiTest, DynamoDbTournamentRepositoryTest |
+| MBR-AC-012 | P1 | 共同管理者は9人(OWNER含め10人)を超えて追加できず、招待を再発行しても上限は回避できない(再発行時もmaxUsesの上限が発行時点の共同管理者数で再計算されるため) | done | TournamentInviteApiTest |
+| MBR-AC-013 | P1 | 大会を削除すると共同管理者・招待アイテムも物理削除され、MAINTAINERの大会一覧から消える | done | TournamentMemberApiTest, TournamentInviteApiTest, DynamoDbTournamentRepositoryTest |
 | MBR-AC-014 | P1 | ログイン後のリダイレクト先は自サイト内の相対パスのみ許可し、絶対URL・`//`始まりは無視して大会一覧へ戻す | done | AuthApiTest, OAuth2LoginSuccessHandlerTest |
 | MBR-AC-015 | P2 | 招待受諾画面は、通常・招待が無効・すでにメンバーの3分岐をそれぞれ専用の表示と導線で出し分ける | todo | - |
 | MBR-AC-016 | P0 | 招待のプレビュー・承諾APIはIPベースのレート制限超過で429になる(招待トークンの漏洩はMAINTAINER権限の奪取に直結するためSHR-AC-009より優先度を上げる) | done | InvitationRateLimitApiTest |
