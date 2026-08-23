@@ -137,6 +137,10 @@ class TournamentInviteApiTest extends ApiContractTestSupport {
 
     performApi(delete(invitePath()).cookie(ownerCookie())).andExpect(status().isNoContent());
 
+    performApi(get("/api/v1/invitations/" + token).cookie(sessionCookie(OTHER_SUB)))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.error.code").value("INVALID_INVITE_TOKEN"));
+
     performApi(post("/api/v1/invitations/" + token + "/accept").cookie(sessionCookie(OTHER_SUB)))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.error.code").value("INVALID_INVITE_TOKEN"));
@@ -161,6 +165,10 @@ class TournamentInviteApiTest extends ApiContractTestSupport {
         .andExpect(status().isOk());
 
     performApi(post("/api/v1/invitations/" + token + "/accept").cookie(sessionCookie("second-sub")))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.error.code").value("INVALID_INVITE_TOKEN"));
+
+    performApi(get("/api/v1/invitations/" + token).cookie(sessionCookie("second-sub")))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.error.code").value("INVALID_INVITE_TOKEN"));
 
