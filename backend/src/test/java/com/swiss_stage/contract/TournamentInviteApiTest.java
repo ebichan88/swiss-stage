@@ -134,7 +134,8 @@ class TournamentInviteApiTest extends ApiContractTestSupport {
   }
 
   @Test
-  @DisplayName("MBR-AC-017: 人数枠1で発行した招待は1人が承諾すると即座に枠切れになり、" + "以後の承諾はINVALID_INVITE_TOKENになる")
+  @DisplayName(
+      "MBR-AC-005,MBR-AC-017: 人数枠1で発行した招待は1人が承諾すると即座に枠切れになり、" + "以後の承諾はINVALID_INVITE_TOKENになる")
   void 人数枠1は1人で枠切れになる() throws Exception {
     MvcResult issued =
         performApi(
@@ -178,7 +179,7 @@ class TournamentInviteApiTest extends ApiContractTestSupport {
   }
 
   @Test
-  @DisplayName("MBR-AC-019: 招待発行のmaxUsesが「9−発行時点の共同管理者数」を超えると400 VALIDATION_ERRORになる")
+  @DisplayName("MBR-AC-012,MBR-AC-019: 招待発行のmaxUsesが「9−発行時点の共同管理者数」を超えると400 VALIDATION_ERRORになる")
   void maxUsesが残り枠を超えると400() throws Exception {
     seedMembers(7);
 
@@ -200,7 +201,8 @@ class TournamentInviteApiTest extends ApiContractTestSupport {
 
   @Test
   @DisplayName(
-      "MBR-AC-022: 共同管理者0人の状態でmaxUses=9を指定すると発行に成功し、" + "共同管理者がN人いる状態でmaxUses=9-Nちょうどを指定しても発行に成功する")
+      "MBR-AC-012,MBR-AC-022: 共同管理者0人の状態でmaxUses=9を指定すると発行に成功し、"
+          + "共同管理者がN人いる状態でmaxUses=9-Nちょうどを指定しても発行に成功する")
   void 上限ちょうどのmaxUsesは成功する() throws Exception {
     performApi(
             post(invitePath())
