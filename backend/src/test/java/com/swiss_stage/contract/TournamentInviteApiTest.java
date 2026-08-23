@@ -14,6 +14,13 @@ import com.swiss_stage.domain.repository.TournamentInviteRepository;
 import com.swiss_stage.domain.repository.TournamentMemberRepository;
 import com.swiss_stage.domain.repository.TournamentRepository;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -137,7 +144,7 @@ class TournamentInviteApiTest extends ApiContractTestSupport {
 
   @Test
   @DisplayName(
-      "MBR-AC-005,MBR-AC-017: 人数枠1で発行した招待は1人が承諾すると即座に枠切れになり、"
+      "MBR-AC-017: 人数枠1で発行した招待は1人が承諾すると即座に枠切れになり、"
           + "枠を超えるMAINTAINERは作られず以後の承諾はINVALID_INVITE_TOKENになる")
   void 人数枠1は1人で枠切れになる() throws Exception {
     MvcResult issued =
@@ -159,6 +166,55 @@ class TournamentInviteApiTest extends ApiContractTestSupport {
 
     // 枠を超えた側はMAINTAINERとして登録されない
     assertThat(memberRepository.findBySub(new TournamentId(tournamentId), "second-sub")).isEmpty();
+  }
+
+  @Test
+  @DisplayName("MBR-AC-005: 人数枠を超える同時承諾は上限で打ち切られ、枠を超えるMAINTAINERは作られない")
+  void 同時承諾は上限で打ち切られる() throws Exception {
+    MvcResult issued =
+        performApi(
+                post(invitePath())
+                    .cookie(ownerCookie())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"maxUses\":1}"))
+            .andExpect(status().isOk())
+            .andReturn();
+    String token = dataOf(issued).path("invite").path("token").asText();
+
+    int concurrency = 16;
+    ExecutorService pool = Executors.newFixedThreadPool(concurrency);
+    CyclicBarrier barrier = new CyclicBarrier(concurrency);
+    try {
+      List<Future<Integer>> futures = new ArrayList<>();
+      for (int i = 0; i < concurrency; i++) {
+        String sub = "concurrent-sub-" + i;
+        futures.add(
+            pool.submit(
+                () -> {
+                  barrier.await();
+                  MvcResult result =
+                      performApi(
+                              post("/api/v1/invitations/" + token + "/accept")
+                                  .cookie(sessionCookie(sub)))
+                          .andReturn();
+                  return result.getResponse().getStatus();
+                }));
+      }
+      int successCount = 0;
+      for (Future<Integer> future : futures) {
+        int httpStatus = future.get(10, TimeUnit.SECONDS);
+        if (httpStatus == 200) {
+          successCount++;
+        } else {
+          assertThat(httpStatus).isEqualTo(403);
+        }
+      }
+      // 人数枠1のため、同時に何人が承諾を試みても成功はちょうど1人に打ち切られる
+      assertThat(successCount).isEqualTo(1);
+    } finally {
+      pool.shutdown();
+    }
+    assertThat(memberRepository.findByTournamentId(new TournamentId(tournamentId))).hasSize(1);
   }
 
   @Test
@@ -289,9 +345,13 @@ class TournamentInviteApiTest extends ApiContractTestSupport {
   }
 
   @Test
-  @DisplayName("MBR-AC-024: 招待の発行・失効は大会の状態(PREPARING/IN_PROGRESS/FINISHED)を問わず利用できる")
+  @DisplayName(
+      "MBR-AC-024: 招待の発行・失効・承諾、共同管理者の取り消しは" + "大会の状態(PREPARING/IN_PROGRESS/FINISHED)を問わず利用できる")
   void 大会の状態を問わず利用できる() throws Exception {
-    // 開始条件を満たすため参加者を2名追加してから開始する
+    // PREPARING: 発行→承諾→取り消し(招待も道連れに失効)がひととおり成功する
+    issueAcceptAndRemove("prep-sub");
+
+    // 開始条件を満たすため参加者を2名追加してからIN_PROGRESSへ進める
     performApi(
             post("/api/v1/tournaments/" + tournamentId + "/participants")
                 .cookie(ownerCookie())
@@ -307,13 +367,37 @@ class TournamentInviteApiTest extends ApiContractTestSupport {
     performApi(post("/api/v1/tournaments/" + tournamentId + "/start").cookie(ownerCookie()))
         .andExpect(status().isOk());
 
-    performApi(
-            post(invitePath())
-                .cookie(ownerCookie())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"maxUses\":3}"))
+    // IN_PROGRESS: 同様にひととおり成功する
+    issueAcceptAndRemove("progress-sub");
+
+    // FINISHEDへ進める(ラウンドを消化しなくても終了できる。Tournament.finish()参照)
+    performApi(post("/api/v1/tournaments/" + tournamentId + "/finish").cookie(ownerCookie()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("FINISHED"));
+
+    // FINISHED: 同様にひととおり成功する(監査目的で共同管理者を整理できる必要がある)
+    issueAcceptAndRemove("finished-sub");
+  }
+
+  /** 招待の発行→承諾→共同管理者の取り消し(招待も道連れに失効)がその時点の大会の状態で一通り成功することを確認する */
+  private void issueAcceptAndRemove(String sub) throws Exception {
+    MvcResult issued =
+        performApi(
+                post(invitePath())
+                    .cookie(ownerCookie())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"maxUses\":1}"))
+            .andExpect(status().isOk())
+            .andReturn();
+    String token = dataOf(issued).path("invite").path("token").asText();
+
+    performApi(post("/api/v1/invitations/" + token + "/accept").cookie(sessionCookie(sub)))
         .andExpect(status().isOk());
-    performApi(delete(invitePath()).cookie(ownerCookie())).andExpect(status().isNoContent());
+    String memberId =
+        memberRepository.findBySub(new TournamentId(tournamentId), sub).orElseThrow().id().value();
+
+    performApi(delete(membersPath() + "/" + memberId).cookie(ownerCookie()))
+        .andExpect(status().isNoContent());
   }
 
   @Test

@@ -81,7 +81,8 @@ public class InvitationService {
       }
       // 招待versionの競合、または同時承諾によるMEMBER重複。状態を読み直して先頭から再試行する
     }
-    throw new IllegalStateException("招待の承諾が競合により完了しませんでした: " + token);
+    // 招待トークンはログに残せない機微情報のため、メッセージに含めない(13_security_design.md §6)
+    throw new IllegalStateException("招待の承諾が競合により完了しませんでした");
   }
 
   private TournamentInvite loadInvite(String token) {

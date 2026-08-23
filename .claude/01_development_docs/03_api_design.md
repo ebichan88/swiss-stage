@@ -71,6 +71,12 @@
    運営者の直接確定(`InputTeamMatchResultRequest`)・トークン経由の自己申告(`ReportTeamMatchResultRequest`)は、対局1件分の全ボード結果を配列でまとめて送る点を除き、個人戦の設計ルール(§4-3)をそのまま踏襲する。
    詳細は `05_swiss_pairing_algorithm.md` §5、`02_database_design.md` の Team/TeamMatch を参照。
 9. **CSVダウンロード**: `/participants/export`・`/teams/csv-export` はCSVインポートと同じ列構成(グループ列を含む)でエントリー順に返す。参加者/チームが0件のときはヘッダー行のみを返し、テンプレートとして使える。大会の状態(PREPARING/IN_PROGRESS/FINISHED)を問わず利用できる(過去大会からの参加者流用が主目的のため。CSVインポートがPREPARING限定なのとは異なる制約)。文字コードはUTF-8 BOM付き(`Content-Type: text/csv;charset=UTF-8`、`Content-Disposition: attachment`、ファイル名は大会名を含みRFC5987でエンコード)。棄権(WITHDRAWN)扱いの参加者/チームも含めて全件出力する。チームCSVはメンバー1人につき1行(グループ列は各行に同じ値を出す。メンバーが1人もいないチームは行として表現できないため出力されない)。エスケープ・クォート処理はCSVインポート同様に非対応(氏名・所属にカンマを含むデータを再インポートすると列数不一致でエラーになりうる。既存のインポート実装と同じ既知の制約であり、直す場合はパーサーを含む別タスクとする)。
+10. **大会の共同管理(招待リンク)は `/api/v1/tournaments/{id}/members`・`/invite`(OWNER操作)と `/api/v1/invitations/{token}`(招待される側の操作)の2系統に分離する**(`14_tournament_collaboration.md`)。
+    - `GET/DELETE /tournaments/{id}/members`・`POST/DELETE /tournaments/{id}/invite` はOWNER専用。メンバーでない場合は404 `TOURNAMENT_NOT_FOUND`(存在を漏らさない)、メンバーだがOWNERでない(MAINTAINER)場合は403 `FORBIDDEN`(§7の「存在を漏らさない」方針の応用。`13_security_design.md` §3)。
+    - `GET/POST /invitations/{token}[/accept]` は認証済みなら誰でも呼べる。招待の期限切れ・人数枠切れ・失効済み・不正トークンはすべて403 `INVALID_INVITE_TOKEN` に統一し、理由を出し分けない(§7の `INVALID_SHARE_TOKEN` と同じ発想。招待トークンの漏洩は共有トークンと異なりMAINTAINER=書き込み権限の奪取に直結するため優先度が高い)。
+    - `/api/v1/invitations/**` は共有トークンと同じ仕組み(bucket4j・IPベース)でレート制限する(`InvitationRateLimitFilter`。§7の共有トークンとは別バケット)。
+    - `Tournament.role`(`OWNER`/`MAINTAINER`)をレスポンスに含め、`shareToken` はOWNERにのみ返す(大会設定=OWNER専用の機能であるため)。
+    - 招待の受諾はサーバー内部で楽観ロック競合を再試行し、クライアントに409を返さない契約とする(`POST /invitations/{token}/accept` のresponsesに409を含めない)。
 
 ---
 

@@ -28,11 +28,13 @@ import com.swiss_stage.domain.model.TeamMember;
 import com.swiss_stage.domain.model.TeamMemberId;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
+import com.swiss_stage.domain.model.TournamentInvite;
 import com.swiss_stage.domain.model.TournamentMember;
 import com.swiss_stage.domain.model.TournamentMemberId;
 import com.swiss_stage.domain.model.TournamentRole;
 import com.swiss_stage.domain.model.TournamentStatus;
 import com.swiss_stage.domain.model.Visibility;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -229,6 +231,119 @@ class ModelTest {
     void バリデーション() {
       assertThatThrownBy(() -> new TournamentMemberId(" ")).isInstanceOf(DomainException.class);
       assertThatThrownBy(() -> new TournamentMemberId(null)).isInstanceOf(DomainException.class);
+    }
+  }
+
+  @Nested
+  class TournamentInviteTest {
+
+    private final TournamentId tournamentId = TournamentId.generate();
+    private final Instant now = Instant.parse("2026-07-13T00:00:00Z");
+
+    private TournamentInvite invite(int maxUses, int usedCount, Instant expiresAt) {
+      return new TournamentInvite(
+          tournamentId, "token-value", expiresAt, maxUses, usedCount, 0L, now);
+    }
+
+    @Test
+    @DisplayName("大会IDがnullの招待は作成できない")
+    void 大会IDのバリデーション() {
+      assertThatThrownBy(() -> new TournamentInvite(null, "token-value", now, 1, 0, 0L, now))
+          .isInstanceOf(DomainException.class);
+    }
+
+    @Test
+    @DisplayName("トークンが空・nullの招待は作成できない")
+    void トークンのバリデーション() {
+      assertThatThrownBy(() -> new TournamentInvite(tournamentId, " ", now, 1, 0, 0L, now))
+          .isInstanceOf(DomainException.class);
+      assertThatThrownBy(() -> new TournamentInvite(tournamentId, null, now, 1, 0, 0L, now))
+          .isInstanceOf(DomainException.class);
+    }
+
+    @Test
+    @DisplayName("人数枠が1未満の招待は作成できない")
+    void 人数枠のバリデーション() {
+      assertThatThrownBy(
+              () -> new TournamentInvite(tournamentId, "token-value", now, 0, 0, 0L, now))
+          .isInstanceOf(DomainException.class);
+    }
+
+    @Test
+    @DisplayName("使用済み人数が負の招待は作成できない")
+    void 使用済み人数のバリデーション() {
+      assertThatThrownBy(
+              () -> new TournamentInvite(tournamentId, "token-value", now, 1, -1, 0L, now))
+          .isInstanceOf(DomainException.class);
+    }
+
+    @Test
+    @DisplayName("発行日時・有効期限がnullの招待は作成できない")
+    void 日時のバリデーション() {
+      assertThatThrownBy(
+              () -> new TournamentInvite(tournamentId, "token-value", null, 1, 0, 0L, now))
+          .isInstanceOf(DomainException.class);
+      assertThatThrownBy(
+              () -> new TournamentInvite(tournamentId, "token-value", now, 1, 0, 0L, null))
+          .isInstanceOf(DomainException.class);
+    }
+
+    @Test
+    @DisplayName("issueは72時間後を有効期限とし、未使用・version=0で発行する")
+    void 新規発行() {
+      TournamentInvite issued = TournamentInvite.issue(tournamentId, "token-value", 3, now, null);
+      assertThat(issued.expiresAt()).isEqualTo(now.plus(Duration.ofHours(72)));
+      assertThat(issued.usedCount()).isEqualTo(0);
+      assertThat(issued.version()).isEqualTo(0L);
+    }
+
+    @Test
+    @DisplayName("issueは再発行時に直前のversionを引き継ぐ")
+    void 再発行時のversion引き継ぎ() {
+      TournamentInvite reissued = TournamentInvite.issue(tournamentId, "token-value", 3, now, 5L);
+      assertThat(reissued.version()).isEqualTo(5L);
+      assertThat(reissued.usedCount()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("人数枠に余裕があり期限内なら承諾できる")
+    void 承諾可能() {
+      TournamentInvite invite = invite(2, 1, now.plusSeconds(60));
+      assertThat(invite.isAcceptable(now)).isTrue();
+    }
+
+    @Test
+    @DisplayName("使用済み人数が人数枠に達したら承諾できない")
+    void 人数枠上限で承諾不可() {
+      TournamentInvite invite = invite(2, 2, now.plusSeconds(60));
+      assertThat(invite.isAcceptable(now)).isFalse();
+    }
+
+    @Test
+    @DisplayName("有効期限ちょうど・期限超過は承諾できない")
+    void 期限切れで承諾不可() {
+      TournamentInvite invite = invite(2, 0, now);
+      assertThat(invite.isAcceptable(now)).isFalse();
+      assertThat(invite.isAcceptable(now.minusMillis(1))).isTrue();
+      assertThat(invite.isAcceptable(now.plusMillis(1))).isFalse();
+    }
+
+    @Test
+    @DisplayName("acceptedは使用済み人数のみ加算し、他のフィールドは維持する")
+    void 承諾による加算() {
+      TournamentInvite invite = invite(3, 1, now.plusSeconds(60));
+      TournamentInvite accepted = invite.accepted();
+      assertThat(accepted.usedCount()).isEqualTo(2);
+      assertThat(accepted.tournamentId()).isEqualTo(invite.tournamentId());
+      assertThat(accepted.token()).isEqualTo(invite.token());
+      assertThat(accepted.expiresAt()).isEqualTo(invite.expiresAt());
+      assertThat(accepted.version()).isEqualTo(invite.version());
+    }
+
+    @Test
+    @DisplayName("remainingUsesは人数枠から使用済み人数を引いた値")
+    void 残り枠() {
+      assertThat(invite(3, 1, now.plusSeconds(60)).remainingUses()).isEqualTo(2);
     }
   }
 
