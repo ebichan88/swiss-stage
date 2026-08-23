@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
 import com.swiss_stage.domain.model.TournamentMember;
+import com.swiss_stage.domain.repository.TournamentInviteRepository;
 import com.swiss_stage.domain.repository.TournamentMemberRepository;
 import com.swiss_stage.domain.repository.TournamentRepository;
 import java.time.Instant;
@@ -28,6 +29,7 @@ class TournamentInviteApiTest extends ApiContractTestSupport {
 
   @Autowired private TournamentRepository tournamentRepository;
   @Autowired private TournamentMemberRepository memberRepository;
+  @Autowired private TournamentInviteRepository inviteRepository;
 
   private String tournamentId;
 
@@ -135,7 +137,8 @@ class TournamentInviteApiTest extends ApiContractTestSupport {
 
   @Test
   @DisplayName(
-      "MBR-AC-005,MBR-AC-017: 人数枠1で発行した招待は1人が承諾すると即座に枠切れになり、" + "以後の承諾はINVALID_INVITE_TOKENになる")
+      "MBR-AC-005,MBR-AC-017: 人数枠1で発行した招待は1人が承諾すると即座に枠切れになり、"
+          + "枠を超えるMAINTAINERは作られず以後の承諾はINVALID_INVITE_TOKENになる")
   void 人数枠1は1人で枠切れになる() throws Exception {
     MvcResult issued =
         performApi(
@@ -153,6 +156,9 @@ class TournamentInviteApiTest extends ApiContractTestSupport {
     performApi(post("/api/v1/invitations/" + token + "/accept").cookie(sessionCookie("second-sub")))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.error.code").value("INVALID_INVITE_TOKEN"));
+
+    // 枠を超えた側はMAINTAINERとして登録されない
+    assertThat(memberRepository.findBySub(new TournamentId(tournamentId), "second-sub")).isEmpty();
   }
 
   @Test
@@ -179,7 +185,7 @@ class TournamentInviteApiTest extends ApiContractTestSupport {
   }
 
   @Test
-  @DisplayName("MBR-AC-012,MBR-AC-019: 招待発行のmaxUsesが「9−発行時点の共同管理者数」を超えると400 VALIDATION_ERRORになる")
+  @DisplayName("MBR-AC-019: 招待発行のmaxUsesが「9−発行時点の共同管理者数」を超えると400 VALIDATION_ERRORになる")
   void maxUsesが残り枠を超えると400() throws Exception {
     seedMembers(7);
 
@@ -201,8 +207,38 @@ class TournamentInviteApiTest extends ApiContractTestSupport {
 
   @Test
   @DisplayName(
-      "MBR-AC-012,MBR-AC-022: 共同管理者0人の状態でmaxUses=9を指定すると発行に成功し、"
-          + "共同管理者がN人いる状態でmaxUses=9-Nちょうどを指定しても発行に成功する")
+      "MBR-AC-012: 共同管理者は9人(OWNER含め10人)を超えて追加できず、"
+          + "招待を再発行しても上限は回避できない(再発行時もmaxUsesの上限が発行時点の共同管理者数で再計算される)")
+  void 上限は再発行でも回避できない() throws Exception {
+    seedMembers(7);
+    performApi(
+            post(invitePath())
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"maxUses\":2}"))
+        .andExpect(status().isOk());
+
+    // 再発行時も同じ上限(9-7=2)が適用され、超える指定は拒否される
+    performApi(
+            post(invitePath())
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"maxUses\":3}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+
+    // 上限ちょうどでの再発行(枠のリセット)は成功する
+    performApi(
+            post(invitePath())
+                .cookie(ownerCookie())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"maxUses\":2}"))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @DisplayName(
+      "MBR-AC-022: 共同管理者0人の状態でmaxUses=9を指定すると発行に成功し、" + "共同管理者がN人いる状態でmaxUses=9-Nちょうどを指定しても発行に成功する")
   void 上限ちょうどのmaxUsesは成功する() throws Exception {
     performApi(
             post(invitePath())
@@ -278,6 +314,36 @@ class TournamentInviteApiTest extends ApiContractTestSupport {
                 .content("{\"maxUses\":3}"))
         .andExpect(status().isOk());
     performApi(delete(invitePath()).cookie(ownerCookie())).andExpect(status().isNoContent());
+  }
+
+  @Test
+  @DisplayName("MBR-AC-013: 大会を削除すると共同管理者・招待アイテムも物理削除され、MAINTAINERの大会一覧から消える")
+  void 大会削除で共同管理者と招待も物理削除される() throws Exception {
+    MvcResult issued =
+        performApi(
+                post(invitePath())
+                    .cookie(ownerCookie())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"maxUses\":3}"))
+            .andExpect(status().isOk())
+            .andReturn();
+    String token = dataOf(issued).path("invite").path("token").asText();
+    performApi(post("/api/v1/invitations/" + token + "/accept").cookie(sessionCookie(OTHER_SUB)))
+        .andExpect(status().isOk());
+
+    TournamentId id = new TournamentId(tournamentId);
+    assertThat(memberRepository.findBySub(id, OTHER_SUB)).isPresent();
+    assertThat(inviteRepository.findByTournamentId(id)).isPresent();
+    performApi(get("/api/v1/tournaments").cookie(sessionCookie(OTHER_SUB)))
+        .andExpect(jsonPath("$.data[?(@.id=='" + tournamentId + "')]").isNotEmpty());
+
+    performApi(delete("/api/v1/tournaments/" + tournamentId).cookie(ownerCookie()))
+        .andExpect(status().isNoContent());
+
+    assertThat(memberRepository.findBySub(id, OTHER_SUB)).isEmpty();
+    assertThat(inviteRepository.findByTournamentId(id)).isEmpty();
+    performApi(get("/api/v1/tournaments").cookie(sessionCookie(OTHER_SUB)))
+        .andExpect(jsonPath("$.data[?(@.id=='" + tournamentId + "')]").isEmpty());
   }
 
   private void seedMembers(int count) {

@@ -51,7 +51,8 @@ public class InMemoryRepositoryConfig {
 
   @Bean
   @Primary
-  public TournamentRepository inMemoryTournamentRepository() {
+  public TournamentRepository inMemoryTournamentRepository(
+      TournamentMemberRepository memberRepository, TournamentInviteRepository inviteRepository) {
     return new TournamentRepository() {
       private final Map<String, Tournament> store = new ConcurrentHashMap<>();
       // 実時計はミリ秒未満の解像度が環境依存で、大量生成時にcreatedAtが衝突しうる。
@@ -108,6 +109,10 @@ public class InMemoryRepositoryConfig {
       public void delete(TournamentId id) {
         store.remove(id.value());
         insertionSequence.remove(id.value());
+        // 本番のDynamoDB実装はパーティション全体を一括削除するため、同じパーティションに属する
+        // MEMBER・INVITEアイテムも道連れになる(MBR-AC-013)。フェイクでも同じ振る舞いを再現する
+        memberRepository.findByTournamentId(id).forEach(m -> memberRepository.delete(id, m.id()));
+        inviteRepository.delete(id);
       }
 
       private Tournament withVersion(Tournament t, long version) {
