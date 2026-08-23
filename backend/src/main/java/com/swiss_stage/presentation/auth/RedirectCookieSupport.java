@@ -35,9 +35,12 @@ public class RedirectCookieSupport {
     return baseCookie("").maxAge(0).build();
   }
 
-  /** オープンリダイレクト対策: 「`/` で始まり `//` で始まらない相対パス」のみ許可する。 絶対URL・スキーム付き・プロトコル相対URLはすべて拒否する。 */
+  /**
+   * オープンリダイレクト対策: 「`/` で始まり `//` で始まらない相対パス」のみ許可する。 絶対URL・スキーム付き・プロトコル相対URLはすべて拒否する。
+   * `\`を含む値は拒否する(先頭`/`直後の`\`はWHATWG URL標準でオーソリティ開始として`//`と等価に解釈されうるため)。
+   */
   public static boolean isSafeRelativePath(String path) {
-    return path != null && path.startsWith("/") && !path.startsWith("//");
+    return path != null && path.startsWith("/") && !path.startsWith("//") && path.indexOf('\\') < 0;
   }
 
   private ResponseCookie.ResponseCookieBuilder baseCookie(String value) {

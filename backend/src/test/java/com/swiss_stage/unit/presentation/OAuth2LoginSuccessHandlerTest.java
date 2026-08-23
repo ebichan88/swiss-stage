@@ -68,6 +68,18 @@ class OAuth2LoginSuccessHandlerTest {
   }
 
   @Test
+  @DisplayName("MBR-AC-014: redirect Cookieが\"/\\\\\"始まり(バックスラッシュによるオーソリティ偽装)なら無視して/tournamentsへ戻す")
+  void 先頭スラッシュ直後のバックスラッシュは既定に倒す() throws Exception {
+    MockHttpServletRequest request = new MockHttpServletRequest();
+    request.setCookies(new Cookie(RedirectCookieSupport.COOKIE_NAME, "/\\evil.example.com"));
+    MockHttpServletResponse response = new MockHttpServletResponse();
+
+    handler.onAuthenticationSuccess(request, response, authenticationOf("user-sub"));
+
+    assertThat(response.getRedirectedUrl()).isEqualTo("/tournaments");
+  }
+
+  @Test
   @DisplayName("redirect Cookieが無ければ/tournamentsへ戻る")
   void Cookieが無ければ既定へ() throws Exception {
     MockHttpServletRequest request = new MockHttpServletRequest();

@@ -98,6 +98,14 @@ class AuthApiTest extends ApiContractTestSupport {
     assertThat(protocolRelative.getResponse().getCookie(RedirectCookieSupport.COOKIE_NAME))
         .isNull();
 
+    MvcResult backslashAuthority =
+        mockMvc
+            .perform(get("/api/v1/auth/login").param("redirect", "/\\evil.example.com"))
+            .andExpect(status().isFound())
+            .andReturn();
+    assertThat(backslashAuthority.getResponse().getCookie(RedirectCookieSupport.COOKIE_NAME))
+        .isNull();
+
     MvcResult noParam =
         mockMvc.perform(get("/api/v1/auth/login")).andExpect(status().isFound()).andReturn();
     assertThat(noParam.getResponse().getCookie(RedirectCookieSupport.COOKIE_NAME)).isNull();
