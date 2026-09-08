@@ -3,7 +3,7 @@
 - Status: in_progress
 - Issue: #185
 - PR: #198(PR1: entryOrder採番カウンタ)、#199(PR1b: ラウンド確定と結果編集の競合対策)、
-  #200(PR2: 認可基盤)
+  #200(PR2: 認可基盤)、#201(PR3: 招待リンク+ログイン後リダイレクト)
 
 ## 1. 背景・目的
 
@@ -607,11 +607,11 @@ IPベースのレート制限というトークン総当たり対策の欠落を
 
 ### 実装PRで更新が必要な設計ドキュメント(今は更新しない・実装時の申し送り)
 
-- [ ] `.claude/01_development_docs/02_database_design.md` — AP11〜AP14、Member/Inviteアイテム、`nextEntryOrder`、GSI1の`entityType`フィルタ、`editMatch`のMatch更新をRound項目へのConditionCheck付き`TransactWriteItems`に変更する旨(§4.9)
-- [ ] `.claude/01_development_docs/13_security_design.md` — §3 認可マトリクスにMAINTAINER列を追加、404/403の使い分け、招待トークンの扱い
+- [x] `.claude/01_development_docs/02_database_design.md` — AP11〜AP14、Member/Inviteアイテム、`nextEntryOrder`、GSI1の`entityType`フィルタ、`editMatch`のMatch更新をRound項目へのConditionCheck付き`TransactWriteItems`に変更する旨(§4.9)(PR1b・PR2・PR3で対応)
+- [x] `.claude/01_development_docs/13_security_design.md` — §3 認可マトリクスにMAINTAINER列を追加、404/403の使い分け、招待トークンの扱い(PR2・PR3で対応)
 - [ ] `.claude/01_development_docs/04_screen_transition_design.md` — S14の追加、S09の権限、ナビゲーション項目の出し分け
-- [ ] `.claude/01_development_docs/06_error_handling_design.md` — `INVALID_INVITE_TOKEN`・`TOURNAMENT_MEMBER_NOT_FOUND` の追記
-- [ ] `.claude/01_development_docs/03_api_design.md` — 新規エンドポイント群
+- [x] `.claude/01_development_docs/06_error_handling_design.md` — `INVALID_INVITE_TOKEN`・`TOURNAMENT_MEMBER_NOT_FOUND` の追記(PR2・PR3で対応)
+- [x] `.claude/01_development_docs/03_api_design.md` — 新規エンドポイント群(PR3で対応)
 - [ ] `.claude/01_development_docs/12_e2e_test_design.md` — CP8の追加
 - [ ] `CLAUDE.md` — GSI1相乗りに伴う`entityType`フィルタ必須を「避けるべき落とし穴」に追記
 - [ ] `.claude/01_development_docs/05_swiss_pairing_algorithm.md` — **更新不要**(`entryOrder`の採番方法は変わるが、初回ペアリングが「entryOrder順」であるという仕様自体は変えない)

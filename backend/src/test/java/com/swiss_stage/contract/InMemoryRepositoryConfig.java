@@ -17,6 +17,7 @@ import com.swiss_stage.domain.model.TeamMatch;
 import com.swiss_stage.domain.model.TeamMatchId;
 import com.swiss_stage.domain.model.Tournament;
 import com.swiss_stage.domain.model.TournamentId;
+import com.swiss_stage.domain.model.TournamentInvite;
 import com.swiss_stage.domain.model.TournamentMember;
 import com.swiss_stage.domain.model.TournamentMemberId;
 import com.swiss_stage.domain.repository.GroupRepository;
@@ -25,6 +26,7 @@ import com.swiss_stage.domain.repository.ParticipantRepository;
 import com.swiss_stage.domain.repository.RoundRepository;
 import com.swiss_stage.domain.repository.TeamMatchRepository;
 import com.swiss_stage.domain.repository.TeamRepository;
+import com.swiss_stage.domain.repository.TournamentInviteRepository;
 import com.swiss_stage.domain.repository.TournamentMemberRepository;
 import com.swiss_stage.domain.repository.TournamentRepository;
 import java.time.Instant;
@@ -34,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -47,9 +51,16 @@ public class InMemoryRepositoryConfig {
 
   @Bean
   @Primary
-  public TournamentRepository inMemoryTournamentRepository() {
+  public TournamentRepository inMemoryTournamentRepository(
+      TournamentMemberRepository memberRepository, TournamentInviteRepository inviteRepository) {
     return new TournamentRepository() {
       private final Map<String, Tournament> store = new ConcurrentHashMap<>();
+      // 実時計はミリ秒未満の解像度が環境依存で、大量生成時にcreatedAtが衝突しうる。
+      // ConcurrentHashMap#valuesの走査順は挿入順を保証しないため、createdAtが同値の場合に
+      // 「新しい順」の結果が実行のたびに揺れる(実際にテスト実行数が増えて顕在化した)。
+      // 保存順を明示的なタイブレークにして決定的にする
+      private final Map<String, Long> insertionSequence = new ConcurrentHashMap<>();
+      private final AtomicLong sequenceCounter = new AtomicLong();
 
       @Override
       public Optional<Tournament> findById(TournamentId id) {
@@ -60,7 +71,10 @@ public class InMemoryRepositoryConfig {
       public List<Tournament> findByOwnerSub(String ownerSub) {
         return store.values().stream()
             .filter(t -> t.ownerSub().equals(ownerSub))
-            .sorted(Comparator.comparing(Tournament::createdAt).reversed())
+            .sorted(
+                Comparator.comparing(Tournament::createdAt)
+                    .thenComparing(t -> insertionSequence.get(t.id().value()))
+                    .reversed())
             .toList();
       }
 
@@ -74,7 +88,7 @@ public class InMemoryRepositoryConfig {
         // DynamoDBの条件付き書き込みと同じ原子性を再現するため、
         // 同一キーへのread-check-writeを1つの compute 呼び出しに閉じ込める
         // (ConcurrentHashMap#computeは同一キーに対するリエントラント以外の呼び出しを直列化する)
-        var conflict = new java.util.concurrent.atomic.AtomicBoolean(false);
+        var conflict = new AtomicBoolean(false);
         store.compute(
             tournament.id().value(),
             (key, stored) -> {
@@ -88,11 +102,17 @@ public class InMemoryRepositoryConfig {
         if (conflict.get()) {
           throw new OptimisticLockException("大会が他の操作で更新されています");
         }
+        insertionSequence.putIfAbsent(tournament.id().value(), sequenceCounter.incrementAndGet());
       }
 
       @Override
       public void delete(TournamentId id) {
         store.remove(id.value());
+        insertionSequence.remove(id.value());
+        // 本番のDynamoDB実装はパーティション全体を一括削除するため、同じパーティションに属する
+        // MEMBER・INVITEアイテムも道連れになる(MBR-AC-013)。フェイクでも同じ振る舞いを再現する
+        memberRepository.findByTournamentId(id).forEach(m -> memberRepository.delete(id, m.id()));
+        inviteRepository.delete(id);
       }
 
       private Tournament withVersion(Tournament t, long version) {
@@ -446,6 +466,83 @@ public class InMemoryRepositoryConfig {
 
       private Map<String, TournamentMember> byTournament(TournamentId tournamentId) {
         return store.computeIfAbsent(tournamentId.value(), k -> new ConcurrentHashMap<>());
+      }
+    };
+  }
+
+  @Bean
+  @Primary
+  public TournamentInviteRepository inMemoryTournamentInviteRepository(
+      TournamentMemberRepository memberRepository) {
+    return new TournamentInviteRepository() {
+      private final Map<String, TournamentInvite> store = new ConcurrentHashMap<>();
+
+      @Override
+      public Optional<TournamentInvite> findByTournamentId(TournamentId tournamentId) {
+        return Optional.ofNullable(store.get(tournamentId.value()));
+      }
+
+      @Override
+      public Optional<TournamentInvite> findByToken(String token) {
+        return store.values().stream().filter(i -> i.token().equals(token)).findFirst();
+      }
+
+      @Override
+      public void save(TournamentInvite invite) {
+        var conflict = new AtomicBoolean(false);
+        store.compute(
+            invite.tournamentId().value(),
+            (key, stored) -> {
+              long storedVersion = stored == null ? 0 : stored.version();
+              if (invite.version() != storedVersion) {
+                conflict.set(true);
+                return stored;
+              }
+              return withVersion(invite, storedVersion + 1);
+            });
+        if (conflict.get()) {
+          throw new OptimisticLockException("招待が他の操作で更新されています");
+        }
+      }
+
+      @Override
+      public void delete(TournamentId tournamentId) {
+        store.remove(tournamentId.value());
+      }
+
+      @Override
+      public boolean acceptWithMember(
+          TournamentInvite acceptedInvite, TournamentMember member, Instant tournamentCreatedAt) {
+        if (memberRepository.findBySub(acceptedInvite.tournamentId(), member.sub()).isPresent()) {
+          return false; // 二重承諾(MEMBER重複)を模す
+        }
+        var conflict = new AtomicBoolean(false);
+        store.compute(
+            acceptedInvite.tournamentId().value(),
+            (key, stored) -> {
+              long storedVersion = stored == null ? 0 : stored.version();
+              if (acceptedInvite.version() != storedVersion) {
+                conflict.set(true);
+                return stored;
+              }
+              return withVersion(acceptedInvite, storedVersion + 1);
+            });
+        if (conflict.get()) {
+          return false;
+        }
+        memberRepository.save(acceptedInvite.tournamentId(), member, tournamentCreatedAt);
+        return true;
+      }
+
+      private TournamentInvite withVersion(TournamentInvite invite, long version) {
+        return new TournamentInvite(
+            invite.tournamentId(),
+            invite.token(),
+            invite.expiresAt(),
+            invite.maxUses(),
+            invite.usedCount(),
+            version,
+            invite.createdAt());
       }
     };
   }

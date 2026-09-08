@@ -25,6 +25,8 @@
 | AP10 | 特定ラウンドのチーム対局一覧を取得(団体戦) | PK=`TOURNAMENT#{id}`, SK begins_with `ROUND#{n}#TEAM_MATCH#` |
 | AP11 | 大会の共同管理者一覧を取得 | PK=`TOURNAMENT#{id}`, SK begins_with `MEMBER#` |
 | AP12 | ユーザーが共同管理する大会のID一覧を取得 | GSI1: PK=`USER#{sub}`(`entityType=MEMBER` でTOURNAMENTアイテムと区別) |
+| AP13 | 招待トークンから大会と招待を特定 | GSI2: PK=`INVITE#{token}` |
+| AP14 | 大会の招待の現在状態を取得 | PK=`TOURNAMENT#{id}`, SK=`INVITE` |
 
 ---
 
@@ -153,7 +155,23 @@
 
 - `version`は持たない(作成と削除のみで更新がないため)
 - GSI1PKは`TournamentアイテムのGSI1PK(USER#{ownerSub})`と同じ形式(`USER#{sub}`)で相乗りするため、AP5・AP12のクエリは必ず`entityType`でフィルタする(付け忘れるとMEMBERアイテムがTournamentItemとして誤マッピングされる。`06_adr/13_tournament_collaboration_model.md`)
-- 招待リンク(Inviteアイテム)は別PRで追加する
+
+### Invite(招待リンク)
+
+| 属性 | 例 | 備考 |
+|------|----|------|
+| PK / SK | `TOURNAMENT#01J...` / `INVITE` | 1大会につき有効な招待は常に1本。再発行は同じアイテムの上書き |
+| entityType | `INVITE` | |
+| token | `SecureRandom` 32バイトのURL-safe Base64 | 既存`ShareTokens`を流用 |
+| expiresAt | ISO8601(UTC) | 発行から72時間固定 |
+| maxUses / usedCount | 1〜9 / 0〜 | |
+| createdAt | ISO8601(UTC) | |
+| GSI2PK | `INVITE#{token}` | AP13用。共有トークン(`SHARE#{token}`)と名前空間が異なるためGSI2に相乗りできる |
+| version | number | 楽観ロック。**必須**(同時承諾での枠超過を防ぐ) |
+
+- 発行・再発行はOWNERの単独操作のため通常競合しない(読み込んだ状態のversionをそのまま引き継いで上書きする。Tournamentの`touched()`と同じ書き方)
+- 承諾(`POST /invitations/{token}/accept`)は「INVITEの条件付き更新(version一致でusedCount+1)」+「MEMBERの作成(`attribute_not_exists(SK)`。二重承諾を弾く)」を1つの`TransactWriteItems`で行う(`RoundConfirmationGuard`と同じ2アイテムトランザクションのパターン)。競合時(招待versionの不一致、または同時承諾によるMEMBER重複)はサーバー内部で数回再試行し、クライアントに409を返さない
+- 招待の失効(`DELETE`)は物理削除。共同管理者の取り消し(`DELETE /members/{memberId}`)も招待を道連れに削除する(取り消し後に同じリンクで復帰できないようにするため)
 
 ## 4. 設計上の決定事項
 

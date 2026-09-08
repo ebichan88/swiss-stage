@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.swiss_stage.presentation.auth.JwtSessionSupport;
+import com.swiss_stage.presentation.auth.RedirectCookieSupport;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -67,6 +68,47 @@ class AuthApiTest extends ApiContractTestSupport {
         .startsWith("https://accounts.google.com/o/oauth2/v2/auth")
         .contains("redirect_uri=")
         .contains("/api/v1/auth/callback");
+  }
+
+  @Test
+  @DisplayName("MBR-AC-014: /auth/loginのredirectは安全な相対パスのみCookieに退避し、" + "絶対URL・\"//\"始まりは退避しない")
+  void ログインリダイレクト先の一時退避() throws Exception {
+    MvcResult safe =
+        mockMvc
+            .perform(get("/api/v1/auth/login").param("redirect", "/invite/abc123"))
+            .andExpect(status().isFound())
+            .andReturn();
+    Cookie redirectCookie = safe.getResponse().getCookie(RedirectCookieSupport.COOKIE_NAME);
+    assertThat(redirectCookie).isNotNull();
+    assertThat(redirectCookie.getValue()).isEqualTo("/invite/abc123");
+    assertThat(redirectCookie.isHttpOnly()).isTrue();
+
+    MvcResult absoluteUrl =
+        mockMvc
+            .perform(get("/api/v1/auth/login").param("redirect", "https://evil.example.com"))
+            .andExpect(status().isFound())
+            .andReturn();
+    assertThat(absoluteUrl.getResponse().getCookie(RedirectCookieSupport.COOKIE_NAME)).isNull();
+
+    MvcResult protocolRelative =
+        mockMvc
+            .perform(get("/api/v1/auth/login").param("redirect", "//evil.example.com"))
+            .andExpect(status().isFound())
+            .andReturn();
+    assertThat(protocolRelative.getResponse().getCookie(RedirectCookieSupport.COOKIE_NAME))
+        .isNull();
+
+    MvcResult backslashAuthority =
+        mockMvc
+            .perform(get("/api/v1/auth/login").param("redirect", "/\\evil.example.com"))
+            .andExpect(status().isFound())
+            .andReturn();
+    assertThat(backslashAuthority.getResponse().getCookie(RedirectCookieSupport.COOKIE_NAME))
+        .isNull();
+
+    MvcResult noParam =
+        mockMvc.perform(get("/api/v1/auth/login")).andExpect(status().isFound()).andReturn();
+    assertThat(noParam.getResponse().getCookie(RedirectCookieSupport.COOKIE_NAME)).isNull();
   }
 
   @Test

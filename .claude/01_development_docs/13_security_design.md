@@ -74,7 +74,10 @@
 
 - 大会に対する役割は`TournamentAccessSupport`が`loadOwner`(OWNER専用)・`loadMember`(OWNER・MAINTAINER共通)の2メソッドに集約して検証する(application層で必ずチェック。presentation層のチェックだけに頼らない)。役割はordinal比較せず`TournamentRole`の明示的な述語で判定する(CLAUDE.md #13)
 - **404と403の使い分け**: メンバーでない(OWNERでもMAINTAINERでもない)場合は他人の大会の存在を漏らさないため404 `TOURNAMENT_NOT_FOUND`。メンバーではあるが権限が足りない(MAINTAINERがOWNER専用操作を呼んだ)場合は403 `FORBIDDEN`(「自分が所属している大会である」という情報以上は増えないため存在秘匿は保たれる)
-- 招待リンクの発行・受諾によるMAINTAINER追加は`14_tournament_collaboration.md`を参照(別PRで実装)
+- 招待リンクの発行・受諾によるMAINTAINER追加は`14_tournament_collaboration.md`を参照。招待トークンの
+  プレビュー・承諾(`/api/v1/invitations/**`)は`InvitationRateLimitFilter`でIPベースのレート制限を
+  かける(共有トークンと同じ仕組みを別バケットで適用。招待トークンの漏洩はMAINTAINER=書き込み権限の
+  奪取に直結するため)
 
 ---
 

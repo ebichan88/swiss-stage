@@ -152,6 +152,19 @@ class TournamentMemberApiTest extends ApiContractTestSupport {
     assertThat(tournamentIdsOf(sessionCookie(OTHER_SUB))).doesNotContain(tournamentId);
   }
 
+  @Test
+  @DisplayName("MBR-AC-013: 大会を削除すると共同管理者・招待アイテムも物理削除され、MAINTAINERの大会一覧から消える")
+  void 大会削除で共同管理者の一覧からも消える() throws Exception {
+    addMaintainer(OTHER_SUB, "共同管理 太郎");
+
+    assertThat(tournamentIdsOf(sessionCookie(OTHER_SUB))).contains(tournamentId);
+
+    performApi(delete("/api/v1/tournaments/" + tournamentId).cookie(ownerCookie()))
+        .andExpect(status().isNoContent());
+
+    assertThat(tournamentIdsOf(sessionCookie(OTHER_SUB))).doesNotContain(tournamentId);
+  }
+
   private List<String> tournamentIdsOf(Cookie cookie) throws Exception {
     MvcResult result = performApi(get("/api/v1/tournaments").cookie(cookie)).andReturn();
     List<String> ids = new ArrayList<>();

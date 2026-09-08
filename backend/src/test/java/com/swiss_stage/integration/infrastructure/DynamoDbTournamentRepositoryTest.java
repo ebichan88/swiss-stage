@@ -12,12 +12,14 @@ import com.swiss_stage.domain.model.Participant;
 import com.swiss_stage.domain.model.Rank;
 import com.swiss_stage.domain.model.Round;
 import com.swiss_stage.domain.model.Tournament;
+import com.swiss_stage.domain.model.TournamentInvite;
 import com.swiss_stage.domain.model.TournamentMember;
 import com.swiss_stage.domain.model.TournamentStatus;
 import com.swiss_stage.domain.model.Visibility;
 import com.swiss_stage.domain.repository.MatchRepository;
 import com.swiss_stage.domain.repository.ParticipantRepository;
 import com.swiss_stage.domain.repository.RoundRepository;
+import com.swiss_stage.domain.repository.TournamentInviteRepository;
 import com.swiss_stage.domain.repository.TournamentMemberRepository;
 import com.swiss_stage.domain.repository.TournamentRepository;
 import java.time.Instant;
@@ -37,6 +39,7 @@ class DynamoDbTournamentRepositoryTest extends DynamoDbRepositoryTestSupport {
   @Autowired RoundRepository roundRepository;
   @Autowired MatchRepository matchRepository;
   @Autowired TournamentMemberRepository memberRepository;
+  @Autowired TournamentInviteRepository inviteRepository;
 
   @Test
   @DisplayName("大会を保存して全属性を復元できる(初回保存でversionが払い出される)")
@@ -222,6 +225,11 @@ class DynamoDbTournamentRepositoryTest extends DynamoDbRepositoryTestSupport {
     participantRepository.saveAll(tournament.id(), List.of(p1, p2));
     roundRepository.create(tournament.id(), Round.pairing(1));
     matchRepository.save(tournament.id(), Match.pairOf(1, 1, p1.id(), p2.id(), groupId));
+    // MBR-AC-013: 共同管理者・招待アイテムも同じパーティションに属するため一括削除の対象になる
+    String memberSub = uniqueSub();
+    memberRepository.save(
+        tournament.id(), TournamentMember.create(memberSub, "削除対象共同管理者", NOW), NOW);
+    inviteRepository.save(TournamentInvite.issue(tournament.id(), uniqueToken(), 3, NOW, null));
 
     repository.delete(tournament.id());
 
@@ -229,6 +237,8 @@ class DynamoDbTournamentRepositoryTest extends DynamoDbRepositoryTestSupport {
     assertThat(participantRepository.findAllByTournamentId(tournament.id())).isEmpty();
     assertThat(roundRepository.findAllByTournamentId(tournament.id())).isEmpty();
     assertThat(matchRepository.findAllByTournamentId(tournament.id())).isEmpty();
+    assertThat(memberRepository.findBySub(tournament.id(), memberSub)).isEmpty();
+    assertThat(inviteRepository.findByTournamentId(tournament.id())).isEmpty();
   }
 
   private static String uniqueSub() {

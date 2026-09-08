@@ -52,6 +52,9 @@ app:
     shared:                      # /api/v1/shared/** のIPベースレート制限(13_security_design.md §5)
       capacity: 60
       refill-per-minute: 60
+    invitation:                  # /api/v1/invitations/** のIPベースレート制限(14_tournament_collaboration.md §4.7)
+      capacity: 60
+      refill-per-minute: 60
   cache:
     shared:                      # 共有ページ集約のインメモリキャッシュTTL(14_performance_optimization.md §3)
       ttl-seconds: 30
